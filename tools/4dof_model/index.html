@@ -1,19 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LutherieLab — 4dof model</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="model_core.js" defer></script>
-  <script src="main.js" defer></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gore–Gilet Acoustic Guitar Model — 1/2/3/4 DOF + Peak Labels</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
-  <header class="card pad">
-    <h1>LutherieLab — 4dof model</h1>
-  </header>
-  <main>
-    <canvas id="plot"></canvas>
-  </main>
+    <header class="card pad">
+        <h1>Gore–Gilet Acoustic Guitar Model — 1/2/3/4 DOF (Coupled)</h1>
+        <div class="muted">
+            1DOF (Helmholtz) • 2DOF (Top+Air) • 3DOF (Top+Back+Air) • 4DOF (Top+Back+Air+Sides).
+            Based on Gore &amp; Gilet Vol. 2 §2.4.1 and Jim Kirby’s determinant expansion (2012). Frequency axis
+            0–500&nbsp;Hz.
+        </div>
+    </header>
+
+    <main>
+        <section class="card pad">
+
+            <!-- MODEL ORDER -->
+            <h3 class="section">Model Complexity</h3>
+            <div class="row"><label>Order</label>
+                <div class="val"><span id="model_label">4‑DOF</span></div>
+            </div>
+            <input type="range" id="model_order" min="1" max="4" step="1" value="4" list="model_ticks">
+            <datalist id="model_ticks">
+                <option value="1"></option>
+                <option value="2"></option>
+                <option value="3"></option>
+                <option value="4"></option>
+            </datalist>
+            <div class="row" style="margin-top:8px;">
+                <label><input type="checkbox" id="show_labels" checked> Show peak labels</label>
+                <span class="badge">Force target: Air (1DOF) • Top (2–4DOF)</span>
+            </div>
+            <div class="small">The solver and visible controls adapt to the chosen order. Peaks are auto‑labeled by
+                dominant subsystem.</div>
+
+            <!-- AIR -->
+            <div id="blk_air">
+                <h3 class="section">Air (Helmholtz) Mode</h3>
+                <div class="row"><label>mass_air m<sub>a</sub> (kg)</label>
+                    <div class="val" id="mass_air_val">0.000482</div>
+                </div>
+                <input type="range" id="mass_air" min="0.00030" max="0.00100" step="0.000001" value="0.000482">
+                <div class="row"><label>damping_air R<sub>a</sub> (N·s/m)</label>
+                    <div class="val" id="damping_air_val">0.005</div>
+                </div>
+                <input type="range" id="damping_air" min="0.001" max="0.030" step="0.001" value="0.005">
+                <div class="row"><label>area_hole A<sub>h</sub> (m²)</label>
+                    <div class="val" id="area_hole_val">0.0055</div>
+                </div>
+                <input type="range" id="area_hole" min="0.0030" max="0.0100" step="0.0001" value="0.0055">
+                <div class="row"><label>volume_air V (m³)</label>
+                    <div class="val" id="volume_air_val">0.0141</div>
+                </div>
+                <input type="range" id="volume_air" min="0.0100" max="0.0250" step="0.0001" value="0.0141">
+            </div>
+
+            <!-- TOP -->
+            <div id="blk_top">
+                <h3 class="section">Top Plate Mode</h3>
+                <div class="row"><label>mass_top m<sub>t</sub> (kg)</label>
+                    <div class="val" id="mass_top_val">0.043</div>
+                </div>
+                <input type="range" id="mass_top" min="0.020" max="0.120" step="0.001" value="0.043">
+                <div class="row"><label>stiffness_top K<sub>t</sub> (N/m)</label>
+                    <div class="val" id="stiffness_top_val">42700</div>
+                </div>
+                <input type="range" id="stiffness_top" min="20000" max="150000" step="1000" value="42700">
+                <div class="row"><label>damping_top R<sub>t</sub> (N·s/m)</label>
+                    <div class="val" id="damping_top_val">1.5</div>
+                </div>
+                <input type="range" id="damping_top" min="1.0" max="20.0" step="0.5" value="1.5">
+                <div class="row"><label>area_top A<sub>t</sub> (m²)</label>
+                    <div class="val" id="area_top_val">0.0390</div>
+                </div>
+                <input type="range" id="area_top" min="0.0300" max="0.0600" step="0.0005" value="0.0390">
+            </div>
+
+            <!-- BACK -->
+            <div id="blk_back">
+                <h3 class="section">Back Plate Mode</h3>
+                <div class="row"><label>mass_back m<sub>b</sub> (kg)</label>
+                    <div class="val" id="mass_back_val">0.0940</div>
+                </div>
+                <input type="range" id="mass_back" min="0.050" max="0.150" step="0.001" value="0.0940">
+                <div class="row"><label>stiffness_back K<sub>b</sub> (N/m)</label>
+                    <div class="val" id="stiffness_back_val">130000</div>
+                </div>
+                <input type="range" id="stiffness_back" min="80000" max="220000" step="1000" value="130000">
+                <div class="row"><label>damping_back R<sub>b</sub> (N·s/m)</label>
+                    <div class="val" id="damping_back_val">7.0</div>
+                </div>
+                <input type="range" id="damping_back" min="1.0" max="20.0" step="0.1" value="7.0">
+                <div class="row"><label>area_back A<sub>b</sub> (m²)</label>
+                    <div class="val" id="area_back_val">0.0400</div>
+                </div>
+                <input type="range" id="area_back" min="0.0300" max="0.0600" step="0.0005" value="0.0400">
+            </div>
+
+            <!-- SIDES -->
+            <div id="blk_sides">
+                <h3 class="section">Sides / Rim Mode</h3>
+                <div class="row"><label>mass_sides m<sub>s</sub> (kg)</label>
+                    <div class="val" id="mass_sides_val">0.800</div>
+                </div>
+                <input type="range" id="mass_sides" min="0.100" max="1.500" step="0.010" value="0.800">
+                <div class="row"><label>stiffness_sides K<sub>s</sub> (N/m)</label>
+                    <div class="val" id="stiffness_sides_val">1400000</div>
+                </div>
+                <input type="range" id="stiffness_sides" min="500000" max="3000000" step="10000" value="1400000">
+                <div class="row"><label>damping_sides R<sub>s</sub> (N·s/m)</label>
+                    <div class="val" id="damping_sides_val">10.0</div>
+                </div>
+                <input type="range" id="damping_sides" min="1.0" max="80.0" step="1.0" value="10.0">
+                <div class="row"><label>area_sides A<sub>s</sub> (m²)</label>
+                    <div class="val" id="area_sides_val">0.0250</div>
+                </div>
+                <input type="range" id="area_sides" min="0.0100" max="0.0600" step="0.0005" value="0.0250">
+            </div>
+
+            <!-- DRIVER -->
+            <h3 class="section">Driving Force</h3>
+            <div class="row"><label>driving_force F (N)</label>
+                <div class="val" id="driving_force_val">0.40</div>
+            </div>
+            <input type="range" id="driving_force" min="0.10" max="1.00" step="0.01" value="0.40">
+
+            <button id="btn_reset">Reset Defaults</button>
+            <div class="small">
+                Tip: the model is coupled. Peaks shift together as you change air volume, plate stiffness, or effective
+                areas.
+                Watch T(1,1) / A(0,1) interactions by nudging V, A<sub>h</sub>, and K<sub>t</sub>.
+            </div>
+        </section>
+
+        <section class="card pad">
+            <canvas id="plot"></canvas>
+            <div class="legend">
+                <div><span class="sw total"></span> Total</div>
+                <div><span class="sw top"></span> Top</div>
+                <div><span class="sw back"></span> Back</div>
+                <div><span class="sw air"></span> Air</div>
+                <div><span class="sw sides"></span> Sides</div>
+            </div>
+            <div id="peak_list"></div>
+        </section>
+    </main>
+
+    <script src="model_core.js" defer></script>
+    <script src="main.js" defer></script>
+
 </body>
+
 </html>
