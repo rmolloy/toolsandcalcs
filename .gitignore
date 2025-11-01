@@ -1,0 +1,11 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+node_modules/
+dist/
+
+# Temporary
+*.tmp
+*.bak
