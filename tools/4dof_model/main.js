@@ -1,4 +1,24 @@
 
+const COLORS = { total: "#ff9a5c", top: "#61a8ff", back: "#47d78a", air: "#b38cff", sides: "#ffd166" };
+const MASS_IDS = new Set(["mass_top","mass_back","mass_sides","mass_air"]);
+const STIFFNESS_IDS = new Set(["stiffness_top","stiffness_back","stiffness_sides"]);
+
+function formatSliderValue(id, value){
+  if(Number.isNaN(value)) return "—";
+  if(MASS_IDS.has(id)) return `${value.toFixed(1)} g`;
+  if(id === "area_hole"){
+    const diameterMm = Math.sqrt((4 * value) / Math.PI) * 1000;
+    return `${value.toFixed(5)} m² (diameter ${diameterMm.toFixed(1)} mm)`;
+  }
+  if(id === "damping_air") return value.toFixed(4);
+  if(id === "volume_air"){
+    const liters = value * 1000;
+    return `${value.toFixed(4)} m³ (${liters.toFixed(1)} L)`;
+  }
+  if(STIFFNESS_IDS.has(id)) return `${value.toFixed(0)} N/m`;
+  return fmt(value);
+}
+
 /* --------------------- Peak detection & labeling --------------------- */
 function subs(n){ return ["","₁","₂","₃","₄","₅"][n] || ("_"+n); }
 function maxPeaksFor(order){ return Math.min(4, Math.max(1, order)); }
@@ -36,6 +56,20 @@ function detectPeaks(series, // array of {x, y}
   return picked;
 }
 
+function detectPeaksAdaptive(series, desiredCount, baseOpts){
+  const attempts = [
+    baseOpts,
+    { ...baseOpts, minProm: baseOpts.minProm * 0.75 },
+    { ...baseOpts, minProm: baseOpts.minProm * 0.5, minDb: baseOpts.minDb - 5 },
+    { ...baseOpts, minProm: baseOpts.minProm * 0.35, minDb: baseOpts.minDb - 10 }
+  ];
+  for(let i=0;i<attempts.length;i++){
+    const result = detectPeaks(series, attempts[i]);
+    if(result.length >= desiredCount || i === attempts.length - 1) return result;
+  }
+  return [];
+}
+
 function dominantAt(index, R){
   const vals = {
     top:   R.top[index]?.y ?? -140,
@@ -52,6 +86,11 @@ function dominantAt(index, R){
   return { key: bestKey, name, color };
 }
 
+function expectedSubsystemKey(ordinal){
+  const table = ["air","top","back","sides"];
+  return table[ordinal - 1] || null;
+}
+
 function modeName(order, ordinal, domKey){
   if(order === 1) return "A(0,1)";
   // For 2–4 DOF, label the T(1,1) family and append dominant subsystem
@@ -65,13 +104,18 @@ const cvs = $("plot");
 const ctx = cvs.getContext("2d");
 const dpi = window.devicePixelRatio || 1;
 
-function resize(){
+function resizeCanvas(){
   const w = cvs.clientWidth, h = cvs.clientHeight;
   cvs.width = Math.max(1, Math.floor(w * dpi));
   cvs.height = Math.max(1, Math.floor(h * dpi));
   ctx.setTransform(dpi,0,0,dpi,0,0);
 }
-window.addEventListener("resize", resize); resize();
+function resizeAndRender(){
+  resizeCanvas();
+  render();
+}
+window.addEventListener("resize", resizeAndRender);
+resizeCanvas();
 
 let yMin = -100, yMax = -20;
 function xPix(f){ return (f/500) * cvs.clientWidth; }
@@ -159,8 +203,42 @@ function drawLabel(x, y, text, color, yBump=0){
   ctx.fillText(text, bx + padX, by + boxH - 6);
 }
 
+/* --------------------- Read UI params + adapter --------------------- */
+function readUiInputs(){
+  const g = id => parseFloat($(id).value);
+  return {
+    mass_top: g("mass_top"), mass_back: g("mass_back"),
+    mass_sides: g("mass_sides"), mass_air: g("mass_air"),
+    stiffness_top: g("stiffness_top"), stiffness_back: g("stiffness_back"),
+    stiffness_sides: g("stiffness_sides"),
+    damping_top: g("damping_top"), damping_back: g("damping_back"),
+    damping_sides: g("damping_sides"), damping_air: g("damping_air"),
+    area_top: g("area_top"), area_back: g("area_back"),
+    area_sides: g("area_sides"), area_hole: g("area_hole"),
+    volume_air: g("volume_air"), driving_force: g("driving_force"),
+    model_order: parseInt($("model_order").value, 10),
+    show_labels: $("show_labels").checked
+  };
+}
+
+function adaptUiToSolver(raw){
+  const out = { ...raw };
+  MASS_IDS.forEach(key=>{
+    const v = out[key];
+    if(typeof v === "number" && !Number.isNaN(v)){
+      out[key] = v / 1000;
+    }
+  });
+  return out;
+}
+
+function buildParams(){
+  const raw = readUiInputs();
+  return adaptUiToSolver(raw);
+}
+
 function render(){
-  const p = readParams();
+  const p = buildParams();
   const R = computeResponse(p);
 
   // autoscale y to content (with sensible bounds)
@@ -182,7 +260,7 @@ function render(){
 
   // peak detection on total
   const maxN = maxPeaksFor(p.model_order);
-  const peaks = detectPeaks(R.total, {
+  const peaks = detectPeaksAdaptive(R.total, maxN, {
     minDb: -95,
     minProm: 4.0,
     minDistHz: 20
@@ -196,10 +274,15 @@ function render(){
     peaks.forEach((pk, idx)=>{
       const x = xPix(pk.f), y = yPix(pk.y);
       const dom = dominantAt(pk.i, R);
-      const name = modeName(p.model_order, idx+1, dom.key);
+      const ordinal = idx + 1;
+      const expectedKey = expectedSubsystemKey(ordinal);
+      const labelKey = expectedKey || dom.key;
+      const colorKey = COLORS[labelKey] ? labelKey : dom.key;
+      const color = COLORS[colorKey] || dom.color;
+      const name = modeName(p.model_order, ordinal, labelKey);
       const text = `${name} — ${pk.f.toFixed(1)} Hz`;
-      drawLabel(x, y, text, dom.color, bumps[idx % bumps.length]);
-      list.push({ text, color: dom.color });
+      drawLabel(x, y, text, color, bumps[idx % bumps.length]);
+      list.push({ text, color });
     });
   }
 
@@ -210,8 +293,13 @@ function render(){
   } else {
     el.innerHTML = peaks.map((pk, idx)=>{
       const dom = dominantAt(pk.i, R);
-      const name = modeName(p.model_order, idx+1, dom.key);
-      return `<div class="pl-item" style="color:${dom.color}">${name}: <b>${pk.f.toFixed(1)} Hz</b> (prom≈${pk.prom.toFixed(1)} dB)</div>`;
+      const ordinal = idx + 1;
+      const expectedKey = expectedSubsystemKey(ordinal);
+      const labelKey = expectedKey || dom.key;
+      const colorKey = COLORS[labelKey] ? labelKey : dom.key;
+      const color = COLORS[colorKey] || dom.color;
+      const name = modeName(p.model_order, ordinal, labelKey);
+      return `<div class="pl-item" style="color:${color}">${name}: <b>${pk.f.toFixed(1)} Hz</b> (prom≈${pk.prom.toFixed(1)} dB)</div>`;
     }).join("");
   }
 }
@@ -230,7 +318,7 @@ ids.forEach(id=>{
   if(!el) return;
   el.addEventListener("input", ()=>{
     const lab = $(`${id}_val`);
-    if(lab && el.type === "range") lab.textContent = fmt(parseFloat(el.value));
+    if(lab && el.type === "range") lab.textContent = formatSliderValue(id, parseFloat(el.value));
     if(id === "model_order"){
       const labels = {1:"1‑DOF",2:"2‑DOF",3:"3‑DOF",4:"4‑DOF"};
       $("model_label").textContent = labels[parseInt(el.value,10)] || "—";
@@ -248,7 +336,7 @@ ids.forEach(id=>{
     if(el.type === "range"){
       const v = parseFloat(el.value);
       const lab = $(`${id}_val`);
-      if(lab && !Number.isNaN(v)) lab.textContent = fmt(v);
+      if(lab && !Number.isNaN(v)) lab.textContent = formatSliderValue(id, v);
     }
   });
 })();
@@ -267,7 +355,7 @@ $("btn_reset").addEventListener("click", ()=>{
   $("show_labels").checked = true;
   ["mass_top","mass_back","mass_sides","mass_air","stiffness_top","stiffness_back","stiffness_sides","damping_top","damping_back","damping_sides","damping_air","area_top","area_back","area_sides","area_hole","volume_air","driving_force"].forEach(id=>{
     const el = $(id), lab = $(`${id}_val`);
-    if(el && lab) lab.textContent = fmt(parseFloat(el.value));
+    if(el && lab) lab.textContent = formatSliderValue(id, parseFloat(el.value));
   });
   $("model_label").textContent = "4‑DOF";
   setModelVisibility(4);
