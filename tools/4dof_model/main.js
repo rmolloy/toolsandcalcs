@@ -157,9 +157,15 @@ function drawAxes(){
 }
 
 function line(data, color, width=2, dashed=false){
+  ctx.save();
   ctx.strokeStyle = color;
-  ctx.lineWidth = width;
-  ctx.setLineDash(dashed ? [6,4] : []);
+  ctx.lineWidth = dashed ? Math.max(1, width * 0.7) : width;
+  if(dashed){
+    ctx.globalAlpha = 0.45;
+    ctx.setLineDash([6,4]);
+  } else {
+    ctx.setLineDash([]);
+  }
   ctx.beginPath();
   let first = true;
   for(const p of data){
@@ -168,7 +174,7 @@ function line(data, color, width=2, dashed=false){
     else { ctx.lineTo(x,y); }
   }
   ctx.stroke();
-  ctx.setLineDash([]);
+  ctx.restore();
 }
 
 
