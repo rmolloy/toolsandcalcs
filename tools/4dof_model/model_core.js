@@ -1,7 +1,7 @@
 /* --------------------- Utilities & constants --------------------- */
 const $ = id => document.getElementById(id);
-const c = 340;       // m/s
-const rho = 1.205;   // kg/m^3
+const DEFAULT_C = 340;       // m/s
+const DEFAULT_RHO = 1.205;   // kg/m^3
 const pref = 50;     // reference pressure (Kirby)
 const mic_r = 1.0;   // microphone distance (m)
 
@@ -28,13 +28,26 @@ function det3(a11, a12, a13, a21, a22, a23, a31, a32, a33) {
 }
 
 /* shared helpers */
-function scalePressure(y, area, om) { const scale = (om * om * rho) / (4 * Math.PI * mic_r); return scl(y, area * scale); }
-function kappaFrom(p) { return (c * c) * rho / p.volume_air; }
+function resolveAtmosphere(p) {
+  const rho = (typeof p.air_density === "number" && !Number.isNaN(p.air_density)) ? p.air_density : DEFAULT_RHO;
+  const c = (typeof p.speed_of_sound === "number" && !Number.isNaN(p.speed_of_sound)) ? p.speed_of_sound : DEFAULT_C;
+  return { rho, c };
+}
+function scalePressure(y, area, om, rhoOverride) {
+  const rho = (typeof rhoOverride === "number" && !Number.isNaN(rhoOverride)) ? rhoOverride : DEFAULT_RHO;
+  const scale = (om * om * rho) / (4 * Math.PI * mic_r);
+  return scl(y, area * scale);
+}
+function kappaFrom(p, atm) {
+  const { c, rho } = atm || resolveAtmosphere(p);
+  return (c * c) * rho / p.volume_air;
+}
 
 /* --------------------- 1DOF, 2DOF, 3DOF, 4DOF solvers --------------------- */
 /* 1DOF: Helmholtz-only (air mass + cavity spring). Force applied to air. */
 function computeResponse1DOF(p) {
-  const kappa = kappaFrom(p);
+  const atm = resolveAtmosphere(p);
+  const kappa = kappaFrom(p, atm);
   const oma = Math.sqrt((kappa * p.area_hole * p.area_hole) / p.mass_air);
   const freqs = sweep(0, 500, 0.1);
 
@@ -42,17 +55,17 @@ function computeResponse1DOF(p) {
   const F = p.driving_force;
 
   for (const f of freqs) {
-    const om = 2 * Math.PI * f;
-    const Da = C(p.mass_air * (oma * oma - om * om), p.damping_air * om);
-    const ya = div(C(F, 0), Da);       // F on air coordinate
-    const p_air = scalePressure(ya, p.area_hole, om);
-    const p_tot = p_air;
+    const omega = 2 * Math.PI * f;
+    const airImpedance = C(p.mass_air * (oma * oma - omega * omega), p.damping_air * omega);
+    const airResponse = div(C(F, 0), airImpedance); // Force applied on air coordinate
+    const airPressure = scalePressure(airResponse, p.area_hole, omega, atm.rho);
+    const totalPressure = airPressure;
 
-    const dB_tot = 20 * Math.log10((abs(p_tot) / pref) || 1e-30);
-    const dB_air = 20 * Math.log10((abs(p_air) / pref) || 1e-30);
+    const totalDb = 20 * Math.log10((abs(totalPressure) / pref) || 1e-30);
+    const airDb = 20 * Math.log10((abs(airPressure) / pref) || 1e-30);
 
-    total.push({ x: f, y: dB_tot });
-    air.push({ x: f, y: dB_air });
+    total.push({ x: f, y: totalDb });
+    air.push({ x: f, y: airDb });
     top.push({ x: f, y: -140 }); back.push({ x: f, y: -140 }); sides.push({ x: f, y: -140 });
   }
   return { total, top, back, air, sides };
@@ -60,7 +73,8 @@ function computeResponse1DOF(p) {
 
 /* 2DOF: Top + Air (force on Top). */
 function computeResponse2DOF(p) {
-  const kappa = kappaFrom(p);
+  const atm = resolveAtmosphere(p);
+  const kappa = kappaFrom(p, atm);
   const omt = Math.sqrt((p.stiffness_top + kappa * p.area_top * p.area_top) / p.mass_top);
   const oma = Math.sqrt((kappa * p.area_hole * p.area_hole) / p.mass_air);
   const alpha_t = kappa * p.area_hole * p.area_top;
@@ -70,20 +84,20 @@ function computeResponse2DOF(p) {
   const F = p.driving_force;
 
   for (const f of freqs) {
-    const om = 2 * Math.PI * f;
-    const Dt = C(p.mass_top * (omt * omt - om * om), p.damping_top * om);
-    const Da = C(p.mass_air * (oma * oma - om * om), p.damping_air * om);
-    const A = det2(Dt, C(-alpha_t, 0), C(-alpha_t, 0), Da);      // Δ
-    const yt = div(mul(Da, C(F, 0)), A);                        // (Da*F)/Δ
-    const ya = div(mul(C(alpha_t, 0), C(F, 0)), A);              // (α_t*F)/Δ
+    const omega = 2 * Math.PI * f;
+    const topImpedance = C(p.mass_top * (omt * omt - omega * omega), p.damping_top * omega);
+    const airImpedance = C(p.mass_air * (oma * oma - omega * omega), p.damping_air * omega);
+    const systemDet = det2(topImpedance, C(-alpha_t, 0), C(-alpha_t, 0), airImpedance);
+    const topResponse = div(mul(airImpedance, C(F, 0)), systemDet);      // (Da*F)/Δ
+    const airResponse = div(mul(C(alpha_t, 0), C(F, 0)), systemDet);     // (α_t*F)/Δ
 
-    const p_top = scalePressure(yt, p.area_top, 2 * Math.PI * f);
-    const p_air = scalePressure(ya, p.area_hole, 2 * Math.PI * f);
-    const p_tot = add(p_top, p_air);
+    const topPressure = scalePressure(topResponse, p.area_top, omega, atm.rho);
+    const airPressure = scalePressure(airResponse, p.area_hole, omega, atm.rho);
+    const totalPressure = add(topPressure, airPressure);
 
-    total.push({ x: f, y: 20 * Math.log10((abs(p_tot) / pref) || 1e-30) });
-    top.push({ x: f, y: 20 * Math.log10((abs(p_top) / pref) || 1e-30) });
-    air.push({ x: f, y: 20 * Math.log10((abs(p_air) / pref) || 1e-30) });
+    total.push({ x: f, y: 20 * Math.log10((abs(totalPressure) / pref) || 1e-30) });
+    top.push({ x: f, y: 20 * Math.log10((abs(topPressure) / pref) || 1e-30) });
+    air.push({ x: f, y: 20 * Math.log10((abs(airPressure) / pref) || 1e-30) });
     back.push({ x: f, y: -140 });
     sides.push({ x: f, y: -140 });
   }
@@ -92,7 +106,8 @@ function computeResponse2DOF(p) {
 
 /* 3DOF: Top + Back + Air (force on Top). */
 function computeResponse3DOF(p) {
-  const kappa = kappaFrom(p);
+  const atm = resolveAtmosphere(p);
+  const kappa = kappaFrom(p, atm);
   const omt = Math.sqrt((p.stiffness_top + kappa * p.area_top * p.area_top) / p.mass_top);
   const omb = Math.sqrt((p.stiffness_back + kappa * p.area_back * p.area_back) / p.mass_back);
   const oma = Math.sqrt((kappa * p.area_hole * p.area_hole) / p.mass_air);
@@ -105,51 +120,50 @@ function computeResponse3DOF(p) {
   const F = p.driving_force;
 
   for (const f of freqs) {
-    const om = 2 * Math.PI * f;
-    const Dt = C(p.mass_top * (omt * omt - om * om), p.damping_top * om);
-    const Db = C(p.mass_back * (omb * omb - om * om), p.damping_back * om);
-    const Da = C(p.mass_air * (oma * oma - om * om), p.damping_air * om);
+    const omega = 2 * Math.PI * f;
+    const topImpedance = C(p.mass_top * (omt * omt - omega * omega), p.damping_top * omega);
+    const backImpedance = C(p.mass_back * (omb * omb - omega * omega), p.damping_back * omega);
+    const airImpedance = C(p.mass_air * (oma * oma - omega * omega), p.damping_air * omega);
 
-    // M = [[Dt,   0, -αt],
-    //      [ 0,  Db, -αb],
-    //      [-αt,-αb,  Da]]
-    const Δ = det3(
-      Dt, C(0, 0), C(-alpha_t, 0),
-      C(0, 0), Db, C(-alpha_b, 0),
-      C(-alpha_t, 0), C(-alpha_b, 0), Da
+    // M = [[topImpedance,   0, -αt],
+    //      [      0, backImpedance, -αb],
+    //      [-αt,-αb,  airImpedance]]
+    const detSystem = det3(
+      topImpedance, C(0, 0), C(-alpha_t, 0),
+      C(0, 0), backImpedance, C(-alpha_b, 0),
+      C(-alpha_t, 0), C(-alpha_b, 0), airImpedance
     );
 
     // b = [F, 0, 0]^T
-    const Δt = det3(
+    const detTop = det3(
       C(F, 0), C(0, 0), C(-alpha_t, 0),
-      C(0, 0), Db, C(-alpha_b, 0),
-      C(0, 0), C(-alpha_b, 0), Da
+      C(0, 0), backImpedance, C(-alpha_b, 0),
+      C(0, 0), C(-alpha_b, 0), airImpedance
     );
-    const Δb = det3(
-      Dt, C(F, 0), C(-alpha_t, 0),
+    const detBack = det3(
+      topImpedance, C(F, 0), C(-alpha_t, 0),
       C(0, 0), C(0, 0), C(-alpha_b, 0),
-      C(-alpha_t, 0), C(0, 0), Da
+      C(-alpha_t, 0), C(0, 0), airImpedance
     );
-    const Δa = det3(
-      Dt, C(0, 0), C(F, 0),
-      C(0, 0), Db, C(0, 0),
+    const detAir = det3(
+      topImpedance, C(0, 0), C(F, 0),
+      C(0, 0), backImpedance, C(0, 0),
       C(-alpha_t, 0), C(-alpha_b, 0), C(0, 0)
     );
 
-    const yt = div(Δt, Δ);
-    const yb = div(Δb, Δ);
-    const ya = div(Δa, Δ);
+    const topResponse = div(detTop, detSystem);
+    const backResponse = div(detBack, detSystem);
+    const airResponse = div(detAir, detSystem);
 
-    const omc = 2 * Math.PI * f;
-    const p_top = scalePressure(yt, p.area_top, omc);
-    const p_back = scalePressure(yb, p.area_back, omc);
-    const p_air = scalePressure(ya, p.area_hole, omc);
-    const p_tot = add(add(p_top, p_back), p_air);
+    const topPressure = scalePressure(topResponse, p.area_top, omega, atm.rho);
+    const backPressure = scalePressure(backResponse, p.area_back, omega, atm.rho);
+    const airPressure = scalePressure(airResponse, p.area_hole, omega, atm.rho);
+    const totalPressure = add(add(topPressure, backPressure), airPressure);
 
-    total.push({ x: f, y: 20 * Math.log10((abs(p_tot) / pref) || 1e-30) });
-    top.push({ x: f, y: 20 * Math.log10((abs(p_top) / pref) || 1e-30) });
-    back.push({ x: f, y: 20 * Math.log10((abs(p_back) / pref) || 1e-30) });
-    air.push({ x: f, y: 20 * Math.log10((abs(p_air) / pref) || 1e-30) });
+    total.push({ x: f, y: 20 * Math.log10((abs(totalPressure) / pref) || 1e-30) });
+    top.push({ x: f, y: 20 * Math.log10((abs(topPressure) / pref) || 1e-30) });
+    back.push({ x: f, y: 20 * Math.log10((abs(backPressure) / pref) || 1e-30) });
+    air.push({ x: f, y: 20 * Math.log10((abs(airPressure) / pref) || 1e-30) });
     sides.push({ x: f, y: -140 });
   }
   return { total, top, back, air, sides };
@@ -157,7 +171,8 @@ function computeResponse3DOF(p) {
 
 /* 4DOF: Determinant-expanded Kirby/Gore–Gilet (unchanged math) */
 function computeResponse4DOF(p) {
-  const kappa = kappaFrom(p);
+  const atm = resolveAtmosphere(p);
+  const kappa = kappaFrom(p, atm);
 
   const omt = Math.sqrt((p.stiffness_top + kappa * p.area_top * p.area_top) / p.mass_top);
   const oms = Math.sqrt((p.stiffness_back + p.stiffness_top) / p.mass_sides);
@@ -174,71 +189,73 @@ function computeResponse4DOF(p) {
   const total = [], top = [], back = [], air = [], sides = [];
 
   for (const f of freqs) {
-    const om = 2 * Math.PI * f;
+    const omega = 2 * Math.PI * f;
 
-    const Dt = C(p.mass_top * (omt * omt - om * om), p.damping_top * om);
-    const Ds = C(p.mass_sides * (oms * oms - om * om), p.damping_sides * om);
-    const Db = C(p.mass_back * (omb * omb - om * om), p.damping_back * om);
-    const Da = C(p.mass_air * (oma * oma - om * om), p.damping_air * om);
+    const topImpedance = C(p.mass_top * (omt * omt - omega * omega), p.damping_top * omega);
+    const sidesImpedance = C(p.mass_sides * (oms * oms - omega * omega), p.damping_sides * omega);
+    const backImpedance = C(p.mass_back * (omb * omb - omega * omega), p.damping_back * omega);
+    const airImpedance = C(p.mass_air * (oma * oma - omega * omega), p.damping_air * omega);
 
     const Kt = p.stiffness_top, Kb = p.stiffness_back;
 
-    const DtDs = mul(Dt, Ds), DsDb = mul(Ds, Db), DbDa = mul(Db, Da);
-    const DtDsDb = mul(DtDs, Db);
-    const DtDsDbDa = mul(DtDsDb, Da);
+    const topTimesSides = mul(topImpedance, sidesImpedance);
+    const sidesTimesBack = mul(sidesImpedance, backImpedance);
+    const backTimesAir = mul(backImpedance, airImpedance);
+    const topSidesBack = mul(topTimesSides, backImpedance);
+    const topSidesBackAir = mul(topSidesBack, airImpedance);
 
-    const term1 = DtDsDbDa;
-    const term2 = scl(Da, -2 * alphbt * Kt * Kb);
-    const term3 = scl(Ds, 2 * alphbt * alphab * alphat);
+    const term1 = topSidesBackAir;
+    const term2 = scl(airImpedance, -2 * alphbt * Kt * Kb);
+    const term3 = scl(sidesImpedance, 2 * alphbt * alphab * alphat);
     const term4 = C(2 * alphat * alphab * Kt * Kb, 0);
-    const term5 = scl(sub(DtDs, C(Kt * Kt, 0)), -(alphab * alphab));
-    const term6 = scl(sub(DsDb, C(Kb * Kb, 0)), -(alphat * alphat));
-    const term7 = scl(mul(Ds, Da), -(alphbt * alphbt));
-    const term8 = scl(mul(Dt, Da), -(Kb * Kb));
-    const term9 = scl(mul(Db, Da), -(Kt * Kt));
+    const term5 = scl(sub(topTimesSides, C(Kt * Kt, 0)), -(alphab * alphab));
+    const term6 = scl(sub(sidesTimesBack, C(Kb * Kb, 0)), -(alphat * alphat));
+    const term7 = scl(mul(sidesImpedance, airImpedance), -(alphbt * alphbt));
+    const term8 = scl(mul(topImpedance, airImpedance), -(Kb * Kb));
+    const term9 = scl(mul(backImpedance, airImpedance), -(Kt * Kt));
 
-    let Dbar = term1;
-    [term2, term3, term4, term5, term6, term7, term8, term9].forEach(t => { Dbar = add(Dbar, t); });
+    let systemDet = term1;
+    [term2, term3, term4, term5, term6, term7, term8, term9].forEach(t => { systemDet = add(systemDet, t); });
 
-    const term_t1 = mul(mul(Ds, Db), Da);
-    const term_t2 = scl(Ds, -(alphab * alphab));
-    const term_t3 = scl(Da, -(Kb * Kb));
-    const yt = scl(div(add(add(term_t1, term_t2), term_t3), Dbar), F);
+    const term_t1 = mul(mul(sidesImpedance, backImpedance), airImpedance);
+    const term_t2 = scl(sidesImpedance, -(alphab * alphab));
+    const term_t3 = scl(airImpedance, -(Kb * Kb));
+    const topResponse = scl(div(add(add(term_t1, term_t2), term_t3), systemDet), F);
 
-    const term_s1 = scl(mul(Db, Da), Kt);
+    const term_s1 = scl(mul(backImpedance, airImpedance), Kt);
     const term_s2 = C(-Kt * (alphab * alphab), 0);
-    const term_s3 = scl(Da, alphbt * Kb);
+    const term_s3 = scl(airImpedance, alphbt * Kb);
     const term_s4 = C(-alphat * alphab * Kb, 0);
-    const ys = scl(div(add(add(add(term_s1, term_s2), term_s3), term_s4), Dbar), F);
+    const sidesResponse = scl(div(add(add(add(term_s1, term_s2), term_s3), term_s4), systemDet), F);
 
-    const term_b1 = scl(Da, -Kt * Kb);
-    const term_b2 = scl(mul(Da, Ds), -alphbt);
-    const term_b3 = scl(Ds, alphab * alphat);
-    const yb = scl(div(add(add(term_b1, term_b2), term_b3), Dbar), F);
+    const term_b1 = scl(airImpedance, -Kt * Kb);
+    const term_b2 = scl(mul(airImpedance, sidesImpedance), -alphbt);
+    const term_b3 = scl(sidesImpedance, alphab * alphat);
+    const backResponse = scl(div(add(add(term_b1, term_b2), term_b3), systemDet), F);
 
     const term_a1 = C(Kt * Kb * alphab, 0);
-    const term_a2 = scl(Ds, alphbt * alphab);
-    const term_a3 = scl(mul(Ds, Db), -alphat);
+    const term_a2 = scl(sidesImpedance, alphbt * alphab);
+    const term_a3 = scl(mul(sidesImpedance, backImpedance), -alphat);
     const term_a4 = C(alphat * (Kb * Kb), 0);
-    const ya = scl(div(add(add(add(term_a1, term_a2), term_a3), term_a4), Dbar), F);
+    const airResponse = scl(div(add(add(add(term_a1, term_a2), term_a3), term_a4), systemDet), F);
 
-    const p_top = scalePressure(yt, p.area_top, om);
-    const p_sides = scalePressure(ys, p.area_sides, om);
-    const p_back = scalePressure(yb, p.area_back, om);
-    const p_air = scalePressure(ya, p.area_hole, om);
-    const p_tot = add(add(add(p_top, p_sides), p_back), p_air);
+    const topPressure = scalePressure(topResponse, p.area_top, omega, atm.rho);
+    const sidesPressure = scalePressure(sidesResponse, p.area_sides, omega, atm.rho);
+    const backPressure = scalePressure(backResponse, p.area_back, omega, atm.rho);
+    const airPressure = scalePressure(airResponse, p.area_hole, omega, atm.rho);
+    const totalPressure = add(add(add(topPressure, sidesPressure), backPressure), airPressure);
 
-    const dB_tot = 20 * Math.log10((abs(p_tot) / pref) || 1e-30);
-    const dB_top = 20 * Math.log10((abs(p_top) / pref) || 1e-30);
-    const dB_back = 20 * Math.log10((abs(p_back) / pref) || 1e-30);
-    const dB_air = 20 * Math.log10((abs(p_air) / pref) || 1e-30);
-    const dB_sides = 20 * Math.log10((abs(p_sides) / pref) || 1e-30);
+    const totalDb = 20 * Math.log10((abs(totalPressure) / pref) || 1e-30);
+    const topDb = 20 * Math.log10((abs(topPressure) / pref) || 1e-30);
+    const backDb = 20 * Math.log10((abs(backPressure) / pref) || 1e-30);
+    const airDb = 20 * Math.log10((abs(airPressure) / pref) || 1e-30);
+    const sidesDb = 20 * Math.log10((abs(sidesPressure) / pref) || 1e-30);
 
-    total.push({ x: f, y: dB_tot });
-    top.push({ x: f, y: dB_top });
-    back.push({ x: f, y: dB_back });
-    air.push({ x: f, y: dB_air });
-    sides.push({ x: f, y: dB_sides });
+    total.push({ x: f, y: totalDb });
+    top.push({ x: f, y: topDb });
+    back.push({ x: f, y: backDb });
+    air.push({ x: f, y: airDb });
+    sides.push({ x: f, y: sidesDb });
   }
   return { total, top, back, air, sides };
 }
@@ -252,5 +269,3 @@ function computeResponse(p) {
     default: return computeResponse4DOF(p);
   }
 }
-
-
