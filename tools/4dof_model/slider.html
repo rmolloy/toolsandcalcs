@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optional&lt;T&gt; Delta Slider</title>
+<style>
+  body {
+    background: #181a1f;
+    color: #e6e9ef;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+
+  h2 { margin-bottom: 1em; }
+
+  .range_container {
+    display: flex;
+    flex-direction: column;
+    width: 80%;
+    max-width: 420px;
+  }
+
+  .sliders_control {
+    position: relative;
+    min-height: 50px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    width: 100%;
+    position: absolute;
+    background-color: #444;
+    pointer-events: none;
+  }
+
+  /* Both thumbs can be grabbed */
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    pointer-events: all;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background-color: #888;
+    border: 2px solid #222;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover {
+    background-color: #ccc;
+  }
+
+  .active-thumb {
+    background-color: #ff9a5c !important;
+  }
+
+  .form_control {
+    margin-top: 1em;
+    text-align: center;
+    font-size: 18px;
+    color: #ccc;
+  }
+</style>
+</head>
+<body>
+  <h2>Optional&lt;T&gt; Delta Slider</h2>
+  <div class="range_container">
+    <div class="sliders_control">
+      <input id="baselineSlider" type="range" min="0" max="100" value="50">
+      <input id="deltaSlider" type="range" min="0" max="100" value="0">
+    </div>
+    <div class="form_control">
+      <span id="status">Off</span>
+    </div>
+  </div>
+
+<script>
+const baseline = document.getElementById('baselineSlider');
+const delta = document.getElementById('deltaSlider');
+const status = document.getElementById('status');
+
+const OFF_THRESHOLD = 1;
+
+function updateTrack() {
+  const min = parseInt(delta.min);
+  const max = parseInt(delta.max);
+  const baseVal = parseInt(baseline.value);
+  const deltaVal = parseInt(delta.value);
+
+  const basePct = ((baseVal - min) / (max - min)) * 100;
+  const deltaPct = ((deltaVal - min) / (max - min)) * 100;
+
+  let gradient, text;
+
+  if (deltaVal <= OFF_THRESHOLD) {
+    delta.classList.remove('active-thumb');
+    gradient = `linear-gradient(to right, #444 0%, #444 100%)`;
+    text = 'Off';
+  } else {
+    delta.classList.add('active-thumb');
+    const diff = deltaVal - baseVal;
+    const absDiff = Math.abs(diff).toFixed(1);
+    if (diff > 0) {
+      const color = '#ff9a5c';
+      text = `Δ = +${absDiff}`;
+      gradient = `linear-gradient(to right, #444 ${basePct}%, ${color} ${basePct}%, ${color} ${deltaPct}%, #444 ${deltaPct}%)`;
+    } else {
+      const color = '#47d78a';
+      text = `Δ = -${absDiff}`;
+      gradient = `linear-gradient(to right, #444 ${deltaPct}%, ${color} ${deltaPct}%, ${color} ${basePct}%, #444 ${basePct}%)`;
+    }
+  }
+
+  baseline.style.background = gradient;
+  delta.style.background = gradient;
+  status.textContent = text;
+}
+
+// keep sliders synced and visual updated
+baseline.addEventListener('input', updateTrack);
+delta.addEventListener('input', updateTrack);
+updateTrack();
+</script>
+</body>
+</html>
