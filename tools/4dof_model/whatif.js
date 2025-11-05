@@ -95,24 +95,26 @@
 
     const baselineColor = getCssVar("--blue", "#56B4E9");
     const basePct = ((baseVal - min)/(max - min))*100;
-    const neutral = getCssVar("--track-neutral", getCssVar("--panel-hover", "#1a1f2b"));
+    const neutral = getCssVar("--white", getCssVar("--track-neutral", getCssVar("--panel-hover", "#1a1f2b")));
     const baseGradient = `linear-gradient(to right, ${baselineColor} 0%, ${baselineColor} ${basePct}%, ${neutral} ${basePct}%, ${neutral} 100%)`;
     base.style.background = baseGradient;
 
+    overlay.classList.toggle("active-thumb", isActive);
+
     if(!isActive){
-      overlay.classList.remove("active-thumb");
-      overlay.style.background = baseGradient;
+      overlay.style.background = "transparent";
       deltaBar.style.display = "none";
       label.textContent = "What-If: off";
       return;
     }
 
-    overlay.classList.add("active-thumb");
     const deltaColor = getCssVar("--orange", "#E69F00");
     const whatPct = ((whatVal - min)/(max - min))*100;
     const start = Math.min(basePct, whatPct);
-    const end = Math.max(basePct, whatPct);
-    overlay.style.background = `linear-gradient(to right, ${neutral} 0%, ${neutral} ${start}%, ${deltaColor} ${start}%, ${deltaColor} ${end}%, ${neutral} ${end}%, ${neutral} 100%)`;
+    let end = Math.max(basePct, whatPct);
+    if(end - start < 0.001) end = start + 0.001;
+    const pct = (val)=>`${val.toFixed(4)}%`;
+    overlay.style.background = `linear-gradient(to right, transparent 0%, transparent ${pct(start)}, ${deltaColor} ${pct(start)}, ${deltaColor} ${pct(end)}, transparent ${pct(end)}, transparent 100%)`;
 
     deltaBar.style.display = "block";
     deltaBar.style.left = `${start}%`;
