@@ -168,6 +168,9 @@ canvas {
 .sw.back   { background: var(--green); }
 .sw.air    { background: var(--purple); }
 .sw.sides  { background: var(--yellow); }
+.sw.muted  { opacity: 0.3; }
+.sw.current { background: #61a8ff; }
+.sw.whatif  { background: #ff9a5c; }
 
 /* ==========================================================
    BADGES + PEAK LIST

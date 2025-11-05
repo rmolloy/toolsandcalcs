@@ -1,7 +1,20 @@
 
-const COLORS = { total: "#ff9a5c", top: "#61a8ff", back: "#47d78a", air: "#b38cff", sides: "#ffd166" };
+const DEFAULT_COLORS = { total: "#ff9a5c", top: "#61a8ff", back: "#47d78a", air: "#b38cff", sides: "#ffd166" };
+const WHATIF_COLORS = { ...DEFAULT_COLORS, total: "#61a8ff" };
+function activeColors(){ return (typeof document !== "undefined" && document.body?.dataset?.palette === "whatif") ? WHATIF_COLORS : DEFAULT_COLORS; }
+const BASE_LINE_COLOR = "#61a8ff";
+const WHATIF_LINE_COLOR = "#ff9a5c";
 const MASS_IDS = new Set(["mass_top","mass_back","mass_sides","mass_air"]);
 const STIFFNESS_IDS = new Set(["stiffness_top","stiffness_back","stiffness_sides"]);
+const RANGE_IDS = [
+  "ambient_temp","altitude",
+  "mass_top","mass_back","mass_sides","mass_air",
+  "stiffness_top","stiffness_back","stiffness_sides",
+  "damping_top","damping_back","damping_sides","damping_air",
+  "area_top","area_back","area_sides","area_hole",
+  "volume_air","driving_force"
+];
+const CONTROL_IDS = [...RANGE_IDS, "model_order","show_labels"];
 
 const ISA = {
   T0: 288.15,            // K
@@ -65,6 +78,22 @@ function formatSliderValue(id, value){
   return fmt(value);
 }
 
+function isWhatIfPage(){
+  return document.body?.dataset?.palette === "whatif";
+}
+function isWhatIfEnabled(){
+  const toggle = document.getElementById("whatif_toggle");
+  return Boolean(toggle && toggle.checked && isWhatIfPage());
+}
+
+function isWhatIfPage(){
+  return typeof document !== "undefined" && document.body?.dataset?.palette === "whatif";
+}
+function isWhatIfEnabled(){
+  const toggle = document.getElementById("whatif_toggle");
+  return isWhatIfPage() && toggle && toggle.checked;
+}
+
 /* --------------------- Peak detection & labeling --------------------- */
 function subs(n){ return ["","₁","₂","₃","₄","₅"][n] || ("_"+n); }
 function maxPeaksFor(order){ return Math.min(4, Math.max(1, order)); }
@@ -117,6 +146,7 @@ function detectPeaksAdaptive(series, desiredCount, baseOpts){
 }
 
 function dominantAt(index, R){
+  const palette = activeColors();
   const vals = {
     top:   R.top[index]?.y ?? -140,
     back:  R.back[index]?.y ?? -140,
@@ -128,7 +158,7 @@ function dominantAt(index, R){
     if(vals[k] > best){ best = vals[k]; bestKey = k; }
   }
   const name = {top:"Top", back:"Back", air:"Air", sides:"Sides"}[bestKey];
-  const color = COLORS[bestKey];
+  const color = palette[bestKey];
   return { key: bestKey, name, color };
 }
 
@@ -149,6 +179,7 @@ function modeName(order, ordinal, domKey){
 const cvs = $("plot");
 const ctx = cvs.getContext("2d");
 const dpi = window.devicePixelRatio || 1;
+const legendEl = $("legend");
 
 function resizeCanvas(){
   const w = cvs.clientWidth, h = cvs.clientHeight;
@@ -202,7 +233,26 @@ function drawAxes(){
   ctx.restore();
 }
 
-function line(data, color, width=2, dashed=false){
+function renderLegend(showWhatIf){
+  if(!legendEl) return;
+  if(isWhatIfPage()){
+    legendEl.innerHTML = `
+      <div><span class="sw current"></span> Current Response</div>
+      <div><span class="sw whatif${showWhatIf ? "" : " muted"}"></span> What‑If Response${showWhatIf ? "" : " (off)"}</div>
+    `;
+  } else {
+    const palette = activeColors();
+    legendEl.innerHTML = `
+      <div><span class="sw total" style="background:${palette.total}"></span> Total</div>
+      <div><span class="sw top" style="background:${palette.top}"></span> Top</div>
+      <div><span class="sw back" style="background:${palette.back}"></span> Back</div>
+      <div><span class="sw air" style="background:${palette.air}"></span> Air</div>
+      <div><span class="sw sides" style="background:${palette.sides}"></span> Sides</div>
+    `;
+  }
+}
+
+function line(data, color, width=2, dashed=false, offsetDb=0){
   ctx.save();
   ctx.strokeStyle = color;
   ctx.lineWidth = dashed ? Math.max(1, width * 0.7) : width;
@@ -215,7 +265,7 @@ function line(data, color, width=2, dashed=false){
   ctx.beginPath();
   let first = true;
   for(const p of data){
-    const x = xPix(p.x), y = yPix(p.y);
+    const x = xPix(p.x), y = yPix(p.y + offsetDb);
     if(first){ ctx.moveTo(x,y); first=false; }
     else { ctx.lineTo(x,y); }
   }
@@ -253,6 +303,17 @@ function drawLabel(x, y, text, color, yBump=0){
   // text
   ctx.fillStyle = color;
   ctx.fillText(text, bx + padX, by + boxH - 6);
+}
+
+function buildWhatIfPeakList(basePeaks, whatPeaks, order){
+  return basePeaks.map((pk, idx)=>{
+    const name = modeName(order, idx + 1, expectedSubsystemKey(idx + 1));
+    const baseText = `<span style="color:${BASE_LINE_COLOR}">${name}: <b>${pk.f.toFixed(1)} Hz</b></span>`;
+    const what = whatPeaks?.[idx];
+    if(!what) return `<div class="pl-item">${baseText}</div>`;
+    const whatText = `<span style="color:${WHATIF_LINE_COLOR}"><b>${what.f.toFixed(1)} Hz</b></span>`;
+    return `<div class="pl-item">${baseText} → ${whatText}</div>`;
+  }).join(" ");
 }
 
 /* --------------------- Read UI params + adapter --------------------- */
@@ -303,96 +364,122 @@ function adaptUiToSolver(raw){
   return out;
 }
 
+function readWhatIfRaw(baseRaw){
+  if(!isWhatIfEnabled()) return null;
+  const overlays = Array.from(document.querySelectorAll(".dual-slider__overlay.active"));
+  if(overlays.length === 0) return null;
+  const copy = { ...baseRaw };
+  overlays.forEach(slider=>{
+    const baseId = slider.dataset.baseId || slider.id.replace(/_whatif$/, "");
+    const val = parseFloat(slider.value);
+    if(Number.isNaN(val)) return;
+    copy[baseId] = val;
+  });
+  return copy;
+}
+
 function buildParams(){
   const raw = readUiInputs();
-  return adaptUiToSolver(raw);
+  const base = adaptUiToSolver(raw);
+  const whatRaw = readWhatIfRaw(raw);
+  const whatIf = whatRaw ? adaptUiToSolver(whatRaw) : null;
+  return { base, whatIf };
 }
 
 function render(){
-  const p = buildParams();
-  if(p._atm){
+  const { base, whatIf } = buildParams();
+  const colors = activeColors();
+  if(base._atm){
     const meta = $("atm_meta");
-    if(meta) meta.textContent = formatAtmosphereSummary(p._atm);
+    if(meta) meta.textContent = formatAtmosphereSummary(base._atm);
     const massLabel = $("mass_air_val");
-    const massText = formatEffectiveAirMass(p._atm);
+    const massText = formatEffectiveAirMass(base._atm);
     if(massLabel && massText) massLabel.textContent = massText;
   }
-  const R = computeResponse(p);
+  const baseResponse = computeResponse(base);
+  const showWhatIf = Boolean(whatIf);
 
-  // autoscale y to content (with sensible bounds)
-  const allVals = [...R.total, ...R.top, ...R.back, ...R.air, ...R.sides].map(d=>d.y);
+  const whatIfResponse = showWhatIf ? computeResponse(whatIf) : null;
+  const seriesForScale = whatIfResponse
+    ? [...baseResponse.total, ...whatIfResponse.total.map(p => ({ x: p.x, y: p.y - 20 }))]
+    : [...baseResponse.total, ...baseResponse.top, ...baseResponse.back, ...baseResponse.air, ...baseResponse.sides];
+  const allVals = seriesForScale.map(d=>d.y);
   let vmin = Math.min(...allVals), vmax = Math.max(...allVals);
   vmin = Math.max(-140, Math.min(vmin, -10));
-  vmax = Math.min(  -5, Math.max(vmax, -120));
+  vmax = Math.min(-5, Math.max(vmax, -120));
   const span = Math.max(15, (vmax - vmin) || 1);
   yMin = vmin - 0.05*span;
   yMax = vmax + 0.10*span;
 
-  // draw curves
   drawAxes();
-  line(R.total, COLORS.total, 3, false);
-  line(R.top,   COLORS.top, 2, true);
-  line(R.back,  COLORS.back, 2, true);
-  line(R.air,   COLORS.air, 2, true);
-  line(R.sides, COLORS.sides, 2, true);
+  renderLegend(showWhatIf);
+  if(showWhatIf && whatIfResponse){
+    line(baseResponse.total, BASE_LINE_COLOR, 3, false);
+    line(whatIfResponse.total, WHATIF_LINE_COLOR, 3, false, -20);
+  } else {
+    line(baseResponse.total, colors.total, 3, false);
+    line(baseResponse.top,   colors.top, 2, true);
+    line(baseResponse.back,  colors.back, 2, true);
+    line(baseResponse.air,   colors.air, 2, true);
+    line(baseResponse.sides, colors.sides, 2, true);
+  }
 
-  // peak detection on total
-  const maxN = maxPeaksFor(p.model_order);
-  const peaks = detectPeaksAdaptive(R.total, maxN, {
+  const maxN = maxPeaksFor(base.model_order);
+  const basePeaks = detectPeaksAdaptive(baseResponse.total, maxN, {
     minDb: -95,
     minProm: 4.0,
     minDistHz: 20
   }).slice(0, maxN);
+  const whatPeaks = whatIfResponse ? detectPeaksAdaptive(whatIfResponse.total, maxN, {
+    minDb: -95,
+    minProm: 4.0,
+    minDistHz: 20
+  }).slice(0, maxN) : null;
 
-  // draw markers + labels
-  const list = [];
-  if(p.show_labels){
-    // stagger labels vertically to reduce overlap
+  if(base.show_labels){
     const bumps = [-10, -28, -46, -64];
-    peaks.forEach((pk, idx)=>{
-      const x = xPix(pk.f), y = yPix(pk.y);
-      const dom = dominantAt(pk.i, R);
+    basePeaks.forEach((pk, idx)=>{
+      const dom = dominantAt(pk.i, baseResponse);
       const ordinal = idx + 1;
       const expectedKey = expectedSubsystemKey(ordinal);
       const labelKey = expectedKey || dom.key;
-      const colorKey = COLORS[labelKey] ? labelKey : dom.key;
-      const color = COLORS[colorKey] || dom.color;
-      const name = modeName(p.model_order, ordinal, labelKey);
+      const colorKey = colors[labelKey] ? labelKey : dom.key;
+      const color = colors[colorKey] || dom.color;
+      const name = modeName(base.model_order, ordinal, labelKey);
       const text = `${name} — ${pk.f.toFixed(1)} Hz`;
-      drawLabel(x, y, text, color, bumps[idx % bumps.length]);
-      list.push({ text, color });
+      drawLabel(xPix(pk.f), yPix(pk.y), text, color, bumps[idx % bumps.length]);
     });
+    if(whatIfResponse && whatPeaks){
+      whatPeaks.forEach((pk, idx)=>{
+        const ordinal = idx + 1;
+        const name = modeName(base.model_order, ordinal, expectedSubsystemKey(ordinal));
+        const text = `${name} — ${pk.f.toFixed(1)} Hz (What‑If)`;
+        drawLabel(xPix(pk.f), yPix(pk.y), text, WHATIF_LINE_COLOR, bumps[idx % bumps.length]);
+      });
+    }
   }
 
-  // write textual list
   const el = $("peak_list");
-  if(peaks.length === 0){
+  if(whatIfResponse){
+    el.innerHTML = buildWhatIfPeakList(basePeaks, whatPeaks, base.model_order);
+  } else if(basePeaks.length === 0){
     el.innerHTML = `<div class="small">No prominent peaks detected in 0–500 Hz (try increasing F, lowering damping, or adjusting volumes/stiffness).</div>`;
   } else {
-    el.innerHTML = peaks.map((pk, idx)=>{
-      const dom = dominantAt(pk.i, R);
+    el.innerHTML = basePeaks.map((pk, idx)=>{
+      const dom = dominantAt(pk.i, baseResponse);
       const ordinal = idx + 1;
       const expectedKey = expectedSubsystemKey(ordinal);
       const labelKey = expectedKey || dom.key;
-      const colorKey = COLORS[labelKey] ? labelKey : dom.key;
-      const color = COLORS[colorKey] || dom.color;
-      const name = modeName(p.model_order, ordinal, labelKey);
+      const colorKey = colors[labelKey] ? labelKey : dom.key;
+      const color = colors[colorKey] || dom.color;
+      const name = modeName(base.model_order, ordinal, labelKey);
       return `<div class="pl-item" style="color:${color}">${name}: <b>${pk.f.toFixed(1)} Hz</b> (prom≈${pk.prom.toFixed(1)} dB)</div>`;
     }).join("");
   }
 }
 
 /* --------------------- UI hooks --------------------- */
-const ids = [
-  "ambient_temp","altitude",
-  "mass_top","mass_back","mass_sides","mass_air",
-  "stiffness_top","stiffness_back","stiffness_sides",
-  "damping_top","damping_back","damping_sides","damping_air",
-  "area_top","area_back","area_sides","area_hole",
-  "volume_air","driving_force","model_order","show_labels"
-];
-
-ids.forEach(id=>{
+CONTROL_IDS.forEach(id=>{
   const el = $(id);
   if(!el) return;
   el.addEventListener("input", ()=>{
@@ -409,7 +496,7 @@ ids.forEach(id=>{
 
 /* initialize displayed numbers from defaults */
 (function initVals(){
-  ids.forEach(id=>{
+  CONTROL_IDS.forEach(id=>{
     const el = $(id);
     if(!el) return;
     if(el.type === "range"){
