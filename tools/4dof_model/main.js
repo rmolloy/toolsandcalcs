@@ -16,6 +16,28 @@ const RANGE_IDS = [
   "volume_air","driving_force"
 ];
 const CONTROL_IDS = [...RANGE_IDS, "model_order","show_labels"];
+const FIT_PARAM_IDS = [
+  "mass_top","stiffness_top","mass_back","stiffness_back",
+  "volume_air","area_top","area_hole"
+];
+
+function buildSliderMeta(){
+  const meta = {};
+  RANGE_IDS.forEach(id=>{
+    const el = $(id);
+    if(!el) return;
+    const min = parseFloat(el.min);
+    const max = parseFloat(el.max);
+    const step = parseFloat(el.step);
+    meta[id] = {
+      min: Number.isFinite(min) ? min : -Infinity,
+      max: Number.isFinite(max) ? max : Infinity,
+      step: Number.isFinite(step) ? step : 0.0001
+    };
+  });
+  return meta;
+}
+const SLIDER_META = buildSliderMeta();
 
 const ISA = {
   T0: 288.15,            // K
@@ -405,6 +427,207 @@ function buildParams(){
   return { base, whatIf };
 }
 
+function clampToSlider(id, value){
+  const meta = SLIDER_META[id];
+  if(!meta || !Number.isFinite(value)) return value;
+  let v = value;
+  if(Number.isFinite(meta.min)) v = Math.max(meta.min, v);
+  if(Number.isFinite(meta.max)) v = Math.min(meta.max, v);
+  return v;
+}
+
+function applyRawValues(raw){
+  Object.entries(raw).forEach(([key, val])=>{
+    if(!Number.isFinite(val)) return;
+    const el = $(key);
+    if(!el) return;
+    const next = clampToSlider(key, val);
+    el.value = next;
+    if(el.type === "range"){
+      const lab = $(`${key}_val`);
+      if(lab) lab.textContent = formatSliderValue(key, next);
+    }
+  });
+  render();
+}
+
+function collectFitTargets(form){
+  const read = id=>{
+    const el = form.querySelector(`#${id}`);
+    if(!el) return null;
+    const val = parseFloat(el.value);
+    return Number.isFinite(val) ? val : null;
+  };
+  return {
+    freqs: [read("fit_freq_1"), read("fit_freq_2"), read("fit_freq_3")],
+    mass_top: read("fit_mass_top"),
+    stiffness_top: read("fit_stiffness_top"),
+    mass_back: read("fit_mass_back"),
+    stiffness_back: read("fit_stiffness_back"),
+    volume_air: read("fit_volume_air")
+  };
+}
+
+function hasFitTargets(targets){
+  if(targets.freqs && targets.freqs.some(v=>Number.isFinite(v))) return true;
+  return ["mass_top","stiffness_top","mass_back","stiffness_back","volume_air"]
+    .some(key => Number.isFinite(targets[key]));
+}
+
+function sqRelative(value, target){
+  const denom = Math.max(Math.abs(target), 1);
+  const diff = (value - target) / denom;
+  return diff * diff;
+}
+
+function evaluateFitDetail(raw, targets){
+  const params = adaptUiToSolver(raw);
+  const response = computeResponse(params);
+  const maxN = maxPeaksFor(params.model_order);
+  const peaks = detectPeaksAdaptive(response.total, maxN, {
+    minDb: -95,
+    minProm: 4.0,
+    minDistHz: 20
+  }).slice(0, 3);
+
+  let cost = 0;
+  const freqErrors = [];
+  targets.freqs?.forEach((target, idx)=>{
+    if(!Number.isFinite(target)) return;
+    const pk = peaks[idx];
+    const actual = pk ? pk.f : target;
+    const diff = actual - target;
+    freqErrors.push(diff);
+    const denom = Math.max(target, 1);
+    cost += 10 * (diff/denom) * (diff/denom);
+  });
+
+  if(Number.isFinite(targets.mass_top)) cost += sqRelative(raw.mass_top, targets.mass_top);
+  if(Number.isFinite(targets.stiffness_top)) cost += sqRelative(raw.stiffness_top, targets.stiffness_top);
+  if(Number.isFinite(targets.mass_back)) cost += sqRelative(raw.mass_back, targets.mass_back);
+  if(Number.isFinite(targets.stiffness_back)) cost += sqRelative(raw.stiffness_back, targets.stiffness_back);
+  if(Number.isFinite(targets.volume_air)) cost += sqRelative(raw.volume_air, targets.volume_air);
+
+  return { cost, peaks, freqErrors };
+}
+
+function evaluateFitCost(raw, targets){
+  return evaluateFitDetail(raw, targets).cost;
+}
+
+function fitBaselineParameters(targets, { maxIter=80 } = {}){
+  const raw = readUiInputs();
+  const adjustable = FIT_PARAM_IDS.filter(id=>{
+    return typeof raw[id] === "number" && !Number.isNaN(raw[id]) && SLIDER_META[id];
+  });
+  if(adjustable.length === 0) throw new Error("No adjustable parameters available.");
+
+  let best = { ...raw };
+  let bestCost = evaluateFitCost(best, targets);
+  if(!Number.isFinite(bestCost)) bestCost = 1e6;
+
+  const stepSizes = {};
+  adjustable.forEach(id=>{
+    const meta = SLIDER_META[id];
+    const span = (Number.isFinite(meta.max) && Number.isFinite(meta.min))
+      ? Math.max(meta.max - meta.min, Math.abs(best[id]) || 1)
+      : Math.abs(best[id]) || 1;
+    stepSizes[id] = span * 0.05;
+  });
+
+  let decay = 1;
+  for(let iter=0; iter<maxIter; iter++){
+    let improved = false;
+    for(const id of adjustable){
+      const meta = SLIDER_META[id];
+      const baseStep = Math.max(stepSizes[id] * decay, meta.step || 0.0001);
+      const tryDelta = delta =>{
+        const candidate = { ...best, [id]: clampToSlider(id, best[id] + delta) };
+        const cost = evaluateFitCost(candidate, targets);
+        return { candidate, cost };
+      };
+      const plus = tryDelta(baseStep);
+      const minus = tryDelta(-baseStep);
+      let next = null;
+      if(plus.cost < bestCost) next = plus;
+      if(minus.cost < (next ? next.cost : bestCost)) next = minus;
+      if(next){
+        best = next.candidate;
+        bestCost = next.cost;
+        improved = true;
+      }
+    }
+    if(!improved){
+      decay *= 0.6;
+      if(decay < 0.05) break;
+    }
+  }
+  return { raw: best, evaluation: evaluateFitDetail(best, targets) };
+}
+
+function initFitBaselineUi(){
+  const modal = $("fit_modal");
+  const btn = $("btn_fit_baseline");
+  const form = $("fit_form");
+  const status = $("fit_status");
+  if(!modal || !btn || !form || !status) return;
+
+  const closeButtons = modal.querySelectorAll("[data-fit-close]");
+  const closeModal = ()=>{
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden","true");
+    status.textContent = "";
+    form.reset();
+  };
+  const openModal = ()=>{
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden","false");
+    status.textContent = "";
+  };
+
+  btn.addEventListener("click", openModal);
+  closeButtons.forEach(el=>el.addEventListener("click", closeModal));
+  modal.addEventListener("click", evt=>{
+    if(evt.target === modal || evt.target.classList.contains("fit-modal__backdrop")) closeModal();
+  });
+
+  const toggleDisabled = disabled=>{
+    form.querySelectorAll("input,button").forEach(el=>{
+      if(el.dataset.fitClose !== undefined) return;
+      el.disabled = disabled;
+    });
+  };
+
+  form.addEventListener("submit", async evt=>{
+    evt.preventDefault();
+    const targets = collectFitTargets(form);
+    if(!hasFitTargets(targets)){
+      status.textContent = "Enter at least one target to fit.";
+      return;
+    }
+    status.textContent = "Solving…";
+    toggleDisabled(true);
+    await new Promise(requestAnimationFrame);
+    try{
+      const result = fitBaselineParameters(targets, { maxIter: 90 });
+      applyRawValues(result.raw);
+      const rms = (()=> {
+        const diffs = result.evaluation.freqErrors.filter(v=>Number.isFinite(v));
+        if(!diffs.length) return null;
+        return Math.sqrt(diffs.reduce((sum,v)=>sum + v*v, 0) / diffs.length);
+      })();
+      status.textContent = rms != null
+        ? `Fit complete. RMS Δf ≈ ${rms.toFixed(2)} Hz.`
+        : "Fit complete.";
+    } catch(err){
+      console.error(err);
+      status.textContent = err?.message || "Unable to fit baseline.";
+    } finally {
+      toggleDisabled(false);
+    }
+  });
+}
+
 function render(){
   const { base, whatIf } = buildParams();
   const colors = activeColors();
@@ -510,6 +733,8 @@ function render(){
     }).join("");
   }
 }
+
+initFitBaselineUi();
 
 /* --------------------- UI hooks --------------------- */
 CONTROL_IDS.forEach(id=>{

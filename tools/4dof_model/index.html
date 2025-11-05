@@ -144,7 +144,10 @@
                 </details>
             </div>
 
-            <button id="btn_reset">Reset Defaults</button>
+            <div class="action-row">
+                <button id="btn_fit_baseline" class="ghost">Fit Baseline…</button>
+                <button id="btn_reset">Reset Defaults</button>
+            </div>
             <div class="small">
                 Tip: the model is coupled. Peaks shift together as you change air volume, plate stiffness, or effective
                 areas.
@@ -158,6 +161,53 @@
             <div id="peak_list"></div>
         </section>
     </main>
+
+    <div id="fit_modal" class="fit-modal" aria-hidden="true">
+        <div class="fit-modal__backdrop" data-fit-close></div>
+        <div class="fit-modal__panel">
+            <header>
+                <h2>Fit Baseline</h2>
+                <button type="button" class="ghost small" data-fit-close>Close</button>
+            </header>
+            <form id="fit_form">
+                <p class="small muted">Provide any targets you know (all optional). The solver will adjust the baseline
+                    sliders to match them.</p>
+                <div class="fit-grid">
+                    <label>Target T(1,1)<sub>1</sub> (Hz)
+                        <input type="number" step="0.1" id="fit_freq_1" name="freq1" placeholder="e.g. 90">
+                    </label>
+                    <label>Target T(1,1)<sub>2</sub> (Hz)
+                        <input type="number" step="0.1" id="fit_freq_2" name="freq2" placeholder="e.g. 190">
+                    </label>
+                    <label>Target T(1,1)<sub>3</sub> (Hz)
+                        <input type="number" step="0.1" id="fit_freq_3" name="freq3" placeholder="e.g. 230">
+                    </label>
+                    <label>Top Mass m<sub>t</sub> (g)
+                        <input type="number" step="0.1" id="fit_mass_top" name="mass_top" placeholder="e.g. 43">
+                    </label>
+                    <label>Top Stiffness K<sub>t</sub> (N/m)
+                        <input type="number" step="10" id="fit_stiffness_top" name="stiffness_top"
+                            placeholder="e.g. 42000">
+                    </label>
+                    <label>Back Mass m<sub>b</sub> (g)
+                        <input type="number" step="0.1" id="fit_mass_back" name="mass_back" placeholder="e.g. 90">
+                    </label>
+                    <label>Back Stiffness K<sub>b</sub> (N/m)
+                        <input type="number" step="10" id="fit_stiffness_back" name="stiffness_back"
+                            placeholder="e.g. 130000">
+                    </label>
+                    <label>Cavity Volume V (m³)
+                        <input type="number" step="0.0001" id="fit_volume_air" name="volume_air" placeholder="e.g. 0.014">
+                    </label>
+                </div>
+                <div id="fit_status" class="fit-status small muted"></div>
+                <div class="fit-actions">
+                    <button type="button" class="ghost" data-fit-close>Cancel</button>
+                    <button type="submit">Solve</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="model_core.js" defer></script>
     <script src="main.js" defer></script>
