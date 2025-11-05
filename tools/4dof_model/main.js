@@ -4,6 +4,7 @@ const WHATIF_COLORS = { ...DEFAULT_COLORS, total: "#61a8ff" };
 function activeColors(){ return (typeof document !== "undefined" && document.body?.dataset?.palette === "whatif") ? WHATIF_COLORS : DEFAULT_COLORS; }
 const BASE_LINE_COLOR = "#61a8ff";
 const WHATIF_LINE_COLOR = "#ff9a5c";
+const WHATIF_DB_OFFSET = -20;
 const MASS_IDS = new Set(["mass_top","mass_back","mass_sides","mass_air"]);
 const STIFFNESS_IDS = new Set(["stiffness_top","stiffness_back","stiffness_sides"]);
 const RANGE_IDS = [
@@ -274,23 +275,34 @@ function line(data, color, width=2, dashed=false, offsetDb=0){
 }
 
 
-function drawLabel(x, y, text, color, yBump=0){
-  const padX=6, padY=3;
+function drawLabel(x, y, text, color, yBump=0, opts={}){
+  const lines = Array.isArray(text) ? text : [text];
+  const padX=8, padY=5, lineH = 14;
   ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-  const textWidth = ctx.measureText(text).width;
-  const boxW = textWidth + padX*2, boxH = 18;
+  let textWidth = 0;
+  lines.forEach(line=>{
+    textWidth = Math.max(textWidth, ctx.measureText(line).width);
+  });
+  const boxW = textWidth + padX*2;
+  const boxH = lines.length * lineH + padY*2;
 
   // keep label within viewport
   let bx = Math.min(Math.max(6, x - boxW/2), cvs.clientWidth - boxW - 6);
-  let by = Math.max(6, y - 24 + yBump);
+  let by = Math.max(6, y - (boxH + 6) + yBump);
 
-  // stem
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1.25;
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x, by + boxH);
-  ctx.stroke();
+  const baseY = by + boxH;
+  const stems = Array.isArray(opts.stems) && opts.stems.length ? opts.stems : null;
+
+  // stems
+  (stems || [{x, y, color}]).forEach(stem=>{
+    ctx.strokeStyle = stem.color || color;
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    const anchorX = Math.max(bx + 3, Math.min(stem.x, bx + boxW - 3));
+    ctx.moveTo(anchorX, baseY);
+    ctx.lineTo(stem.x, stem.y);
+    ctx.stroke();
+  });
 
   // box
   ctx.fillStyle = "rgba(24,30,44,0.92)";
@@ -301,8 +313,15 @@ function drawLabel(x, y, text, color, yBump=0){
   ctx.fill(); ctx.stroke();
 
   // text
-  ctx.fillStyle = color;
-  ctx.fillText(text, bx + padX, by + boxH - 6);
+  lines.forEach((line, idx)=>{
+    let fill = color;
+    if(opts.lineColors && opts.lineColors[idx]) fill = opts.lineColors[idx];
+    else if(/What-If:/i.test(line)) fill = WHATIF_LINE_COLOR;
+    else if(/Δ/.test(line)) fill = WHATIF_LINE_COLOR;
+    ctx.fillStyle = fill;
+    const ty = by + padY + lineH*(idx+1) - 2;
+    ctx.fillText(line, bx + padX, ty);
+  });
 }
 
 function buildWhatIfPeakList(basePeaks, whatPeaks, order){
@@ -415,7 +434,7 @@ function render(){
   renderLegend(showWhatIf);
   if(showWhatIf && whatIfResponse){
     line(baseResponse.total, BASE_LINE_COLOR, 3, false);
-    line(whatIfResponse.total, WHATIF_LINE_COLOR, 3, false, -20);
+    line(whatIfResponse.total, WHATIF_LINE_COLOR, 3, false, WHATIF_DB_OFFSET);
   } else {
     line(baseResponse.total, colors.total, 3, false);
     line(baseResponse.top,   colors.top, 2, true);
@@ -446,17 +465,31 @@ function render(){
       const colorKey = colors[labelKey] ? labelKey : dom.key;
       const color = colors[colorKey] || dom.color;
       const name = modeName(base.model_order, ordinal, labelKey);
-      const text = `${name} — ${pk.f.toFixed(1)} Hz`;
-      drawLabel(xPix(pk.f), yPix(pk.y), text, color, bumps[idx % bumps.length]);
+      const what = (whatIfResponse && whatPeaks) ? whatPeaks[idx] : null;
+      if(showWhatIf && what){
+        const text = [
+          name,
+          `Current: ${pk.f.toFixed(1)} Hz`,
+          `What-If: ${what.f.toFixed(1)} Hz`
+        ];
+        const baseX = xPix(pk.f);
+        const baseY = yPix(pk.y);
+        const whatX = xPix(what.f);
+        const whatY = yPix(what.y + WHATIF_DB_OFFSET);
+        const labelX = (baseX + whatX) / 2;
+        const labelY = Math.min(baseY, whatY);
+        drawLabel(labelX, labelY, text, color, bumps[idx % bumps.length], {
+          lineColors: [color, color, WHATIF_LINE_COLOR],
+          stems: [
+            { x: baseX, y: baseY, color },
+            { x: whatX, y: whatY, color: WHATIF_LINE_COLOR }
+          ]
+        });
+      } else {
+        const text = `${name} — ${pk.f.toFixed(1)} Hz`;
+        drawLabel(xPix(pk.f), yPix(pk.y), text, color, bumps[idx % bumps.length]);
+      }
     });
-    if(whatIfResponse && whatPeaks){
-      whatPeaks.forEach((pk, idx)=>{
-        const ordinal = idx + 1;
-        const name = modeName(base.model_order, ordinal, expectedSubsystemKey(ordinal));
-        const text = `${name} — ${pk.f.toFixed(1)} Hz (What‑If)`;
-        drawLabel(xPix(pk.f), yPix(pk.y), text, WHATIF_LINE_COLOR, bumps[idx % bumps.length]);
-      });
-    }
   }
 
   const el = $("peak_list");
