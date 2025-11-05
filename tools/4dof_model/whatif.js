@@ -4,6 +4,10 @@
   if(!toggle || !resetBtn) return;
 
   const EPS = 1e-6;
+  const getCssVar = (name, fallback="")=>{
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+  };
 
   function ensureEnabled(){
     if(toggle.checked) return;
@@ -89,31 +93,31 @@
     const inWhatIfMode = toggle.checked && document.body.classList.contains("whatif-mode");
     const isActive = inWhatIfMode && overlay.classList.contains("active") && Math.abs(whatVal - offValue) > EPS;
 
+    const baselineColor = getCssVar("--blue", "#56B4E9");
+    const basePct = ((baseVal - min)/(max - min))*100;
+    const neutral = getCssVar("--track-neutral", getCssVar("--panel-hover", "#1a1f2b"));
+    const baseGradient = `linear-gradient(to right, ${baselineColor} 0%, ${baselineColor} ${basePct}%, ${neutral} ${basePct}%, ${neutral} 100%)`;
+    base.style.background = baseGradient;
+
     if(!isActive){
       overlay.classList.remove("active-thumb");
-      const neutral = "#3a4052";
-      const gradient = `linear-gradient(to right, ${neutral} 0%, ${neutral} 100%)`;
-      base.style.background = gradient;
-      overlay.style.background = gradient;
+      overlay.style.background = baseGradient;
       deltaBar.style.display = "none";
       label.textContent = "What-If: off";
       return;
     }
 
     overlay.classList.add("active-thumb");
-    const color = whatVal >= baseVal ? "var(--orange)" : "var(--green)";
-    const basePct = ((baseVal - min)/(max - min))*100;
+    const deltaColor = getCssVar("--orange", "#E69F00");
     const whatPct = ((whatVal - min)/(max - min))*100;
     const start = Math.min(basePct, whatPct);
     const end = Math.max(basePct, whatPct);
-    const neutral = "#3a4052";
-    const gradient = `linear-gradient(to right, ${neutral} 0%, ${neutral} ${start}%, ${color} ${start}%, ${color} ${end}%, ${neutral} ${end}%, ${neutral} 100%)`;
-    base.style.background = overlay.style.background = gradient;
+    overlay.style.background = `linear-gradient(to right, ${neutral} 0%, ${neutral} ${start}%, ${deltaColor} ${start}%, ${deltaColor} ${end}%, ${neutral} ${end}%, ${neutral} 100%)`;
 
     deltaBar.style.display = "block";
     deltaBar.style.left = `${start}%`;
     deltaBar.style.width = `${Math.max(end - start, 0.001)}%`;
-    deltaBar.style.background = color;
+    deltaBar.style.background = deltaColor;
 
     const delta = whatVal - baseVal;
     const formatted = typeof formatSliderValue === "function"

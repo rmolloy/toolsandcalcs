@@ -18,10 +18,10 @@ main {
 }
 
 .control-card {
-  border: 1px solid #222a3a;
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   padding: 10px 12px;
-  background: #111522;
+  background: color-mix(in srgb, var(--panel) 90%, var(--bg));
   height: 100%;
 }
 .control-card summary {
@@ -49,7 +49,7 @@ main {
   align-items: center;
 }
 .ghost {
-  border: 1px solid #2a3245;
+  border: 1px solid var(--border-soft);
   background: transparent;
   color: var(--muted);
   padding: 4px 10px;
@@ -71,7 +71,7 @@ main {
   appearance: none;
   height: 4px;
   width: 100%;
-  background: #3a4052;
+  background: var(--track-neutral);
   border-radius: 999px;
   position: absolute;
   top: 14px;
@@ -85,22 +85,43 @@ main {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 2px solid #12151f;
-  background: #9aa4b2;
+  border: 2px solid var(--thumb-border);
+  background: var(--track-muted);
   cursor: pointer;
   transition: background 0.15s ease;
 }
 .dual-slider__base::-webkit-slider-thumb {
   background: var(--blue);
 }
+.dual-slider__base::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--thumb-border);
+  background: var(--blue);
+}
+.dual-slider input::-moz-range-thumb {
+  pointer-events: all;
+  cursor: pointer;
+}
 .dual-slider__overlay {
   opacity: 0;
   z-index: 2;
 }
 .dual-slider__overlay::-webkit-slider-thumb {
-  background: #6b7386;
+  background: var(--track-muted);
+}
+.dual-slider__overlay::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--thumb-border);
+  background: var(--track-muted);
 }
 .dual-slider__overlay.active-thumb::-webkit-slider-thumb {
+  background: var(--orange);
+}
+.dual-slider__overlay.active-thumb::-moz-range-thumb {
   background: var(--orange);
 }
 body.whatif-mode .dual-slider__overlay {

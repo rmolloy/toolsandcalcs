@@ -9,6 +9,12 @@
   --ink: #e6e9ef;
   --muted: #9aa4b2;
   --radius: 14px;
+  --white: var(--ink);
+  --border-strong: color-mix(in srgb, var(--ink) 12%, var(--bg));
+  --border-soft: color-mix(in srgb, var(--ink) 6%, var(--bg));
+  --thumb-border: color-mix(in srgb, var(--panel) 80%, var(--bg));
+  --track-neutral: color-mix(in srgb, var(--ink) 16%, var(--bg));
+  --track-muted: color-mix(in srgb, var(--muted) 65%, var(--bg));
 
   /* ---- Okabe & Ito palette ---- */
   --orange:  #E69F00; /* Total / main accent */
