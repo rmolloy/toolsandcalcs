@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 
-<body>
+<body data-palette="whatif">
     <header class="card pad">
         <h1>Gore–Gilet Acoustic Guitar Model — 1/2/3/4 DOF (Coupled)</h1>
         <div class="muted">
@@ -36,6 +36,10 @@
             <div class="row" style="margin-top:8px;">
                 <label><input type="checkbox" id="show_labels" checked> Show peak labels</label>
                 <span class="badge">Force target: Air (1DOF) • Top (2–4DOF)</span>
+            </div>
+            <div class="row whatif-toggle-row">
+                <label><input type="checkbox" id="whatif_toggle"> Enable What-If Mode</label>
+                <button id="btn_reset_whatif" class="ghost" disabled>Reset What-If</button>
             </div>
             <div class="small">The solver and visible controls adapt to the chosen order. Peaks are auto‑labeled by
                 dominant subsystem.</div>
@@ -154,13 +158,14 @@
 
         <section class="card pad plot-panel">
             <canvas id="plot"></canvas>
-            <div class="legend" id="legend"></div>
+            <div class="legend whatif-legend" id="legend"></div>
             <div id="peak_list"></div>
         </section>
     </main>
 
     <script src="model_core.js" defer></script>
     <script src="main.js" defer></script>
+    <script src="whatif.js" defer></script>
 
 </body>
 
