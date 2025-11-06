@@ -25,6 +25,7 @@
     document.body.classList.remove("whatif-mode");
     resetBtn.disabled = true;
     refreshSliders();
+    if(window.setWhatIfSummary) window.setWhatIfSummary(null);
     if(window.render) window.render();
   }
 
@@ -97,7 +98,7 @@
         valueEl.classList.add("is-off");
       }
       if(deltaEl){
-        deltaEl.textContent = "Δ —";
+        deltaEl.innerHTML = '<span class="delta-label" title="Show change Δ">Δ</span> —';
       }
       return;
     }
@@ -132,7 +133,7 @@
       valueEl.classList.remove("is-off");
     }
     if(deltaEl){
-      deltaEl.innerHTML = `Δ <span class="delta">${deltaText}</span>`;
+      deltaEl.innerHTML = `<span class="delta-label" title="Show change Δ">Δ</span> <span class="delta">${deltaText}</span>`;
     }
   }
 
@@ -182,7 +183,7 @@
     info.id = `${base.id}_whatif_val`;
     info.innerHTML = `
       <div class="whatif-val__row">
-        <span class="whatif-val__delta">Δ —</span>
+        <span class="whatif-val__delta"><span class="delta-label" title="Show change Δ">Δ</span> —</span>
         <span class="whatif-val__value is-off">Off</span>
       </div>
     `;
@@ -191,4 +192,5 @@
   });
 
   refreshSliders();
+  window.resetWhatIfOverlays = resetWhatIf;
 })();

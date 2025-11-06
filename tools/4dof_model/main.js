@@ -16,6 +16,54 @@ const RANGE_IDS = [
   "volume_air","driving_force"
 ];
 const CONTROL_IDS = [...RANGE_IDS, "model_order","show_labels"];
+const FIT_PARAM_IDS = [
+  "mass_top","stiffness_top","mass_back","stiffness_back",
+  "volume_air","area_top","area_hole"
+];
+
+function buildSliderMeta(){
+  const meta = {};
+  RANGE_IDS.forEach(id=>{
+    const el = $(id);
+    if(!el) return;
+    const min = parseFloat(el.min);
+    const max = parseFloat(el.max);
+    const step = parseFloat(el.step);
+    meta[id] = {
+      min: Number.isFinite(min) ? min : -Infinity,
+      max: Number.isFinite(max) ? max : Infinity,
+      step: Number.isFinite(step) ? step : 0.0001
+    };
+  });
+  return meta;
+}
+const SLIDER_META = buildSliderMeta();
+const WHATIF_SUMMARY_FIELDS = [
+  { id: "mass_top", label: "top plate mass", unit: "g", precision: 1, threshold: 0.1 },
+  { id: "stiffness_top", label: "top plate stiffness", unit: "N/m", precision: 0, threshold: 50 },
+  { id: "mass_back", label: "back plate mass", unit: "g", precision: 1, threshold: 0.1 },
+  { id: "stiffness_back", label: "back plate stiffness", unit: "N/m", precision: 0, threshold: 50 },
+  { id: "volume_air", label: "cavity volume", unit: "m³", precision: 4, threshold: 0.00005 },
+  {
+    id: "area_hole",
+    label: "soundhole diameter",
+    unit: "mm",
+    precision: 1,
+    threshold: 0.1,
+    transform: areaToDiameterMm,
+    extra: (baseVal, targetVal)=>{
+      const deltaArea = targetVal - baseVal;
+      const sign = deltaArea >= 0 ? "+" : "-";
+      return ` (${sign}${Math.abs(deltaArea).toFixed(5)} m²)`;
+    }
+  }
+];
+
+function getAdjustableIds(raw){
+  return FIT_PARAM_IDS.filter(id=>{
+    return typeof raw[id] === "number" && !Number.isNaN(raw[id]) && SLIDER_META[id];
+  });
+}
 
 const ISA = {
   T0: 288.15,            // K
@@ -77,6 +125,17 @@ function formatSliderValue(id, value){
   }
   if(STIFFNESS_IDS.has(id)) return `${value.toFixed(0)} N/m`;
   return fmt(value);
+}
+
+function areaToDiameterMm(area){
+  if(!Number.isFinite(area) || area <= 0) return NaN;
+  return Math.sqrt((4 * area) / Math.PI) * 1000;
+}
+
+function diameterMmToArea(diamMm){
+  if(!Number.isFinite(diamMm) || diamMm <= 0) return NaN;
+  const meters = diamMm / 1000;
+  return Math.PI * Math.pow(meters, 2) / 4;
 }
 
 function isWhatIfPage(){
@@ -405,6 +464,352 @@ function buildParams(){
   return { base, whatIf };
 }
 
+function clampToSlider(id, value){
+  const meta = SLIDER_META[id];
+  if(!meta || !Number.isFinite(value)) return value;
+  let v = value;
+  if(Number.isFinite(meta.min)) v = Math.max(meta.min, v);
+  if(Number.isFinite(meta.max)) v = Math.min(meta.max, v);
+  return v;
+}
+
+function applyRawValues(raw){
+  Object.entries(raw).forEach(([key, val])=>{
+    if(!Number.isFinite(val)) return;
+    const el = $(key);
+    if(!el) return;
+    const next = clampToSlider(key, val);
+    el.value = next;
+    if(el.type === "range"){
+      const lab = $(`${key}_val`);
+      if(lab) lab.textContent = formatSliderValue(key, next);
+    }
+  });
+  render();
+}
+
+function ensureWhatIfModeOn(){
+  const toggle = $("whatif_toggle");
+  if(!toggle) return;
+  if(!toggle.checked){
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event("change", { bubbles: true }));
+  } else {
+    document.body.classList.add("whatif-mode");
+  }
+}
+
+function applyWhatIfRawValues(raw){
+  ensureWhatIfModeOn();
+  let applied = false;
+  FIT_PARAM_IDS.forEach(id=>{
+    if(!Number.isFinite(raw[id])) return;
+    const overlay = document.getElementById(`${id}_whatif`);
+    if(!overlay) return;
+    const next = clampToSlider(id, raw[id]);
+    overlay.value = next;
+    overlay.dispatchEvent(new Event("input", { bubbles: true }));
+    applied = true;
+  });
+  if(!applied) throw new Error("No What-If sliders available to adjust.");
+}
+
+function describeDeltaLine(field, baseRaw, targetRaw){
+  const baseVal = baseRaw[field.id];
+  const targetVal = targetRaw[field.id];
+  if(!Number.isFinite(baseVal) || !Number.isFinite(targetVal)) return null;
+  let base = baseVal;
+  let target = targetVal;
+  if(typeof field.transform === "function"){
+    base = field.transform(baseVal);
+    target = field.transform(targetVal);
+  }
+  if(!Number.isFinite(base) || !Number.isFinite(target)) return null;
+  const delta = target - base;
+  if(Math.abs(delta) < (field.threshold ?? 0)) return null;
+  const dir = delta >= 0 ? "Increase" : "Decrease";
+  const precision = typeof field.precision === "number" ? field.precision : 2;
+  const amount = Math.abs(delta).toFixed(precision);
+  let line = `${dir} ${field.label} by ${amount} ${field.unit}`;
+  if(field.extra) line += field.extra(baseVal, targetVal, delta) || "";
+  return line;
+}
+
+function buildWhatIfSummary(baseRaw, targetRaw){
+  if(!baseRaw || !targetRaw) return null;
+  const lines = WHATIF_SUMMARY_FIELDS
+    .map(field => describeDeltaLine(field, baseRaw, targetRaw))
+    .filter(Boolean);
+  return lines.length ? lines : null;
+}
+
+function updateWhatIfSummary(lines){
+  const box = $("whatif_summary");
+  if(!box) return;
+  const body = box.querySelector(".delta-summary__body") || box;
+  if(!lines || !lines.length){
+    body.textContent = "Run Solve Targets to see suggested adjustments.";
+    box.classList.remove("has-content");
+    return;
+  }
+  const html = `<ul>${lines.map(line=>`<li>${line}</li>`).join("")}</ul>`;
+  body.innerHTML = html;
+  box.classList.add("has-content");
+}
+
+window.setWhatIfSummary = lines => updateWhatIfSummary(lines);
+
+function collectFitTargets(form){
+  const read = id=>{
+    const el = form.querySelector(`#${id}`);
+    if(!el) return null;
+    const val = parseFloat(el.value);
+    return Number.isFinite(val) ? val : null;
+  };
+  return {
+    freqs: [read("fit_freq_1"), read("fit_freq_2"), read("fit_freq_3")],
+    mass_top: read("fit_mass_top"),
+    stiffness_top: read("fit_stiffness_top"),
+    mass_back: read("fit_mass_back"),
+    stiffness_back: read("fit_stiffness_back"),
+    volume_air: read("fit_volume_air"),
+    area_hole_diam: read("fit_area_hole_diam"),
+    area_hole: (()=>{
+      const diam = read("fit_area_hole_diam");
+      return Number.isFinite(diam) ? diameterMmToArea(diam) : null;
+    })()
+  };
+}
+
+function hasFitTargets(targets){
+  if(targets.freqs && targets.freqs.some(v=>Number.isFinite(v))) return true;
+  return ["mass_top","stiffness_top","mass_back","stiffness_back","volume_air","area_hole"]
+    .some(key => Number.isFinite(targets[key]));
+}
+
+function sqRelative(value, target){
+  const denom = Math.max(Math.abs(target), 1);
+  const diff = (value - target) / denom;
+  return diff * diff;
+}
+
+function evaluateFitDetail(raw, targets){
+  const params = adaptUiToSolver(raw);
+  const response = computeResponse(params);
+  const maxN = maxPeaksFor(params.model_order);
+  const peaks = detectPeaksAdaptive(response.total, maxN, {
+    minDb: -95,
+    minProm: 4.0,
+    minDistHz: 20
+  }).slice(0, 3);
+
+  let cost = 0;
+  const freqErrors = [];
+  targets.freqs?.forEach((target, idx)=>{
+    if(!Number.isFinite(target)) return;
+    const pk = peaks[idx];
+    const actual = pk ? pk.f : target;
+    const diff = actual - target;
+    freqErrors.push(diff);
+    const denom = Math.max(target, 1);
+    cost += 10 * (diff/denom) * (diff/denom);
+  });
+
+  if(Number.isFinite(targets.mass_top)) cost += sqRelative(raw.mass_top, targets.mass_top);
+  if(Number.isFinite(targets.stiffness_top)) cost += sqRelative(raw.stiffness_top, targets.stiffness_top);
+  if(Number.isFinite(targets.mass_back)) cost += sqRelative(raw.mass_back, targets.mass_back);
+  if(Number.isFinite(targets.stiffness_back)) cost += sqRelative(raw.stiffness_back, targets.stiffness_back);
+  if(Number.isFinite(targets.volume_air)) cost += sqRelative(raw.volume_air, targets.volume_air);
+  if(Number.isFinite(targets.area_hole)) cost += sqRelative(raw.area_hole, targets.area_hole);
+
+  return { cost, peaks, freqErrors };
+}
+
+function evaluateFitCost(raw, targets){
+  return evaluateFitDetail(raw, targets).cost;
+}
+
+function runCoordinateDescent(initialRaw, adjustableIds, targets, { maxIter=80, clampDirection } = {}){
+  if(!adjustableIds.length) throw new Error("No adjustable parameters available.");
+  let best = { ...initialRaw };
+  let bestCost = evaluateFitCost(best, targets);
+  if(!Number.isFinite(bestCost)) bestCost = 1e6;
+
+  const stepSizes = {};
+  adjustableIds.forEach(id=>{
+    const meta = SLIDER_META[id];
+    const span = (Number.isFinite(meta.max) && Number.isFinite(meta.min))
+      ? Math.max(meta.max - meta.min, Math.abs(best[id]) || 1)
+      : Math.abs(best[id]) || 1;
+    stepSizes[id] = span * 0.05;
+  });
+
+  let decay = 1;
+  for(let iter=0; iter<maxIter; iter++){
+    let improved = false;
+    for(const id of adjustableIds){
+      const meta = SLIDER_META[id];
+      const baseStep = Math.max(stepSizes[id] * decay, meta.step || 0.0001);
+      const tryDelta = delta =>{
+        if(clampDirection && !clampDirection(id, delta)) return null;
+        const candidate = { ...best, [id]: clampToSlider(id, best[id] + delta) };
+        const cost = evaluateFitCost(candidate, targets);
+        return { candidate, cost };
+      };
+      const plus = tryDelta(baseStep);
+      const minus = tryDelta(-baseStep);
+      let next = null;
+      if(plus && plus.cost < bestCost) next = plus;
+      if(minus && minus.cost < ((next && next.cost) || bestCost)) next = minus;
+      if(next){
+        best = next.candidate;
+        bestCost = next.cost;
+        improved = true;
+      }
+    }
+    if(!improved){
+      decay *= 0.6;
+      if(decay < 0.05) break;
+    }
+  }
+  return { raw: best, evaluation: evaluateFitDetail(best, targets) };
+}
+
+function fitBaselineParameters(targets, opts={}){
+  const raw = readUiInputs();
+  const adjustable = getAdjustableIds(raw);
+  return runCoordinateDescent(raw, adjustable, targets, opts);
+}
+
+function buildDirectionClamp(options){
+  if(!options || !options.restrictSimple) return null;
+  const increaseOnly = new Set(["mass_top","mass_back"]);
+  const allowed = new Set(["mass_top","mass_back","area_hole"]);
+  return (id, delta)=>{
+    if(!allowed.has(id)) return false;
+    if(increaseOnly.has(id)) return delta >= 0;
+    return true;
+  };
+}
+
+function fitWhatIfParameters(targets, opts={}){
+  const baseRaw = readUiInputs();
+  const whatRaw = readWhatIfRaw(baseRaw);
+  const initial = whatRaw ? whatRaw : { ...baseRaw };
+  const adjustable = getAdjustableIds(initial).filter(id=>id !== "volume_air");
+  const restrictClamp = buildDirectionClamp(opts);
+  const stiffnessClamp = (id, delta)=>{
+    if(id === "stiffness_top" || id === "stiffness_back") return delta <= 0;
+    return true;
+  };
+  const clampDirection = (id, delta)=>{
+    if(!stiffnessClamp(id, delta)) return false;
+    if(restrictClamp && !restrictClamp(id, delta)) return false;
+    return true;
+  };
+  const result = runCoordinateDescent(initial, adjustable, targets, { ...opts, clampDirection });
+  return { ...result, baseRaw };
+}
+
+function initFitAssistUi(){
+  const modal = $("fit_modal");
+  const baselineBtn = $("btn_fit_baseline");
+  const whatIfBtn = $("btn_fit_whatif");
+  const form = $("fit_form");
+  const status = $("fit_status");
+  if(!modal || !form || !status || (!baselineBtn && !whatIfBtn)) return;
+
+  const titleEl = modal.querySelector("header h2");
+  const submitBtn = form.querySelector("button[type=submit]");
+  let mode = "baseline";
+
+  const closeButtons = modal.querySelectorAll("[data-fit-close]");
+  const closeModal = ()=>{
+    modal.classList.remove("is-open");
+    modal.setAttribute("aria-hidden","true");
+    status.textContent = "";
+    form.reset();
+  };
+  const setMode = nextMode =>{
+    mode = nextMode;
+    if(titleEl) titleEl.textContent = mode === "whatif" ? "Solve Targets" : "Fit Baseline";
+    if(submitBtn) submitBtn.textContent = mode === "whatif" ? "Compute Recipe" : "Solve";
+  };
+  const openModal = nextMode =>{
+    setMode(nextMode);
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden","false");
+    status.textContent = "";
+  };
+
+  baselineBtn?.addEventListener("click", ()=>openModal("baseline"));
+  whatIfBtn?.addEventListener("click", ()=>openModal("whatif"));
+  closeButtons.forEach(el=>el.addEventListener("click", closeModal));
+  modal.addEventListener("click", evt=>{
+    if(evt.target === modal || evt.target.classList.contains("fit-modal__backdrop")) closeModal();
+  });
+
+  const resetBtn = modal.querySelector("[data-fit-reset]");
+  if(resetBtn){
+    resetBtn.addEventListener("click",()=>{
+      if(mode === "whatif"){
+        if(window.resetWhatIfOverlays) window.resetWhatIfOverlays();
+        else document.getElementById("btn_reset_whatif")?.click();
+      } else {
+        document.getElementById("btn_reset")?.click();
+      }
+      status.textContent = mode === "whatif"
+        ? "What-If sliders reset."
+        : "Baseline reset to defaults.";
+    });
+  }
+
+  const toggleDisabled = disabled=>{
+    form.querySelectorAll("input,button").forEach(el=>{
+      if(el.dataset.fitClose !== undefined) return;
+      el.disabled = disabled;
+    });
+  };
+
+  form.addEventListener("submit", async evt=>{
+    evt.preventDefault();
+    const targets = collectFitTargets(form);
+    if(!hasFitTargets(targets)){
+      status.textContent = "Enter at least one target to fit.";
+      return;
+    }
+    const restrictSimple = Boolean($("fit_restrict_simple")?.checked);
+    status.textContent = "Solving…";
+    toggleDisabled(true);
+    await new Promise(requestAnimationFrame);
+    try{
+      const result = mode === "whatif"
+        ? fitWhatIfParameters(targets, { maxIter: 90, restrictSimple })
+        : fitBaselineParameters(targets, { maxIter: 90 });
+
+      if(mode === "whatif"){
+        applyWhatIfRawValues(result.raw);
+        const summary = buildWhatIfSummary(result.baseRaw, result.raw);
+        setWhatIfSummary(summary);
+      } else {
+        applyRawValues(result.raw);
+        setWhatIfSummary(null);
+      }
+
+      const diffs = result.evaluation.freqErrors.filter(v=>Number.isFinite(v));
+      const rms = diffs.length ? Math.sqrt(diffs.reduce((sum,v)=>sum + v*v, 0) / diffs.length) : null;
+      status.textContent = rms != null
+        ? `Fit complete. RMS Δf ≈ ${rms.toFixed(2)} Hz.`
+        : "Fit complete.";
+    } catch(err){
+      console.error(err);
+      status.textContent = err?.message || (mode === "whatif" ? "Unable to fit What-If." : "Unable to fit baseline.");
+    } finally {
+      toggleDisabled(false);
+    }
+  });
+}
+
 function render(){
   const { base, whatIf } = buildParams();
   const colors = activeColors();
@@ -510,6 +915,8 @@ function render(){
     }).join("");
   }
 }
+
+initFitAssistUi();
 
 /* --------------------- UI hooks --------------------- */
 CONTROL_IDS.forEach(id=>{
