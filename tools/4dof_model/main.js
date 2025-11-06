@@ -1,4 +1,21 @@
 
+/*
+© 2025 Rick Molloy. All rights reserved.
+
+This work extends and builds upon the acoustic-guitar modeling framework
+originally developed and published by Trevor Gore and Gerard Gilet in
+*Contemporary Acoustic Guitar Design and Build*. Their research established
+the theoretical foundation used here. This implementation is an independent
+derivative applying those principles in software form.
+
+Permission is granted to view and reference this source code for educational
+and research purposes only. Redistribution, modification, or commercial use
+of this code or any derivative works is strictly prohibited without written
+permission from the author.
+
+This license supersedes all previous licensing for this repository.
+*/
+
 const DEFAULT_COLORS = { total: "#ff9a5c", top: "#61a8ff", back: "#47d78a", air: "#b38cff", sides: "#ffd166" };
 const WHATIF_COLORS = { ...DEFAULT_COLORS, total: "#61a8ff" };
 function activeColors(){ return (typeof document !== "undefined" && document.body?.dataset?.palette === "whatif") ? WHATIF_COLORS : DEFAULT_COLORS; }
