@@ -59,11 +59,22 @@ main {
 }
 
 .slider-row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 120px;
   align-items: center;
-  margin-bottom: 6px;
+  gap: 10px;
+  margin-bottom: 8px;
   font-size: 14px;
+}
+
+.value-input {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+  width: 100%;
 }
 
 .actions {

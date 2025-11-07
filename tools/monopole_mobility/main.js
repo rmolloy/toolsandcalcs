@@ -7,20 +7,29 @@ const defaults = {
   mass: 1.02,
 };
 
-const inputs = {
+const typeLabels = {
+  steel: "Steel string",
+  classical: "Classical",
+  other: "Other",
+};
+
+const getTypeLabel = (value) => typeLabels[value] || "Other";
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const sliders = {
   freq: document.getElementById("freq"),
   deflection: document.getElementById("deflection"),
   mass: document.getElementById("mass"),
 };
 
+const fields = {
+  freq: document.getElementById("freq_field"),
+  deflection: document.getElementById("deflection_field"),
+  mass: document.getElementById("mass_field"),
+};
+
 const nameInput = document.getElementById("instrument_name");
 const typeSelect = document.getElementById("instrument_type");
-
-const displays = {
-  freq: document.getElementById("freq_val"),
-  deflection: document.getElementById("deflection_val"),
-  mass: document.getElementById("mass_val"),
-};
 
 const instrumentDisplay = document.getElementById("instrument_display");
 
@@ -45,32 +54,16 @@ const formatter = (options = {}) =>
 
 const fmtMobility = formatter({ min: 1, max: 1 });
 
-function updateDisplayLabels(values) {
-  if ("freq" in values) {
-    displays.freq.textContent = `${Number(values.freq).toFixed(1)} Hz`;
-  }
-  if ("deflection" in values) {
-    displays.deflection.textContent = `${Number(values.deflection).toFixed(
-      3
-    )} mm`;
-  }
-  if ("mass" in values) {
-    displays.mass.textContent = `${Number(values.mass).toFixed(2)} kg`;
-  }
-}
-
 function updateInstrumentLabel() {
   const name = nameInput.value.trim() || "Untitled sample";
-  const type = typeSelect.value;
-  const typeLabel =
-    type === "steel" ? "Steel string" : type === "classical" ? "Classical" : "Other";
+  const typeLabel = getTypeLabel(typeSelect.value);
   instrumentDisplay.textContent = `${name} • ${typeLabel}`;
 }
 
 function compute() {
-  const freq = parseFloat(inputs.freq.value);
-  const deflection = parseFloat(inputs.deflection.value);
-  const mass = parseFloat(inputs.mass.value);
+  const freq = parseFloat(fields.freq.value);
+  const deflection = parseFloat(fields.deflection.value);
+  const mass = parseFloat(fields.mass.value);
   updateInstrumentLabel();
 
   const valid =
@@ -86,8 +79,6 @@ function compute() {
     outputs.status.textContent = "Waiting for complete inputs…";
     return;
   }
-
-  updateDisplayLabels({ freq, deflection, mass });
 
   const defM = deflection / 1000;
   const stiffness = (mass * g) / defM;
@@ -128,20 +119,24 @@ function setOutputs(value) {
 function resetInputs() {
   nameInput.value = defaults.name;
   typeSelect.value = defaults.type;
-  inputs.freq.value = defaults.freq;
-  inputs.deflection.value = defaults.deflection;
-  inputs.mass.value = defaults.mass;
+  sliders.freq.value = defaults.freq;
+  sliders.deflection.value = defaults.deflection;
+  sliders.mass.value = defaults.mass;
+  fields.freq.value = defaults.freq;
+  fields.deflection.value = defaults.deflection;
+  fields.mass.value = defaults.mass;
   updateInstrumentLabel();
-  updateDisplayLabels(defaults);
   compute();
 }
 
 function copyResults() {
   const payload = [
-    `Sample: ${nameInput.value.trim() || "Untitled sample"} (${typeSelect.value})`,
-    `f_u (Hz): ${inputs.freq.value}`,
-    `Deflection (mm): ${inputs.deflection.value}`,
-    `Mass (kg): ${inputs.mass.value}`,
+    `Sample: ${nameInput.value.trim() || "Untitled sample"} (${getTypeLabel(
+      typeSelect.value
+    )})`,
+    `f_u (Hz): ${fields.freq.value}`,
+    `Deflection (mm): ${fields.deflection.value}`,
+    `Mass (kg): ${fields.mass.value}`,
     `K (N/m): ${outputs.stiffness.textContent}`,
     `M_eff (g): ${outputs.effMass.textContent}`,
     `Mobility score: ${outputs.mobilityScore.textContent}`,
@@ -161,17 +156,44 @@ function copyResults() {
 buttons.reset.addEventListener("click", resetInputs);
 buttons.copy.addEventListener("click", copyResults);
 
-Object.values(inputs).forEach((input) => {
-  input.addEventListener("input", (event) => {
-    const { id, value } = event.target;
-    if (id in displays) {
-      updateDisplayLabels({ [id]: parseFloat(value) });
+Object.entries(sliders).forEach(([key, slider]) => {
+  slider.addEventListener("input", (event) => {
+    const value = parseFloat(event.target.value);
+    if (Number.isFinite(value)) {
+      fields[key].value = value;
     }
     compute();
   });
 });
 
-nameInput.addEventListener("input", updateInstrumentLabel);
-typeSelect.addEventListener("change", updateInstrumentLabel);
+Object.entries(fields).forEach(([key, field]) => {
+  field.addEventListener("input", (event) => {
+    const raw = parseFloat(event.target.value);
+    if (Number.isFinite(raw)) {
+      const min = parseFloat(sliders[key].min);
+      const max = parseFloat(sliders[key].max);
+      if (raw >= min && raw <= max) {
+        sliders[key].value = raw;
+      }
+    }
+    compute();
+  });
+
+  field.addEventListener("change", () => {
+    const value = parseFloat(field.value);
+    if (!Number.isFinite(value)) {
+      return;
+    }
+    const min = parseFloat(sliders[key].min);
+    const max = parseFloat(sliders[key].max);
+    const clamped = clamp(value, min, max);
+    sliders[key].value = clamped;
+    field.value = clamped;
+    compute();
+  });
+});
+
+nameInput.addEventListener("input", compute);
+typeSelect.addEventListener("change", compute);
 
 resetInputs();

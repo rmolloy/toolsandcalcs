@@ -31,7 +31,7 @@
       <label class="type-input">
         Build type
         <select id="instrument_type">
-          <option value="steel" selected>Steel string</option>
+          <option value="steel" selected>Steel String</option>
           <option value="classical">Classical</option>
           <option value="other">Other</option>
         </select>
@@ -39,24 +39,24 @@
       <div class="inputs">
         <div class="slider-block">
           <div class="slider-row row">
-            <label>Uncoupled top monopole f<sub>u</sub> (Hz)</label>
-            <div class="val" id="freq_val">153.0 Hz</div>
+            <label for="freq_field">Uncoupled top monopole f<sub>u</sub> (Hz)</label>
+            <input id="freq_field" class="value-input" type="number" min="90" max="220" step="0.1" value="153" />
           </div>
           <input id="freq" type="range" min="90" max="220" step="0.1" value="153" />
         </div>
 
         <div class="slider-block">
           <div class="slider-row row">
-            <label>Bridge deflection under load (mm)</label>
-            <div class="val" id="deflection_val">0.18 mm</div>
+            <label for="deflection_field">Bridge deflection under load (mm)</label>
+            <input id="deflection_field" class="value-input" type="number" min="0.05" max="0.50" step="0.005" value="0.18" />
           </div>
           <input id="deflection" type="range" min="0.05" max="0.50" step="0.005" value="0.18" />
         </div>
 
         <div class="slider-block">
           <div class="slider-row row">
-            <label>Test mass (kg)</label>
-            <div class="val" id="mass_val">1.02 kg</div>
+            <label for="mass_field">Test mass (kg)</label>
+            <input id="mass_field" class="value-input" type="number" min="0.30" max="1.80" step="0.01" value="1.02" />
           </div>
           <input id="mass" type="range" min="0.30" max="1.80" step="0.01" value="1.02" />
         </div>
