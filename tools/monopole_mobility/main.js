@@ -21,9 +21,6 @@ const outputs = {
   stiffness: document.getElementById("stiffness"),
   effMass: document.getElementById("effMass"),
   mobilityScore: document.getElementById("mobilityScore"),
-  mobilitySI: document.getElementById("mobilitySI"),
-  deflectionMeters: document.getElementById("deflectionMeters"),
-  kmProduct: document.getElementById("kmProduct"),
   status: document.getElementById("status"),
 };
 
@@ -39,8 +36,7 @@ const formatter = (options = {}) =>
     notation: options.notation ?? "standard",
   });
 
-const fmtThree = formatter({ max: 3 });
-const fmtSci = formatter({ notation: "scientific", max: 3 });
+const fmtMobility = formatter({ min: 1, max: 1 });
 
 function updateDisplayLabels(values) {
   if ("freq" in values) {
@@ -82,17 +78,11 @@ function compute() {
   const meffKg = stiffness / Math.pow(2 * Math.PI * freq, 2);
   const meffG = meffKg * 1000;
   const mobilitySI = 1 / Math.sqrt(stiffness * meffKg);
-  const mobilityScore = 1000 / Math.sqrt(stiffness * meffG);
-  const kmProduct = stiffness * meffKg;
+  const mobilityScore = 1000 * mobilitySI;
 
-  outputs.stiffness.textContent = formatter({ max: 1 }).format(stiffness);
-  outputs.effMass.textContent = formatter({ max: 2 }).format(meffG);
-  outputs.mobilityScore.textContent = formatter({ max: 2 }).format(
-    mobilityScore
-  );
-  outputs.mobilitySI.textContent = fmtSci.format(mobilitySI);
-  outputs.deflectionMeters.textContent = fmtThree.format(defM);
-  outputs.kmProduct.textContent = formatter({ max: 3 }).format(kmProduct);
+  outputs.stiffness.textContent = formatter({ max: 0 }).format(stiffness);
+  outputs.effMass.textContent = formatter({ min: 1, max: 1 }).format(meffG);
+  outputs.mobilityScore.textContent = fmtMobility.format(mobilityScore);
 
   if (
     Math.abs(freq - defaults.freq) < 1e-9 &&
@@ -111,9 +101,6 @@ function setOutputs(value) {
   outputs.stiffness.textContent = value;
   outputs.effMass.textContent = value;
   outputs.mobilityScore.textContent = value;
-  outputs.mobilitySI.textContent = value;
-  outputs.deflectionMeters.textContent = value;
-  outputs.kmProduct.textContent = value;
   buttons.copy.disabled = true;
 }
 
@@ -133,7 +120,6 @@ function copyResults() {
     `K (N/m): ${outputs.stiffness.textContent}`,
     `M_eff (g): ${outputs.effMass.textContent}`,
     `Mobility score: ${outputs.mobilityScore.textContent}`,
-    `Mobility (SI): ${outputs.mobilitySI.textContent}`,
   ].join("\n");
 
   navigator.clipboard

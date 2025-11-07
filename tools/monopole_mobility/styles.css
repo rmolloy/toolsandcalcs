@@ -114,20 +114,6 @@ main {
   opacity: 0.8;
 }
 
-.derived {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  border-top: 1px solid var(--border-soft);
-  padding-top: 12px;
-}
-
-.derived .value {
-  font-size: 18px;
-  font-weight: 500;
-  margin: 6px 0 2px;
-}
-
 .formulas ol {
   margin: 8px 0 0 18px;
   line-height: 1.5;
