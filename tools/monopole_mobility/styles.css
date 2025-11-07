@@ -36,6 +36,24 @@ main {
   font-size: 15px;
 }
 
+.type-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.type-input select {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+}
+
 .slider-block input[type="range"] {
   width: 100%;
 }

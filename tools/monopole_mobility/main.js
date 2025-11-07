@@ -1,6 +1,7 @@
 const g = 9.8;
 const defaults = {
-  name: "Rick Molloy's guitar — 10/5/25",
+  name: "Rick Molloy's guitar: 10/5/25",
+  type: "steel",
   freq: 153,
   deflection: 0.18,
   mass: 1.02,
@@ -13,6 +14,7 @@ const inputs = {
 };
 
 const nameInput = document.getElementById("instrument_name");
+const typeSelect = document.getElementById("instrument_type");
 
 const displays = {
   freq: document.getElementById("freq_val"),
@@ -58,8 +60,11 @@ function updateDisplayLabels(values) {
 }
 
 function updateInstrumentLabel() {
-  const name = nameInput.value.trim();
-  instrumentDisplay.textContent = name || "Untitled sample";
+  const name = nameInput.value.trim() || "Untitled sample";
+  const type = typeSelect.value;
+  const typeLabel =
+    type === "steel" ? "Steel string" : type === "classical" ? "Classical" : "Other";
+  instrumentDisplay.textContent = `${name} • ${typeLabel}`;
 }
 
 function compute() {
@@ -96,12 +101,14 @@ function compute() {
   outputs.mobilityScore.textContent = fmtMobility.format(mobilityScore);
 
   const nameMatches = nameInput.value.trim() === defaults.name;
+  const typeMatches = typeSelect.value === defaults.type;
 
   if (
     Math.abs(freq - defaults.freq) < 1e-9 &&
     Math.abs(deflection - defaults.deflection) < 1e-9 &&
     Math.abs(mass - defaults.mass) < 1e-9 &&
-    nameMatches
+    nameMatches &&
+    typeMatches
   ) {
     outputs.status.textContent = "Live: Rick Molloy OM (10/25/2025)";
   } else {
@@ -120,6 +127,7 @@ function setOutputs(value) {
 
 function resetInputs() {
   nameInput.value = defaults.name;
+  typeSelect.value = defaults.type;
   inputs.freq.value = defaults.freq;
   inputs.deflection.value = defaults.deflection;
   inputs.mass.value = defaults.mass;
@@ -130,7 +138,7 @@ function resetInputs() {
 
 function copyResults() {
   const payload = [
-    `Sample: ${nameInput.value.trim() || "Untitled sample"}`,
+    `Sample: ${nameInput.value.trim() || "Untitled sample"} (${typeSelect.value})`,
     `f_u (Hz): ${inputs.freq.value}`,
     `Deflection (mm): ${inputs.deflection.value}`,
     `Mass (kg): ${inputs.mass.value}`,
@@ -164,5 +172,6 @@ Object.values(inputs).forEach((input) => {
 });
 
 nameInput.addEventListener("input", updateInstrumentLabel);
+typeSelect.addEventListener("change", updateInstrumentLabel);
 
 resetInputs();
