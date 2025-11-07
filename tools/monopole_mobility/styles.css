@@ -14,21 +14,38 @@ main {
 .controls .inputs {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
   margin-top: 12px;
+}
+
+.name-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.name-input input {
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
 }
 
 .slider-block input[type="range"] {
   width: 100%;
 }
 
-.slider-meta {
+.slider-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 6px;
   font-size: 14px;
-  color: var(--ink);
 }
 
 .actions {
@@ -69,6 +86,14 @@ main {
   justify-content: space-between;
   align-items: baseline;
   gap: 12px;
+}
+
+.results-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .result-grid {

@@ -24,27 +24,31 @@
   <main>
     <section class="card pad controls">
       <h2>Measurement Inputs</h2>
+      <label class="name-input">
+        Guitar / sample name
+        <input id="instrument_name" type="text" value="Rick Molloy's guitar — 10/5/25" />
+      </label>
       <div class="inputs">
         <div class="slider-block">
-          <div class="slider-meta">
-            <span>Uncoupled top monopole f<sub>u</sub> (Hz)</span>
-            <span id="freq_val" class="badge">153.0 Hz</span>
+          <div class="slider-row row">
+            <label>Uncoupled top monopole f<sub>u</sub> (Hz)</label>
+            <div class="val" id="freq_val">153.0 Hz</div>
           </div>
           <input id="freq" type="range" min="90" max="220" step="0.1" value="153" />
         </div>
 
         <div class="slider-block">
-          <div class="slider-meta">
-            <span>Bridge deflection under load (mm)</span>
-            <span id="deflection_val" class="badge">0.18 mm</span>
+          <div class="slider-row row">
+            <label>Bridge deflection under load (mm)</label>
+            <div class="val" id="deflection_val">0.18 mm</div>
           </div>
           <input id="deflection" type="range" min="0.05" max="0.50" step="0.005" value="0.18" />
         </div>
 
         <div class="slider-block">
-          <div class="slider-meta">
-            <span>Test mass (kg)</span>
-            <span id="mass_val" class="badge">1.02 kg</span>
+          <div class="slider-row row">
+            <label>Test mass (kg)</label>
+            <div class="val" id="mass_val">1.02 kg</div>
           </div>
           <input id="mass" type="range" min="0.30" max="1.80" step="0.01" value="1.02" />
         </div>
@@ -67,7 +71,10 @@
     <section class="card pad results">
       <div class="results-header">
         <h2>Calculated Properties</h2>
-        <div id="status" class="status muted">Live: Rick Molloy OM (10/25/2025)</div>
+        <div class="results-meta">
+          <span id="instrument_display" class="badge">Rick Molloy's guitar — 10/5/25</span>
+          <span id="status" class="status muted">Live: Rick Molloy OM (10/25/2025)</span>
+        </div>
       </div>
       <div class="result-grid">
         <article class="result-card">
