@@ -21,7 +21,7 @@ It serves as the **forward-model foundation** for the upcoming **Delta-Recipe So
 3. Explain each proposed change’s rationale, expected frequency shifts, and trade-offs.
 
 > **Public disclosure date:** 2025-11-05  
-> **License:** MIT — attribution required (“© Rick Molloy”).
+> **License:** Educational Open License — viewing and reference permitted for research and teaching. Redistribution, modification, or commercial use requires written permission from the author (© 2025 Rick Molloy).
 
 ---
 
