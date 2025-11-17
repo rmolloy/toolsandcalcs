@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gore–Gilet Acoustic Guitar Model — 1/2/3/4 DOF + Peak Labels</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../common/4dof/styles.css">
 </head>
 
 <body>
@@ -145,8 +145,8 @@
             </div>
 
             <div class="action-row">
-                <button id="btn_fit_baseline" class="ghost">Fit Baseline…</button>
-            <button id="btn_reset">Start Over</button>
+                <button id="btn_fit_baseline">Fit My Guitar</button>
+                <button id="btn_reset">Start Over</button>
             </div>
             <div class="small">
                 Tip: the model is coupled. Peaks shift together as you change air volume, plate stiffness, or effective
@@ -156,22 +156,18 @@
         </section>
 
         <section class="card pad plot-panel">
-            <canvas id="plot"></canvas>
-            <div class="legend" id="legend"></div>
+            <div id="plot"></div>
             <div id="peak_list"></div>
-        </section>
-    </main>
-
-    <div id="fit_modal" class="fit-modal" aria-hidden="true">
-        <div class="fit-modal__backdrop" data-fit-close></div>
-        <div class="fit-modal__panel">
-            <header>
-                <h2>Fit Baseline</h2>
-                <button type="button" class="ghost small" data-fit-close>Close</button>
-            </header>
-            <form id="fit_form">
-                <p class="small muted">Provide any targets you know (all optional). The solver will adjust the baseline
-                    sliders to match them.</p>
+            <details id="fit_panel_inline" class="fit-card" data-fit-panel="inline">
+            <summary>
+                <div class="fit-card__summary">
+                    <h3>Fit My Guitar</h3>
+                    <p>Tell the solver what your guitar currently measures and it will nudge the baseline sliders to match.</p>
+                </div>
+            </summary>
+            <form id="fit_form" data-fit-mode="baseline">
+                <p class="small muted">All fields are optional. Provide whatever modal frequencies or structural
+                    values you know and the baseline sliders will be adjusted toward them.</p>
                 <div class="fit-grid">
                     <label>Target T(1,1)<sub>1</sub> (Hz)
                         <input type="number" step="0.1" id="fit_freq_1" name="freq1" placeholder="e.g. 90">
@@ -202,15 +198,19 @@
                 </div>
                 <div id="fit_status" class="fit-status small muted"></div>
                 <div class="fit-actions">
-                    <button type="button" class="ghost" data-fit-close>Cancel</button>
-                    <button type="submit">Solve</button>
+                    <button type="button" class="ghost" data-fit-reset>Reset baseline</button>
+                    <button type="submit">Fit My Guitar</button>
                 </div>
             </form>
-        </div>
-    </div>
+        </details>
+        </section>
+    </main>
 
-    <script src="model_core.js" defer></script>
-    <script src="main.js" defer></script>
+    <script src="../common/atmosphere.js" defer></script>
+    <script src="../common/solver_core.js" defer></script>
+    <script src="../vendor/plotly/plotly.min.js" defer></script>
+    <script src="../common/4dof/model_core.js" defer></script>
+    <script src="../common/4dof/main.js" defer></script>
 
 </body>
 
