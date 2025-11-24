@@ -1,7 +1,7 @@
 /*
 © 2025 Rick Molloy. All rights reserved.
 
-Plate thickness calculator UI logic.
+Panel thickness calculator UI logic.
 */
 
 (function initPlateThicknessTool() {

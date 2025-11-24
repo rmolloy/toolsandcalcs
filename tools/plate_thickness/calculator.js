@@ -1,7 +1,7 @@
 /*
 © 2025 Rick Molloy. All rights reserved.
 
-Plate thickness calculator core math. Shared between the UI and Vitest.
+Panel thickness calculator core math. Shared between the UI and Vitest.
 */
 
 const PlateThickness = (() => {

@@ -4,15 +4,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Plate Thickness Target — ToneLab</title>
+  <title>Panel Thickness Target — ToneLab</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <header class="card pad tl-card tl-card-info">
-    <h1>Target Plate Thickness Calculator</h1>
+    <h1>Target Panel Thickness Calculator</h1>
     <p class="tl-card-desc">
-      Use this tool to estimate the thickness for a top or back using its dimensions, mass, and tap-tone frequencies, so
+      Use this tool to estimate the thickness for a top or back panel using its dimensions, mass, and tap-tone frequencies, so
       you can achieve consistent stiffness and a predictable acoustic response.
     </p>
     <p class="tl-card-desc">
@@ -23,13 +23,13 @@
       <summary>Overview &amp; Required Measurements</summary>
       <p class="tl-card-desc">
         Thickness isn’t the target, stiffness is. And one of the most straightforward ways to estimate stiffness in a
-        guitar plate is by measuring its modal frequencies.
+        guitar panel is by measuring its modal frequencies.
       </p>
       <div class="before-columns">
         <div class="before-card">
           <h3>How to use this tool</h3>
           <ol class="tl-steps">
-            <li>Prepare the plate so it is smooth, rectangular, and evenly thicknessed.</li>
+            <li>Prepare the panel so it is smooth, rectangular, and evenly thicknessed.</li>
             <li>Tap to identify the long grain, cross grain, and twisting modes.</li>
             <li>Enter your measurements into the controls below.</li>
             <li>Review the recommended target thickness.</li>
@@ -39,8 +39,8 @@
           <h3>Measurements required</h3>
           <ul class="tl-list">
             <li>Guitar box length & lower-bout width (mm)</li>
-            <li>Plate length, width, and thickness (mm)</li>
-            <li>Plate mass (g)</li>
+            <li>Panel length, width, and thickness (mm)</li>
+            <li>Panel mass (g)</li>
             <li>Tap-tone frequencies: long, cross, twist (Hz)</li>
             <li>Target modal frequency for the finished top or back (Hz)</li>
           </ul>
@@ -138,7 +138,7 @@
           <div id="result_thickness" class="value tl-primary-result">—</div>
         </div>
         <div class="result-card">
-          <div class="label">Projected plate mass</div>
+          <div class="label">Projected panel mass</div>
           <div id="result_mass" class="value">—</div>
         </div>
         <div class="result-card">
@@ -171,13 +171,13 @@
       <h2>How the calculation works</h2>
       <p class="tl-card-desc">
         This calculator is based on Gore &amp; Gilet Vol. 1 (sections 4.5.2–4.5.3) and the example tables in the Design
-        book. It converts your plate’s geometry, mass, and tap-tone frequencies into stiffness properties, then
+        book. It converts your panel’s geometry, mass, and tap-tone frequencies into stiffness properties, then
         determines the thickness that corresponds to your target modal frequency.
       </p>
 
       <div class="tl-eq-block">
         <h3>Density (ρ)</h3>
-        <p class="small muted">Derived from the bare plate mass and dimensions.</p>
+        <p class="small muted">Derived from the bare panel mass and dimensions.</p>
         <div class="tl-equation">ρ =
           <span class="tl-eq-frac"><span class="tl-eq-num">m</span><span class="tl-eq-den">h · l · w</span></span>
         </div>
@@ -210,7 +210,7 @@
 
       <div class="tl-eq-block">
         <h3>Target thickness (h)</h3>
-        <p class="small muted">The thickness at which the plate will reach your chosen modal frequency.</p>
+        <p class="small muted">The thickness at which the panel will reach your chosen modal frequency.</p>
         <div class="tl-equation">
           h =
           <span class="tl-eq-frac">
