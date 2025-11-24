@@ -4,38 +4,38 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Modal Frequency Reader — ToneLab</title>
+  <title>Modal Frequency Reader - ToneLab</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <div class="page">
     <header class="card pad tl-card tl-card-info">
-      <h1>Modal Frequency Reader — Tap Tone Viewer</h1>
+      <h1>Modal Frequency Reader - Tap Tone Viewer</h1>
       <p class="tl-card-desc">
-        Quick, note-aware visualization for tap tones and small snippets. Waveform + FFT + note grid with simple peak
-        markers—no Q, damping, or solver hooks. Built for the Lutherie Academy free tier.
+        Quick, note-aware visualization for tap tones and short snippets. Waveform + FFT + note grid with simple peak
+        markers; no Q/damping or solver hooks. Built for the Lutherie Academy free tier.
       </p>
       <details class="tl-accordion">
         <summary>How to use</summary>
         <div class="tl-accordion-body">
           <h4>Orientation &amp; required measurements</h4>
           <p class="tl-card-desc">
-            Tap tones tell you how stiff or flexible a plate is; the FFT shows where the main resonances sit so you can compare tops, backs, and boxes.
+            Tap tones show how stiff or flexible a plate is; the FFT shows where the main resonances sit so you can compare tops, backs, and boxes.
           </p>
           <h4>How to use</h4>
           <ol class="tl-steps">
-            <li>Place a mic 3–6 inches from the plate/guitar.</li>
-            <li>Tap cleanly near center or edge based on what you want to hear.</li>
+            <li>Place a mic 75–150 mm from the plate or guitar and mute strings if present.</li>
+            <li>Tap cleanly near center for monopole content or near an edge for cross/long modes.</li>
             <li>Record a short tap (or load a WAV).</li>
-            <li>Zoom the waveform to focus; the FFT updates to that window.</li>
-            <li>Read note + cents for each peak.</li>
+            <li>Zoom the waveform to focus on the tap; the FFT follows that window.</li>
+            <li>Read note and cents for each peak.</li>
           </ol>
           <h4>Accuracy tips</h4>
           <ul class="tl-list">
-            <li>Tap firmly without clipping the mic.</li>
-            <li>Re-tap if peaks look smeared; move slightly.</li>
-            <li>Quieter rooms reduce false low peaks.</li>
+            <li>Tap firmly without clipping the mic preamp.</li>
+            <li>Re-tap and move a few centimeters if peaks look smeared.</li>
+            <li>Quieter rooms reduce false low peaks; silence fans/vents.</li>
           </ul>
         </div>
       </details>
@@ -159,9 +159,9 @@
             <div class="meta" id="fft_meta">hann window • tone gen: Off</div>
           </div>
           <div class="hover-readout" id="hover_readout">
-            <span id="hover_freq">— Hz</span>
-            <span id="hover_db">— dB</span>
-            <span id="hover_note">Note: —</span>
+            <span id="hover_freq">-- Hz</span>
+            <span id="hover_db">-- dB</span>
+            <span id="hover_note">Note: --</span>
           </div>
           <div class="plot-actions">
             <button id="btn_reset_zoom" class="tl-btn secondary small">Reset FFT zoom</button>
@@ -170,8 +170,7 @@
         </div>
       </div>
       <div class="small muted">
-        LA-safe scope: waveform, FFT magnitude, chromatic note grid, and simple peak markers. No Q/damping, no wolf
-        scoring, no solver integration.
+        Scope: waveform, FFT magnitude, chromatic note grid, and simple peak markers. No Q/damping, no wolf scoring, no solver integration.
       </div>
     </section>
   </main>
