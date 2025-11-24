@@ -617,6 +617,7 @@ interface BraceRenderInfo {
         } else {
           braces = loaded;
           run(true);
+          emitBraceLayoutLoaded(data, loaded);
         }
       } catch (error) {
         console.error("[BraceGeometry] Failed to load layout", error);
@@ -629,9 +630,14 @@ interface BraceRenderInfo {
   }
 
   function sanitizeBraceLayout(data: unknown): BraceConfig[] {
-    if (!Array.isArray(data)) return [];
+    const braceArray = Array.isArray(data)
+      ? data
+      : Array.isArray((data as any)?.braces)
+        ? (data as any).braces
+      : [];
+    if (!braceArray.length) return [];
     const result: BraceConfig[] = [];
-    data.forEach((rawBrace, braceIndex) => {
+    braceArray.forEach((rawBrace: any, braceIndex: number) => {
       if (!rawBrace || typeof rawBrace !== "object") return;
       const rawSegments = Array.isArray((rawBrace as any).segments) ? (rawBrace as any).segments : [];
       const segments: StackSegment[] = rawSegments
@@ -644,6 +650,37 @@ interface BraceRenderInfo {
       result.push({ id: nextBraceId(), name, segments });
     });
     return result;
+  }
+
+  function emitBraceLayoutLoaded(raw: any, bracesLoaded: BraceConfig[]): void {
+    try {
+      const topRaw = raw?.top || {};
+      const span = Number(topRaw.span);
+      const thickness = Number(topRaw.thickness);
+      const modulus = Number(topRaw.modulus);
+      const detail: any = {
+        braces: bracesLoaded.map((brace) => ({
+          name: brace.name,
+          segments: brace.segments.map((segment) => ({
+            label: segment.label,
+            shape: segment.shape,
+            height: segment.height,
+            breadth: segment.breadth,
+            modulus: segment.modulus
+          }))
+        }))
+      };
+      if (Number.isFinite(span) && Number.isFinite(thickness)) {
+        detail.top = {
+          span,
+          thickness,
+          modulus: Number.isFinite(modulus) ? modulus : undefined
+        };
+      }
+      window.dispatchEvent(new CustomEvent("braceLayoutChanged", { detail }));
+    } catch (err) {
+      console.warn("[BraceGeometry] emit layout failed", err);
+    }
   }
 
   function sanitizeSegment(raw: any, fallbackLabel: string): StackSegment | null {
@@ -678,6 +715,7 @@ interface BraceRenderInfo {
   loadBtn.addEventListener("click", () => loadInput.click());
   loadInput.addEventListener("change", handleBraceFileSelect);
   addBraceBtn.addEventListener("click", () => addBrace());
+  window.addEventListener("requestBraceLayout", () => emitBraceLayout());
 
   function emitBraceLayout(): void {
     try {

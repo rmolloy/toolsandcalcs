@@ -530,6 +530,7 @@
                     else {
                         braces = loaded;
                         run(true);
+                        emitBraceLayoutLoaded(data, loaded);
                     }
                 }
                 catch (error) {
@@ -543,10 +544,15 @@
             reader.readAsText(file);
         }
         function sanitizeBraceLayout(data) {
-            if (!Array.isArray(data))
+            const braceArray = Array.isArray(data)
+                ? data
+                : Array.isArray(data === null || data === void 0 ? void 0 : data.braces)
+                    ? data.braces
+                    : [];
+            if (!braceArray.length)
                 return [];
             const result = [];
-            data.forEach((rawBrace, braceIndex) => {
+            braceArray.forEach((rawBrace, braceIndex) => {
                 if (!rawBrace || typeof rawBrace !== "object")
                     return;
                 const rawSegments = Array.isArray(rawBrace.segments) ? rawBrace.segments : [];
@@ -561,6 +567,37 @@
                 result.push({ id: nextBraceId(), name, segments });
             });
             return result;
+        }
+        function emitBraceLayoutLoaded(raw, bracesLoaded) {
+            try {
+                const topRaw = (raw === null || raw === void 0 ? void 0 : raw.top) || {};
+                const span = Number(topRaw.span);
+                const thickness = Number(topRaw.thickness);
+                const modulus = Number(topRaw.modulus);
+                const detail = {
+                    braces: bracesLoaded.map((brace) => ({
+                        name: brace.name,
+                        segments: brace.segments.map((segment) => ({
+                            label: segment.label,
+                            shape: segment.shape,
+                            height: segment.height,
+                            breadth: segment.breadth,
+                            modulus: segment.modulus
+                        }))
+                    }))
+                };
+                if (Number.isFinite(span) && Number.isFinite(thickness)) {
+                    detail.top = {
+                        span,
+                        thickness,
+                        modulus: Number.isFinite(modulus) ? modulus : undefined
+                    };
+                }
+                window.dispatchEvent(new CustomEvent("braceLayoutChanged", { detail }));
+            }
+            catch (err) {
+                console.warn("[BraceGeometry] emit layout failed", err);
+            }
         }
         function sanitizeSegment(raw, fallbackLabel) {
             if (!raw || typeof raw !== "object")
@@ -594,6 +631,7 @@
         loadBtn.addEventListener("click", () => loadInput.click());
         loadInput.addEventListener("change", handleBraceFileSelect);
         addBraceBtn.addEventListener("click", () => addBrace());
+        window.addEventListener("requestBraceLayout", () => emitBraceLayout());
         function emitBraceLayout() {
             try {
                 const detail = braces.map((brace) => ({
