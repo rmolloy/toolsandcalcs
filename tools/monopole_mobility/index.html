@@ -11,45 +11,44 @@ No redistribution, modification, or commercial use without written consent from 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Monopole Mobility Calculator — Gore Jig Method</title>
+  <title>Monopole Mobility Calculator - Gore Measurement Method</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 
 <body>
   <header class="card pad tl-card tl-card-info">
-    <h1>Monopole Mobility — Gore Jig Method</h1>
+    <h1>Monopole Mobility - Gore Measurement Method</h1>
     <p class="tl-card-desc">
       <strong>Use this tool to</strong> translate your Gore-style monopole mobility jig readings into top stiffness K,
-      effective modal mass M<sub>eff</sub>, and the monopole mobility score—so you can compare guitars on a consistent scale.
+      effective modal mass M<sub>eff</sub>, and then calculate a guitar’s monopole mobility value, so you can compare guitars on a consistent basis.
     </p>
     <p class="tl-card-desc">
-      <strong>Why this matters:</strong> Monopole mobility shows how freely the top pumps air at its main resonance.
-      Alongside tap tones and thickness, it helps you avoid tops that are too stiff to respond or too floppy to hold up.
+      <strong>Why this matters:</strong> Monopole mobility shows how freely the top pumps air at its main resonance and is a measure of how responsive a guitar is across a whole range of frequencies. It shows how much sound you can get out for how hard you pluck the strings. It doesn’t help guard against structural issues, but does show that low mass, low stiffness tops will be more responsive (provided they hold up!)
     </p>
     <div class="sample-note badge">
-      Default dataset: Rick Molloy OM (10/25/2025) — spruce / steel-string, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz
+      Default dataset: Rick Molloy OM (10/25/2025) (spruce / steel-string, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
     </div>
     <details class="tl-accordion">
       <summary>Overview &amp; required measurements</summary>
       <p class="tl-card-desc">
-        Seal the soundhole, mute the strings, tap the top to find the uncoupled monopole f<sub>u</sub>, then hang a known mass over the bridge and record deflection x.
+        Seal the sound hole, mute the strings, tap the top to find the frequency f<sub>u</sub> of the uncoupled monopole resonance. Then, using the monopole mobility jig, load the bridge with a known force and record its deflection x.
       </p>
       <div class="before-card">
         <h3>Measurements required</h3>
         <ul class="tl-list">
-          <li>Uncoupled top monopole frequency f<sub>u</sub> (Hz)</li>
-          <li>Bridge deflection under test mass x (mm)</li>
-          <li>Test mass m (kg)</li>
+          <li>Uncoupled top monopole frequency, f<sub>u</sub> (Hz)</li>
+          <li>Bridge deflection under test load, x (mm)</li>
+          <li>Test mass, m (kg)</li>
           <li>Guitar type (steel-string, classical, other)</li>
         </ul>
       </div>
       <div class="before-card">
         <h3>How to use this tool</h3>
         <ol class="tl-steps">
-          <li>Seal the soundhole so the box is airtight.</li>
+          <li>Seal the sound hole with a low mass, rigid cover so the box is airtight.</li>
           <li>Mute the strings, tap the top, and record the uncoupled top frequency f<sub>u</sub> with your FFT app.</li>
-          <li>Mount the mobility jig – hang a known test mass (m) vertically over the bridge and measure deflection (x) in millimeters.</li>
-          <li>Enter f<sub>u</sub>, x, and m above. The calculator converts x → meters, computes K, M<sub>eff</sub>, and mobility.</li>
+          <li>Mount the mobility jig. Load it over the bridge using a known test mass (m) and measure the panel deflection (x) in millimeters.</li>
+          <li>Enter f<sub>u</sub>, x, and m above. The calculator converts x to meters, the mass m to the applied load in Newtons, computes K, M<sub>eff</sub>, and mobility.</li>
           <li>Review the score and compare to the target ranges.</li>
         </ol>
       </div>
@@ -60,7 +59,7 @@ No redistribution, modification, or commercial use without written consent from 
 
     <section class="card pad controls">
       <h2>Measurement Inputs</h2>
-      <div class="muted small">Enter measurements from a sealed-soundhole, muted-strings tap and jig deflection.</div>
+      <div class="muted small">The required inputs are the uncoupled top monopole frequency (Hz), the bridge deflection under load (mm) and the applied mass m (kg)</div>
       <label class="name-input">
         Guitar / sample name
         <input id="instrument_name" type="text" value="Rick Molloy OM (10/25/2025)" />
@@ -76,7 +75,7 @@ No redistribution, modification, or commercial use without written consent from 
       <div class="inputs">
         <div class="slider-block">
           <div class="slider-row row">
-            <label for="freq_field">Uncoupled top monopole f<sub>u</sub> (Hz)<span class="help-text">Sealed soundhole &amp; muted strings</span></label>
+            <label for="freq_field">Uncoupled top monopole frequency, f<sub>u</sub> (Hz)<span class="help-text">Sealed soundhole &amp; muted strings</span></label>
             <input id="freq_field" class="value-input" type="number" min="90" max="220" step="0.1" value="153" />
           </div>
           <input id="freq" type="range" min="90" max="220" step="0.1" value="153" />
@@ -84,7 +83,7 @@ No redistribution, modification, or commercial use without written consent from 
 
         <div class="slider-block">
           <div class="slider-row row">
-            <label for="deflection_field">Bridge deflection under load x (mm)<span class="help-text">Dial gauge at bridge, vertical load</span></label>
+            <label for="deflection_field">Bridge deflection under test load, x (mm)<span class="help-text">Dial gauge at bridge, vertical load</span></label>
             <input id="deflection_field" class="value-input" type="number" min="0.05" max="0.50" step="0.005" value="0.18" />
           </div>
           <input id="deflection" type="range" min="0.05" max="0.50" step="0.005" value="0.18" />
@@ -92,7 +91,7 @@ No redistribution, modification, or commercial use without written consent from 
 
         <div class="slider-block">
           <div class="slider-row row">
-            <label for="mass_field">Test mass m (kg)<span class="help-text">Hang vertically over the bridge</span></label>
+            <label for="mass_field">Test mass, m (kg)<span class="help-text">Apply the load vertically over the bridge via the shaft of the gauge</span></label>
             <input id="mass_field" class="value-input" type="number" min="0.30" max="1.80" step="0.01" value="1.02" />
           </div>
           <input id="mass" type="range" min="0.30" max="1.80" step="0.01" value="1.02" />
@@ -116,7 +115,7 @@ No redistribution, modification, or commercial use without written consent from 
         <article class="result-card highlighted">
           <div class="label">Monopole mobility score</div>
           <div class="value-row">
-            <div id="mobilityScore" class="value">—</div>
+            <div id="mobilityScore" class="value">--</div>
             <span class="unit-inline">score</span>
           </div>
           <div class="note">1000 / √(K · M<sub>eff</sub>)</div>
@@ -124,58 +123,58 @@ No redistribution, modification, or commercial use without written consent from 
         <article class="result-card">
           <div class="label">Top stiffness K</div>
           <div class="value-row">
-            <div id="stiffness" class="value">—</div>
+            <div id="stiffness" class="value">--</div>
             <span class="unit-inline">N/m</span>
           </div>
           <div class="note">K = m·g / x</div>
         </article>
         <article class="result-card">
-          <div class="label">Effective mass M<sub>eff</sub></div>
+          <div class="label">EFFECTIVE MASS M<sub>eff</sub></div>
           <div class="value-row">
-            <div id="effMass" class="value">—</div>
+            <div id="effMass" class="value">--</div>
             <span class="unit-inline">g</span>
           </div>
           <div class="note">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
         </article>
       </div>
       <div class="muted small">
-        Lower scores mean a stiffer top. Aim for ≈20 on a responsive steel‑string OM, ≈30 for classicals. &lt;15 = very stiff, &gt;40 = very compliant.
+        Lower scores mean a stiffer and/or heavier top. Guitars scoring highly (&gt; 20 for steel string guitars, &gt; 30 for classicals) will likely require composite construction to survive over time.
       </div>
       <div id="warnings" class="muted small"></div>
       <div class="muted small">
-        Top stiffness K and effective mass M<sub>eff</sub> can be entered into the 4‑DOF solver to model your guitar’s
-        air/top/back coupling and to generate realistic brace/plate tuning deltas when aiming at specific frequencies.
+        Top stiffness, K and effective mass, M<sub>eff</sub> can be entered into the 4‑DOF solver to model your guitar’s
+        air/top/back coupling and to indicate realistic brace/plate tuning changes when aiming at specific frequencies.
       </div>
     </section>
 
     <section class="card pad tl-card tl-card-info tl-span-2">
       <h2>How this tool works</h2>
       <p class="tl-card-desc">
-        Based on the Gore &amp; Gilet monopole mobility jig (Vol. 1). The calculator converts your jig measurements into
+        This tool is based on the Gore &amp; Gilet monopole mobility jig (Vol. 1, Appendix AI 3). The calculator converts your jig measurements into
         top stiffness at the bridge (K), effective modal mass (M<sub>eff</sub>), and the standard monopole mobility score.
       </p>
 
       <div class="tl-eq-block">
         <h3>Force from test mass</h3>
-        <p class="small muted">The hanging mass sets the applied force.</p>
+        <p class="small muted">The mass sets the applied force.</p>
         <div class="tl-equation">F = m · g</div>
       </div>
 
       <div class="tl-eq-block">
         <h3>Top stiffness at the bridge</h3>
-        <p class="small muted">Deflection (x) is converted to meters.</p>
+        <p class="small muted">The applied force divided by the Deflection x (converted to meters) gives the stiffness, K.</p>
         <div class="tl-equation">K = F / x</div>
       </div>
 
       <div class="tl-eq-block">
         <h3>Effective modal mass</h3>
-        <p class="small muted">Derived from stiffness and the uncoupled top frequency.</p>
+        <p class="small muted">Derived from stiffness, K and the uncoupled top frequency, f<sub>u</sub>.</p>
         <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
       </div>
 
       <div class="tl-eq-block">
         <h3>Monopole mobility score</h3>
-        <p class="small muted">Dimensionless index used for build-to-build comparisons.</p>
+        <p class="small muted">Index used for build-to-build responsiveness comparisons. Monopole mobility has dimensions of admittance, (s/Kg)</p>
         <div class="tl-equation">Mobility score = 1000 / √(K · M<sub>eff</sub>)</div>
       </div>
     </section>
