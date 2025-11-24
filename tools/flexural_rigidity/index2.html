@@ -1,16 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Flexural Rigidity (EI) Calculator - ToneLab</title>
   <link rel="stylesheet" href="../common/styles.css">
   <style>
     :root {
       --card-bg: #0d1116;
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-border-strong: rgba(255, 255, 255, 0.15);
+      --card-border: rgba(255, 255, 255, 0.06);
+      --card-border-strong: rgba(255, 255, 255, 0.12);
       --text-strong: #f7f8fa;
       --text-body: #c7cfdb;
       --text-muted: #7c869b;
@@ -21,157 +19,452 @@
       color: var(--text-body);
       font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
       letter-spacing: -0.01em;
-      padding: 24px;
     }
 
-    .fr-layout {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
+    header {
+      max-width: 960px;
+      margin: 32px auto 16px;
+      color: var(--text-body);
+    }
+
+    .brace-app {
       max-width: 1200px;
-      margin: 0 auto 40px;
+      margin: 0 auto 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
     .wide-card {
       grid-column: 1 / -1;
     }
-    .profile-card {
+
+    .brace-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .brace-toolbar button {
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 6px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-body);
+      transition: background 160ms ease, border 160ms ease;
+    }
+    .brace-toolbar button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--card-border-strong);
+    }
+    .brace-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .gallery-grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: minmax(220px, 320px) 1fr;
+      align-items: start;
+    }
+    .brace-gallery {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .brace-card {
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px 20px;
+      background: var(--card-bg);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 20px;
+      transition: box-shadow 200ms ease, border 200ms ease;
     }
-    .profile-card h2 {
+    .brace-card:hover {
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+      border-color: var(--card-border-strong);
+    }
+
+    .brace-card header {
       margin: 0;
-      color: var(--text-strong);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
     }
-    .profile-preview {
+
+    .brace-card header input {
+      flex: 1;
+      border: none;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-strong);
+      padding: 4px 0;
+    }
+
+    .brace-preview {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 12px;
     }
-    .profile-preview-canvas {
+
+    .brace-preview-svg {
       width: 140px;
-      height: 80px;
+      height: 160px;
       border: 1px solid var(--card-border);
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.02);
+      flex-shrink: 0;
     }
-    .profile-preview-meta {
+
+    .preview-shape {
+      stroke: rgba(0, 0, 0, 0.2);
+      stroke-width: 1;
+    }
+    .preview-outline {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.7);
+      stroke-width: 1.4;
+      pointer-events: none;
+    }
+
+    .segment-rectangle {
+      fill: var(--blue);
+    }
+
+    .segment-triangle {
+      fill: var(--orange);
+    }
+
+    .segment-parabolic {
+      fill: var(--yellow);
+    }
+
+    .brace-preview-meta {
       font-size: 16px;
       font-weight: 600;
       color: var(--text-strong);
       letter-spacing: 0.01em;
     }
 
-    .pill {
-      display: inline-flex;
-      gap: 8px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      border: 1px solid var(--card-border);
-      background: rgba(255, 255, 255, 0.04);
-      font-size: 12px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text-muted);
+    .brace-info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--card-border);
+      padding-top: 12px;
+      gap: 12px;
+      font-size: 15px;
+    }
+    .brace-info-row span {
+      color: var(--text-body);
+      font-weight: 500;
+    }
+    .brace-info-row button {
+      border: none;
+      background: transparent;
+      color: var(--orange);
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 0;
     }
 
-    .tl-card {
+    .brace-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 20px;
+      font-size: 15px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .metric-label {
+      color: var(--text-body);
+    }
+    .metric-value {
+      color: var(--text-strong);
+      font-weight: 500;
+      text-align: right;
+    }
+    .metric-value.primary {
+      color: var(--blue);
+    }
+
+    .profile-card {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 12px;
+    }
+    .profile-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .profile-preview-canvas {
+      width: 140px;
+      height: 70px;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .top-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .top-inputs .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .top-inputs input {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text-strong);
+      font-size: 14px;
+    }
+    .viz-card .viz-frame {
       border: 1px solid var(--card-border);
       border-radius: 18px;
-      padding: 24px 22px;
-      background: var(--card-bg);
-      box-shadow: 0 18px 32px rgba(0, 0, 0, 0.35);
+      background: rgba(255,255,255,0.02);
+      padding: 12px;
     }
-
-    .input-block,
-    .result-block {
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 18px;
-      background: rgba(255, 255, 255, 0.02);
+    .viz-card .viz-frame svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .brace-stack {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
-    .input-block h3,
-    .result-block h3 {
-      margin: 0;
+    .brace-stack-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .segment-chip {
+      align-self: flex-start;
+      border-radius: 999px;
+      padding: 4px 12px;
       font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
+      color: #05060a;
+    }
+    .segment-chip-rectangle {
+      background: var(--blue);
+    }
+    .segment-chip-triangle {
+      background: var(--orange);
+    }
+    .segment-chip-parabolic {
+      background: var(--yellow);
+      color: #0b0d12;
+    }
+    .stack-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
       letter-spacing: 0.05em;
-      color: var(--text-muted);
     }
-
-    .field {
-      display: grid;
-      grid-template-columns: 1fr 140px;
-      align-items: center;
-      gap: 14px;
-      font-size: 14px;
-      color: var(--text-muted);
+    .stack-field span {
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
     }
-
-    .field input {
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
-      padding: 10px 12px;
+    .stack-field input,
+    .stack-field select {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 6px 10px;
       background: rgba(0, 0, 0, 0.35);
       color: var(--text-strong);
-      font-size: 16px;
-      text-align: right;
-      max-width: 140px;
+      font-size: 13px;
       transition: border 160ms ease, box-shadow 160ms ease;
     }
-    .field select {
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
-      padding: 10px 12px;
-      background: rgba(0, 0, 0, 0.35);
-      color: var(--text-strong);
-      font-size: 14px;
-      min-width: 140px;
-    }
-    .field input:focus,
-    .field select:focus {
+    .stack-field input:focus,
+    .stack-field select:focus {
       border-color: var(--blue);
       box-shadow: 0 0 0 1px var(--blue);
       outline: none;
     }
 
-    .muted {
-      color: var(--text-muted);
-    }
-
-    .tl-steps,
-    .tl-list {
-      margin: 0;
-      padding-left: 18px;
-      color: var(--text-muted);
+    .brace-stack-row input,
+    .brace-stack-row select {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px 10px;
       font-size: 13px;
-      line-height: 1.5;
     }
 
-    .results-grid {
+    .brace-stack-row button {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      color: var(--text-body);
+    }
+
+    .brace-stack-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .brace-stack-actions button {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      color: var(--text-body);
+    }
+
+    .brace-design {
+      border-top: 1px solid var(--card-border);
+      padding-top: 12px;
+    }
+    .brace-design summary {
+      list-style: none;
+      cursor: pointer;
+      height: 56px;
+      padding: 0 4px;
+      font-size: 15px;
+      color: var(--text-body);
+      display: flex;
+      align-items: center;
+    }
+    .brace-design summary::marker {
+      content: "";
+    }
+    .brace-design-summary::after {
+      content: "›";
+      font-size: 18px;
+      color: var(--text-muted);
+      transition: transform 200ms ease;
+      margin-left: 8px;
+    }
+    .brace-design[open] .brace-design-summary::after {
+      transform: rotate(90deg);
+    }
+    .brace-design-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      gap: 12px;
+    }
+    .brace-design-summary .design-label {
+      font-weight: 600;
+      color: var(--text-body);
+    }
+    .brace-design-summary .design-detail {
+      color: var(--text-muted);
+      font-size: 14px;
+      text-align: right;
+    }
+    .brace-design-body {
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .brace-design-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .comparison-panel .brace-summary-grid {
       display: grid;
+      gap: 12px;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 18px;
     }
 
-    .result-card {
+    .brace-summary-card {
       border: 1px solid var(--card-border);
       border-radius: 16px;
-      padding: 18px;
-      background: rgba(255, 255, 255, 0.02);
+      padding: 16px 18px;
+      background: var(--card-bg);
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
 
+    .brace-summary-card h4 {
+      margin: 0;
+      font-size: 15px;
+      color: var(--text-strong);
+    }
+
+    .brace-summary-card .metric {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-body);
+    }
+
+    .metric span:first-child {
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+
+    .results-card {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .results-card h2 {
+      margin: 0;
+      color: var(--text-strong);
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .result-card {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
     .result-card .label {
       color: var(--text-muted);
       font-size: 12px;
@@ -179,450 +472,358 @@
       font-weight: 600;
       text-transform: uppercase;
     }
-
     .result-card .value {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
       color: var(--text-strong);
     }
-
-    .tl-primary {
+    .result-card .value.primary {
       color: var(--blue);
-      font-size: 28px;
+      font-size: 24px;
     }
 
-    .tl-span-2 {
-      grid-column: 1 / -1;
-    }
-    .controls-column {
-      grid-column: 1;
-      grid-row: 1 / span 2;
-    }
-    .right-stack {
-      grid-column: 2;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .brace-slider {
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 14px;
-      background: rgba(255, 255, 255, 0.02);
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .brace-slider header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-    }
-    .brace-slider input[type="range"] {
-      width: 100%;
-    }
-    .brace-slider .value {
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .brace-stack-editor {
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.03);
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .brace-stack-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .brace-stack-heading h4 {
-      margin: 0;
-      font-size: 13px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .brace-profile-card {
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      padding: 16px;
-      background: rgba(255, 255, 255, 0.02);
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .brace-preview-tile {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-    }
-    .brace-preview-canvas {
-      width: 140px;
-      height: 160px;
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.02);
-    }
-    .brace-preview-meta {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-strong);
-      letter-spacing: 0.01em;
-    }
-    .brace-design {
-      border-top: 1px solid var(--card-border);
-      padding-top: 4px;
-    }
-    .brace-design summary {
-      list-style: none;
-      cursor: pointer;
-      height: 48px;
-      padding: 0 4px;
-      display: flex;
-      align-items: center;
-      font-size: 15px;
-      color: var(--text-body);
-    }
-    .brace-design summary::marker {
-      content: "";
-    }
-    .brace-design-summary {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-      gap: 8px;
-    }
-    .brace-design-summary::after {
-      content: "›";
-      font-size: 18px;
-      color: var(--text-muted);
-      transition: transform 160ms ease;
-    }
-    .brace-design[open] .brace-design-summary::after {
-      transform: rotate(90deg);
-    }
-    .design-label {
-      font-weight: 600;
-    }
-    .design-detail {
+    .empty-state {
       color: var(--text-muted);
       font-size: 14px;
-      text-align: right;
-    }
-    .brace-design-body {
-      padding-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .brace-design-hint {
-      color: var(--text-muted);
-    }
-    .brace-stack-list {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .brace-stack-row {
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 12px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, auto));
-      gap: 12px;
-      align-items: center;
-      background: rgba(255, 255, 255, 0.02);
-    }
-    .brace-stack-label {
-      font-weight: 600;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .brace-stack-field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 12px;
-      color: var(--text-muted);
-      letter-spacing: 0.04em;
-    }
-    .brace-stack-field input,
-    .brace-stack-field select {
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 8px;
-      padding: 6px 8px;
-      background: rgba(0, 0, 0, 0.35);
-      color: var(--text-strong);
-      font-size: 14px;
-    }
-    .brace-stack-remove,
-    .brace-stack-add {
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 999px;
-      padding: 6px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      color: var(--text-body);
-      cursor: pointer;
-      font-size: 13px;
-      transition: background 160ms ease, border 160ms ease;
-    }
-    .brace-stack-remove:disabled,
-    .brace-stack-add:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .brace-summary-grid {
-      margin-top: 12px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 10px;
-    }
-    .brace-summary-card {
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 12px 14px;
-      background: var(--card-bg);
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 13px;
-    }
-    .brace-summary-card h4 {
-      margin: 0;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-muted);
-    }
-    .brace-summary-metric {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: var(--text-body);
-    }
-    .brace-summary-metric span:last-child {
-      font-weight: 600;
-    }
-    .brace-position-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-    .brace-position-actions button {
-      border: 1px solid var(--border-soft);
-      border-radius: 8px;
-      padding: 6px 10px;
-      background: var(--panel-hover);
-      color: var(--ink);
-      cursor: pointer;
-    }
-    .brace-position-actions button:hover {
-      background: var(--orange);
-      color: #111;
-    }
-
-    .viz-card {
-      gap: 10px;
-    }
-    .viz-frame {
-      border: 1px solid var(--card-border);
-      border-radius: 18px;
-      background: var(--card-bg);
-      padding: 16px;
-    }
-    svg#aa_view {
-      width: 100%;
-      height: 320px;
-      display: block;
     }
   </style>
 </head>
 
 <body>
-  <header class="card pad tl-card">
-    <div class="pill">Pre-release tool for Lutherie Academy</div>
-    <h1>Flexural Rigidity (EI) Calculator</h1>
-    <p class="small">
-      Use this tool to calculate flexural rigidity for a guitar top along the AA line, so you can compare stiffness across
-      wood species, brace patterns, and thicknesses without waiting for a full build.
-    </p>
-    <p class="small">
-      Why this matters: EI links a panel’s thickness, modulus, and span to how much it will bend under load. Knowing EI
-      helps you balance strength and responsiveness before committing to a top, back, or brace set.
-    </p>
-    <details class="muted">
-      <summary><strong>Measurements required</strong></summary>
-      <ul class="tl-list">
-        <li>AA span and thickness at AA (mm)</li>
-        <li>Panel modulus E for the top (GPa)</li>
-        <li>Brace intercept breadth b and stack heights (mm)</li>
-        <li>Brace modulus E (GPa)</li>
-        <li>Optional: applied bridge moment (N·m) and rotation limit (deg)</li>
-      </ul>
-    </details>
-  </header>
 
-  <main class="fr-layout">
-    <section class="card pad tl-card profile-card top-profile">
+<header class="card pad tl-card">
+  <div class="pill">ToneLab Utility</div>
+  <h1>Flexural Rigidity (EI) Calculator</h1>
+  <p class="small">
+    Use this tool to calculate flexural rigidity for a guitar top along the AA line, so you can compare stiffness across
+    wood species, brace patterns, and thicknesses without waiting for a full build.
+  </p>
+  <p class="small">
+    Why this matters: EI links a panel’s thickness, modulus, and span to how much it will bend under load. Knowing EI helps
+    you balance strength and responsiveness before committing to a top, back, or brace set.
+  </p>
+  <details class="muted">
+    <summary><strong>Measurements required</strong></summary>
+    <ul class="tl-list">
+      <li>AA span and thickness at AA (mm)</li>
+      <li>Panel modulus E for the top (GPa)</li>
+      <li>Brace intercept breadth b and stack heights (mm)</li>
+      <li>Brace modulus E (GPa)</li>
+      <li>Optional: applied bridge moment (N·m) and rotation limit (deg)</li>
+    </ul>
+  </details>
+</header>
+
+<main class="brace-app">
+  <section class="card pad tl-card viz-card wide-card">
+    <h2>AA-line visualization</h2>
+    <p class="small muted">Full span visualization. This is a placeholder until the flexural rigidity calculator wiring is hooked up.</p>
+    <div class="viz-frame">
+      <svg id="aa_view" viewBox="0 0 700 320">
+        <rect id="viz_bg" x="0" y="0" width="700" height="320" fill="transparent" />
+        <line id="viz_axis_y" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+        <line id="viz_axis_x" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+        <line id="viz_span_line" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1" stroke-dasharray="4 4" />
+        <rect id="viz_top" x="0" y="0" width="0" height="0" fill="var(--panel)" stroke="var(--border-soft)" />
+        <g id="viz_braces"></g>
+        <line id="viz_centroid" x1="0" y1="0" x2="0" y2="0" stroke="var(--orange)" stroke-width="2" stroke-dasharray="4 3" />
+      </svg>
+    </div>
+    <div class="small muted" id="viz_status">Coming soon: linked visualization from the EI calculator.</div>
+  </section>
+
+  <div class="gallery-grid">
+    <section class="card pad tl-card profile-card">
       <h2>Top profile</h2>
-      <p class="small muted">Span and thickness for the AA slice. Treat this as the base the brace stack rides on.</p>
+      <p class="small muted">Span and thickness for the AA slice. Treat this like the base brace the rest of the stack rides on.</p>
       <div class="profile-preview">
-        <div id="top_preview" class="profile-preview-canvas"></div>
-        <div id="top_preview_meta" class="profile-preview-meta">—</div>
+        <div class="profile-preview-canvas" id="top_profile_preview"></div>
+        <div class="brace-preview-meta" id="top_profile_meta">—</div>
       </div>
-      <label class="field">
-        <span>AA span (mm)</span>
-        <input type="number" data-field="spanAA" value="500" min="300" step="1">
-      </label>
-      <label class="field">
-        <span>Top thickness at AA (mm)</span>
-        <input type="number" data-field="topThickness" value="4.0" min="2.0" step="0.1">
-      </label>
-      <label class="field">
-        <span>Top modulus E (GPa)</span>
-        <input type="number" data-field="topModulus" value="10.0" min="1" step="0.1">
-      </label>
-    </section>
-
-    <section class="card pad tl-card profile-card brace-profile">
-      <h2>Brace profile</h2>
-      <p class="small muted">Borrow the same card UI from the brace calculator so you can import/export layouts seamlessly.</p>
-      <label class="field">
-        <span>Intercept breadth b (mm)</span>
-        <input type="number" data-field="brace_b" value="10" min="5" step="1">
-      </label>
-      <div class="brace-profile-card">
-        <div class="brace-preview-tile">
-          <div id="brace_preview" class="brace-preview-canvas"></div>
-          <div id="brace_preview_meta" class="brace-preview-meta">—</div>
-        </div>
-        <details class="brace-design" open>
-          <summary id="brace_design_summary" class="brace-design-summary">
-            <span class="design-label">Design</span>
-            <span class="design-detail">Segments (2): Base / Cap</span>
-          </summary>
-          <div class="brace-design-body">
-            <p class="brace-design-hint small muted">Stack segments from the bottom up. Rectangular bases accept additional caps.</p>
-            <div class="brace-stack-actions">
-              <button type="button" class="brace-stack-add" id="add_segment">+ Add segment</button>
-              <button type="button" class="brace-stack-add" id="load_brace_layout">Load layout</button>
-              <input type="file" id="brace_layout_file" accept="application/json" hidden>
-            </div>
-            <div id="brace_stack" class="brace-stack-list"></div>
-            <p class="small muted" id="brace_stack_hint">Switch to a triangle for single braces or load a brace layout from the geometry tool.</p>
-          </div>
-        </details>
+      <div class="top-inputs">
+        <label class="field">
+          <span>AA span (mm)</span>
+          <input type="number" value="500" min="300" step="1" id="top_span_input">
+        </label>
+        <label class="field">
+          <span>Top thickness at AA (mm)</span>
+          <input type="number" value="4.0" min="1" step="0.1" id="top_thickness_input">
+        </label>
+        <label class="field">
+          <span>Top modulus E (GPa)</span>
+          <input type="number" value="12" min="1" step="0.1" id="top_modulus_input">
+        </label>
       </div>
-      <label class="field">
-        <span>Brace material E (GPa)</span>
-        <input type="number" data-field="brace_modulus" value="12" min="1" step="0.5">
-      </label>
-      <p class="small muted">Each brace in this slice uses the same intercept breadth and stack.</p>
     </section>
 
-    <section class="card pad tl-card viz-card wide-card">
-      <h2>AA-line visualization</h2>
-      <p class="small muted">Scaled preview of the AA slice: top thickness and brace stack centered on the span.</p>
-      <div class="viz-frame">
-        <svg id="aa_view" viewBox="0 0 700 320" role="img" aria-label="AA line cross-section">
-          <rect id="viz_bg" x="0" y="0" width="700" height="320" fill="transparent" />
-          <line id="viz_axis_y" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
-          <line id="viz_axis_x" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
-          <line id="viz_span_line" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1" stroke-dasharray="4 4" />
-          <rect id="viz_top" x="0" y="0" width="0" height="0" fill="var(--panel)" stroke="var(--border-soft)" />
-          <g id="viz_braces"></g>
-          <line id="viz_centroid" x1="0" y1="0" x2="0" y2="0" stroke="var(--orange)" stroke-width="2" stroke-dasharray="4 3" />
-        </svg>
-      </div>
-      <div class="small muted" id="viz_status"></div>
-    </section>
-
-    <section class="card pad tl-card profile-card bridge-card">
-      <h2>Bridge check</h2>
-      <p class="small muted">Simple moment / EI slope estimate. Use it to sanity check bridge rotation under load.</p>
-      <label class="field">
-        <span>Applied bridge moment (N·m)</span>
-        <input type="number" data-field="bridge_moment" value="12" min="1" step="0.5">
-      </label>
-      <label class="field">
-        <span>Target rotation limit (deg)</span>
-        <input type="number" data-field="bridge_limit" value="2" min="0.1" step="0.1">
-      </label>
-      <p class="small muted">Treat the AA slice as a lever arm for quick rotation checks.</p>
-    </section>
-
-    <section class="card pad tl-card results-card wide-card">
-      <h2>Results</h2>
-      <p class="small muted">Live results update as you type. EI shown in N·m².</p>
-      <div class="results-grid">
-        <div class="result-card">
-          <div class="label">Composite EI (N·m²)</div>
-          <div id="result_ei" class="value tl-primary">—</div>
+    <section class="card pad tl-card">
+      <div class="brace-toolbar">
+        <div>
+          <h2>Brace gallery</h2>
+          <p class="small muted">Add braces, stack geometric components, and explore their centroid & stiffness.</p>
         </div>
-        <div class="result-card">
-          <div class="label">Transformed I (mm⁴)</div>
-          <div id="result_I" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">Centroid from plate (mm)</div>
-          <div id="result_centroid" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">Brace height (mm)</div>
-          <div id="result_brace_height" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">Bridge rotation (deg)</div>
-          <div id="result_rotation" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">Rotation status</div>
-          <div id="result_rotation_status" class="value">—</div>
+        <div class="brace-toolbar-actions">
+          <button type="button" id="add_brace">+ Add brace</button>
+          <button type="button" id="save_braces">Save layout</button>
+          <button type="button" id="load_braces">Load layout</button>
+          <input type="file" id="brace_file_input" accept="application/json" hidden>
         </div>
       </div>
-      <div class="brace-summary-grid" id="brace_summary"></div>
-      <p id="result_status" class="small muted">Live: ready for inputs.</p>
+      <div id="brace_gallery" class="brace-gallery"></div>
     </section>
+  </div>
 
-    <section class="card pad tl-card tl-span-2 wide-card">
-      <h2>How to interpret and next steps</h2>
-      <p class="small">
-        Typical steel-string spruce tops land between 120–220 N·m² depending on thickness and brace layout. Lower EI
-        means more flex (livelier), higher EI means more resistance to bending. Compare against your panel thickness and
-        modal targets to decide how much to thin or brace.
-      </p>
-      <h3 class="section">Common pitfalls</h3>
-      <ul class="tl-list">
-        <li>Using braced plates or finished tops (measure bare plates only).</li>
-        <li>Confusing harmonic taps with fundamentals.</li>
-        <li>Mixing units (mm vs inches) or grams vs kilograms.</li>
-        <li>Panels not uniform in thickness; sand or plane before measuring.</li>
-      </ul>
-      <h3 class="section">Help</h3>
-      <p class="small muted">If something looks off, email your measurements or tap files to rick@rickmolloy.com and I’ll take a look.</p>
-    </section>
-  </main>
+  <section class="card pad tl-card comparison-panel">
+    <h2>Brace comparison</h2>
+    <p class="small muted">Relative mass uses total area as a proxy. Relative stiffness is based on I.</p>
+    <div id="brace_summary" class="brace-summary-grid"></div>
+  </section>
 
-  <script>
-    if (typeof window !== "undefined") {
-      window.exports = window.exports || {};
-      window.module = window.module || { exports: window.exports };
-      window.require = window.require || function () { return {}; };
+  <section class="card pad tl-card results-card wide-card">
+    <h2>Results</h2>
+    <p class="small muted">Composite EI/I for the assembled top at this AA slice (using current top inputs and brace set).</p>
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="label">Composite EI (N·m²)</div>
+        <div id="result_ei" class="value primary">—</div>
+      </div>
+      <div class="result-card">
+        <div class="label">Transformed I (mm⁴)</div>
+        <div id="result_I" class="value">—</div>
+      </div>
+      <div class="result-card">
+        <div class="label">Centroid from plate (mm)</div>
+        <div id="result_centroid" class="value">—</div>
+      </div>
+      <div class="result-card">
+        <div class="label">Height (mm)</div>
+        <div id="result_height" class="value">—</div>
+      </div>
+    </div>
+    <p id="result_status" class="small muted">Live: ready for inputs.</p>
+  </section>
+</main>
+
+<script>
+  if (typeof window !== "undefined") {
+    window.exports = window.exports || {};
+    window.module = window.module || { exports: window.exports };
+    window.require =
+      window.require ||
+      function (name) {
+        if (name === "../calculator" || name === "./calculator") {
+          return { FlexuralRigidity: window.FlexuralRigidity };
+        }
+        return window[name] || {};
+      };
+  }
+</script>
+<script src="./calculator.js"></script>
+<script src="./brace_calc/brace-geometry.js"></script>
+<script src="./brace_calc/brace-geometry-ui.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const canvas = document.getElementById("top_profile_preview");
+    const meta = document.getElementById("top_profile_meta");
+    const spanInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_span_input"));
+    const thicknessInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_thickness_input"));
+    if (!canvas || !meta || !spanInput || !thicknessInput) return;
+
+    function renderTopPreview() {
+      const span = Number(spanInput.value) || 0;
+      const thickness = Number(thicknessInput.value) || 0;
+      const width = 140;
+      const height = 70;
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.setAttribute("width", `${width}`);
+      svg.setAttribute("height", `${height}`);
+      const rectHeight = Math.max(6, Math.min(height - 10, (thickness / 6) * height));
+      const rectY = (height - rectHeight) / 2;
+      const rect = document.createElementNS(svgNS, "rect");
+      rect.setAttribute("x", "0");
+      rect.setAttribute("y", rectY.toString());
+      rect.setAttribute("width", width.toString());
+      rect.setAttribute("height", rectHeight.toString());
+      rect.setAttribute("fill", "var(--blue)");
+      const outline = document.createElementNS(svgNS, "rect");
+      outline.setAttribute("x", "0");
+      outline.setAttribute("y", rectY.toString());
+      outline.setAttribute("width", width.toString());
+      outline.setAttribute("height", rectHeight.toString());
+      outline.setAttribute("fill", "none");
+      outline.setAttribute("stroke", "rgba(255,255,255,0.7)");
+      outline.setAttribute("stroke-width", "1.4");
+      svg.append(rect, outline);
+      canvas.replaceChildren(svg);
+      meta.textContent = `${span.toFixed(0)} × ${thickness.toFixed(1)} mm`;
     }
-  </script>
-  <script src="calculator.js"></script>
-  <script src="main.js"></script>
-</body>
 
+    spanInput.addEventListener("input", renderTopPreview);
+    thicknessInput.addEventListener("input", renderTopPreview);
+    renderTopPreview();
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const spanInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_span_input"));
+    const thicknessInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_thickness_input"));
+    const svg = document.getElementById("aa_view");
+    const centroidLine = document.getElementById("viz_centroid");
+    const bracesGroup = document.getElementById("viz_braces");
+    const status = document.getElementById("viz_status");
+    if (!spanInput || !thicknessInput || !svg || !centroidLine || !bracesGroup || !status) return;
+
+    let bracesFromLayout = Array.isArray(window.braceLayoutCache?.braces)
+      ? window.braceLayoutCache.braces
+      : [];
+    const placeholderBraces = [
+      { offset: -60, width: 12, segments: [{ shape: "rect", height: 6 }, { shape: "tri", height: 8 }] },
+      { offset: 60, width: 12, segments: [{ shape: "rect", height: 6 }, { shape: "tri", height: 8 }] },
+    ];
+
+    function normalizeShape(value) {
+      const str = (value ?? "").toString().toLowerCase();
+      if (str.includes("tri")) return "tri";
+      if (str.includes("para")) return "para";
+      return "rect";
+    }
+
+    function getVizBraces(spanValue) {
+      if (bracesFromLayout.length) {
+        const span = Math.max(Number(spanValue) || 500, 1);
+        const count = bracesFromLayout.length;
+        const spacing = span / (count + 1);
+        const start = -span / 2 + spacing;
+        return bracesFromLayout.map((brace, idx) => {
+          const segments = Array.isArray(brace.segments) ? brace.segments : [];
+          const width = Number(segments[segments.length - 1]?.breadth ?? brace.width ?? brace.breadth) || 10;
+          return {
+            offset: start + idx * spacing,
+            width,
+            segments: segments.map((seg) => ({
+              shape: normalizeShape(seg.shape),
+              height: Number(seg.height) || 0,
+              breadth: Number(seg.breadth ?? seg.width ?? seg.b) || undefined,
+            })).filter((seg) => seg.height > 0),
+          };
+        });
+      }
+      return placeholderBraces;
+    }
+
+    function renderAaPreview() {
+      const width = 700;
+      const padding = 24;
+      const span = Math.max(Number(spanInput.value) || 500, 1);
+      const topHeight = Math.max(Number(thicknessInput.value) || 4, 0.5);
+      const braces = getVizBraces(span);
+      const maxBraceH = braces.reduce((max, brace) => Math.max(max, brace.segments.reduce((sum, seg) => sum + seg.height, 0)), 0);
+      const totalH = Math.max(topHeight + maxBraceH, 1);
+
+      const svgWidth = svg.clientWidth || width;
+      const spanDraw = Math.max(svgWidth - 2 * padding, 1);
+      const scaleX = spanDraw / span;
+      const scaleY = scaleX; // lock Y to X so proportions stay true
+      const offsetX = padding;
+      const viewHeight = padding * 2 + Math.max(totalH * scaleY, padding);
+      svg.setAttribute("viewBox", `0 0 ${svgWidth} ${viewHeight}`);
+      svg.style.height = `${viewHeight}px`;
+      const baseY = viewHeight - padding;
+
+      const topRect = document.getElementById("viz_top");
+      const axisX = document.getElementById("viz_axis_x");
+      const axisY = document.getElementById("viz_axis_y");
+      const spanLine = document.getElementById("viz_span_line");
+      if (axisX && axisY && spanLine && topRect) {
+        spanLine.setAttribute("x1", offsetX.toString());
+        spanLine.setAttribute("x2", (offsetX + spanDraw).toString());
+        spanLine.setAttribute("y1", baseY.toString());
+        spanLine.setAttribute("y2", baseY.toString());
+
+        axisX.setAttribute("x1", offsetX.toString());
+        axisX.setAttribute("x2", (offsetX + spanDraw).toString());
+        axisX.setAttribute("y1", baseY.toString());
+        axisX.setAttribute("y2", baseY.toString());
+
+        axisY.setAttribute("x1", offsetX.toString());
+        axisY.setAttribute("x2", offsetX.toString());
+        axisY.setAttribute("y1", baseY.toString());
+        axisY.setAttribute("y2", (baseY - totalH * scaleY).toString());
+
+        const topY = baseY - topHeight * scaleY;
+        topRect.setAttribute("x", offsetX.toString());
+        topRect.setAttribute("y", topY.toString());
+        topRect.setAttribute("width", spanDraw.toString());
+        topRect.setAttribute("height", Math.max(topHeight * scaleY, 1).toString());
+      }
+
+      bracesGroup.replaceChildren();
+      const centerX = offsetX + spanDraw / 2;
+      const svgNS = "http://www.w3.org/2000/svg";
+      braces.forEach((brace) => {
+        const maxSegBreadthMm = brace.segments.reduce((max, seg) => Math.max(max, Number(seg.breadth) || 0), 0);
+        const braceWidthMm = Math.max(brace.width, maxSegBreadthMm || brace.width, 1);
+        const braceWidthPx = braceWidthMm * scaleX;
+        let currentY = baseY - topHeight * scaleY;
+        brace.segments.forEach((segment) => {
+          const segHeightPx = segment.height * scaleY;
+          const segY = currentY - segHeightPx;
+          const segBreadthMm = Math.max(Number(segment.breadth) || braceWidthMm, 0.1);
+          const segWidthPx = segBreadthMm * scaleX;
+          const segX = centerX + brace.offset * scaleX - segWidthPx / 2;
+          let element;
+          if (segment.shape === "tri") {
+            element = document.createElementNS(svgNS, "path");
+            element.setAttribute("d", `M${segX} ${currentY} L${segX + segWidthPx} ${currentY} L${segX + segWidthPx / 2} ${segY} Z`);
+          } else if (segment.shape === "para") {
+            element = document.createElementNS(svgNS, "path");
+            const left = segX;
+            const right = left + segWidthPx;
+            const mid = (left + right) / 2;
+            element.setAttribute("d", `M${left} ${currentY} L${right} ${currentY} Q${mid} ${segY} ${left} ${currentY} Z`);
+          } else {
+            element = document.createElementNS(svgNS, "rect");
+            element.setAttribute("x", segX.toString());
+            element.setAttribute("y", segY.toString());
+            element.setAttribute("width", Math.max(segWidthPx, 1).toString());
+            element.setAttribute("height", Math.max(segHeightPx, 1).toString());
+          }
+          element.setAttribute("fill", segment.shape === "tri" ? "var(--orange)" : "var(--blue)");
+          bracesGroup.appendChild(element);
+          const outline = element.cloneNode(false);
+          outline.setAttribute("fill", "none");
+          outline.setAttribute("stroke", "rgba(255,255,255,0.7)");
+          outline.setAttribute("stroke-width", "1.2");
+          bracesGroup.appendChild(outline);
+          currentY = segY;
+        });
+      });
+
+      const centroidY = baseY - (topHeight / 2) * scaleY;
+      centroidLine.setAttribute("x1", offsetX.toString());
+      centroidLine.setAttribute("x2", (offsetX + spanDraw).toString());
+      centroidLine.setAttribute("y1", centroidY.toString());
+      centroidLine.setAttribute("y2", centroidY.toString());
+      status.textContent = `Span: ${span.toFixed(0)} mm · Top thickness: ${topHeight.toFixed(1)} mm · Sample braces: ${braces.length}`;
+    }
+
+    spanInput.addEventListener("input", renderAaPreview);
+    thicknessInput.addEventListener("input", renderAaPreview);
+    window.addEventListener("braceLayoutChanged", (event) => {
+      const detail = event.detail || {};
+      const incomingBraces = Array.isArray(detail.braces) ? detail.braces : Array.isArray(detail) ? detail : [];
+      bracesFromLayout = incomingBraces;
+      if (detail.top) {
+        const { span, thickness } = detail.top;
+        if (spanInput && Number.isFinite(span)) spanInput.value = String(span);
+        if (thicknessInput && Number.isFinite(thickness)) thicknessInput.value = String(thickness);
+      }
+      renderAaPreview();
+    });
+    renderAaPreview();
+  });
+</script>
+</body>
 </html>
