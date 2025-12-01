@@ -11,31 +11,25 @@
 <body>
   <div class="page">
     <header class="card pad tl-card tl-card-info">
-      <h1>Modal Frequency Reader - Tap Tone Viewer</h1>
-      <p class="tl-card-desc">
-        Quick, note-aware visualization for tap tones and short snippets. Waveform + FFT + note grid with simple peak
-        markers; no Q/damping or solver hooks. Built for the Lutherie Academy free tier.
-      </p>
+      <h1>Modal Frequency Reader — Tap Tone Viewer</h1>
+      <p class="tl-card-desc">A simple, accurate way to inspect tap tones and short clips. View the waveform, see the FFT, and identify resonant peaks with note and cents readouts.</p>
       <details class="tl-accordion">
         <summary>How to use</summary>
         <div class="tl-accordion-body">
-          <h4>Orientation &amp; required measurements</h4>
-          <p class="tl-card-desc">
-            Tap tones show how stiff or flexible a plate is; the FFT shows where the main resonances sit so you can compare tops, backs, and boxes.
-          </p>
-          <h4>How to use</h4>
-          <ol class="tl-steps">
-            <li>Place a mic 75–150 mm from the plate or guitar and mute strings if present.</li>
-            <li>Tap cleanly near center for monopole content or near an edge for cross/long modes.</li>
-            <li>Record a short tap (or load a WAV).</li>
-            <li>Zoom the waveform to focus on the tap; the FFT follows that window.</li>
-            <li>Read note and cents for each peak.</li>
-          </ol>
+          <h4>Tap tones &amp; frequencies</h4>
+          <p class="tl-card-desc">Tap tones reveal how a plate or box behaves. The waveform shows the impact; the FFT shows the resonances it excites.</p>
+          <h4>Recording a tap</h4>
+          <ul class="tl-list">
+            <li>Place the mic 75–150 mm from the plate or guitar; mute strings on a box.</li>
+            <li>Tap near center for monopole content; tap near an edge to highlight cross/long modes.</li>
+            <li>Record a short, clean tap—or load a WAV file.</li>
+          </ul>
+          <p class="tl-card-desc">Zoom the waveform to isolate the tap. The FFT automatically follows that selection. Hover over the FFT to see frequency, level, note, and cents. Click to add a marker.</p>
           <h4>Accuracy tips</h4>
           <ul class="tl-list">
-            <li>Tap firmly without clipping the mic preamp.</li>
-            <li>Re-tap and move a few centimeters if peaks look smeared.</li>
-            <li>Quieter rooms reduce false low peaks; silence fans/vents.</li>
+            <li>Tap firmly, but avoid clipping your preamp.</li>
+            <li>Move the mic a few centimeters if peaks look smeared.</li>
+            <li>A quieter room reduces low-frequency noise.</li>
           </ul>
         </div>
       </details>
@@ -153,11 +147,11 @@
           </div>
           <div id="plot_waveform" class="plot plot-thin"></div>
         </div>
-        <div class="plot-card">
-          <div class="plot-header">
-            <h3 class="section">FFT + Note Grid</h3>
-            <div class="meta" id="fft_meta">hann window • tone gen: Off</div>
-          </div>
+      <div class="plot-card">
+        <div class="plot-header">
+          <h3 class="section">FFT + Note Grid</h3>
+          <div class="meta" id="fft_meta">hann window • tone gen: Off</div>
+        </div>
           <div class="hover-readout" id="hover_readout">
             <span id="hover_freq">-- Hz</span>
             <span id="hover_db">-- dB</span>
@@ -170,7 +164,7 @@
         </div>
       </div>
       <div class="small muted">
-        Scope: waveform, FFT magnitude, chromatic note grid, and simple peak markers. No Q/damping, no wolf scoring, no solver integration.
+        Waveform navigator with time zoom; FFT with note grid; peak markers with frequency, level, and pitch info. No Q/damping, wolf scoring, or solver integration.
       </div>
     </section>
   </main>
@@ -191,7 +185,7 @@
           <span>Note / cents</span>
         </div>
       </div>
-      <div class="small muted">Click on the FFT to add a marker. Hover updates the tone generator and shows note/cents.</div>
+      <div class="small muted">Click the FFT to add a marker. Hover updates the tone generator and shows note/cents.</div>
     </section>
   </div>
 
