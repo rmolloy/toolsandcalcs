@@ -81,7 +81,7 @@
       y: ySeries,
       type: "scatter",
       mode: "lines",
-      line: { color: "var(--blue)", width: 1.5 },
+      line: { color: "var(--blue)", width: 2, shape: "spline", smoothing: 1 },
       hovertemplate: "%{customdata[4]:.1f} Hz<br>%{y:.2f} dB<br>%{customdata[0]} <span style=\"color:%{customdata[3]};font-weight:700;\">%{customdata[1]}</span><extra></extra>",
       customdata: noteCustomData,
     };
