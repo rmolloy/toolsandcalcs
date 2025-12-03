@@ -315,3 +315,27 @@ main.tl-layout {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.ringdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.ringdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 90%, var(--bg));
+}
+.ringdown-row .label {
+  color: var(--muted);
+  font-size: 13px;
+}
+.ringdown-row .value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
