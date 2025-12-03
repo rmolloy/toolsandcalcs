@@ -19,6 +19,11 @@
     fftDefaultRanges: null,
     resetZoomBound: false,
     ringdown: null,
+    lastSpectrogram: null,
+    debug: {
+      useStft: false,
+      stftSize: "auto",
+    },
   };
 
   window.FFTState = state;
