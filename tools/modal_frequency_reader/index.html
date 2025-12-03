@@ -102,6 +102,10 @@
             </label>
             <div class="toggle-row">
               <label class="field checkbox">
+                <input type="checkbox" id="use_stft">
+                <span class="field-label">Use STFT</span>
+              </label>
+              <label class="field checkbox">
                 <input type="checkbox" id="show_note_grid">
                 <span class="field-label">Show chromatic note grid</span>
               </label>
@@ -110,6 +114,15 @@
                 <span class="field-label">Show basic peak markers</span>
               </label>
             </div>
+            <label class="field">
+              <span class="field-label">STFT size</span>
+              <select id="stft_size">
+                <option value="auto">Auto</option>
+                <option value="2048">2048</option>
+                <option value="4096">4096</option>
+                <option value="8192">8192</option>
+              </select>
+            </label>
             <label class="field checkbox">
               <input type="checkbox" id="chromatic_spacing">
               <span class="field-label">Equal chromatic spacing (C1–C6)</span>
@@ -166,6 +179,13 @@
       <div class="small muted">
         Waveform navigator with time zoom; FFT with note grid; basic peak markers with frequency, level, and pitch info.
       </div>
+      <div class="plot-card" id="spectrogram_card" style="display:none;">
+        <div class="plot-header">
+          <h3 class="section">Spectrogram (STFT)</h3>
+          <div class="meta small muted">Toggle STFT in Debug options to render.</div>
+        </div>
+        <div id="plot_spectrogram" class="plot plot-thin"></div>
+      </div>
     </section>
   </main>
 
@@ -197,6 +217,7 @@
   <script src="../modal_frequency_shared/fft_plot.js" defer></script>
   <script src="../modal_frequency_shared/fft_engine.js" defer></script>
   <script src="../modal_frequency_shared/live_spectrogram.js" defer></script>
+  <script src="../modal_frequency_shared/stft.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 

@@ -8,6 +8,12 @@ const FREQ_MIN = 60;
 const FREQ_MAX_DEFAULT = 1000;
 const state = FFTState;
 const { freqToNoteCents } = FFTUtils;
+function getDebug() {
+    if (!state.debug) {
+        state.debug = { useStft: false, stftSize: "auto" };
+    }
+    return state.debug;
+}
 let toneOn = false;
 let mediaStream = null;
 let playButton = null;
@@ -16,6 +22,11 @@ let stopButton = null;
 function updateMeta(sampleLengthMs, sampleRate, window) {
     document.getElementById("wave_meta").textContent = `${(sampleLengthMs / 1000).toFixed(2)} s window • ${(sampleRate / 1000).toFixed(1)} kHz`;
     document.getElementById("fft_meta").textContent = `${window} window • tone gen: Off`;
+}
+function toggleSpectrogramCard(show) {
+    const card = document.getElementById("spectrogram_card");
+    if (card)
+        card.style.display = show ? "block" : "none";
 }
 function renderAnnotations() {
     const table = document.getElementById("annotation_table");
@@ -162,9 +173,10 @@ async function updateFftForRange(rangeMs) {
     updateMeta(rangeMs.end - rangeMs.start, sliced.sampleRate, windowType);
 }
 async function refresh() {
-    var _a;
+    var _a, _b;
     const sampleInput = document.getElementById("sample_length");
     let sampleLengthMs = Number(sampleInput.value) || 1500;
+    const debug = getDebug();
     if (state.currentWave && state.currentWave.fullLengthMs && !state.viewRangeMs) {
         sampleLengthMs = state.currentWave.fullLengthMs;
         sampleInput.value = Math.round(sampleLengthMs);
@@ -201,6 +213,21 @@ async function refresh() {
     });
     updateMeta(slice.timeMs[slice.timeMs.length - 1] || sampleLengthMs, slice.sampleRate, windowType);
     renderAnnotations();
+    if (debug.useStft && ((_b = window.ModalSpectrogram) === null || _b === void 0 ? void 0 : _b.computeSpectrogram)) {
+        const maxSamples = Math.min(slice.wave.length, Math.round(slice.sampleRate * 1));
+        const waveForStft = slice.wave.length > maxSamples ? slice.wave.slice(0, maxSamples) : slice.wave;
+        const stftSize = debug.stftSize === "auto" ? 2048 : Number(debug.stftSize) || 2048;
+        const hop = stftSize >> 1;
+        const spec = await window.ModalSpectrogram.computeSpectrogram(waveForStft, slice.sampleRate, fftEngine, { fftSize: stftSize, hopSize: hop, maxFreq: 1000, window: "hann" });
+        state.lastSpectrogram = spec;
+        toggleSpectrogramCard(true);
+        if (window.renderSpectrogram)
+            window.renderSpectrogram(spec, { elementId: "plot_spectrogram" });
+    }
+    else {
+        state.lastSpectrogram = null;
+        toggleSpectrogramCard(false);
+    }
 }
 function bindControls() {
     const safeRefresh = () => { refresh().catch((err) => console.error("[FFT Lite] refresh failed", err)); };
@@ -210,6 +237,22 @@ function bindControls() {
     document.getElementById("sample_length").addEventListener("change", safeRefresh);
     document.getElementById("window_type").addEventListener("change", safeRefresh);
     document.getElementById("smooth_hz").addEventListener("change", safeRefresh);
+    const useStft = document.getElementById("use_stft");
+    if (useStft) {
+        useStft.checked = getDebug().useStft;
+        useStft.addEventListener("change", () => {
+            getDebug().useStft = useStft.checked;
+            safeRefresh();
+        });
+    }
+    const stftSize = document.getElementById("stft_size");
+    if (stftSize) {
+        stftSize.value = String(getDebug().stftSize);
+        stftSize.addEventListener("change", () => {
+            getDebug().stftSize = stftSize.value;
+            safeRefresh();
+        });
+    }
     const chromaticSpacing = document.getElementById("chromatic_spacing");
     if (chromaticSpacing)
         chromaticSpacing.addEventListener("change", safeRefresh);
