@@ -1,0 +1,459 @@
+"use strict";
+// @ts-nocheck
+/* global FFTState, FFTUtils, FFTAudio, FFTWaveform, FFTPlot, createFftEngine */
+var _a;
+const wasmAllowed = typeof window !== "undefined" && ((_a = window.location) === null || _a === void 0 ? void 0 : _a.protocol) !== "file:";
+const fftEngine = createFftEngine(wasmAllowed ? { wasmUrl: "../vendor/kissfft.wasm" } : {});
+const FREQ_MIN = 60;
+const FREQ_MAX_DEFAULT = 1000;
+const state = FFTState;
+const { freqToNoteCents } = FFTUtils;
+let toneOn = false;
+let mediaStream = null;
+let playButton = null;
+let recordButton = null;
+let stopButton = null;
+function updateMeta(sampleLengthMs, sampleRate, window) {
+    document.getElementById("wave_meta").textContent = `${(sampleLengthMs / 1000).toFixed(2)} s window • ${(sampleRate / 1000).toFixed(1)} kHz`;
+    document.getElementById("fft_meta").textContent = `${window} window • tone gen: Off`;
+}
+function formatValue(v, unit, digits = 2) {
+    if (!Number.isFinite(v))
+        return "—";
+    return `${v.toFixed(digits)} ${unit}`;
+}
+function estimatePeakFreq() {
+    var _a, _b, _c;
+    const spectrum = state.lastSpectrum;
+    if (!((_a = spectrum === null || spectrum === void 0 ? void 0 : spectrum.freqs) === null || _a === void 0 ? void 0 : _a.length))
+        return null;
+    const values = ((_b = spectrum.dbs) === null || _b === void 0 ? void 0 : _b.length) ? spectrum.dbs : spectrum.mags;
+    let maxIdx = 0;
+    let maxVal = -Infinity;
+    for (let i = 0; i < values.length; i += 1) {
+        if (values[i] > maxVal) {
+            maxVal = values[i];
+            maxIdx = i;
+        }
+    }
+    return (_c = spectrum.freqs[maxIdx]) !== null && _c !== void 0 ? _c : null;
+}
+function drawRingdownEnvelope(env = []) {
+    const canvas = document.getElementById("ringdown_plot");
+    if (!canvas)
+        return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width = canvas.clientWidth || 800;
+    const h = canvas.height = canvas.clientHeight || 200;
+    ctx.fillStyle = "#0b1520";
+    ctx.fillRect(0, 0, w, h);
+    if (!env.length) {
+        ctx.fillStyle = "#ccc";
+        ctx.fillText("No envelope.", 10, 20);
+        return;
+    }
+    ctx.beginPath();
+    env.forEach((v, i) => {
+        const x = (i / Math.max(1, env.length - 1)) * w;
+        const y = h - v * (h - 12) - 6;
+        if (i === 0)
+            ctx.moveTo(x, y);
+        else
+            ctx.lineTo(x, y);
+    });
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = "#56B4E9";
+    ctx.stroke();
+}
+function renderRingdown(result) {
+    var _a;
+    const el = document.getElementById("ringdown_results");
+    if (!el)
+        return;
+    if (!result) {
+        el.innerHTML = '<div class="small muted">No analysis yet.</div>';
+        drawRingdownEnvelope([]);
+        return;
+    }
+    if (result.error) {
+        el.innerHTML = `<div class="small muted">Error: ${result.error}</div>`;
+        drawRingdownEnvelope([]);
+        return;
+    }
+    const rows = [
+        { label: "Mode", value: formatValue(result.f0, "Hz") },
+        { label: "Tau", value: formatValue(result.tau, "s") },
+        { label: "Q", value: Number.isFinite(result.Q) ? result.Q.toFixed(0) : "—" },
+        { label: "Delta f (-3 dB)", value: formatValue(result.deltaF, "Hz", 3) },
+        { label: "Stability (R2)", value: Number.isFinite(result.envelopeR2) ? result.envelopeR2.toFixed(3) : "—" },
+    ];
+    const flags = ((_a = result.flags) === null || _a === void 0 ? void 0 : _a.length) ? result.flags.join(", ") : "None";
+    el.innerHTML = `
+    <div class="ringdown-grid">
+      ${rows.map((r) => `
+        <div class="ringdown-row">
+          <span class="label">${r.label}</span>
+          <span class="value">${r.value}</span>
+        </div>`).join("")}
+      <div class="ringdown-row">
+        <span class="label">Flags</span>
+        <span class="value">${flags}</span>
+      </div>
+    </div>`;
+    drawRingdownEnvelope(result.envelope || []);
+}
+function clearRingdown() {
+    state.ringdown = null;
+    renderRingdown(null);
+}
+async function handleRingdownAnalyze() {
+    const el = document.getElementById("ringdown_results");
+    if (el)
+        el.innerHTML = '<div class="small muted">Analyzing…</div>';
+    try {
+        const sampleInput = document.getElementById("sample_length");
+        const sampleLengthMs = Number(sampleInput === null || sampleInput === void 0 ? void 0 : sampleInput.value) || 1500;
+        const base = state.currentWave || FFTAudio.generateDemoWave(sampleLengthMs);
+        const slice = state.viewRangeMs
+            ? FFTWaveform.sliceWaveRange(base, state.viewRangeMs.start, state.viewRangeMs.end)
+            : FFTWaveform.sliceWave(base, sampleLengthMs);
+        if (!slice)
+            throw new Error("No audio loaded.");
+        const peak = estimatePeakFreq();
+        const analysis = await window.ModalRingdown.analyzeRingdown({
+            buffer: slice.wave,
+            sampleRate: slice.sampleRate,
+            f0: peak,
+            spectrum: state.lastSpectrum,
+        });
+        state.ringdown = analysis;
+        renderRingdown(analysis);
+    }
+    catch (err) {
+        console.error("[FFT Lite] ring-down analysis failed", err);
+        if (el)
+            el.innerHTML = `<div class="small muted">Ring-down analysis failed: ${err.message || err}</div>`;
+        drawRingdownEnvelope([]);
+    }
+}
+function renderAnnotations() {
+    const table = document.getElementById("annotation_table");
+    const header = `
+    <div class="annotation-row annotation-head">
+      <span>Label</span><span>Frequency (Hz)</span><span>dB</span><span>Note / cents</span>
+    </div>`;
+    if (!state.annotations.length) {
+        table.innerHTML = `${header}<div class="annotation-row"><span colspan="4">No markers yet.</span></div>`;
+        return;
+    }
+    const rows = state.annotations.map((a) => `
+    <div class="annotation-row">
+      <span>${a.label || "—"}</span>
+      <span>${a.freq.toFixed(2)}</span>
+      <span>${a.db.toFixed(2)}</span>
+      <span>${a.note} ${a.cents}</span>
+    </div>
+  `).join("");
+    table.innerHTML = header + rows;
+}
+function addAnnotation(point) {
+    const freq = point.x;
+    const db = point.y;
+    const note = freqToNoteCents(freq);
+    state.annotations.push({
+        label: `Marker ${state.annotations.length + 1}`,
+        freq,
+        db,
+        note: note.name,
+        cents: note.cents,
+    });
+    renderAnnotations();
+}
+window.addAnnotation = addAnnotation;
+function clearAnnotations() {
+    state.annotations.length = 0;
+    renderAnnotations();
+}
+function saveAnnotations() {
+    const blob = new Blob([JSON.stringify(state.annotations, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "fft_annotations.json";
+    a.click();
+    URL.revokeObjectURL(url);
+}
+function handleWaveRangeChange(range) {
+    state.viewRangeMs = range;
+    if (range) {
+        updateFftForRange(range).catch((err) => console.error("[FFT Lite] update FFT for range failed", err));
+    }
+    else {
+        refresh().catch((err) => console.error("[FFT Lite] refresh failed", err));
+    }
+}
+async function refreshDevices(requirePermission = false) {
+    var _a, _b;
+    try {
+        if (!((_a = navigator.mediaDevices) === null || _a === void 0 ? void 0 : _a.enumerateDevices))
+            return;
+        // Only ask for permission if we need labels (user clicked reset).
+        if (requirePermission) {
+            try {
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach((t) => t.stop());
+                }
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            }
+            catch (err) {
+                console.warn("Audio permission denied; device labels may be blank.", err);
+            }
+        }
+        let devices = await navigator.mediaDevices.enumerateDevices();
+        let inputs = devices.filter((d) => d.kind === "audioinput");
+        // If labels are still empty, try once more.
+        const hasLabels = inputs.some((d) => d.label && d.label.trim());
+        if (!hasLabels && requirePermission) {
+            try {
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach((t) => t.stop());
+                }
+                mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                devices = await navigator.mediaDevices.enumerateDevices();
+                inputs = devices.filter((d) => d.kind === "audioinput");
+            }
+            catch (err) {
+                console.warn("Second attempt to get mic labels failed.", err);
+            }
+        }
+        const outputs = devices.filter((d) => d.kind === "audiooutput");
+        const inputSelect = document.getElementById("input_devices");
+        const outputSelect = document.getElementById("output_devices");
+        const trackList = document.getElementById("track_list");
+        const inputChannel = document.getElementById("input_channel");
+        if (inputSelect) {
+            inputSelect.innerHTML = inputs.map((d, idx) => (`<option value="${d.deviceId}">${d.label || `Input ${idx + 1}`}</option>`)).join("");
+        }
+        if (outputSelect) {
+            outputSelect.innerHTML = outputs.map((d, idx) => (`<option value="${d.deviceId}">${d.label || `Output ${idx + 1}`}</option>`)).join("");
+        }
+        if (trackList) {
+            const tracks = ((_b = mediaStream === null || mediaStream === void 0 ? void 0 : mediaStream.getTracks) === null || _b === void 0 ? void 0 : _b.call(mediaStream)) || [];
+            trackList.textContent = tracks.length
+                ? tracks.map((t) => `${t.kind}: ${t.label || "track"}`).join(" • ")
+                : "No active tracks";
+        }
+        if (inputChannel) {
+            inputChannel.innerHTML = Array.from({ length: 8 }).map((_, idx) => (`<option value="${idx + 1}">Channel ${idx + 1}</option>`)).join("");
+        }
+    }
+    catch (err) {
+        console.error("[FFT Lite] device enumeration failed", err);
+    }
+}
+async function updateFftForRange(rangeMs) {
+    var _a;
+    const source = state.currentWave || FFTAudio.generateDemoWave(rangeMs.end - rangeMs.start);
+    const windowType = document.getElementById("window_type").value;
+    const smoothHz = Number(document.getElementById("smooth_hz").value) || 0;
+    const noteGridCheckbox = document.getElementById("show_note_grid");
+    const showNoteGrid = noteGridCheckbox ? noteGridCheckbox.checked : false;
+    const showPeaks = document.getElementById("show_peaks").checked;
+    const chromaticSpacing = (_a = document.getElementById("chromatic_spacing")) === null || _a === void 0 ? void 0 : _a.checked;
+    const wolfBandCheckbox = document.getElementById("show_wolf_band");
+    const showWolfBand = wolfBandCheckbox ? wolfBandCheckbox.checked : false;
+    const sliced = FFTWaveform.sliceWaveRange(source, rangeMs.start, rangeMs.end)
+        || FFTWaveform.sliceWave(source, rangeMs.end - rangeMs.start);
+    if (!sliced)
+        return;
+    const spectrum = await fftEngine.magnitude(sliced.wave, sliced.sampleRate, { maxFreq: FREQ_MAX_DEFAULT, window: windowType });
+    const smoothed = FFTPlot.smoothSpectrum(spectrum, smoothHz);
+    const withDb = FFTPlot.applyDb(smoothed);
+    FFTPlot.makeFftPlot(withDb, {
+        showNoteGrid,
+        showPeaks,
+        peaks: [],
+        freqMin: FREQ_MIN,
+        freqMax: FREQ_MAX_DEFAULT,
+        useNoteAxis: chromaticSpacing,
+        showWolfBand,
+    });
+    updateMeta(rangeMs.end - rangeMs.start, sliced.sampleRate, windowType);
+}
+async function refresh() {
+    var _a;
+    const sampleInput = document.getElementById("sample_length");
+    let sampleLengthMs = Number(sampleInput.value) || 1500;
+    if (state.currentWave && state.currentWave.fullLengthMs && !state.viewRangeMs) {
+        sampleLengthMs = state.currentWave.fullLengthMs;
+        sampleInput.value = Math.round(sampleLengthMs);
+    }
+    const windowType = document.getElementById("window_type").value;
+    const smoothHz = Number(document.getElementById("smooth_hz").value) || 0;
+    const noteGridCheckbox = document.getElementById("show_note_grid");
+    const showNoteGrid = noteGridCheckbox ? noteGridCheckbox.checked : false;
+    const showPeaks = document.getElementById("show_peaks").checked;
+    const chromaticSpacing = (_a = document.getElementById("chromatic_spacing")) === null || _a === void 0 ? void 0 : _a.checked;
+    const wolfBandCheckbox = document.getElementById("show_wolf_band");
+    const showWolfBand = wolfBandCheckbox ? wolfBandCheckbox.checked : false;
+    const source = state.currentWave || FFTAudio.generateDemoWave(sampleLengthMs);
+    if (!state.currentWave) {
+        state.currentWave = source;
+    }
+    const slice = state.viewRangeMs
+        ? FFTWaveform.sliceWaveRange(source, state.viewRangeMs.start, state.viewRangeMs.end)
+        : FFTWaveform.sliceWave(source, sampleLengthMs);
+    if (!slice)
+        return;
+    FFTWaveform.makeWavePlot(slice, handleWaveRangeChange);
+    const spectrum = await fftEngine.magnitude(slice.wave, slice.sampleRate, { maxFreq: FREQ_MAX_DEFAULT, window: windowType });
+    const smoothed = FFTPlot.smoothSpectrum(spectrum, smoothHz);
+    const withDb = FFTPlot.applyDb(smoothed);
+    FFTPlot.makeFftPlot(withDb, {
+        showNoteGrid,
+        showPeaks,
+        peaks: [],
+        freqMin: FREQ_MIN,
+        freqMax: FREQ_MAX_DEFAULT,
+        useNoteAxis: chromaticSpacing,
+        showWolfBand,
+    });
+    updateMeta(slice.timeMs[slice.timeMs.length - 1] || sampleLengthMs, slice.sampleRate, windowType);
+    renderAnnotations();
+}
+function bindControls() {
+    const safeRefresh = () => { refresh().catch((err) => console.error("[FFT Lite] refresh failed", err)); };
+    document.getElementById("btn_refresh").addEventListener("click", safeRefresh);
+    document.getElementById("show_note_grid").addEventListener("change", safeRefresh);
+    document.getElementById("show_peaks").addEventListener("change", safeRefresh);
+    document.getElementById("sample_length").addEventListener("change", safeRefresh);
+    document.getElementById("window_type").addEventListener("change", safeRefresh);
+    document.getElementById("smooth_hz").addEventListener("change", safeRefresh);
+    const chromaticSpacing = document.getElementById("chromatic_spacing");
+    if (chromaticSpacing)
+        chromaticSpacing.addEventListener("change", safeRefresh);
+    const wolfBand = document.getElementById("show_wolf_band");
+    if (wolfBand)
+        wolfBand.addEventListener("change", safeRefresh);
+    const resetTimeZoom = document.getElementById("btn_reset_time_zoom");
+    if (resetTimeZoom) {
+        resetTimeZoom.addEventListener("click", () => {
+            state.viewRangeMs = null;
+            const wavePlot = document.getElementById("plot_waveform");
+            if (wavePlot && window.Plotly) {
+                window.Plotly.relayout(wavePlot, { "xaxis.autorange": true });
+            }
+            safeRefresh();
+        });
+    }
+    const clearBtn = document.getElementById("btn_clear_annotations");
+    if (clearBtn)
+        clearBtn.addEventListener("click", clearAnnotations);
+    const saveBtn = document.getElementById("btn_save_annotations");
+    if (saveBtn)
+        saveBtn.addEventListener("click", saveAnnotations);
+    const btnRefreshDevices = document.getElementById("btn_refresh_devices");
+    if (btnRefreshDevices)
+        btnRefreshDevices.addEventListener("click", () => refreshDevices(true));
+    const loadBtn = document.getElementById("btn_load");
+    const fileInput = document.getElementById("file_input");
+    if (loadBtn && fileInput) {
+        loadBtn.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", async (e) => {
+            var _a;
+            const file = (_a = e.target.files) === null || _a === void 0 ? void 0 : _a[0];
+            if (!file)
+                return;
+            try {
+                await FFTAudio.handleFile(file);
+                state.viewRangeMs = null;
+                await refresh();
+                clearRingdown();
+            }
+            catch (err) {
+                console.error("[FFT Lite] load failed", err);
+            }
+        });
+    }
+    const btnRecord = document.getElementById("btn_record");
+    const btnStop = document.getElementById("btn_stop");
+    const btnPlay = document.getElementById("btn_play");
+    playButton = btnPlay;
+    recordButton = btnRecord;
+    stopButton = btnStop;
+    updateTransportLabels();
+    if (btnRecord)
+        btnRecord.addEventListener("click", () => {
+            if (FFTAudio.isRecordingActive()) {
+                FFTAudio.stopAll();
+                updateTransportLabels();
+                return;
+            }
+            FFTAudio.startRecording(() => {
+                updateTransportLabels();
+                refresh().catch((err) => console.error("[FFT Lite] refresh after record failed", err));
+                clearRingdown();
+            }).catch((err) => console.error("[FFT Lite] record failed", err));
+            updateTransportLabels(true, FFTAudio.isPlaybackActive());
+        });
+    if (btnStop)
+        btnStop.addEventListener("click", () => {
+            FFTAudio.stopAll();
+            updateTransportLabels();
+        });
+    if (btnPlay)
+        btnPlay.addEventListener("click", () => {
+            if (FFTAudio.isPlaybackActive()) {
+                FFTAudio.stopPlayback();
+                updateTransportLabels();
+                return;
+            }
+            const started = FFTAudio.playCurrent(() => updateTransportLabels());
+            if (started)
+                updateTransportLabels(FFTAudio.isRecordingActive(), true);
+        });
+    const btnSaveAudio = document.getElementById("btn_save_audio");
+    if (btnSaveAudio)
+        btnSaveAudio.addEventListener("click", FFTAudio.saveCurrentAudio);
+    const toneToggle = document.getElementById("tone_toggle");
+    if (toneToggle) {
+        toneToggle.addEventListener("change", () => {
+            toneOn = toneToggle.checked;
+            FFTAudio.setToneEnabled(toneOn);
+            if (!toneOn)
+                FFTAudio.stopTone();
+            document.getElementById("fft_meta").textContent = `${document.getElementById("window_type").value} window • tone gen: ${toneOn ? "On" : "Off"}`;
+        });
+    }
+    const btnRingdown = document.getElementById("btn_analyze_ringdown");
+    if (btnRingdown)
+        btnRingdown.addEventListener("click", () => {
+            handleRingdownAnalyze().catch((err) => console.error("[FFT Lite] ring-down handler failed", err));
+        });
+    const btnClearRingdown = document.getElementById("btn_clear_ringdown");
+    if (btnClearRingdown)
+        btnClearRingdown.addEventListener("click", clearRingdown);
+}
+window.addEventListener("DOMContentLoaded", () => {
+    bindControls();
+    refreshDevices(false).catch((err) => console.error("[FFT Lite] device refresh failed", err));
+    refresh().catch((err) => console.error("[FFT Lite] initial refresh failed", err));
+});
+window.handleToneHover = (freq) => {
+    if (!toneOn)
+        return;
+    if (freq === null) {
+        FFTAudio.stopTone();
+    }
+    else {
+        FFTAudio.updateToneFreq(freq);
+    }
+};
+function updateTransportLabels(recording = FFTAudio.isRecordingActive(), playing = FFTAudio.isPlaybackActive()) {
+    if (recordButton)
+        recordButton.textContent = recording ? "■ Stop recording" : "● Record";
+    if (playButton)
+        playButton.textContent = playing ? "⏸ Pause" : "▶ Play";
+    if (stopButton)
+        stopButton.textContent = "■ Stop";
+}
