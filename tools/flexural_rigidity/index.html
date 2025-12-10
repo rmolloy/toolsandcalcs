@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>Flexural Rigidity (EI) Calculator - ToneLab</title>
   <link rel="stylesheet" href="../common/styles.css">
+  <link rel="stylesheet" href="../common/layout.css">
   <style>
     :root {
       --card-bg: #0d1116;
@@ -490,31 +491,35 @@
 </head>
 
 <body>
+<div class="tl-app">
+  <header class="tl-topbar"></header>
+  <div class="tl-page">
+    <header class="card pad tl-card">
+      <div class="pill">ToneLab Utility</div>
+      <h1>Flexural Rigidity (EI) Calculator</h1>
+      <p class="small">
+        Use this tool to calculate flexural rigidity for a guitar top along the AA line, so you can compare stiffness across
+        wood species, brace patterns, and thicknesses without waiting for a full build.
+      </p>
+      <p class="small">
+        Why this matters: EI links a panel’s thickness, modulus, and span to how much it will bend under load. Knowing EI helps
+        you balance strength and responsiveness before committing to a top, back, or brace set.
+      </p>
+      <details class="muted">
+        <summary><strong>Measurements required</strong></summary>
+        <ul class="tl-list">
+          <li>AA span and thickness at AA (mm)</li>
+          <li>Panel modulus E for the top (GPa)</li>
+          <li>Brace intercept breadth b and stack heights (mm)</li>
+          <li>Brace modulus E (GPa)</li>
+          <li>Optional: applied bridge moment (N·m) and rotation limit (deg)</li>
+        </ul>
+      </details>
+    </header>
 
-<header class="card pad tl-card">
-  <div class="pill">ToneLab Utility</div>
-  <h1>Flexural Rigidity (EI) Calculator</h1>
-  <p class="small">
-    Use this tool to calculate flexural rigidity for a guitar top along the AA line, so you can compare stiffness across
-    wood species, brace patterns, and thicknesses without waiting for a full build.
-  </p>
-  <p class="small">
-    Why this matters: EI links a panel’s thickness, modulus, and span to how much it will bend under load. Knowing EI helps
-    you balance strength and responsiveness before committing to a top, back, or brace set.
-  </p>
-  <details class="muted">
-    <summary><strong>Measurements required</strong></summary>
-    <ul class="tl-list">
-      <li>AA span and thickness at AA (mm)</li>
-      <li>Panel modulus E for the top (GPa)</li>
-      <li>Brace intercept breadth b and stack heights (mm)</li>
-      <li>Brace modulus E (GPa)</li>
-      <li>Optional: applied bridge moment (N·m) and rotation limit (deg)</li>
-    </ul>
-  </details>
-</header>
-
-<main class="brace-app">
+    <main class="tl-layout tl-single">
+      <section class="tl-content">
+<div class="brace-app">
   <section class="card pad tl-card viz-card wide-card">
     <h2>AA-line visualization</h2>
     <p class="small muted">Full span visualization. This is a placeholder until the flexural rigidity calculator wiring is hooked up.</p>
@@ -602,7 +607,11 @@
     </div>
     <p id="result_status" class="small muted">Live: ready for inputs.</p>
   </section>
-</main>
+  </div>
+      </section>
+    </main>
+  </div>
+</div>
 
 <script>
   if (typeof window !== "undefined") {
