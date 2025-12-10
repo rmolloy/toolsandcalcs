@@ -6,62 +6,67 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Panel Thickness Target — ToneLab</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/layout.css">
 </head>
 
 <body>
-  <header class="card pad tl-card tl-card-info">
-    <h1>Target Panel Thickness Calculator</h1>
-    <p class="tl-card-desc">
-      Use this tool to estimate the thickness for a top or back panel using its dimensions, mass, and tap-tone frequencies, so
-      you can achieve consistent stiffness and a predictable acoustic response.
-    </p>
-    <p class="tl-card-desc">
-      This calculator is based on the Gore &amp; Gilet “Design” book (sections 4.5.2–4.5.3) and validated against their
-      reference tables.
-    </p>
-    <details class="tl-accordion">
-      <summary>Overview &amp; Required Measurements</summary>
-      <p class="tl-card-desc">
-        Thickness isn’t the target, stiffness is. And one of the most straightforward ways to estimate stiffness in a
-        guitar panel is by measuring its modal frequencies.
-      </p>
-      <div class="before-columns">
-        <div class="before-card">
-          <h3>How to use this tool</h3>
-          <ol class="tl-steps">
-            <li>Prepare the panel so it is smooth, rectangular, and evenly thicknessed.</li>
-            <li>Tap to identify the long grain, cross grain, and twisting modes.</li>
-            <li>Enter your measurements into the controls below.</li>
-            <li>Review the recommended target thickness.</li>
-          </ol>
-        </div>
-        <div class="before-card">
-          <h3>Measurements required</h3>
-          <ul class="tl-list">
-            <li>Guitar box length & lower-bout width (mm)</li>
-            <li>Panel length, width, and thickness (mm)</li>
-            <li>Panel mass (g)</li>
-            <li>Tap-tone frequencies: long, cross, twist (Hz)</li>
-            <li>Target modal frequency for the finished top or back (Hz)</li>
-          </ul>
-        </div>
-      </div>
-      <div class="before-card">
-        <h3>Accuracy &amp; troubleshooting</h3>
+  <div class="tl-app">
+    <header class="tl-topbar"></header>
+    <div class="tl-page">
+      <header class="card pad tl-card tl-card-info">
+        <h1>Target Panel Thickness Calculator</h1>
         <p class="tl-card-desc">
-          Measure the fundamental of each mode (an FFT helps). Uneven thickness or coarse sanding can shift the tap
-          frequencies; planing or scraping gives the most reliable readings. </p>
-        <p class="tl-card-desc">
-          If the recommended thickness seems unusually thin, re-measure your tap frequencies and compare them to the
-          examples in the Gore &amp; Gilet book. They should be in the same ballpark. If they’re not, send your numbers
-          using the form below and we’ll take a look.
+          Use this tool to estimate the thickness for a top or back panel using its dimensions, mass, and tap-tone frequencies, so
+          you can achieve consistent stiffness and a predictable acoustic response.
         </p>
-      </div>
-    </details>
-  </header>
+        <p class="tl-card-desc">
+          This calculator is based on the Gore &amp; Gilet “Design” book (sections 4.5.2–4.5.3) and validated against their
+          reference tables.
+        </p>
+        <details class="tl-accordion">
+          <summary>Overview &amp; Required Measurements</summary>
+          <p class="tl-card-desc">
+            Thickness isn’t the target, stiffness is. And one of the most straightforward ways to estimate stiffness in a
+            guitar panel is by measuring its modal frequencies.
+          </p>
+          <div class="before-columns">
+            <div class="before-card">
+              <h3>How to use this tool</h3>
+              <ol class="tl-steps">
+                <li>Prepare the panel so it is smooth, rectangular, and evenly thicknessed.</li>
+                <li>Tap to identify the long grain, cross grain, and twisting modes.</li>
+                <li>Enter your measurements into the controls below.</li>
+                <li>Review the recommended target thickness.</li>
+              </ol>
+            </div>
+            <div class="before-card">
+              <h3>Measurements required</h3>
+              <ul class="tl-list">
+                <li>Guitar box length & lower-bout width (mm)</li>
+                <li>Panel length, width, and thickness (mm)</li>
+                <li>Panel mass (g)</li>
+                <li>Tap-tone frequencies: long, cross, twist (Hz)</li>
+                <li>Target modal frequency for the finished top or back (Hz)</li>
+              </ul>
+            </div>
+          </div>
+          <div class="before-card">
+            <h3>Accuracy &amp; troubleshooting</h3>
+            <p class="tl-card-desc">
+              Measure the fundamental of each mode (an FFT helps). Uneven thickness or coarse sanding can shift the tap
+              frequencies; planing or scraping gives the most reliable readings. </p>
+            <p class="tl-card-desc">
+              If the recommended thickness seems unusually thin, re-measure your tap frequencies and compare them to the
+              examples in the Gore &amp; Gilet book. They should be in the same ballpark. If they’re not, send your numbers
+              using the form below and we’ll take a look.
+            </p>
+          </div>
+        </details>
+      </header>
 
-  <main class="tl-layout">
+      <main class="tl-layout">
 
+        <aside class="tl-controls">
     <section class="card pad tl-card tl-card-controls tl-control-column">
       <h2>Panel measurements</h2>
       <div class="input-block">
@@ -129,6 +134,9 @@
       </div>
     </section>
 
+        </aside>
+
+        <section class="tl-content">
     <section class="card pad tl-card tl-card-output">
       <h2>Results</h2>
       <p class="small muted">Results update automatically as you enter measurements.</p>
@@ -167,7 +175,7 @@
 
 
 
-    <section class="card pad tl-card tl-card-info tl-span-2">
+    <section class="card pad tl-card tl-card-info">
       <h2>How the calculation works</h2>
       <p class="tl-card-desc">
         This calculator is based on Gore &amp; Gilet Vol. 1 (sections 4.5.2–4.5.3) and the example tables in the Design
@@ -224,7 +232,7 @@
       <p class="small muted">URL tip: append <code>?long=80&amp;cross=120&amp;twisting=45</code> to prefill the modal
         taps when sharing results.</p>
     </section>
-    <section class="card pad tl-card tl-card-info tl-span-2">
+    <section class="card pad tl-card tl-card-info">
       <details class="tl-accordion help-accordion">
         <summary>Need help with this tool? <span class="muted">I read every message.</span></summary>
         <p class="tl-card-desc">
@@ -243,7 +251,10 @@
         </form>
       </details>
     </section>
-  </main>
+        </section>
+      </main>
+    </div>
+  </div>
 
   <script src="calculator.js"></script>
   <script src="main.js"></script>
