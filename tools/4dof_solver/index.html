@@ -9,16 +9,20 @@
 </head>
 
 <body data-palette="whatif">
-    <header class="card pad">
-        <h1>Gore–Gilet Acoustic Guitar Model — 1/2/3/4 DOF (Coupled)</h1>
-        <div class="muted">
-            1DOF (Helmholtz) • 2DOF (Top+Air) • 3DOF (Top+Back+Air) • 4DOF (Top+Back+Air+Sides).
-            Based on Gore &amp; Gilet Vol. 2 §2.4.1 and Jim Kirby’s determinant expansion (2012). Frequency axis
-            0–500&nbsp;Hz.
-        </div>
-    </header>
+    <div class="tl-app">
+        <header class="tl-topbar"></header>
+        <div class="tl-page">
+            <header class="card pad">
+                <h1>Gore–Gilet Acoustic Guitar Model — 1/2/3/4 DOF (Coupled)</h1>
+                <div class="muted">
+                    1DOF (Helmholtz) • 2DOF (Top+Air) • 3DOF (Top+Back+Air) • 4DOF (Top+Back+Air+Sides).
+                    Based on Gore &amp; Gilet Vol. 2 §2.4.1 and Jim Kirby’s determinant expansion (2012). Frequency axis
+                    0–500&nbsp;Hz.
+                </div>
+            </header>
 
-    <main>
+            <main class="tl-layout">
+                <aside class="tl-controls">
         <section class="card pad controls-panel">
 
             <!-- MODEL ORDER -->
@@ -164,8 +168,11 @@
             </div>
         </section>
 
+                </aside>
+
+                <section class="tl-content">
     <section class="card pad plot-panel">
-            <div id="plot"></div>
+            <div id="plot" class="tl-plot-fft"></div>
             <div id="peak_list"></div>
             <details id="fit_panel_inline" class="fit-card" data-fit-panel="inline">
             <summary>
@@ -237,7 +244,10 @@
             </form>
         </details>
         </section>
-    </main>
+                </section>
+            </main>
+        </div>
+    </div>
     <script src="../common/atmosphere.js" defer></script>
     <script src="../common/solver_core.js" defer></script>
     <script src="../vendor/plotly/plotly.min.js" defer></script>
