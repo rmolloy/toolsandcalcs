@@ -7,12 +7,15 @@
 
   function makeWavePlot({ timeMs, wave }, onRangeChange) {
     const absWave = wave.map((v) => Math.abs(v));
+    const fillColor = "rgba(86,180,233,0.18)";
     const trace = {
       x: timeMs,
       y: absWave,
       type: "scatter",
       mode: "lines",
-      line: { color: getCssVar("--blue", "#56B4E9"), width: 1.5 },
+      fill: "tozeroy",
+      fillcolor: fillColor,
+      line: { color: getCssVar("--blue", "#56B4E9"), width: 2 },
       hovertemplate: "%{x:.1f} ms<br>%{y:.3f}<extra></extra>",
     };
     const layout = {

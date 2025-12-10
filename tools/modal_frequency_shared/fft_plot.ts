@@ -43,7 +43,7 @@
   const NOTE_AXIS_TICK_TEXT = CHROMATIC_NOTES.map((n) => n.name);
 
   function makeFftPlot(spectrum, opts) {
-    const { showNoteGrid, showPeaks, peaks, freqMin, freqMax, useNoteAxis, showWolfBand } = opts;
+    const { showNoteGrid, showPeaks, peaks, freqMin, freqMax, useNoteAxis, showWolfBand, modeAnnotations = [] } = opts;
     const useChromaticAxis = Boolean(useNoteAxis);
     const { freqs, mags } = spectrum;
     const peakData = peaks || [];
@@ -126,6 +126,45 @@
       shapes.push(...buildWolfBandShapes());
     }
 
+    const annotations = [];
+    if (modeAnnotations && modeAnnotations.length) {
+      const mapX = (f) => {
+        if (!useChromaticAxis) return f;
+        const note = freqToNoteCents(f);
+        const midiVal = Number.isFinite(note.midi) ? note.midi : NOTE_AXIS_START;
+        return clampMidi(midiVal);
+      };
+      const yAtFreq = (f) => {
+        let bestIdx = 0;
+        let bestDist = Infinity;
+        freqs.forEach((fv, idx) => {
+          const d = Math.abs(fv - f);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = idx;
+          }
+        });
+        return ySeries[bestIdx] || yMax;
+      };
+      modeAnnotations.forEach((ann, idx) => {
+        const x = mapX(ann.freq);
+        const y = yAtFreq(ann.freq);
+        annotations.push({
+          x,
+          y,
+          text: `${ann.label}<br>${ann.freq.toFixed(1)} Hz`,
+          bgcolor: "rgba(11,15,22,0.92)",
+          bordercolor: ann.color || COLOR_ORANGE,
+          font: { color: "#fff", size: 11 },
+          arrowcolor: ann.color || COLOR_ORANGE,
+          arrowsize: 1,
+          arrowwidth: 1,
+          ax: 0,
+          ay: -40 - (idx * 6),
+        });
+      });
+    }
+
     const layout = {
       margin: { l: 55, r: 10, t: 10, b: 40 },
       paper_bgcolor: "transparent",
@@ -158,6 +197,7 @@
         font: { color: "#fff", size: 12, family: "system-ui, -apple-system, Segoe UI, sans-serif" },
       },
       showlegend: false,
+      annotations,
       shapes,
     };
 

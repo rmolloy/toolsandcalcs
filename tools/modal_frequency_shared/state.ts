@@ -24,6 +24,7 @@
       useStft: false,
       stftSize: "auto",
     },
+    noteSlices: [],
   };
 
   window.FFTState = state;

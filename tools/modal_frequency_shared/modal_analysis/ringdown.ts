@@ -238,6 +238,8 @@
     const downsampleStep = Math.max(1, Math.floor(normEnv.length / 400));
     const envelopePreview = [];
     for (let i = 0; i < normEnv.length; i += downsampleStep) envelopePreview.push(normEnv[i]);
+    const timeAxis = normEnv.map((_, idx) => idx / sampleRate);
+    const dt = 1 / sampleRate;
 
     return {
       f0: peak ?? null,
@@ -248,6 +250,10 @@
       slope,
       flags,
       envelope: envelopePreview,
+      envelopeFull: Array.from(normEnv),
+      timeAxis,
+      dt,
+      sampleRate,
       attackSkipMs,
       smoothWindowMs,
     };

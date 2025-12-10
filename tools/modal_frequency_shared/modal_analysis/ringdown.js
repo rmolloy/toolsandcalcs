@@ -235,6 +235,8 @@
         const envelopePreview = [];
         for (let i = 0; i < normEnv.length; i += downsampleStep)
             envelopePreview.push(normEnv[i]);
+        const timeAxis = normEnv.map((_, idx) => idx / sampleRate);
+        const dt = 1 / sampleRate;
         return {
             f0: peak !== null && peak !== void 0 ? peak : null,
             tau,
@@ -244,6 +246,10 @@
             slope,
             flags,
             envelope: envelopePreview,
+            envelopeFull: Array.from(normEnv),
+            timeAxis,
+            dt,
+            sampleRate,
             attackSkipMs,
             smoothWindowMs,
         };
