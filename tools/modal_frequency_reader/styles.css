@@ -5,31 +5,10 @@ body {
   color: var(--ink);
 }
 
-.page {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-main.tl-layout {
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 16px;
-  grid-template-columns: minmax(280px, 360px) 1fr;
-  align-items: start;
-}
-@media (max-width: 960px) {
-  main.tl-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
 .tl-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--tl-section-gap);
 }
 .tl-card-controls {
   gap: 16px;
@@ -37,15 +16,6 @@ main.tl-layout {
 }
 .tl-card-output {
   gap: 16px;
-}
-
-.tl-span-2 {
-  grid-column: span 2;
-}
-@media (max-width: 960px) {
-  .tl-span-2 {
-    grid-column: span 1;
-  }
 }
 
 .tl-control-column {
@@ -148,13 +118,13 @@ main.tl-layout {
 
 .plot {
   width: 100%;
-  height: 320px;
+  height: var(--plot-mid-h);
 }
 .plot.large-plot {
-  height: 360px;
+  height: var(--plot-fft-h);
 }
 .plot.plot-thin {
-  height: 140px;
+  height: var(--plot-thin-h);
 }
 
 .note-grid {
@@ -314,6 +284,27 @@ main.tl-layout {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.wolf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--panel) 90%, var(--bg));
+  font-weight: 600;
+  color: var(--ink);
+}
+.wolf-chip.low {
+  background: color-mix(in srgb, var(--green) 18%, var(--panel));
+}
+.wolf-chip.medium {
+  background: color-mix(in srgb, var(--yellow) 22%, var(--panel));
+}
+.wolf-chip.high {
+  background: color-mix(in srgb, var(--vermilion) 24%, var(--panel));
 }
 
 .ringdown-grid {

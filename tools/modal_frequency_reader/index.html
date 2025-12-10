@@ -6,207 +6,252 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Modal Frequency Reader - ToneLab</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/layout.css">
 </head>
 
 <body>
-  <div class="page">
-    <header class="card pad tl-card tl-card-info">
-      <h1>Modal Frequency Reader — Tap Tone Viewer</h1>
-      <p class="tl-card-desc">A simple, accurate way to inspect tap tones and short clips. View the waveform, see the FFT, and identify resonant peaks with note and cents readouts.</p>
-      <details class="tl-accordion">
-        <summary>How to use</summary>
-        <div class="tl-accordion-body">
-          <h4>Tap tones &amp; frequencies</h4>
-          <p class="tl-card-desc">Tap tones reveal how a plate or box behaves. The waveform shows the impact; the FFT shows the resonances it excites.</p>
-          <h4>Recording a tap</h4>
-          <ul class="tl-list">
-            <li>Place the mic 75–150 mm from the plate or guitar; mute strings on a box.</li>
-            <li>Tap near center for monopole content; tap near an edge to highlight cross/long modes.</li>
-            <li>Record a short, clean tap—or load a WAV file.</li>
-          </ul>
-          <p class="tl-card-desc">Zoom the waveform to isolate the tap. The FFT automatically follows that selection. Hover over the FFT to see frequency, level, note, and cents. Click to add a marker.</p>
-          <h4>Accuracy tips</h4>
-          <ul class="tl-list">
-            <li>Tap firmly, but avoid clipping your preamp.</li>
-            <li>Move the mic a few centimeters if peaks look smeared.</li>
-            <li>A quieter room reduces low-frequency noise.</li>
-          </ul>
-        </div>
-      </details>
-    </header>
-
-    <main class="tl-layout">
-    <section class="card pad tl-card tl-card-controls tl-control-column">
-      <h2>Controls</h2>
-
-      <div class="input-block">
-        <h3 class="input-block__title">Capture</h3>
-        <div class="tl-control-stack">
-          <div class="button-row">
-            <button class="tl-btn" id="btn_stop">■ Stop</button>
-            <button class="tl-btn" id="btn_play">▶ Play</button>
-            <button class="tl-btn danger" id="btn_record">● Record</button>
-            <button class="tl-btn" id="btn_save_audio">Save</button>
+  <div class="tl-app">
+    <header class="tl-topbar"></header>
+    <div class="tl-page">
+      <header class="card pad tl-card tl-card-info">
+        <h1>Modal Frequency Reader — Tap Tone Viewer</h1>
+        <p class="tl-card-desc">A simple, accurate way to inspect tap tones and short clips. View the waveform, see the FFT, and identify resonant peaks with note and cents readouts.</p>
+        <details class="tl-accordion">
+          <summary>How to use</summary>
+          <div class="tl-accordion-body">
+            <h4>Tap tones &amp; frequencies</h4>
+            <p class="tl-card-desc">Tap tones reveal how a plate or box behaves. The waveform shows the impact; the FFT shows the resonances it excites.</p>
+            <h4>Recording a tap</h4>
+            <ul class="tl-list">
+              <li>Place the mic 75–150 mm from the plate or guitar; mute strings on a box.</li>
+              <li>Tap near center for monopole content; tap near an edge to highlight cross/long modes.</li>
+              <li>Record a short, clean tap—or load a WAV file.</li>
+            </ul>
+            <p class="tl-card-desc">Zoom the waveform to isolate the tap. The FFT automatically follows that selection. Hover over the FFT to see frequency, level, note, and cents. Click to add a marker.</p>
+            <h4>Accuracy tips</h4>
+            <ul class="tl-list">
+              <li>Tap firmly, but avoid clipping your preamp.</li>
+              <li>Move the mic a few centimeters if peaks look smeared.</li>
+              <li>A quieter room reduces low-frequency noise.</li>
+            </ul>
           </div>
-          <button class="tl-btn secondary" id="btn_load">Load WAV</button>
-          <input type="file" id="file_input" accept="audio/*" style="display:none">
-        </div>
-      </div>
+        </details>
+      </header>
 
-      <details class="tl-accordion">
-        <summary>Audio devices</summary>
-        <div class="input-block">
-          <h3 class="input-block__title">Audio input settings</h3>
-          <div class="tl-control-stack">
-            <label class="field">
-              <span class="field-label">Input device</span>
-              <select id="input_devices"></select>
-            </label>
-            <label class="field">
-              <span class="field-label">Input channel</span>
-              <select id="input_channel"></select>
-            </label>
-            <label class="field">
-              <span class="field-label">Output / speakers</span>
-              <select id="output_devices"></select>
-            </label>
-            <div class="field">
-              <span class="field-label">Active tracks</span>
-              <div id="track_list" class="track-list small muted"></div>
+      <main class="tl-layout">
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls tl-control-column">
+            <h2>Controls</h2>
+
+            <div class="input-block">
+              <h3 class="input-block__title">Capture</h3>
+              <div class="tl-control-stack">
+                <div class="button-row">
+                  <button class="tl-btn" id="btn_stop">■ Stop</button>
+                  <button class="tl-btn" id="btn_play">▶ Play</button>
+                  <button class="tl-btn danger" id="btn_record">● Record</button>
+                  <button class="tl-btn" id="btn_save_audio">Save</button>
+                </div>
+                <button class="tl-btn secondary" id="btn_load">Load WAV</button>
+                <input type="file" id="file_input" accept="audio/*" style="display:none">
+              </div>
             </div>
-            <button class="tl-btn secondary" id="btn_refresh_devices">Reset devices</button>
-          </div>
-        </div>
-      </details>
 
-      <details class="tl-accordion">
-        <summary>Debug options</summary>
-        <div class="input-block">
-          <h3 class="input-block__title">Debug options</h3>
-          <div class="tl-control-stack">
-            <label class="field">
-              <span class="field-label">Window</span>
-              <select id="window_type">
-                <option value="hann">Hann</option>
-                <option value="hamming">Hamming</option>
-                <option value="rect">Rectangular</option>
-              </select>
-            </label>
-            <label class="field">
-              <span class="field-label">FFT window (ms)</span>
-              <input type="number" min="100" max="8000" step="50" value="1500" id="sample_length">
-            </label>
-            <label class="field">
-              <span class="field-label">Smoothing (Hz)</span>
-              <input type="number" min="0" max="50" step="0.5" value="1.5" id="smooth_hz">
-            </label>
-            <div class="toggle-row">
-              <label class="field checkbox">
-                <input type="checkbox" id="use_stft">
-                <span class="field-label">Use STFT</span>
-              </label>
-              <label class="field checkbox">
-                <input type="checkbox" id="show_note_grid">
-                <span class="field-label">Show chromatic note grid</span>
-              </label>
-              <label class="field checkbox">
-                <input type="checkbox" id="show_peaks" checked>
-                <span class="field-label">Show basic peak markers</span>
-              </label>
+            <details class="tl-accordion">
+              <summary>Audio devices</summary>
+              <div class="input-block">
+                <h3 class="input-block__title">Audio input settings</h3>
+                <div class="tl-control-stack">
+                  <label class="field">
+                    <span class="field-label">Input device</span>
+                    <select id="input_devices"></select>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Input channel</span>
+                    <select id="input_channel"></select>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Output / speakers</span>
+                    <select id="output_devices"></select>
+                  </label>
+                  <div class="field">
+                    <span class="field-label">Active tracks</span>
+                    <div id="track_list" class="track-list small muted"></div>
+                  </div>
+                  <button class="tl-btn secondary" id="btn_refresh_devices">Reset devices</button>
+                </div>
+              </div>
+            </details>
+
+            <details class="tl-accordion">
+              <summary>Debug options</summary>
+              <div class="input-block">
+                <h3 class="input-block__title">Debug options</h3>
+                <div class="tl-control-stack">
+                  <label class="field">
+                    <span class="field-label">Window</span>
+                    <select id="window_type">
+                      <option value="hann">Hann</option>
+                      <option value="hamming">Hamming</option>
+                      <option value="rect">Rectangular</option>
+                    </select>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">FFT window (ms)</span>
+                    <input type="number" min="100" max="8000" step="50" value="1500" id="sample_length">
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Smoothing (Hz)</span>
+                    <input type="number" min="0" max="50" step="0.5" value="1.5" id="smooth_hz">
+                  </label>
+                  <div class="toggle-row">
+                    <label class="field checkbox">
+                      <input type="checkbox" id="use_stft">
+                      <span class="field-label">Use STFT</span>
+                    </label>
+                    <label class="field checkbox">
+                      <input type="checkbox" id="show_note_grid">
+                      <span class="field-label">Show chromatic note grid</span>
+                    </label>
+                    <label class="field checkbox">
+                      <input type="checkbox" id="show_peaks" checked>
+                      <span class="field-label">Show basic peak markers</span>
+                    </label>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">STFT size</span>
+                    <select id="stft_size">
+                      <option value="auto">Auto</option>
+                      <option value="2048">2048</option>
+                      <option value="4096">4096</option>
+                      <option value="8192">8192</option>
+                    </select>
+                  </label>
+                  <label class="field checkbox">
+                    <input type="checkbox" id="chromatic_spacing">
+                    <span class="field-label">Equal chromatic spacing (C1–C6)</span>
+                  </label>
+                  <label class="field checkbox">
+                    <input type="checkbox" id="show_wolf_band">
+                    <span class="field-label">Wolf danger band (±3%)</span>
+                  </label>
+                  <button id="btn_refresh" class="tl-btn">Apply</button>
+                </div>
+              </div>
+            </details>
+
+            <div class="input-block">
+              <h3 class="input-block__title">Tone generator</h3>
+              <div class="tl-control-stack">
+                <label class="field checkbox">
+                  <input type="checkbox" id="tone_toggle">
+                  <span class="field-label">Tone gen: On/Off</span>
+                </label>
+              </div>
             </div>
-            <label class="field">
-              <span class="field-label">STFT size</span>
-              <select id="stft_size">
-                <option value="auto">Auto</option>
-                <option value="2048">2048</option>
-                <option value="4096">4096</option>
-                <option value="8192">8192</option>
-              </select>
-            </label>
-            <label class="field checkbox">
-              <input type="checkbox" id="chromatic_spacing">
-              <span class="field-label">Equal chromatic spacing (C1–C6)</span>
-            </label>
-            <label class="field checkbox">
-              <input type="checkbox" id="show_wolf_band">
-              <span class="field-label">Wolf danger band (±3%)</span>
-            </label>
-            <button id="btn_refresh" class="tl-btn">Apply</button>
-          </div>
-        </div>
-      </details>
 
-      <div class="input-block">
-        <h3 class="input-block__title">Tone generator</h3>
-        <div class="tl-control-stack">
-          <label class="field checkbox">
-            <input type="checkbox" id="tone_toggle">
-            <span class="field-label">Tone gen: On/Off</span>
-          </label>
-        </div>
-      </div>
-    </section>
+            <div class="input-block">
+              <h3 class="input-block__title">Body modes (optional)</h3>
+              <div class="tl-control-stack">
+                <label class="field">
+                  <span class="field-label">Air range (Hz)</span>
+                  <div class="button-row" style="gap:6px;">
+                    <input type="number" min="50" max="150" step="0.5" id="mode_air_low" placeholder="75" value="75" style="flex:1;">
+                    <input type="number" min="50" max="150" step="0.5" id="mode_air_high" placeholder="115" value="115" style="flex:1;">
+                  </div>
+                </label>
+                <label class="field">
+                  <span class="field-label">Top range (Hz)</span>
+                  <div class="button-row" style="gap:6px;">
+                    <input type="number" min="120" max="320" step="0.5" id="mode_top_low" placeholder="150" value="150" style="flex:1;">
+                    <input type="number" min="120" max="320" step="0.5" id="mode_top_high" placeholder="205" value="205" style="flex:1;">
+                  </div>
+                </label>
+                <label class="field">
+                  <span class="field-label">Back range (Hz)</span>
+                  <div class="button-row" style="gap:6px;">
+                    <input type="number" min="160" max="320" step="0.5" id="mode_back_low" placeholder="210" value="210" style="flex:1;">
+                    <input type="number" min="160" max="320" step="0.5" id="mode_back_high" placeholder="260" value="260" style="flex:1;">
+                  </div>
+                </label>
+                <button class="tl-btn secondary" id="btn_apply_modes">Apply mode ranges</button>
+                <div class="small muted">Enter expected bands; defaults cover classical, flamenco, and steel-string boxes.</div>
+              </div>
+            </div>
+          </section>
+        </aside>
 
-    <section class="card pad tl-card tl-card-output">
-      <h2>Waveform &amp; FFT</h2>
-      <div class="plot-stack">
-        <div class="plot-card">
-          <div class="plot-header">
-            <h3 class="section">Waveform navigator</h3>
-            <div class="meta" id="wave_meta">1.5 s • 44.1 kHz</div>
-          </div>
-          <div class="plot-actions">
-            <button id="btn_reset_time_zoom" class="tl-btn secondary small">Reset time zoom</button>
-          </div>
-          <div id="plot_waveform" class="plot plot-thin"></div>
-        </div>
-      <div class="plot-card">
-        <div class="plot-header">
-          <h3 class="section">FFT + Note Grid</h3>
-          <div class="meta" id="fft_meta">hann window • tone gen: Off</div>
-        </div>
-          <div class="hover-readout" id="hover_readout">
-            <span id="hover_freq">-- Hz</span>
-            <span id="hover_db">-- dB</span>
-            <span id="hover_note">Note: --</span>
-          </div>
-          <div class="plot-actions">
-            <button id="btn_reset_zoom" class="tl-btn secondary small">Reset FFT zoom</button>
-          </div>
-          <div id="plot_fft" class="plot large-plot"></div>
-        </div>
-      </div>
-      <div class="small muted">
-        Waveform navigator with time zoom; FFT with note grid; basic peak markers with frequency, level, and pitch info.
-      </div>
-      <div class="plot-card" id="spectrogram_card" style="display:none;">
-        <div class="plot-header">
-          <h3 class="section">Spectrogram (STFT)</h3>
-          <div class="meta small muted">Toggle STFT in Debug options to render.</div>
-        </div>
-        <div id="plot_spectrogram" class="plot plot-thin"></div>
-      </div>
-    </section>
-  </main>
+        <section class="tl-content">
+          <section class="card pad tl-card tl-card-output">
+            <h2>Waveform &amp; FFT</h2>
+            <div class="plot-stack">
+              <div class="plot-card">
+                <div class="plot-header">
+                  <h3 class="section">Waveform navigator</h3>
+                  <div class="meta" id="wave_meta">1.5 s • 44.1 kHz</div>
+                </div>
+                <div class="plot-actions">
+                  <button id="btn_reset_time_zoom" class="tl-btn secondary small">Reset time zoom</button>
+                </div>
+                <div id="plot_waveform" class="plot plot-thin tl-plot-thin"></div>
+              </div>
+              <div class="plot-card">
+                <div class="plot-header">
+                  <h3 class="section">FFT + Note Grid</h3>
+                  <div class="meta" id="fft_meta">hann window • tone gen: Off</div>
+                </div>
+                <div class="hover-readout" id="hover_readout">
+                  <span id="hover_freq">-- Hz</span>
+                  <span id="hover_db">-- dB</span>
+                  <span id="hover_note">Note: --</span>
+                </div>
+                <div class="plot-actions">
+                  <button id="btn_reset_zoom" class="tl-btn secondary small">Reset FFT zoom</button>
+                </div>
+                <div id="plot_fft" class="plot large-plot tl-plot-fft"></div>
+              </div>
+              <div class="plot-card" id="spectrogram_card" style="display:none;">
+                <div class="plot-header">
+                  <h3 class="section">Spectrogram (STFT)</h3>
+                  <div class="meta small muted">Toggle STFT in Debug options to render.</div>
+                </div>
+                <div id="plot_spectrogram" class="plot plot-thin tl-plot-thin"></div>
+              </div>
+            </div>
+            <div class="small muted">
+              Waveform navigator with time zoom; FFT with note grid; basic peak markers with frequency, level, and pitch info.
+            </div>
+          </section>
 
-    <section class="card pad tl-card tl-span-2" id="annotation_card" style="margin:20px 0 0 0;">
-      <div class="annotation-header">
-        <h3 class="section">Selected frequencies</h3>
-        <div class="button-row">
-          <button class="tl-btn secondary" id="btn_clear_annotations">Clear</button>
-          <button class="tl-btn secondary" id="btn_save_annotations">Save</button>
-        </div>
-      </div>
-      <div class="annotation-table" id="annotation_table">
-        <div class="annotation-row annotation-head">
-          <span>Label</span>
-          <span>Frequency (Hz)</span>
-          <span>dB</span>
-          <span>Note / cents</span>
-        </div>
-      </div>
-      <div class="small muted">Click the FFT to add a marker. Hover updates the tone generator and shows note/cents.</div>
-    </section>
+          <section class="card pad tl-card" id="annotation_card" style="margin:20px 0 0 0;">
+            <div class="annotation-header">
+              <h3 class="section">Selected frequencies</h3>
+              <div class="button-row">
+                <button class="tl-btn secondary" id="btn_clear_annotations">Clear</button>
+                <button class="tl-btn secondary" id="btn_save_annotations">Save</button>
+              </div>
+            </div>
+            <div class="annotation-table" id="annotation_table">
+              <div class="annotation-row annotation-head">
+                <span>Label</span>
+                <span>Frequency (Hz)</span>
+                <span>dB</span>
+                <span>Note / cents</span>
+              </div>
+            </div>
+            <div class="small muted">Click the FFT to add a marker. Hover updates the tone generator and shows note/cents.</div>
+          </section>
+
+          <section class="card pad tl-card" id="mode_risk_card" style="margin:20px 0 0 0;">
+            <div class="annotation-header">
+              <h3 class="section">Detected modes &amp; wolf risk</h3>
+              <div class="small muted">Auto-picked peaks within your Air / Top / Back bands.</div>
+            </div>
+            <div class="annotation-table" id="mode_risk_table"></div>
+          </section>
+        </section>
+      </main>
+    </div>
   </div>
 
   <script src="../vendor/plotly/plotly.min.js" defer></script>
@@ -218,6 +263,8 @@
   <script src="../modal_frequency_shared/fft_engine.js" defer></script>
   <script src="../modal_frequency_shared/live_spectrogram.js" defer></script>
   <script src="../modal_frequency_shared/stft.js" defer></script>
+  <script src="../modal_frequency_shared/wolf_logic.js" defer></script>
+  <script src="../modal_frequency_shared/modes.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 
