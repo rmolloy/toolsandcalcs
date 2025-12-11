@@ -5,6 +5,7 @@
   const state = window.FFTState;
   const { freqToNoteCents, deviationColor, COLOR_ORANGE } = window.FFTUtils;
   const NOTE_ORDER = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  const EPS = 1e-12;
 
   function midiFromNote(note) {
     const match = /^([A-G]#?)(\d)$/.exec(note);
@@ -67,6 +68,7 @@
       dbs: spectrum.dbs || [],
       maxDb: spectrum.maxDb || (spectrum.dbs ? Math.max(...spectrum.dbs, -120) : null),
       maxMag: spectrum.maxMag || Math.max(...mags, 1e-9),
+      binWidth: freqs.length > 1 ? Math.abs(freqs[1] - freqs[0]) : null,
     };
     const ySeries = spectrum.dbs && spectrum.dbs.length ? spectrum.dbs : mags;
     const inRange = freqs.map((f, idx) => ({ f, v: ySeries[idx] })).filter((p) => p.f >= freqMin && p.f <= maxFreq);
@@ -261,11 +263,13 @@
     return Math.min(Math.max(value, NOTE_AXIS_START), NOTE_AXIS_END);
   }
 
-  function renderHoverReadout({ freq, db }) {
+  function renderHoverReadout({ freq, db, freqText }) {
     const note = freqToNoteCents(freq);
     const hasFreq = Number.isFinite(freq);
     const hasDb = Number.isFinite(db);
-    document.getElementById("hover_freq").textContent = hasFreq ? `${freq.toFixed(2)} Hz` : "— Hz";
+    document.getElementById("hover_freq").textContent = freqText
+      ? freqText
+      : hasFreq ? `${freq.toFixed(2)} Hz` : "— Hz";
     document.getElementById("hover_db").textContent = hasDb ? `${db.toFixed(2)} dB` : "— dB";
     const color = deviationColor(Math.abs(note.centsNum ?? 999));
     document.getElementById("hover_note").innerHTML = `Note: ${note.name} <span style="color:${color};font-weight:700;">${note.cents}</span>`;
@@ -301,11 +305,24 @@
     plot.on("plotly_hover", (evt) => {
       const pt = evt.points?.[0];
       if (!pt) return;
-      const freq = extractFreqFromPoint(pt);
-      if (!Number.isFinite(freq)) return;
-      const db = dbForFreq(freq);
-      renderHoverReadout({ freq, db });
-      if (window.handleToneHover) window.handleToneHover(freq);
+      const freqFromPoint = extractFreqFromPoint(pt);
+      const pointIdx = Number.isFinite(pt.pointNumber) ? pt.pointNumber : null;
+      const binFreq = (pointIdx !== null && state.lastSpectrum?.freqs)
+        ? state.lastSpectrum.freqs[pointIdx] ?? freqFromPoint
+        : freqFromPoint;
+      if (!Number.isFinite(binFreq)) return;
+      const db = dbForFreq(binFreq);
+      const refined = refineParabolicPeak(pointIdx, binFreq);
+      const freqText = (() => {
+        if (!refined || !Number.isFinite(refined.freq)) return `${binFreq.toFixed(2)} Hz`;
+        const deltaHz = refined.freq - binFreq;
+        const deltaText = `${deltaHz >= 0 ? "+" : ""}${deltaHz.toFixed(2)} Hz`;
+        return `Bin ${binFreq.toFixed(2)} Hz • Parab ${refined.freq.toFixed(2)} Hz (${deltaText})`;
+      })();
+      const displayFreq = refined?.freq ?? binFreq;
+      renderHoverReadout({ freq: displayFreq, db, freqText });
+      const hoverToneFreq = displayFreq;
+      if (window.handleToneHover) window.handleToneHover(hoverToneFreq);
     });
 
     plot.on("plotly_unhover", () => {
@@ -353,6 +370,39 @@
     if (Number.isFinite(pt.x) && !state.useNoteAxis) return pt.x;
     if (Number.isFinite(pt.x) && state.useNoteAxis) return freqFromMidi(pt.x);
     return null;
+  }
+
+  function refineParabolicPeak(pointIndex, fallbackFreq = null) {
+    const spectrum = state.lastSpectrum;
+    if (!spectrum || !Array.isArray(spectrum.mags) || !spectrum.freqs?.length) return null;
+    let k = Number.isFinite(pointIndex) ? pointIndex : null;
+    if (k === null && Number.isFinite(fallbackFreq)) {
+      let bestIdx = 0;
+      let bestDist = Infinity;
+      spectrum.freqs.forEach((f, idx) => {
+        const d = Math.abs(f - fallbackFreq);
+        if (d < bestDist) {
+          bestDist = d;
+          bestIdx = idx;
+        }
+      });
+      k = bestIdx;
+    }
+    if (!Number.isFinite(k)) return null;
+    if (k <= 0 || k >= spectrum.mags.length - 1) return null;
+    const binWidth = spectrum.binWidth || (spectrum.freqs.length > 1 ? Math.abs(spectrum.freqs[1] - spectrum.freqs[0]) : null);
+    if (!Number.isFinite(binWidth) || binWidth <= 0) return null;
+    const a = spectrum.mags[k - 1];
+    const b = spectrum.mags[k];
+    const c = spectrum.mags[k + 1];
+    if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)) return null;
+    const denom = a - (2 * b) + c;
+    if (Math.abs(denom) < EPS) return null;
+    const delta = 0.5 * (a - c) / denom;
+    if (!Number.isFinite(delta)) return null;
+    const clampedDelta = Math.max(-1.5, Math.min(1.5, delta));
+    const freq = spectrum.freqs[k] + clampedDelta * binWidth;
+    return { freq, delta: clampedDelta };
   }
 
   function smoothSpectrum(spectrum, smoothHz) {

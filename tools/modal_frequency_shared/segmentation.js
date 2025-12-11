@@ -8,6 +8,7 @@
 
   function segmentNotesFromBuffer(samples, sampleRate, opts = {}) {
     if (!samples || !samples.length || !sampleRate) return [];
+    const buf = (typeof samples.subarray === "function") ? samples : Float32Array.from(samples);
     const minSilenceMs = opts.minSilenceMs ?? 180;
     const thresholdDb = opts.thresholdDb ?? -40;
     const windowMs = opts.windowMs ?? 20;
@@ -23,8 +24,8 @@
     let noteStart = 0;
     let silenceRun = 0;
     for (let start = 0; start < samples.length; start += hop) {
-      const end = Math.min(samples.length, start + win);
-      const slice = samples.subarray(start, end);
+      const end = Math.min(buf.length, start + win);
+      const slice = buf.subarray(start, end);
       const val = rms(slice);
       if (val >= threshLin) {
         if (!inNote) {
