@@ -12,8 +12,25 @@ const { MODE_DEFAULTS = {}, MODE_COLORS = {} } = window.ModalModes || {};
 const wolfLogic = (window as any).WolfLogic || {};
 function getDebug() {
   if (!state.debug) {
-    state.debug = { useStft: false, stftSize: "auto" };
+    state.debug = {
+      useStft: false,
+      stftSize: "auto",
+      stftOverlap: 0.5,
+      stftMaxFreq: 1000,
+      flipStftAxes: true,
+      modePromGate: false,
+      modePromDb: 5,
+      showModeSplits: false,
+      averageTaps: false,
+    };
   }
+  if (state.debug.stftMaxFreq === undefined) state.debug.stftMaxFreq = 1000;
+  if (state.debug.stftOverlap === undefined) state.debug.stftOverlap = 0.5;
+  if (state.debug.flipStftAxes === undefined) state.debug.flipStftAxes = true;
+  if (state.debug.modePromGate === undefined) state.debug.modePromGate = false;
+  if (state.debug.modePromDb === undefined) state.debug.modePromDb = 5;
+  if (state.debug.showModeSplits === undefined) state.debug.showModeSplits = false;
+  if (state.debug.averageTaps === undefined) state.debug.averageTaps = false;
   return state.debug;
 }
 let toneOn = false;
@@ -26,6 +43,8 @@ const modeRefs = {
   top: { ...(MODE_DEFAULTS.top || { low: 150, high: 205 }), peak: null },
   back: { ...(MODE_DEFAULTS.back || { low: 210, high: 260 }), peak: null },
 };
+const showSplits = () => !!getDebug().showModeSplits;
+const useTapAveraging = () => !!getDebug().averageTaps;
 
 function updateMeta(sampleLengthMs, sampleRate, window) {
   document.getElementById("wave_meta").textContent = `${(sampleLengthMs / 1000).toFixed(2)} s window • ${(sampleRate / 1000).toFixed(1)} kHz`;
@@ -49,6 +68,62 @@ function median(arr) {
   const s = arr.slice().sort((a, b) => a - b);
   const mid = Math.floor(s.length / 2);
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+}
+
+function detectTaps(wave: Float32Array | number[], sampleRate: number, opts: { windowMs?: number; thresholdMult?: number; minGapMs?: number; minLenMs?: number } = {}) {
+  const windowMs = opts.windowMs ?? 10;
+  const thresholdMult = opts.thresholdMult ?? 6;
+  const minGapMs = opts.minGapMs ?? 80;
+  const minLenMs = opts.minLenMs ?? 40;
+  const windowSamples = Math.max(1, Math.round((windowMs / 1000) * sampleRate));
+  const smoothed: number[] = [];
+  let acc = 0;
+  for (let i = 0; i < wave.length; i += 1) {
+    acc += Math.abs(wave[i]);
+    if (i >= windowSamples) acc -= Math.abs(wave[i - windowSamples]);
+    smoothed.push(acc / windowSamples);
+  }
+  const base = median(smoothed);
+  const thresh = thresholdMult * base;
+  const minGapSamples = Math.round((minGapMs / 1000) * sampleRate);
+  const minLenSamples = Math.round((minLenMs / 1000) * sampleRate);
+  const taps: { start: number; end: number }[] = [];
+  let i = 0;
+  while (i < smoothed.length) {
+    if (smoothed[i] > thresh) {
+      const start = i;
+      while (i < smoothed.length && smoothed[i] > thresh / 2) i += 1;
+      const end = i;
+      if (end - start >= minLenSamples) {
+        taps.push({ start, end });
+        i = end + minGapSamples;
+        continue;
+      }
+    }
+    i += 1;
+  }
+  return taps;
+}
+
+async function averageTapSpectra(wave: Float32Array | number[], sampleRate: number, taps: { start: number; end: number }[], fft: any) {
+  if (!taps.length) return null;
+  const windowMs = 350;
+  const windowSamples = Math.round((windowMs / 1000) * sampleRate);
+  const spectra: any[] = [];
+  for (let t = 0; t < taps.length; t += 1) {
+    const slice = wave.slice(taps[t].start, Math.min(wave.length, taps[t].start + windowSamples));
+    if (!slice.length) continue;
+    spectra.push(fft.magnitude(slice, sampleRate, { window: "hann", maxFreq: 1000 }));
+  }
+  if (!spectra.length) return null;
+  const specs = await Promise.all(spectra);
+  const base = specs[0];
+  const sum = new Array(base.mags.length).fill(0);
+  specs.forEach((s) => {
+    s.mags.forEach((m: number, idx: number) => { sum[idx] += m; });
+  });
+  const avgMags = sum.map((s) => s / specs.length);
+  return { freqs: base.freqs, mags: avgMags, dbs: FFTPlot.applyDb({ freqs: base.freqs, mags: avgMags }).dbs, tapsUsed: specs.length };
 }
 
 function userAnnotations() {
@@ -127,59 +202,107 @@ function updateModeRefs() {
   assignRange("mode_back_low", "mode_back_high", "back", MODE_DEFAULTS.back || { low: 210, high: 260 });
 }
 
-const severityFromProminence = (prom: number) =>
-  wolfLogic.severityFromProminence?.(prom) ?? (Number.isFinite(prom)
-    ? prom >= 14 ? "High" : prom >= 9 ? "Medium" : "Low"
-    : "Low");
-
 const severityFromNoteProximity = (centsAbs: number) =>
   wolfLogic.severityFromNoteProximity?.(centsAbs) ?? (Number.isFinite(centsAbs)
-    ? centsAbs <= 7 ? "High" : centsAbs < 15 ? "Medium" : "Low"
+    ? centsAbs <= 7 ? "High" : centsAbs <= 15 ? "Medium" : "Low"
     : "Low");
 
 const pickSeverity = (a: string, b: string) =>
   wolfLogic.pickSeverity?.(a, b) ?? (({ High: 3, Medium: 2, Low: 1 } as const)[a] >= ({ High: 3, Medium: 2, Low: 1 } as const)[b] ? a : b);
 
 const computeSeverity = (prominence: number, centsAbs: number) =>
-  wolfLogic.computeSeverity?.({ prominence, centsAbs }) ?? pickSeverity(
-    severityFromProminence(prominence),
-    severityFromNoteProximity(centsAbs)
-  );
+  wolfLogic.computeSeverity?.({ prominence, centsAbs }) ?? severityFromNoteProximity(centsAbs);
 
 const noteBonus = (centsAbs: number) =>
   wolfLogic.noteBonus?.(centsAbs) ?? (Number.isFinite(centsAbs)
     ? centsAbs <= 7 ? 4 : centsAbs <= 15 ? 2 : centsAbs <= 30 ? 1 : 0
     : 0);
 
+type PeakCandidate = { idx: number; freq: number; db: number; prominence: number };
+
+function estimateQ(targetFreq) {
+  const spectrum = state.lastSpectrum;
+  if (!spectrum?.freqs?.length) return null;
+  const freqs = spectrum.freqs;
+  const dbs = spectrum.dbs?.length ? spectrum.dbs : spectrum.mags.map((m) => 20 * Math.log10(Math.max(m, 1e-12)));
+  let idx = 0;
+  let bestDist = Infinity;
+  freqs.forEach((f, i) => {
+    const d = Math.abs(f - targetFreq);
+    if (d < bestDist) {
+      bestDist = d;
+      idx = i;
+    }
+  });
+  const peakDb = dbs[idx];
+  if (!Number.isFinite(peakDb)) return null;
+  const cutoff = peakDb - 3;
+  let leftIdx = idx;
+  while (leftIdx > 0 && dbs[leftIdx] > cutoff) leftIdx -= 1;
+  let rightIdx = idx;
+  while (rightIdx < dbs.length - 1 && dbs[rightIdx] > cutoff) rightIdx += 1;
+  const leftFreq = freqs[leftIdx] ?? targetFreq;
+  const rightFreq = freqs[rightIdx] ?? targetFreq;
+  const bw = Math.max(1e-3, Math.abs(rightFreq - leftFreq));
+  return targetFreq / bw;
+}
+
 function analyzeModes(spectrum) {
   if (!spectrum?.freqs?.length) return [];
   const dbs = spectrum.dbs?.length ? spectrum.dbs : spectrum.mags || [];
   const freqs = spectrum.freqs;
+  const debug = getDebug();
+  const gateOn = !!debug.modePromGate;
+  const promFloor = Number.isFinite(debug.modePromDb) ? debug.modePromDb : 0;
   return Object.entries(modeRefs).map(([key, band]) => {
-    let bestIdx = -1;
-    let bestDb = -Infinity;
-    freqs.forEach((f, idx) => {
-      if (f >= band.low && f <= band.high && dbs[idx] > bestDb) {
-        bestDb = dbs[idx];
-        bestIdx = idx;
-      }
-    });
-    if (bestIdx < 0) {
-      return { mode: key, peakFreq: null, prominence: null, severity: "Low", score: 0, note: null };
+    const peaks = [];
+    for (let i = 1; i < freqs.length - 1; i += 1) {
+      if (!(dbs[i] > dbs[i - 1] && dbs[i] > dbs[i + 1])) continue;
+      const f = freqs[i];
+      if (f < band.low || f > band.high) continue;
+      const start = Math.max(0, i - 6);
+      const end = Math.min(dbs.length - 1, i + 6);
+      const neighbors = dbs.slice(start, end + 1);
+      neighbors.splice(i - start, 1);
+      const baseline = neighbors.length ? median(neighbors) : dbs[i];
+      const prominence = dbs[i] - baseline;
+      if (gateOn && prominence < promFloor) continue;
+      peaks.push({ idx: i, db: dbs[i], prominence });
     }
-    const centerVal = dbs[bestIdx];
-    const start = Math.max(0, bestIdx - 6);
-    const end = Math.min(dbs.length - 1, bestIdx + 6);
-    const neighbors = dbs.slice(start, end + 1);
-    neighbors.splice(bestIdx - start, 1);
-    const baseline = neighbors.length ? median(neighbors) : centerVal;
-    const prominence = centerVal - baseline;
-    const peakFreq = freqs[bestIdx];
+    if (!peaks.length) return { mode: key, peakFreq: null, prominence: null, severity: "Low", score: 0, note: null };
+
+    peaks.sort((a, b) => b.db - a.db);
+    let primary = peaks[0];
+    const contender = peaks[1];
+    if (contender && (primary.db - contender.db) <= 2) {
+      const qPrimary = estimateQ(freqs[primary.idx]) ?? 0;
+      const qCont = estimateQ(freqs[contender.idx]) ?? 0;
+      if (qCont > qPrimary) primary = contender;
+    }
+
+    let split: PeakCandidate | null = null;
+    if (showSplits() && peaks.length > 1) {
+      const splitCandidates = peaks.filter((p) => p !== primary && Math.abs(freqs[p.idx] - freqs[primary.idx]) >= 8 && Math.abs(freqs[p.idx] - freqs[primary.idx]) <= 20);
+      const lowerFirst = splitCandidates.filter((p) => freqs[p.idx] < freqs[primary.idx]).sort((a, b) => b.prominence - a.prominence || b.db - a.db);
+      const higherFirst = splitCandidates.filter((p) => freqs[p.idx] > freqs[primary.idx]).sort((a, b) => b.prominence - a.prominence || b.db - a.db);
+      split = lowerFirst[0] || higherFirst[0] || null;
+    }
+
+    const peakFreq = freqs[primary.idx];
     const note = freqToNoteCents(peakFreq);
     const centsAbs = Math.abs(note?.centsNum ?? 999);
-    const severity = computeSeverity(prominence, centsAbs);
-    const score = prominence + noteBonus(centsAbs);
-    return { mode: key, peakFreq, prominence, severity, score, note };
+    const severity = computeSeverity(primary.prominence, centsAbs);
+    const score = primary.prominence + noteBonus(centsAbs);
+    return {
+      mode: key,
+      peakFreq,
+      prominence: primary.prominence,
+      severity,
+      score,
+      note,
+      splitFreq: showSplits() && split ? freqs[split.idx] : null,
+      splitProminence: showSplits() && split ? split.prominence : null,
+    };
   });
 }
 
@@ -198,7 +321,7 @@ function renderModeRiskTable(matches) {
   const rows = ordered.map((key) => matches.find((m) => m.mode === key)).filter(Boolean).map((m) => `
     <div class="annotation-row">
       <span>${modeLabel(m.mode)}</span>
-      <span>${m.peakFreq ? m.peakFreq.toFixed(1) : "—"}</span>
+      <span>${m.peakFreq ? m.peakFreq.toFixed(1) : "—"}${m.splitFreq ? ` / ${m.splitFreq.toFixed(1)}` : ""}</span>
       <span>${m.note ? `${m.note.name} (${m.note.cents})` : "—"}</span>
       <span><span class="wolf-chip ${m.severity.toLowerCase()}">${m.severity}</span></span>
     </div>
@@ -264,6 +387,87 @@ function handleWaveRangeChange(range) {
   } else {
     refresh().catch((err) => console.error("[FFT Lite] refresh failed", err));
   }
+}
+
+async function runFrequencyAnalysis(slice, fftOptions) {
+  const debug = getDebug();
+  const smoothHz = Number(document.getElementById("smooth_hz")?.value) || 0;
+  const showNoteGrid = document.getElementById("show_note_grid")?.checked;
+  const showPeaks = document.getElementById("show_peaks")?.checked;
+  const chromaticSpacing = document.getElementById("chromatic_spacing")?.checked;
+  const showWolfBand = document.getElementById("show_wolf_band")?.checked;
+  state.useNoteAxis = !!chromaticSpacing;
+
+  const baseModeAnnotations = buildModeAnnotations();
+  const spectrum = await fftEngine.magnitude(slice.wave, slice.sampleRate, fftOptions);
+  const smoothed = FFTPlot.smoothSpectrum(spectrum, smoothHz);
+  const withDb = FFTPlot.applyDb(smoothed);
+  let finalSpectrum = withDb;
+  if (useTapAveraging()) {
+    const taps = detectTaps(slice.wave, slice.sampleRate, { thresholdMult: 5, minGapMs: 60, minLenMs: 30 });
+    const averaged = await averageTapSpectra(slice.wave, slice.sampleRate, taps, fftEngine);
+    if (averaged?.freqs?.length) {
+      finalSpectrum = { freqs: averaged.freqs, mags: averaged.mags, dbs: averaged.dbs };
+      console.log("[FFT Lite] tap averaging enabled", { tapsFound: taps.length, tapsUsed: averaged.tapsUsed });
+    }
+  }
+  const modeAnnotations = buildModeAnnotationsFromSpectrum(finalSpectrum);
+  const modeMatches = analyzeModes(finalSpectrum);
+  const splitAnns = showSplits()
+    ? modeMatches
+      .filter((m) => m.splitFreq)
+      .map((m) => ({
+        freq: m.splitFreq,
+        label: `${modeLabel(m.mode)} split`,
+        color: MODE_COLORS[m.mode] || undefined,
+      }))
+    : [];
+  const userAnns = userAnnotations();
+  FFTPlot.makeFftPlot(finalSpectrum, {
+    showNoteGrid,
+    showPeaks,
+    peaks: [],
+    freqMin: FREQ_MIN,
+    freqMax: fftOptions.maxFreq || FREQ_MAX_DEFAULT,
+    useNoteAxis: chromaticSpacing,
+    showWolfBand,
+    modeAnnotations: [...(modeAnnotations.length ? modeAnnotations : baseModeAnnotations), ...splitAnns, ...userAnns],
+  });
+  state.lastSpectrum = withDb;
+  renderModeRiskTable(modeMatches);
+
+  if (debug.useStft && window.ModalSpectrogram?.computeSpectrogram) {
+    const stftSize = debug.stftSize === "auto" ? 2048 : Number(debug.stftSize) || 2048;
+    const overlap = debug.stftOverlap ?? 0.5;
+    const hop = Math.max(1, Math.round(stftSize * (1 - overlap)));
+    const maxSamples = Math.min(slice.wave.length, Math.round(slice.sampleRate * 1));
+    const waveForStft = slice.wave.length > maxSamples ? slice.wave.slice(0, maxSamples) : slice.wave;
+    const spec = await window.ModalSpectrogram.computeSpectrogram(
+      waveForStft,
+      slice.sampleRate,
+      fftEngine,
+      {
+        fftSize: stftSize,
+        hopSize: hop,
+        overlap,
+        maxFreq: debug.stftMaxFreq || fftOptions.maxFreq || FREQ_MAX_DEFAULT,
+        window: fftOptions.window || "hann",
+      },
+    );
+    state.lastSpectrogram = spec;
+    toggleSpectrogramCard(true);
+    if (window.renderSpectrogram) {
+      window.renderSpectrogram(spec, {
+        elementId: "plot_spectrogram",
+        useNoteAxis: state.useNoteAxis,
+        flipAxes: debug.flipStftAxes,
+      });
+    }
+  } else {
+    state.lastSpectrogram = null;
+    toggleSpectrogramCard(false);
+  }
+  return withDb;
 }
 
 async function refreshDevices(requirePermission = false) {
@@ -336,53 +540,21 @@ async function refreshDevices(requirePermission = false) {
 async function updateFftForRange(rangeMs) {
   const source = state.currentWave || FFTAudio.generateDemoWave(rangeMs.end - rangeMs.start);
   const windowType = document.getElementById("window_type").value;
-  const smoothHz = Number(document.getElementById("smooth_hz").value) || 0;
-  const noteGridCheckbox = document.getElementById("show_note_grid");
-  const showNoteGrid = noteGridCheckbox ? noteGridCheckbox.checked : false;
-  const showPeaks = document.getElementById("show_peaks").checked;
-  const chromaticSpacing = document.getElementById("chromatic_spacing")?.checked;
-  const wolfBandCheckbox = document.getElementById("show_wolf_band");
-  const showWolfBand = wolfBandCheckbox ? wolfBandCheckbox.checked : false;
-  const baseModeAnnotations = buildModeAnnotations();
-
   const sliced = FFTWaveform.sliceWaveRange(source, rangeMs.start, rangeMs.end)
     || FFTWaveform.sliceWave(source, rangeMs.end - rangeMs.start);
   if (!sliced) return;
-  const spectrum = await fftEngine.magnitude(sliced.wave, sliced.sampleRate, { maxFreq: FREQ_MAX_DEFAULT, window: windowType });
-  const smoothed = FFTPlot.smoothSpectrum(spectrum, smoothHz);
-  const withDb = FFTPlot.applyDb(smoothed);
-  const modeAnnotations = buildModeAnnotationsFromSpectrum(withDb);
-  const userAnns = userAnnotations();
-  FFTPlot.makeFftPlot(withDb, {
-    showNoteGrid,
-    showPeaks,
-    peaks: [],
-    freqMin: FREQ_MIN,
-    freqMax: FREQ_MAX_DEFAULT,
-    useNoteAxis: chromaticSpacing,
-    showWolfBand,
-    modeAnnotations: [...(modeAnnotations.length ? modeAnnotations : baseModeAnnotations), ...userAnns],
-  });
+  await runFrequencyAnalysis(sliced, { maxFreq: FREQ_MAX_DEFAULT, window: windowType });
   updateMeta(rangeMs.end - rangeMs.start, sliced.sampleRate, windowType);
-  renderModeRiskTable(analyzeModes(withDb));
 }
 
 async function refresh() {
   const sampleInput = document.getElementById("sample_length");
   let sampleLengthMs = Number(sampleInput.value) || 1500;
-  const debug = getDebug();
   if (state.currentWave && state.currentWave.fullLengthMs && !state.viewRangeMs) {
     sampleLengthMs = state.currentWave.fullLengthMs;
     sampleInput.value = Math.round(sampleLengthMs);
   }
   const windowType = document.getElementById("window_type").value;
-  const smoothHz = Number(document.getElementById("smooth_hz").value) || 0;
-  const noteGridCheckbox = document.getElementById("show_note_grid");
-  const showNoteGrid = noteGridCheckbox ? noteGridCheckbox.checked : false;
-  const showPeaks = document.getElementById("show_peaks").checked;
-  const chromaticSpacing = document.getElementById("chromatic_spacing")?.checked;
-  const wolfBandCheckbox = document.getElementById("show_wolf_band");
-  const showWolfBand = wolfBandCheckbox ? wolfBandCheckbox.checked : false;
 
   const source = state.currentWave || FFTAudio.generateDemoWave(sampleLengthMs);
   if (!state.currentWave) {
@@ -394,42 +566,9 @@ async function refresh() {
   if (!slice) return;
 
   FFTWaveform.makeWavePlot(slice, handleWaveRangeChange);
-  const spectrum = await fftEngine.magnitude(slice.wave, slice.sampleRate, { maxFreq: FREQ_MAX_DEFAULT, window: windowType });
-  const smoothed = FFTPlot.smoothSpectrum(spectrum, smoothHz);
-  const withDb = FFTPlot.applyDb(smoothed);
-  const modeAnnotations = buildModeAnnotationsFromSpectrum(withDb);
-  const userAnns = userAnnotations();
-  FFTPlot.makeFftPlot(withDb, {
-    showNoteGrid,
-    showPeaks,
-    peaks: [],
-    freqMin: FREQ_MIN,
-    freqMax: FREQ_MAX_DEFAULT,
-    useNoteAxis: chromaticSpacing,
-    showWolfBand,
-    modeAnnotations: [...(modeAnnotations.length ? modeAnnotations : baseModeAnnotations), ...userAnns],
-  });
+  await runFrequencyAnalysis(slice, { maxFreq: FREQ_MAX_DEFAULT, window: windowType });
   updateMeta(slice.timeMs[slice.timeMs.length - 1] || sampleLengthMs, slice.sampleRate, windowType);
   renderAnnotations();
-  renderModeRiskTable(analyzeModes(withDb));
-  if (debug.useStft && window.ModalSpectrogram?.computeSpectrogram) {
-    const maxSamples = Math.min(slice.wave.length, Math.round(slice.sampleRate * 1));
-    const waveForStft = slice.wave.length > maxSamples ? slice.wave.slice(0, maxSamples) : slice.wave;
-    const stftSize = debug.stftSize === "auto" ? 2048 : Number(debug.stftSize) || 2048;
-    const hop = stftSize >> 1;
-    const spec = await window.ModalSpectrogram.computeSpectrogram(
-      waveForStft,
-      slice.sampleRate,
-      fftEngine,
-      { fftSize: stftSize, hopSize: hop, maxFreq: 1000, window: "hann" },
-    );
-    state.lastSpectrogram = spec;
-    toggleSpectrogramCard(true);
-    if (window.renderSpectrogram) window.renderSpectrogram(spec, { elementId: "plot_spectrogram" });
-  } else {
-    state.lastSpectrogram = null;
-    toggleSpectrogramCard(false);
-  }
 }
 
 function bindControls() {
@@ -456,10 +595,75 @@ function bindControls() {
       safeRefresh();
     });
   }
+  const stftOverlap = document.getElementById("stft_overlap");
+  const stftOverlapLabel = document.getElementById("stft_overlap_label");
+  const updateOverlapLabel = (val) => {
+    if (stftOverlapLabel) stftOverlapLabel.textContent = `${Math.round(val * 100)}%`;
+  };
+  if (stftOverlap) {
+    stftOverlap.value = String(getDebug().stftOverlap ?? 0.5);
+    updateOverlapLabel(Number(stftOverlap.value));
+    stftOverlap.addEventListener("input", () => {
+      const v = Math.max(0, Math.min(0.9, Number(stftOverlap.value)));
+      getDebug().stftOverlap = v;
+      updateOverlapLabel(v);
+    });
+    stftOverlap.addEventListener("change", () => safeRefresh());
+  }
+  const stftMaxFreq = document.getElementById("stft_max_freq");
+  if (stftMaxFreq) {
+    stftMaxFreq.value = String(getDebug().stftMaxFreq ?? 1000);
+    stftMaxFreq.addEventListener("change", () => {
+      const v = Number(stftMaxFreq.value) || 1000;
+      getDebug().stftMaxFreq = v;
+      safeRefresh();
+    });
+  }
+  const flipStftAxes = document.getElementById("flip_stft_axes");
+  if (flipStftAxes) {
+    flipStftAxes.checked = !!getDebug().flipStftAxes;
+    flipStftAxes.addEventListener("change", () => {
+      getDebug().flipStftAxes = flipStftAxes.checked;
+      safeRefresh();
+    });
+  }
   const chromaticSpacing = document.getElementById("chromatic_spacing");
   if (chromaticSpacing) chromaticSpacing.addEventListener("change", safeRefresh);
   const wolfBand = document.getElementById("show_wolf_band");
   if (wolfBand) wolfBand.addEventListener("change", safeRefresh);
+  const modeSplits = document.getElementById("show_mode_splits");
+  if (modeSplits) {
+    modeSplits.checked = !!getDebug().showModeSplits;
+    modeSplits.addEventListener("change", () => {
+      getDebug().showModeSplits = modeSplits.checked;
+      safeRefresh();
+    });
+  }
+  const averageTaps = document.getElementById("average_taps");
+  if (averageTaps) {
+    averageTaps.checked = !!getDebug().averageTaps;
+    averageTaps.addEventListener("change", () => {
+      getDebug().averageTaps = averageTaps.checked;
+      safeRefresh();
+    });
+  }
+  const modePromGate = document.getElementById("mode_prom_gate");
+  if (modePromGate) {
+    modePromGate.checked = !!getDebug().modePromGate;
+    modePromGate.addEventListener("change", () => {
+      getDebug().modePromGate = modePromGate.checked;
+      safeRefresh();
+    });
+  }
+  const modePromDb = document.getElementById("mode_prom_db");
+  if (modePromDb) {
+    modePromDb.value = String(getDebug().modePromDb ?? 5);
+    modePromDb.addEventListener("change", () => {
+      const v = Number(modePromDb.value);
+      getDebug().modePromDb = Number.isFinite(v) ? v : 5;
+      safeRefresh();
+    });
+  }
   const applyModes = document.getElementById("btn_apply_modes");
   if (applyModes) {
     applyModes.addEventListener("click", () => {

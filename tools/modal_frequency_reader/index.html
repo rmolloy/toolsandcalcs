@@ -127,6 +127,19 @@
                       <option value="8192">8192</option>
                     </select>
                   </label>
+                  <label class="field">
+                    <span class="field-label">STFT overlap</span>
+                    <input type="range" id="stft_overlap" min="0" max="0.9" step="0.05" value="0.5">
+                    <div class="small muted" id="stft_overlap_label">50%</div>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">STFT max frequency (Hz)</span>
+                    <input type="number" id="stft_max_freq" min="100" max="5000" step="50" value="1000">
+                  </label>
+                  <label class="field checkbox">
+                    <input type="checkbox" id="flip_stft_axes">
+                    <span class="field-label">Flip STFT axes</span>
+                  </label>
                   <label class="field checkbox">
                     <input type="checkbox" id="chromatic_spacing">
                     <span class="field-label">Equal chromatic spacing (C1–C6)</span>
@@ -134,6 +147,24 @@
                   <label class="field checkbox">
                     <input type="checkbox" id="show_wolf_band">
                     <span class="field-label">Wolf danger band (±3%)</span>
+                  </label>
+                  <label class="field checkbox">
+                    <input type="checkbox" id="show_mode_splits">
+                    <span class="field-label">Show mode splits (debug)</span>
+                  </label>
+                  <label class="field checkbox">
+                    <input type="checkbox" id="average_taps">
+                    <span class="field-label">Detect &amp; average taps (debug)</span>
+                    <div class="small muted">Detect onsets, FFT each tap, and average the spectra.</div>
+                  </label>
+                  <label class="field checkbox">
+                    <input type="checkbox" id="mode_prom_gate">
+                    <span class="field-label">Require mode peak contrast</span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Mode prominence floor (dB)</span>
+                    <input type="number" id="mode_prom_db" min="0" max="30" step="0.5" value="5">
+                    <div class="small muted">Only label modes if peak contrast exceeds this when enabled.</div>
                   </label>
                   <button id="btn_refresh" class="tl-btn">Apply</button>
                 </div>
