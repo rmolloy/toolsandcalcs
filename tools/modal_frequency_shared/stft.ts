@@ -5,6 +5,7 @@
     hopSize?: number;
     maxFreq?: number;
     window?: "hann" | "hamming" | "rect";
+    overlap?: number;
   }
 
   interface SpectrogramResult {
@@ -20,7 +21,8 @@
     opts: SpectrogramOptions = {}
   ): Promise<SpectrogramResult> {
     const N = opts.fftSize ?? 2048;
-    const hop = opts.hopSize ?? (N >> 1);
+    const overlap = Math.max(0, Math.min(0.95, opts.overlap ?? 0.5));
+    const hop = opts.hopSize ?? Math.max(1, Math.round(N * (1 - overlap)));
     const maxFreq = opts.maxFreq ?? 1000;
     const window = opts.window ?? "hann";
 

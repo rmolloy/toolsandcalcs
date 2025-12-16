@@ -23,6 +23,9 @@
     debug: {
       useStft: false,
       stftSize: "auto",
+      stftOverlap: 0.5,
+      stftMaxFreq: 1000,
+      flipStftAxes: true,
     },
     noteSlices: [],
   };

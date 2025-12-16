@@ -2,11 +2,12 @@
 // @ts-nocheck
 (() => {
     async function computeSpectrogram(wave, sampleRate, fftEngine, opts = {}) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e;
         const N = (_a = opts.fftSize) !== null && _a !== void 0 ? _a : 2048;
-        const hop = (_b = opts.hopSize) !== null && _b !== void 0 ? _b : (N >> 1);
-        const maxFreq = (_c = opts.maxFreq) !== null && _c !== void 0 ? _c : 1000;
-        const window = (_d = opts.window) !== null && _d !== void 0 ? _d : "hann";
+        const overlap = Math.max(0, Math.min(0.95, (_b = opts.overlap) !== null && _b !== void 0 ? _b : 0.5));
+        const hop = (_c = opts.hopSize) !== null && _c !== void 0 ? _c : Math.max(1, Math.round(N * (1 - overlap)));
+        const maxFreq = (_d = opts.maxFreq) !== null && _d !== void 0 ? _d : 1000;
+        const window = (_e = opts.window) !== null && _e !== void 0 ? _e : "hann";
         const frames = [];
         const times = [];
         let freqs = null;

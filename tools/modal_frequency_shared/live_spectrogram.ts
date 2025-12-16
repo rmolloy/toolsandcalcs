@@ -52,6 +52,46 @@
     return { startFromStream, stop, audioCtx: state.audioCtx };
   }
 
+function transformFreqs(freqs, useNoteAxis) {
+  if (!useNoteAxis) return Array.from(freqs);
+  return freqs.map((f) => {
+    const midi = window.FFTUtils?.freqToNoteCents?.(f)?.midi;
+    return Number.isFinite(midi) ? midi : f;
+  });
+}
+
+  function downsampleMatrix(z, maxY = 256, maxX = 256) {
+    const yLen = z.length;
+    const xLen = z[0]?.length || 0;
+    if (!yLen || !xLen) return z;
+    const yStep = Math.max(1, Math.floor(yLen / maxY));
+    const xStep = Math.max(1, Math.floor(xLen / maxX));
+    const out = [];
+    for (let y = 0; y < yLen; y += yStep) {
+      const row = [];
+      for (let x = 0; x < xLen; x += xStep) {
+        row.push(z[y][x]);
+      }
+      out.push(row);
+    }
+    return out;
+  }
+
+  function downsampleArray(arr, targetLen) {
+    if (!arr?.length || arr.length <= targetLen) return arr || [];
+    const step = arr.length / targetLen;
+    const out = [];
+    for (let i = 0; i < targetLen; i += 1) {
+      out.push(arr[Math.floor(i * step)]);
+    }
+    return out;
+  }
+
+  function transpose(matrix) {
+    if (!matrix.length) return matrix;
+    return matrix[0].map((_, colIndex) => matrix.map((row) => row[colIndex]));
+  }
+
   function renderSpectrogram(spec, opts = {}) {
     const elementId = opts.elementId || "plot_spectrogram";
     const el = typeof elementId === "string" ? document.getElementById(elementId) : elementId;
@@ -71,22 +111,27 @@
       }
     });
 
+    const zClamped = z.map((row) => row.map((v) => Math.max(-140, Math.min(0, v))));
+    const zDs = downsampleMatrix(zClamped, opts.maxY || 256, opts.maxX || 256);
+    const times = downsampleArray(Array.from(spec.times), zDs[0]?.length || spec.times.length);
+    const freqs = downsampleArray(transformFreqs(spec.freqs, opts.useNoteAxis), zDs.length);
+
     const trace = {
-      x: Array.from(spec.times),
-      y: Array.from(spec.freqs),
-      z,
+      x: opts.flipAxes ? freqs : times,
+      y: opts.flipAxes ? times : freqs,
+      z: opts.flipAxes ? transpose(zDs) : zDs,
       type: "heatmap",
       colorscale: "Viridis",
       zmin: -120,
       zmax: 0,
-      colorbar: { title: "dB" },
+      colorbar: { title: "dB", x: 0.5, y: -0.25, orientation: "h", thickness: 12, len: 0.6 },
     };
     const layout = {
       margin: { l: 50, r: 15, t: 10, b: 40 },
       paper_bgcolor: "transparent",
       plot_bgcolor: "transparent",
-      xaxis: { title: "Time (s)", gridcolor: "var(--border-soft)" },
-      yaxis: { title: "Freq (Hz)", gridcolor: "var(--border-soft)" },
+      xaxis: { title: opts.flipAxes ? "Freq" : "Time (s)", gridcolor: "var(--border-soft)" },
+      yaxis: { title: opts.flipAxes ? "Time (s)" : "Freq", gridcolor: "var(--border-soft)" },
       showlegend: false,
     };
 
