@@ -207,7 +207,7 @@ const severityFromNoteProximity = (centsAbs: number) =>
     ? centsAbs <= 7 ? "High" : centsAbs <= 15 ? "Medium" : "Low"
     : "Low");
 
-const pickSeverity = (a: string, b: string) =>
+const unusedPickSeverity = (a: string, b: string) =>
   wolfLogic.pickSeverity?.(a, b) ?? (({ High: 3, Medium: 2, Low: 1 } as const)[a] >= ({ High: 3, Medium: 2, Low: 1 } as const)[b] ? a : b);
 
 const computeSeverity = (prominence: number, centsAbs: number) =>

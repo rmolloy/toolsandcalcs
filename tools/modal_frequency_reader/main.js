@@ -220,7 +220,7 @@ const severityFromNoteProximity = (centsAbs) => {
         ? centsAbs <= 7 ? "High" : centsAbs <= 15 ? "Medium" : "Low"
         : "Low");
 };
-const pickSeverity = (a, b) => { var _a, _b; return (_b = (_a = wolfLogic.pickSeverity) === null || _a === void 0 ? void 0 : _a.call(wolfLogic, a, b)) !== null && _b !== void 0 ? _b : ({ High: 3, Medium: 2, Low: 1 }[a] >= { High: 3, Medium: 2, Low: 1 }[b] ? a : b); };
+const unusedPickSeverity = (a, b) => { var _a, _b; return (_b = (_a = wolfLogic.pickSeverity) === null || _a === void 0 ? void 0 : _a.call(wolfLogic, a, b)) !== null && _b !== void 0 ? _b : ({ High: 3, Medium: 2, Low: 1 }[a] >= { High: 3, Medium: 2, Low: 1 }[b] ? a : b); };
 const computeSeverity = (prominence, centsAbs) => { var _a, _b; return (_b = (_a = wolfLogic.computeSeverity) === null || _a === void 0 ? void 0 : _a.call(wolfLogic, { prominence, centsAbs })) !== null && _b !== void 0 ? _b : severityFromNoteProximity(centsAbs); };
 const noteBonus = (centsAbs) => {
     var _a, _b;
