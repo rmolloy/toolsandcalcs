@@ -1,4 +1,3 @@
-"use strict";
 /*
 © 2025 Rick Molloy. All rights reserved.
 
@@ -15,39 +14,41 @@ permission from the author.
 
 This license supersedes all previous licensing for this repository.
 */
+
 /*
 Shared solver core is now centralized in /tools/common/solver_core.js.
 This file bridges the legacy 4DOF entry point to the shared module so
 existing script tags keep working while other views can reuse the same kernel.
 */
-(function bootstrap(globalScope) {
-    const getShared = () => {
-        if (globalScope && globalScope.SolverCore)
-            return globalScope.SolverCore;
-        if (typeof require === "function") {
-            try {
-                return require("../solver_core.js");
-            }
-            catch {
-                // ignore, handled below
-            }
-        }
-        return null;
-    };
-    const shared = getShared();
-    if (!shared) {
-        throw new Error("Missing shared solver core. Ensure tools/common/solver_core.js is loaded first.");
+
+(function bootstrap(globalScope: any) {
+  const getShared = () => {
+    if (globalScope && globalScope.SolverCore) return globalScope.SolverCore;
+    if (typeof require === "function") {
+      try {
+        return require("../solver_core.js");
+      } catch {
+        // ignore, handled below
+      }
     }
-    // Preserve legacy globals (fmt, computeResponse, etc.) for existing scripts.
-    if (globalScope) {
-        Object.keys(shared).forEach(key => {
-            if (key === "constants")
-                return;
-            globalScope[key] = shared[key];
-        });
-        globalScope.ModelCore = shared;
-    }
-    if (typeof module !== "undefined" && module.exports) {
-        module.exports = shared;
-    }
+    return null;
+  };
+
+  const shared = getShared();
+  if (!shared) {
+    throw new Error("Missing shared solver core. Ensure tools/common/solver_core.js is loaded first.");
+  }
+
+  // Preserve legacy globals (fmt, computeResponse, etc.) for existing scripts.
+  if (globalScope) {
+    Object.keys(shared).forEach(key => {
+      if (key === "constants") return;
+      globalScope[key] = (shared as any)[key];
+    });
+    globalScope.ModelCore = shared;
+  }
+
+  if (typeof module !== "undefined" && (module as any).exports) {
+    (module as any).exports = shared;
+  }
 })(typeof globalThis !== "undefined" ? globalThis : typeof window !== "undefined" ? window : undefined);
