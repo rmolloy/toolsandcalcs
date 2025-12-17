@@ -1,29 +1,49 @@
-// @ts-nocheck
 (() => {
-  const DEFAULT_OPTS = {
+  interface LiveSpectrogramOpts {
+    fftSize?: number;
+    smoothingTimeConstant?: number;
+    audioCtx?: AudioContext;
+    onFrame?: (data: Uint8Array, analyser: AnalyserNode) => void;
+  }
+
+  interface SpectrogramPlot {
+    freqs: Float64Array;
+    times: Float64Array;
+    mags: Float64Array[];
+  }
+
+  const unusedPlotly = (typeof window !== "undefined" ? (window as any).Plotly : undefined);
+
+  const DEFAULT_OPTS: Required<Pick<LiveSpectrogramOpts, "fftSize" | "smoothingTimeConstant">> = {
     fftSize: 2048,
     smoothingTimeConstant: 0.6,
   };
 
-  function createAnalyser(audioCtx, opts = {}) {
+  function createAnalyser(audioCtx: AudioContext, opts: LiveSpectrogramOpts = {}): AnalyserNode {
     const analyser = audioCtx.createAnalyser();
-    analyser.fftSize = opts.fftSize || DEFAULT_OPTS.fftSize;
+    analyser.fftSize = opts.fftSize ?? DEFAULT_OPTS.fftSize;
     analyser.smoothingTimeConstant = opts.smoothingTimeConstant ?? DEFAULT_OPTS.smoothingTimeConstant;
     analyser.minDecibels = -90;
     analyser.maxDecibels = -10;
     return analyser;
   }
 
-  function createLiveSpectrogram(opts) {
-    const state = {
-      audioCtx: opts.audioCtx || new (window.AudioContext || window.webkitAudioContext)(),
+  function createLiveSpectrogram(opts: LiveSpectrogramOpts = {}) {
+    const state: {
+      audioCtx: AudioContext;
+      analyser: AnalyserNode | null;
+      source: MediaStreamAudioSourceNode | null;
+      rafId: number | null;
+      onFrame: (data: Uint8Array, analyser: AnalyserNode) => void;
+    } = {
+      audioCtx: opts.audioCtx || new (window.AudioContext || (window as any).webkitAudioContext)(),
       analyser: null,
       source: null,
       rafId: null,
       onFrame: opts.onFrame || (() => {}),
     };
 
-    async function startFromStream(stream) {
+    async function startFromStream(stream: MediaStream) {
       stop();
       state.analyser = createAnalyser(state.audioCtx, opts);
       state.source = state.audioCtx.createMediaStreamSource(stream);
@@ -32,6 +52,7 @@
     }
 
     function loop() {
+      if (!state.analyser) return;
       const bufferLength = state.analyser.frequencyBinCount;
       const dataArray = new Uint8Array(bufferLength);
       state.analyser.getByteFrequencyData(dataArray);
@@ -52,95 +73,55 @@
     return { startFromStream, stop, audioCtx: state.audioCtx };
   }
 
-function transformFreqs(freqs, useNoteAxis) {
-  if (!useNoteAxis) return Array.from(freqs);
-  return freqs.map((f) => {
-    const midi = window.FFTUtils?.freqToNoteCents?.(f)?.midi;
-    return Number.isFinite(midi) ? midi : f;
-  });
-}
-
-  function downsampleMatrix(z, maxY = 256, maxX = 256) {
-    const yLen = z.length;
-    const xLen = z[0]?.length || 0;
-    if (!yLen || !xLen) return z;
-    const yStep = Math.max(1, Math.floor(yLen / maxY));
-    const xStep = Math.max(1, Math.floor(xLen / maxX));
-    const out = [];
-    for (let y = 0; y < yLen; y += yStep) {
-      const row = [];
-      for (let x = 0; x < xLen; x += xStep) {
-        row.push(z[y][x]);
-      }
-      out.push(row);
-    }
-    return out;
-  }
-
-  function downsampleArray(arr, targetLen) {
-    if (!arr?.length || arr.length <= targetLen) return arr || [];
-    const step = arr.length / targetLen;
-    const out = [];
-    for (let i = 0; i < targetLen; i += 1) {
-      out.push(arr[Math.floor(i * step)]);
-    }
-    return out;
-  }
-
-  function transpose(matrix) {
-    if (!matrix.length) return matrix;
-    return matrix[0].map((_, colIndex) => matrix.map((row) => row[colIndex]));
-  }
-
-  function renderSpectrogram(spec, opts = {}) {
+  function renderSpectrogram(spec: SpectrogramPlot, opts: { elementId?: string | HTMLElement } = {}) {
     const elementId = opts.elementId || "plot_spectrogram";
     const el = typeof elementId === "string" ? document.getElementById(elementId) : elementId;
     if (!el) return;
     if (!spec?.mags?.length || !spec.freqs?.length || !spec.times?.length) {
-      el.innerHTML = "<div class=\"small muted\">No spectrogram data.</div>";
+      (el as HTMLElement).innerHTML = "<div class=\"small muted\">No spectrogram data.</div>";
       return;
     }
 
     const timeCount = spec.times.length;
     const freqCount = spec.freqs.length;
     const z = Array.from({ length: freqCount }, () => Array(timeCount).fill(-120));
-    const toDb = (v) => 20 * Math.log10(Math.max(v, 1e-9));
+    const toDb = (v: number) => 20 * Math.log10(Math.max(v, 1e-9));
     spec.mags.forEach((frame, timeIdx) => {
       for (let f = 0; f < Math.min(freqCount, frame.length); f += 1) {
         z[f][timeIdx] = toDb(frame[f]);
       }
     });
 
-    const zClamped = z.map((row) => row.map((v) => Math.max(-140, Math.min(0, v))));
-    const zDs = downsampleMatrix(zClamped, opts.maxY || 256, opts.maxX || 256);
-    const times = downsampleArray(Array.from(spec.times), zDs[0]?.length || spec.times.length);
-    const freqs = downsampleArray(transformFreqs(spec.freqs, opts.useNoteAxis), zDs.length);
-
     const trace = {
-      x: opts.flipAxes ? freqs : times,
-      y: opts.flipAxes ? times : freqs,
-      z: opts.flipAxes ? transpose(zDs) : zDs,
+      x: Array.from(spec.times),
+      y: Array.from(spec.freqs),
+      z,
       type: "heatmap",
       colorscale: "Viridis",
       zmin: -120,
       zmax: 0,
-      colorbar: { title: "dB", x: 0.5, y: -0.25, orientation: "h", thickness: 12, len: 0.6 },
+      colorbar: { title: "dB" },
     };
     const layout = {
       margin: { l: 50, r: 15, t: 10, b: 40 },
       paper_bgcolor: "transparent",
       plot_bgcolor: "transparent",
-      xaxis: { title: opts.flipAxes ? "Freq" : "Time (s)", gridcolor: "var(--border-soft)" },
-      yaxis: { title: opts.flipAxes ? "Time (s)" : "Freq", gridcolor: "var(--border-soft)" },
+      xaxis: { title: "Time (s)", gridcolor: "var(--border-soft)" },
+      yaxis: { title: "Freq (Hz)", gridcolor: "var(--border-soft)" },
       showlegend: false,
     };
 
-    if (window.Plotly?.newPlot) {
-      window.Plotly.newPlot(el, [trace], layout, { displayModeBar: false, responsive: true })
-        .catch((err) => console.error("[Spectrogram] plot render failed", err));
+    if ((window as any).Plotly?.newPlot) {
+      (window as any).Plotly.newPlot(el, [trace], layout, { displayModeBar: false, responsive: true })
+        .catch((err: unknown) => console.error("[Spectrogram] plot render failed", err));
     }
   }
 
-  window.createLiveSpectrogram = createLiveSpectrogram;
-  window.renderSpectrogram = renderSpectrogram;
+  const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
+    createLiveSpectrogram?: typeof createLiveSpectrogram;
+    renderSpectrogram?: typeof renderSpectrogram;
+  };
+
+  scope.createLiveSpectrogram = createLiveSpectrogram;
+  scope.renderSpectrogram = renderSpectrogram;
 })();

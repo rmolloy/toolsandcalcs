@@ -1,9 +1,24 @@
-// @ts-nocheck
 (() => {
+  type WindowType = "hann" | "hamming" | "rect";
+
+  interface FftOptions {
+    window?: WindowType;
+    maxFreq?: number;
+  }
+
+  interface FftResult {
+    freqs: Float64Array;
+    mags: Float64Array;
+  }
+
+  interface FftEngineOpts {
+    wasmUrl?: string | null;
+  }
+
   class JsFftFallback {
-    static applyWindow(buffer, windowType) {
+    static applyWindow(buffer: ArrayLike<number>, windowType: WindowType): Float64Array {
       const n = buffer.length;
-      if (windowType === "rect") return buffer;
+      if (windowType === "rect") return buffer instanceof Float64Array ? buffer : Float64Array.from(buffer);
       const out = new Float64Array(n);
       for (let i = 0; i < n; i += 1) {
         const frac = i / (n - 1 || 1);
@@ -18,7 +33,7 @@
       return out;
     }
 
-    static fftRadix2(real, imag) {
+    static fftRadix2(real: Float64Array, imag: Float64Array): void {
       const n = real.length;
       if ((n & (n - 1)) !== 0) return;
 
@@ -62,7 +77,7 @@
       }
     }
 
-    static magnitudeSpectrum(wave, sampleRate, opts = {}) {
+    static magnitudeSpectrum(wave: ArrayLike<number>, sampleRate: number, opts: FftOptions = {}): FftResult {
       const { window = "hann", maxFreq = 1200 } = opts;
       const padded = 1 << Math.ceil(Math.log2(wave.length * 2));
       const real = new Float64Array(padded);
@@ -71,26 +86,31 @@
       real.set(windowed);
       JsFftFallback.fftRadix2(real, imag);
 
-      const freqs = [];
-      const mags = [];
       const nyquist = sampleRate / 2;
       const limit = Math.min(Math.floor((maxFreq / nyquist) * (padded / 2)), padded / 2);
       const scale = 2 / padded; // normalize positive-frequency magnitudes
+      const freqs = new Float64Array(limit - 1);
+      const mags = new Float64Array(limit - 1);
       for (let k = 1; k < limit; k += 1) {
-        freqs.push((k * sampleRate) / padded);
-        mags.push(Math.hypot(real[k], imag[k]) * scale);
+        freqs[k - 1] = (k * sampleRate) / padded;
+        mags[k - 1] = Math.hypot(real[k], imag[k]) * scale;
       }
       return { freqs, mags };
     }
   }
 
   class KissFftWasm {
-    constructor({ wasmUrl }) {
-      this.wasmUrl = wasmUrl;
+    wasmUrl: string | null;
+    ready: boolean;
+    instance: WebAssembly.Instance | null;
+
+    constructor({ wasmUrl }: { wasmUrl?: string | null }) {
+      this.wasmUrl = wasmUrl ?? null;
       this.ready = false;
+      this.instance = null;
     }
 
-    async load() {
+    async load(): Promise<this> {
       if (!this.wasmUrl) throw new Error("No wasmUrl provided for KissFFT");
       const response = await fetch(this.wasmUrl);
       const bytes = await response.arrayBuffer();
@@ -102,20 +122,25 @@
     }
 
     // Placeholder: real WASM bridge to be implemented when the binary is available.
-    transform() {
+    transform(): never {
       throw new Error("KissFFT WASM bridge not wired yet");
     }
   }
 
   class FftEngine {
-    constructor(opts = {}) {
-      this.wasmUrl = opts.wasmUrl || null;
+    wasmUrl: string | null;
+    wasm: KissFftWasm | null;
+    useWasm: boolean;
+    loadPromise: Promise<unknown> | null;
+
+    constructor(opts: FftEngineOpts = {}) {
+      this.wasmUrl = opts.wasmUrl ?? null;
       this.wasm = null;
-      this.useWasm = !!opts.wasmUrl;
+      this.useWasm = Boolean(opts.wasmUrl);
       this.loadPromise = null;
     }
 
-    async ensureLoaded() {
+    async ensureLoaded(): Promise<boolean> {
       if (!this.useWasm) return false;
       if (!this.loadPromise) {
         this.wasm = new KissFftWasm({ wasmUrl: this.wasmUrl });
@@ -126,14 +151,15 @@
         });
       }
       await this.loadPromise;
-      return this.useWasm && this.wasm && this.wasm.ready;
+      return this.useWasm && Boolean(this.wasm?.ready);
     }
 
-    async magnitude(wave, sampleRate, opts = {}) {
+    async magnitude(wave: ArrayLike<number>, sampleRate: number, opts: FftOptions = {}): Promise<FftResult> {
       const useWasm = await this.ensureLoaded();
       if (useWasm && this.wasm) {
         try {
-          return await this.wasm.transform(wave, sampleRate, opts);
+          // When wired, will return the WASM FFT result.
+          return await (this.wasm as any).transform(wave, sampleRate, opts);
         } catch (err) {
           console.warn("[FFT] KissFFT transform failed; using JS fallback.", err);
         }
@@ -142,7 +168,12 @@
     }
   }
 
-  window.createFftEngine = function createFftEngine(opts) {
+  type FftEngineApi = (opts?: FftEngineOpts) => FftEngine;
+  const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
+    createFftEngine?: FftEngineApi;
+  };
+
+  scope.createFftEngine = function createFftEngine(opts?: FftEngineOpts) {
     return new FftEngine(opts);
   };
 })();

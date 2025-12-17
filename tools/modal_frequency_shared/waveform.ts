@@ -1,12 +1,25 @@
-// @ts-nocheck
-/* global Plotly */
-
 (() => {
-  const state = window.FFTState;
-  const { getCssVar } = window.FFTUtils;
+  interface WaveData {
+    timeMs: number[];
+    wave: number[] | Float64Array;
+    sampleRate: number;
+  }
 
-  function makeWavePlot({ timeMs, wave }, onRangeChange) {
-    const absWave = wave.map((v) => Math.abs(v));
+  type RangeMs = { start: number; end: number } | null;
+
+  interface FFTStateShape {
+    waveRelayoutApplied: boolean;
+    viewRangeMs: RangeMs;
+  }
+
+  type RangeChangeHandler = (range: RangeMs) => void;
+
+  const state = (typeof window !== "undefined" ? window : globalThis as any).FFTState as FFTStateShape;
+  const { getCssVar } = (typeof window !== "undefined" ? window : globalThis as any).FFTUtils;
+  const Plotly = (typeof window !== "undefined" ? (window as any).Plotly : undefined);
+
+  function makeWavePlot({ timeMs, wave }: WaveData, onRangeChange?: RangeChangeHandler) {
+    const absWave = Array.from(wave, (v) => Math.abs(v));
     const fillColor = "rgba(86,180,233,0.18)";
     const trace = {
       x: timeMs,
@@ -31,12 +44,12 @@
     attachWaveRelayout(onRangeChange);
   }
 
-  function attachWaveRelayout(onRangeChange) {
-    const plot = document.getElementById("plot_waveform");
+  function attachWaveRelayout(onRangeChange?: RangeChangeHandler) {
+    const plot = document.getElementById("plot_waveform") as any;
     if (!plot || state.waveRelayoutApplied) return;
     state.waveRelayoutApplied = true;
 
-    plot.on("plotly_relayout", (ev) => {
+    plot.on("plotly_relayout", (ev: any) => {
       const range0 = ev["xaxis.range[0]"];
       const range1 = ev["xaxis.range[1]"];
       const auto = ev["xaxis.autorange"];
@@ -55,24 +68,32 @@
     });
   }
 
-  function sliceWave(src, sampleLengthMs) {
+  function sliceWave(src: { wave: number[] | Float64Array; sampleRate: number } | null, sampleLengthMs: number): WaveData | null {
     if (!src || !src.wave) return null;
     const desiredSamples = Math.max(64, Math.round((sampleLengthMs / 1000) * src.sampleRate));
     const wave = src.wave.slice(0, desiredSamples);
-    const timeMs = wave.map((_, i) => (i / src.sampleRate) * 1000);
+    const timeMs = Array.from({ length: wave.length }, (_, i) => (i / src.sampleRate) * 1000);
     return { wave, timeMs, sampleRate: src.sampleRate };
   }
 
-  function sliceWaveRange(src, startMs, endMs) {
+  function sliceWaveRange(src: { wave: number[] | Float64Array; sampleRate: number } | null, startMs: number, endMs: number): WaveData | null {
     if (!src || !src.wave) return null;
     const clampedStart = Math.max(0, startMs);
     const clampedEnd = Math.max(clampedStart + 1, endMs);
     const startIdx = Math.floor((clampedStart / 1000) * src.sampleRate);
     const endIdx = Math.min(src.wave.length, Math.ceil((clampedEnd / 1000) * src.sampleRate));
     const wave = src.wave.slice(startIdx, endIdx);
-    const timeMs = wave.map((_, i) => ((startIdx + i) / src.sampleRate) * 1000);
+    const timeMs = Array.from({ length: wave.length }, (_, i) => ((startIdx + i) / src.sampleRate) * 1000);
     return { wave, timeMs, sampleRate: src.sampleRate };
   }
 
-  window.FFTWaveform = { makeWavePlot, sliceWave, sliceWaveRange };
+  const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
+    FFTWaveform?: {
+      makeWavePlot: typeof makeWavePlot;
+      sliceWave: typeof sliceWave;
+      sliceWaveRange: typeof sliceWaveRange;
+    };
+  };
+
+  scope.FFTWaveform = { makeWavePlot, sliceWave, sliceWaveRange };
 })();

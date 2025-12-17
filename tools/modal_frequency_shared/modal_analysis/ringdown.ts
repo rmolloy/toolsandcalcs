@@ -1,15 +1,37 @@
-// @ts-nocheck
 (() => {
   const EPS = 1e-12;
 
-  function nextPow2(n) {
+  interface SpectrumLike {
+    freqs: number[] | Float64Array;
+    mags?: number[] | Float64Array;
+    dbs?: number[] | Float64Array;
+  }
+
+  interface RingdownResult {
+    f0: number | null;
+    tau: number | null;
+    Q: number | null;
+    deltaF: number | null;
+    envelopeR2: number | null;
+    slope: number | null;
+    flags: string[];
+    envelope: number[];
+    envelopeFull: number[];
+    timeAxis: number[];
+    dt: number;
+    sampleRate: number;
+    attackSkipMs: number;
+    smoothWindowMs: number;
+  }
+
+  function nextPow2(n: number): number {
     let p = 1;
     while (p < n) p <<= 1;
     return p;
   }
 
   // Radix-2 FFT with optional inverse flag.
-  function fftRadix2(real, imag, inverse = false) {
+  function fftRadix2(real: Float64Array, imag: Float64Array, inverse = false): void {
     const n = real.length;
     if ((n & (n - 1)) !== 0) throw new Error("FFT length must be power of two");
 
@@ -61,7 +83,7 @@
     }
   }
 
-  function hilbertEnvelope(signal) {
+  function hilbertEnvelope(signal: ArrayLike<number>): Float64Array {
     const n = nextPow2(signal.length);
     const real = new Float64Array(n);
     const imag = new Float64Array(n);
@@ -86,7 +108,7 @@
     return env;
   }
 
-  function movingAverage(arr, windowSamples) {
+  function movingAverage(arr: ArrayLike<number>, windowSamples: number): Float64Array {
     const n = arr.length;
     const out = new Float64Array(n);
     const w = Math.max(1, windowSamples);
@@ -99,7 +121,7 @@
     return out;
   }
 
-  function linearRegression(xs, ys) {
+  function linearRegression(xs: number[], ys: number[]): { slope: number; intercept: number; r2: number } | null {
     const n = xs.length;
     if (n === 0) return null;
     let sumX = 0;
@@ -131,9 +153,10 @@
     return { slope, intercept, r2 };
   }
 
-  function findPeakFrequency(spectrum) {
+  function findPeakFrequency(spectrum: SpectrumLike | null | undefined): number | null {
     if (!spectrum?.freqs?.length || (!spectrum.mags && !spectrum.dbs)) return null;
-    const mags = spectrum.mags || spectrum.dbs.map((db) => 10 ** (db / 20));
+    const mags = spectrum.mags || (spectrum.dbs as any)?.map((db: number) => 10 ** (db / 20));
+    if (!mags?.length) return null;
     let maxIdx = 0;
     let maxVal = -Infinity;
     for (let i = 0; i < mags.length; i += 1) {
@@ -145,7 +168,7 @@
     return spectrum.freqs[maxIdx] ?? null;
   }
 
-  function findDeltaF(spectrum, f0) {
+  function findDeltaF(spectrum: SpectrumLike | null | undefined, f0: number | null): number | null {
     if (!spectrum?.freqs?.length || !Number.isFinite(f0)) return null;
     const freqs = spectrum.freqs;
     const mags = spectrum.mags || spectrum.dbs?.map((db) => 10 ** (db / 20));
@@ -172,7 +195,21 @@
     return Math.max(EPS, rightFreq - leftFreq);
   }
 
-  function analyzeRingdown({ buffer, sampleRate, f0 = null, spectrum = null, smoothWindowMs = 5, attackSkipMs = 40 }) {
+  function analyzeRingdown({
+    buffer,
+    sampleRate,
+    f0 = null,
+    spectrum = null,
+    smoothWindowMs = 5,
+    attackSkipMs = 40,
+  }: {
+    buffer: ArrayLike<number>;
+    sampleRate: number;
+    f0?: number | null;
+    spectrum?: SpectrumLike | null;
+    smoothWindowMs?: number;
+    attackSkipMs?: number;
+  }): RingdownResult {
     if (!buffer || !buffer.length || !Number.isFinite(sampleRate)) {
       throw new Error("Ring-down analysis requires audio buffer and sample rate");
     }
@@ -206,17 +243,17 @@
     }
     const peakSkip = Math.round((attackSkipMs / 1000) * sampleRate);
     const startIdx = Math.min(normEnv.length - 1, peakIdx + peakSkip);
-    const fitTimes = [];
-    const fitVals = [];
+    const fitTimes: number[] = [];
+    const fitVals: number[] = [];
     for (let i = startIdx; i < normEnv.length; i += 1) {
       const v = Math.max(normEnv[i], EPS);
       fitTimes.push(i / sampleRate);
       fitVals.push(Math.log(v));
     }
 
-    let tau = null;
-    let envelopeR2 = null;
-    let slope = null;
+    let tau: number | null = null;
+    let envelopeR2: number | null = null;
+    let slope: number | null = null;
     if (fitTimes.length > 8) {
       const reg = linearRegression(fitTimes, fitVals);
       if (reg) {
@@ -226,19 +263,19 @@
       }
     }
 
-    const peak = Number.isFinite(f0) ? f0 : findPeakFrequency(spectrum);
+    const peak = Number.isFinite(f0) ? (f0 as number) : findPeakFrequency(spectrum);
     const deltaF = spectrum ? findDeltaF(spectrum, peak) : null;
-    const Q = (Number.isFinite(peak) && Number.isFinite(tau)) ? Math.PI * peak * tau : null;
+    const Q = Number.isFinite(peak) && Number.isFinite(tau) ? Math.PI * (peak as number) * (tau as number) : null;
 
-    const flags = [];
-    if (Number.isFinite(Q) && Q < 150) flags.push("low_Q");
-    if (Number.isFinite(deltaF) && Number.isFinite(peak) && deltaF > peak * 0.03) flags.push("broad_peak");
-    if (Number.isFinite(envelopeR2) && envelopeR2 < 0.85) flags.push("unstable_decay");
+    const flags: string[] = [];
+    if (Number.isFinite(Q) && (Q as number) < 150) flags.push("low_Q");
+    if (Number.isFinite(deltaF) && Number.isFinite(peak) && (deltaF as number) > (peak as number) * 0.03) flags.push("broad_peak");
+    if (Number.isFinite(envelopeR2) && (envelopeR2 as number) < 0.85) flags.push("unstable_decay");
 
     const downsampleStep = Math.max(1, Math.floor(normEnv.length / 400));
-    const envelopePreview = [];
+    const envelopePreview: number[] = [];
     for (let i = 0; i < normEnv.length; i += downsampleStep) envelopePreview.push(normEnv[i]);
-    const timeAxis = normEnv.map((_, idx) => idx / sampleRate);
+    const timeAxis = Array.from(normEnv, (_v, idx) => idx / sampleRate);
     const dt = 1 / sampleRate;
 
     return {
@@ -259,5 +296,10 @@
     };
   }
 
-  window.ModalRingdown = { analyzeRingdown };
+  type ModalRingdownApi = { analyzeRingdown: typeof analyzeRingdown };
+  const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
+    ModalRingdown?: ModalRingdownApi;
+  };
+
+  scope.ModalRingdown = { analyzeRingdown };
 })();

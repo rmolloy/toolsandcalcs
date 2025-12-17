@@ -1,5 +1,3 @@
-/* eslint-disable no-restricted-globals */
-
 (function () {
 function clamp01(x: number): number {
   return Math.min(1, Math.max(0, x));
@@ -237,7 +235,6 @@ if (typeof self !== "undefined" && typeof self.onmessage !== "undefined") {
 
 // Export for Node/test usage.
 if (typeof module !== "undefined") {
-  // eslint-disable-next-line no-undef
   (module as any).exports = { fitTwoMode };
 }
 

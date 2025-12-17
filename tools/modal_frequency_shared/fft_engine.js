@@ -1,11 +1,10 @@
 "use strict";
-// @ts-nocheck
 (() => {
     class JsFftFallback {
         static applyWindow(buffer, windowType) {
             const n = buffer.length;
             if (windowType === "rect")
-                return buffer;
+                return buffer instanceof Float64Array ? buffer : Float64Array.from(buffer);
             const out = new Float64Array(n);
             for (let i = 0; i < n; i += 1) {
                 const frac = i / (n - 1 || 1);
@@ -68,22 +67,23 @@
             const windowed = JsFftFallback.applyWindow(wave, window);
             real.set(windowed);
             JsFftFallback.fftRadix2(real, imag);
-            const freqs = [];
-            const mags = [];
             const nyquist = sampleRate / 2;
             const limit = Math.min(Math.floor((maxFreq / nyquist) * (padded / 2)), padded / 2);
             const scale = 2 / padded; // normalize positive-frequency magnitudes
+            const freqs = new Float64Array(limit - 1);
+            const mags = new Float64Array(limit - 1);
             for (let k = 1; k < limit; k += 1) {
-                freqs.push((k * sampleRate) / padded);
-                mags.push(Math.hypot(real[k], imag[k]) * scale);
+                freqs[k - 1] = (k * sampleRate) / padded;
+                mags[k - 1] = Math.hypot(real[k], imag[k]) * scale;
             }
             return { freqs, mags };
         }
     }
     class KissFftWasm {
         constructor({ wasmUrl }) {
-            this.wasmUrl = wasmUrl;
+            this.wasmUrl = wasmUrl !== null && wasmUrl !== void 0 ? wasmUrl : null;
             this.ready = false;
+            this.instance = null;
         }
         async load() {
             if (!this.wasmUrl)
@@ -103,12 +103,14 @@
     }
     class FftEngine {
         constructor(opts = {}) {
-            this.wasmUrl = opts.wasmUrl || null;
+            var _a;
+            this.wasmUrl = (_a = opts.wasmUrl) !== null && _a !== void 0 ? _a : null;
             this.wasm = null;
-            this.useWasm = !!opts.wasmUrl;
+            this.useWasm = Boolean(opts.wasmUrl);
             this.loadPromise = null;
         }
         async ensureLoaded() {
+            var _a;
             if (!this.useWasm)
                 return false;
             if (!this.loadPromise) {
@@ -120,12 +122,13 @@
                 });
             }
             await this.loadPromise;
-            return this.useWasm && this.wasm && this.wasm.ready;
+            return this.useWasm && Boolean((_a = this.wasm) === null || _a === void 0 ? void 0 : _a.ready);
         }
         async magnitude(wave, sampleRate, opts = {}) {
             const useWasm = await this.ensureLoaded();
             if (useWasm && this.wasm) {
                 try {
+                    // When wired, will return the WASM FFT result.
                     return await this.wasm.transform(wave, sampleRate, opts);
                 }
                 catch (err) {
@@ -135,7 +138,8 @@
             return JsFftFallback.magnitudeSpectrum(wave, sampleRate, opts);
         }
     }
-    window.createFftEngine = function createFftEngine(opts) {
+    const scope = (typeof window !== "undefined" ? window : globalThis);
+    scope.createFftEngine = function createFftEngine(opts) {
         return new FftEngine(opts);
     };
 })();

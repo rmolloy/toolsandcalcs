@@ -1,5 +1,4 @@
 "use strict";
-// @ts-nocheck
 (() => {
     function getCssVar(name, fallback) {
         if (typeof window === "undefined")
@@ -19,18 +18,20 @@
         return { name, cents: centsStr, midi, centsNum: cents };
     }
     function deviationColor(absCents) {
-        if (!Number.isFinite(absCents))
+        const c = typeof absCents === "number" ? absCents : NaN;
+        if (!Number.isFinite(c))
             return "var(--yellow)";
-        if (absCents <= 10)
+        if (c <= 10)
             return "var(--vermilion)";
-        if (absCents < 25)
+        if (c < 25)
             return "var(--yellow)";
-        if (absCents <= 50)
+        if (c <= 50)
             return "var(--green)";
         return "var(--yellow)";
     }
     const COLOR_ORANGE = getCssVar("--orange", "#E69F00");
-    window.FFTUtils = {
+    const scope = (typeof window !== "undefined" ? window : globalThis);
+    scope.FFTUtils = {
         getCssVar,
         COLOR_ORANGE,
         freqToNoteCents,

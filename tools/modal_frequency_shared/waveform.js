@@ -1,11 +1,10 @@
 "use strict";
-// @ts-nocheck
-/* global Plotly */
 (() => {
-    const state = window.FFTState;
-    const { getCssVar } = window.FFTUtils;
+    const state = (typeof window !== "undefined" ? window : globalThis).FFTState;
+    const { getCssVar } = (typeof window !== "undefined" ? window : globalThis).FFTUtils;
+    const Plotly = (typeof window !== "undefined" ? window.Plotly : undefined);
     function makeWavePlot({ timeMs, wave }, onRangeChange) {
-        const absWave = wave.map((v) => Math.abs(v));
+        const absWave = Array.from(wave, (v) => Math.abs(v));
         const fillColor = "rgba(86,180,233,0.18)";
         const trace = {
             x: timeMs,
@@ -58,7 +57,7 @@
             return null;
         const desiredSamples = Math.max(64, Math.round((sampleLengthMs / 1000) * src.sampleRate));
         const wave = src.wave.slice(0, desiredSamples);
-        const timeMs = wave.map((_, i) => (i / src.sampleRate) * 1000);
+        const timeMs = Array.from({ length: wave.length }, (_, i) => (i / src.sampleRate) * 1000);
         return { wave, timeMs, sampleRate: src.sampleRate };
     }
     function sliceWaveRange(src, startMs, endMs) {
@@ -69,8 +68,9 @@
         const startIdx = Math.floor((clampedStart / 1000) * src.sampleRate);
         const endIdx = Math.min(src.wave.length, Math.ceil((clampedEnd / 1000) * src.sampleRate));
         const wave = src.wave.slice(startIdx, endIdx);
-        const timeMs = wave.map((_, i) => ((startIdx + i) / src.sampleRate) * 1000);
+        const timeMs = Array.from({ length: wave.length }, (_, i) => ((startIdx + i) / src.sampleRate) * 1000);
         return { wave, timeMs, sampleRate: src.sampleRate };
     }
-    window.FFTWaveform = { makeWavePlot, sliceWave, sliceWaveRange };
+    const scope = (typeof window !== "undefined" ? window : globalThis);
+    scope.FFTWaveform = { makeWavePlot, sliceWave, sliceWaveRange };
 })();

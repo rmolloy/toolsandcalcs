@@ -1,5 +1,4 @@
 "use strict";
-// @ts-nocheck
 (() => {
     const EPS = 1e-12;
     function nextPow2(n) {
@@ -126,10 +125,12 @@
         return { slope, intercept, r2 };
     }
     function findPeakFrequency(spectrum) {
-        var _a, _b;
+        var _a, _b, _c;
         if (!((_a = spectrum === null || spectrum === void 0 ? void 0 : spectrum.freqs) === null || _a === void 0 ? void 0 : _a.length) || (!spectrum.mags && !spectrum.dbs))
             return null;
-        const mags = spectrum.mags || spectrum.dbs.map((db) => 10 ** (db / 20));
+        const mags = spectrum.mags || ((_b = spectrum.dbs) === null || _b === void 0 ? void 0 : _b.map((db) => 10 ** (db / 20)));
+        if (!(mags === null || mags === void 0 ? void 0 : mags.length))
+            return null;
         let maxIdx = 0;
         let maxVal = -Infinity;
         for (let i = 0; i < mags.length; i += 1) {
@@ -138,7 +139,7 @@
                 maxIdx = i;
             }
         }
-        return (_b = spectrum.freqs[maxIdx]) !== null && _b !== void 0 ? _b : null;
+        return (_c = spectrum.freqs[maxIdx]) !== null && _c !== void 0 ? _c : null;
     }
     function findDeltaF(spectrum, f0) {
         var _a, _b;
@@ -169,7 +170,7 @@
         const rightFreq = freqs[Math.min(freqs.length - 1, right)];
         return Math.max(EPS, rightFreq - leftFreq);
     }
-    function analyzeRingdown({ buffer, sampleRate, f0 = null, spectrum = null, smoothWindowMs = 5, attackSkipMs = 40 }) {
+    function analyzeRingdown({ buffer, sampleRate, f0 = null, spectrum = null, smoothWindowMs = 5, attackSkipMs = 40, }) {
         if (!buffer || !buffer.length || !Number.isFinite(sampleRate)) {
             throw new Error("Ring-down analysis requires audio buffer and sample rate");
         }
@@ -223,7 +224,7 @@
         }
         const peak = Number.isFinite(f0) ? f0 : findPeakFrequency(spectrum);
         const deltaF = spectrum ? findDeltaF(spectrum, peak) : null;
-        const Q = (Number.isFinite(peak) && Number.isFinite(tau)) ? Math.PI * peak * tau : null;
+        const Q = Number.isFinite(peak) && Number.isFinite(tau) ? Math.PI * peak * tau : null;
         const flags = [];
         if (Number.isFinite(Q) && Q < 150)
             flags.push("low_Q");
@@ -235,7 +236,7 @@
         const envelopePreview = [];
         for (let i = 0; i < normEnv.length; i += downsampleStep)
             envelopePreview.push(normEnv[i]);
-        const timeAxis = normEnv.map((_, idx) => idx / sampleRate);
+        const timeAxis = Array.from(normEnv, (_v, idx) => idx / sampleRate);
         const dt = 1 / sampleRate;
         return {
             f0: peak !== null && peak !== void 0 ? peak : null,
@@ -254,5 +255,6 @@
             smoothWindowMs,
         };
     }
-    window.ModalRingdown = { analyzeRingdown };
+    const scope = (typeof window !== "undefined" ? window : globalThis);
+    scope.ModalRingdown = { analyzeRingdown };
 })();

@@ -1,5 +1,4 @@
 "use strict";
-// @ts-nocheck
 (() => {
     const state = {
         annotations: [],
@@ -30,5 +29,6 @@
         },
         noteSlices: [],
     };
-    window.FFTState = state;
+    const scope = (typeof window !== "undefined" ? window : globalThis);
+    scope.FFTState = state;
 })();

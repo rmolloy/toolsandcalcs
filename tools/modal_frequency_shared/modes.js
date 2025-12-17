@@ -1,5 +1,4 @@
 "use strict";
-// @ts-nocheck
 (() => {
     const MODE_DEFAULTS = {
         air: { low: 75, high: 115 },
@@ -87,7 +86,8 @@
         });
         return anns;
     }
-    window.ModalModes = {
+    const scope = (typeof window !== "undefined" ? window : globalThis);
+    scope.ModalModes = {
         MODE_DEFAULTS,
         MODE_COLORS,
         modeLabel,

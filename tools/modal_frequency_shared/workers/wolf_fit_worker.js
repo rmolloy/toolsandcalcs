@@ -1,5 +1,4 @@
 "use strict";
-/* eslint-disable no-restricted-globals */
 (function () {
     function clamp01(x) {
         return Math.min(1, Math.max(0, x));
@@ -238,7 +237,6 @@
     }
     // Export for Node/test usage.
     if (typeof module !== "undefined") {
-        // eslint-disable-next-line no-undef
         module.exports = { fitTwoMode };
     }
 })();

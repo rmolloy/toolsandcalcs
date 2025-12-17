@@ -1,7 +1,9 @@
 "use strict";
-// @ts-nocheck
 (() => {
-    const state = window.FFTState;
+    var _a;
+    const scope = (typeof window !== "undefined" ? window : globalThis);
+    const state = ((_a = scope.FFTState) !== null && _a !== void 0 ? _a : {});
+    const createAudioCtx = () => new (window.AudioContext || window.webkitAudioContext)();
     function generateDemoWave(sampleLengthMs = 1500) {
         const sampleRate = 44100;
         const samples = Math.max(64, Math.round((sampleLengthMs / 1000) * sampleRate));
@@ -14,7 +16,7 @@
             time[i] = t * 1000;
             let y = 0;
             freqs.forEach((f, idx) => {
-                y += Math.sin(2 * Math.PI * f * t) * Math.exp(-decay * t) / (idx + 1);
+                y += (Math.sin(2 * Math.PI * f * t) * Math.exp(-decay * t)) / (idx + 1);
             });
             wave[i] = y;
         }
@@ -24,7 +26,7 @@
         if (!file)
             return;
         const arrayBuffer = await file.arrayBuffer();
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioCtx = createAudioCtx();
         const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
         state.currentBuffer = audioBuffer;
         state.currentSampleRate = audioBuffer.sampleRate;
@@ -32,7 +34,7 @@
         const fullLengthMs = (channel.length / state.currentSampleRate) * 1000;
         state.currentWave = {
             wave: Float64Array.from(channel),
-            timeMs: channel.map((_, i) => (i / state.currentSampleRate) * 1000),
+            timeMs: Array.from(channel, (_v, i) => (i / state.currentSampleRate) * 1000),
             sampleRate: state.currentSampleRate,
             fullLengthMs,
         };
@@ -98,7 +100,7 @@
         state.mediaRecorder.onstop = async () => {
             const blob = new Blob(state.recordedChunks, { type: "audio/webm" });
             const arrayBuffer = await blob.arrayBuffer();
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioCtx = createAudioCtx();
             const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
             state.currentBuffer = audioBuffer;
             state.currentSampleRate = audioBuffer.sampleRate;
@@ -106,7 +108,7 @@
             const fullLengthMs = (channel.length / state.currentSampleRate) * 1000;
             state.currentWave = {
                 wave: Float64Array.from(channel),
-                timeMs: channel.map((_, i) => (i / state.currentSampleRate) * 1000),
+                timeMs: Array.from(channel, (_v, i) => (i / state.currentSampleRate) * 1000),
                 sampleRate: state.currentSampleRate,
                 fullLengthMs,
             };
@@ -127,7 +129,7 @@
             return false;
         if (state.playbackActive)
             stopPlayback();
-        state.playbackCtx = new (window.AudioContext || window.webkitAudioContext)();
+        state.playbackCtx = createAudioCtx();
         state.playbackSource = state.playbackCtx.createBufferSource();
         state.playbackSource.buffer = state.currentBuffer;
         state.playbackSource.connect(state.playbackCtx.destination);
@@ -174,7 +176,7 @@
     }
     function ensureTone() {
         if (!toneCtx) {
-            toneCtx = new (window.AudioContext || window.webkitAudioContext)();
+            toneCtx = createAudioCtx();
             toneGain = toneCtx.createGain();
             toneGain.gain.value = 0.08;
             toneGain.connect(toneCtx.destination);
@@ -215,7 +217,7 @@
             toneCtx = null;
         }
     }
-    window.FFTAudio = {
+    scope.FFTAudio = {
         generateDemoWave,
         handleFile,
         saveCurrentAudio,
