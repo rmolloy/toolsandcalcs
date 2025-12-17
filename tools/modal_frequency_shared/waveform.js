@@ -24,7 +24,7 @@
             yaxis: { title: "Amplitude", gridcolor: "var(--border-soft)" },
             showlegend: false,
         };
-        Plotly.newPlot("plot_waveform", [trace], layout, { displayModeBar: false, responsive: true });
+        Plotly.newPlot("plot_waveform", [trace], layout, { displayModeBar: true, responsive: true });
         state.waveRelayoutApplied = false;
         attachWaveRelayout(onRangeChange);
     }

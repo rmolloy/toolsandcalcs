@@ -251,7 +251,7 @@
     };
 
     state.fftHoverShapeApplied = false;
-    Plotly.newPlot("plot_fft", [trace, ...overlay], layout, { displayModeBar: false, responsive: true })
+    Plotly.newPlot("plot_fft", [trace, ...overlay], layout, { displayModeBar: true, responsive: true })
       .then((plot: any) => {
         state.fftDefaultRanges = {
           x: [...xRange] as [number, number],

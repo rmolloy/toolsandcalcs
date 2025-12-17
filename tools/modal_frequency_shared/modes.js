@@ -86,6 +86,50 @@
         });
         return anns;
     }
+    function dbArray(spectrum) {
+        var _a, _b, _c;
+        if (!((_a = spectrum === null || spectrum === void 0 ? void 0 : spectrum.freqs) === null || _a === void 0 ? void 0 : _a.length))
+            return null;
+        if ((_b = spectrum.dbs) === null || _b === void 0 ? void 0 : _b.length)
+            return Array.from(spectrum.dbs);
+        if ((_c = spectrum.mags) === null || _c === void 0 ? void 0 : _c.length) {
+            const mags = spectrum.mags;
+            return Array.from(mags, (m) => 20 * Math.log10(Math.max(m, 1e-12)));
+        }
+        return null;
+    }
+    function estimateModeQ(spectrum, targetFreq) {
+        var _a, _b, _c;
+        if (!((_a = spectrum === null || spectrum === void 0 ? void 0 : spectrum.freqs) === null || _a === void 0 ? void 0 : _a.length) || !Number.isFinite(targetFreq))
+            return null;
+        const freqs = spectrum.freqs;
+        const dbs = dbArray(spectrum);
+        if (!(dbs === null || dbs === void 0 ? void 0 : dbs.length))
+            return null;
+        let idx = 0;
+        let bestDist = Infinity;
+        freqs.forEach((f, i) => {
+            const d = Math.abs(f - targetFreq);
+            if (d < bestDist) {
+                bestDist = d;
+                idx = i;
+            }
+        });
+        const peakDb = dbs[idx];
+        if (!Number.isFinite(peakDb))
+            return null;
+        const cutoff = peakDb - 3;
+        let leftIdx = idx;
+        while (leftIdx > 0 && dbs[leftIdx] > cutoff)
+            leftIdx -= 1;
+        let rightIdx = idx;
+        while (rightIdx < dbs.length - 1 && dbs[rightIdx] > cutoff)
+            rightIdx += 1;
+        const leftFreq = (_b = freqs[leftIdx]) !== null && _b !== void 0 ? _b : targetFreq;
+        const rightFreq = (_c = freqs[rightIdx]) !== null && _c !== void 0 ? _c : targetFreq;
+        const bw = Math.max(1e-6, Math.abs(rightFreq - leftFreq));
+        return targetFreq / bw;
+    }
     const scope = (typeof window !== "undefined" ? window : globalThis);
     scope.ModalModes = {
         MODE_DEFAULTS,
@@ -95,5 +139,6 @@
         readModeRanges,
         buildModeAnnotations,
         buildModeAnnotationsFromSpectrum,
+        estimateModeQ,
     };
 })();

@@ -104,6 +104,43 @@
     return anns;
   }
 
+  function dbArray(spectrum: SpectrumLike): number[] | null {
+    if (!spectrum?.freqs?.length) return null;
+    if (spectrum.dbs?.length) return Array.from(spectrum.dbs as number[] | Float64Array);
+    if (spectrum.mags?.length) {
+      const mags = spectrum.mags as number[] | Float64Array;
+      return Array.from(mags, (m) => 20 * Math.log10(Math.max(m, 1e-12)));
+    }
+    return null;
+  }
+
+  function estimateModeQ(spectrum: SpectrumLike | null | undefined, targetFreq: number | null | undefined): number | null {
+    if (!spectrum?.freqs?.length || !Number.isFinite(targetFreq)) return null;
+    const freqs = spectrum.freqs;
+    const dbs = dbArray(spectrum);
+    if (!dbs?.length) return null;
+    let idx = 0;
+    let bestDist = Infinity;
+    freqs.forEach((f, i) => {
+      const d = Math.abs(f - (targetFreq as number));
+      if (d < bestDist) {
+        bestDist = d;
+        idx = i;
+      }
+    });
+    const peakDb = dbs[idx];
+    if (!Number.isFinite(peakDb)) return null;
+    const cutoff = peakDb - 3;
+    let leftIdx = idx;
+    while (leftIdx > 0 && dbs[leftIdx] > cutoff) leftIdx -= 1;
+    let rightIdx = idx;
+    while (rightIdx < dbs.length - 1 && dbs[rightIdx] > cutoff) rightIdx += 1;
+    const leftFreq = freqs[leftIdx] ?? (targetFreq as number);
+    const rightFreq = freqs[rightIdx] ?? (targetFreq as number);
+    const bw = Math.max(1e-6, Math.abs(rightFreq - leftFreq));
+    return (targetFreq as number) / bw;
+  }
+
   type ModalModesApi = {
     MODE_DEFAULTS: typeof MODE_DEFAULTS;
     MODE_COLORS: typeof MODE_COLORS;
@@ -112,6 +149,7 @@
     readModeRanges: typeof readModeRanges;
     buildModeAnnotations: typeof buildModeAnnotations;
     buildModeAnnotationsFromSpectrum: typeof buildModeAnnotationsFromSpectrum;
+    estimateModeQ: typeof estimateModeQ;
   };
 
   const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
@@ -126,5 +164,6 @@
     readModeRanges,
     buildModeAnnotations,
     buildModeAnnotationsFromSpectrum,
+    estimateModeQ,
   };
 })();
