@@ -259,11 +259,39 @@ This license supersedes all previous licensing for this repository.
     let lastPlot = null;
     let pendingFrame = null;
     let render;
+    function computeResponseSafe(params) {
+        try {
+            return computeResponse(params);
+        }
+        catch (err) {
+            console.error("computeResponse failed; attempting JS fallback.", err);
+            const js = globalThis.computeResponseJs;
+            if (typeof js === "function") {
+                try {
+                    return js(params);
+                }
+                catch (err2) {
+                    console.error("JS fallback computeResponse failed.", err2);
+                }
+            }
+            return null;
+        }
+    }
     function buildTrace(series, label, color, { width = 2, dash = "solid", axis = "y" } = {}) {
+        const xs = [];
+        const ys = [];
+        series.forEach(p => {
+            if (Number.isFinite(p === null || p === void 0 ? void 0 : p.x) && Number.isFinite(p === null || p === void 0 ? void 0 : p.y)) {
+                xs.push(p.x);
+                ys.push(p.y);
+            }
+        });
+        if (xs.length === 0 || ys.length === 0)
+            return null;
         const hoverBg = mixHex(color, "#0b0f16", 0.55);
         return {
-            x: series.map(p => p.x),
-            y: series.map(p => p.y),
+            x: xs,
+            y: ys,
             mode: "lines",
             name: label,
             line: { color, width, dash, shape: "spline", smoothing: 1 },
@@ -844,7 +872,7 @@ This license supersedes all previous licensing for this repository.
         });
         setMode(mode);
     }
-    function unusedRenderNow() {
+    async function renderNow() {
         const { base, whatIf } = buildParams();
         const colors = activeColors();
         if (base._atm) {
@@ -856,9 +884,14 @@ This license supersedes all previous licensing for this repository.
             if (massLabel && massText)
                 massLabel.textContent = massText;
         }
-        const baseResponse = computeResponse(base);
+        const baseResponse = computeResponseSafe(base);
+        const validBase = baseResponse && Array.isArray(baseResponse.total) && baseResponse.total.length > 1;
+        if (!validBase) {
+            console.warn("Skipping render; baseResponse invalid or empty.", baseResponse);
+            return;
+        }
         const showWhatIf = Boolean(whatIf);
-        const whatIfResponse = showWhatIf ? computeResponse(whatIf) : null;
+        const whatIfResponse = showWhatIf ? computeResponseSafe(whatIf) : null;
         const maxN = maxPeaksFor(base.model_order);
         const basePeaks = detectPeaksAdaptive(baseResponse.total, maxN, {
             minDb: -95,
@@ -873,15 +906,34 @@ This license supersedes all previous licensing for this repository.
         if (plotEl && typeof Plotly !== "undefined") {
             const traces = [];
             if (showWhatIf && whatIfResponse) {
-                traces.push(buildTrace(baseResponse.total, "Current Total", BASE_LINE_COLOR, { width: 3 }));
-                traces.push(buildTrace(whatIfResponse.total, "What-If Total", WHATIF_LINE_COLOR, { width: 3, axis: "y2" }));
+                const t1 = buildTrace(baseResponse.total, "Current Total", BASE_LINE_COLOR, { width: 3 });
+                const t2 = buildTrace(whatIfResponse.total, "What-If Total", WHATIF_LINE_COLOR, { width: 3, axis: "y2" });
+                if (t1)
+                    traces.push(t1);
+                if (t2)
+                    traces.push(t2);
             }
             else {
-                traces.push(buildTrace(baseResponse.total, "Total", colors.total, { width: 3 }));
-                traces.push(buildTrace(baseResponse.top, "Top", colors.top, { dash: "dot" }));
-                traces.push(buildTrace(baseResponse.back, "Back", colors.back, { dash: "dot" }));
-                traces.push(buildTrace(baseResponse.air, "Air", colors.air, { dash: "dot" }));
-                traces.push(buildTrace(baseResponse.sides, "Sides", colors.sides, { dash: "dot" }));
+                const tTotal = buildTrace(baseResponse.total, "Total", colors.total, { width: 3 });
+                const tTop = buildTrace(baseResponse.top, "Top", colors.top, { dash: "dot" });
+                const tBack = buildTrace(baseResponse.back, "Back", colors.back, { dash: "dot" });
+                const tAir = buildTrace(baseResponse.air, "Air", colors.air, { dash: "dot" });
+                const tSides = buildTrace(baseResponse.sides, "Sides", colors.sides, { dash: "dot" });
+                [tTotal, tTop, tBack, tAir, tSides].forEach(t => { if (t)
+                    traces.push(t); });
+            }
+            const hasValidData = traces.length > 0 && traces.every(t => Array.isArray(t.x) && Array.isArray(t.y) && t.x.length > 0 && t.y.length > 0);
+            if (!hasValidData) {
+                console.warn("Skipping Plotly render; traces invalid/empty.", traces);
+                if (lastPlot && plotEl) {
+                    try {
+                        Plotly.react(plotEl, lastPlot.traces, lastPlot.layout, PLOTLY_CONFIG);
+                    }
+                    catch (err) {
+                        console.error("Failed to restore previous plot", err);
+                    }
+                }
+                return;
             }
             const [yMin, yMax] = yBoundsWithin(traces, FREQ_MIN_HZ, FREQ_MAX_HZ);
             const tickVals = buildTickValues(yMin, yMax);
@@ -953,14 +1005,14 @@ This license supersedes all previous licensing for this repository.
                 };
             }
             try {
-                Plotly.react(plotEl, traces, layout, PLOTLY_CONFIG);
+                await Plotly.react(plotEl, traces, layout, PLOTLY_CONFIG);
                 lastPlot = { traces, layout };
             }
             catch (err) {
                 console.error("Plot render failed; restoring previous plot if available.", err);
                 if (lastPlot) {
                     try {
-                        Plotly.react(plotEl, lastPlot.traces, lastPlot.layout, PLOTLY_CONFIG);
+                        await Plotly.react(plotEl, lastPlot.traces, lastPlot.layout, PLOTLY_CONFIG);
                     }
                     catch (innerErr) {
                         console.error("Failed to restore previous plot", innerErr);
@@ -968,20 +1020,6 @@ This license supersedes all previous licensing for this repository.
                 }
             }
         }
-        render = function render() {
-            if (pendingFrame !== null) {
-                cancelAnimationFrame(pendingFrame);
-            }
-            pendingFrame = requestAnimationFrame(() => {
-                pendingFrame = null;
-                try {
-                    unusedRenderNow();
-                }
-                catch (err) {
-                    console.error("Render error", err);
-                }
-            });
-        };
         const el = $("peak_list");
         if (el) {
             if (whatIfResponse) {
@@ -1004,6 +1042,20 @@ This license supersedes all previous licensing for this repository.
             }
         }
     }
+    render = function render() {
+        if (pendingFrame !== null) {
+            cancelAnimationFrame(pendingFrame);
+        }
+        pendingFrame = requestAnimationFrame(async () => {
+            pendingFrame = null;
+            try {
+                await renderNow();
+            }
+            catch (err) {
+                console.error("Render error", err);
+            }
+        });
+    };
     initFitAssistUi();
     /* --------------------- UI hooks --------------------- */
     CONTROL_IDS.forEach(id => {
