@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>4-DOF Model - ToneLab</title>
+  <link rel="stylesheet" href="../resonance_reader/styles.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-text">
+        <h1>Low-Frequency DOF Model</h1>
+        <p>Tune the coupled degrees of freedom directly. Use the cards to edit physical parameters, then preview the model response.</p>
+      </div>
+      <div class="hero-actions">
+        <div class="mode-tabs" role="tablist">
+          <button class="tab-btn" data-order="1">1-DOF</button>
+          <button class="tab-btn" data-order="2">2-DOF</button>
+          <button class="tab-btn" data-order="3">3-DOF</button>
+          <button class="tab-btn tab-btn-active" data-order="4">4-DOF</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="card-surface">
+      <div class="plot-header dof-frf-header">
+        <div>
+          <h2>Frequency Response</h2>
+          <p class="muted small">Solid line shows current model solution. Dashed line shows What-If overlay.</p>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="toggle_overlay">
+          <span class="toggle-label">Overlay What-If</span>
+          <span class="toggle-knob"></span>
+        </label>
+      </div>
+      <div class="plot-shell">
+        <div id="plot_dof" class="plot"></div>
+        <div id="plot_overlay" class="plot-overlay"></div>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="lfs-header dof-modes-header">
+        <div>
+          <h2>Modes</h2>
+          <p class="muted small">Edit physical parameters for each degree of freedom.</p>
+        </div>
+      </div>
+
+      <div class="mode-grid" id="dof_cards">
+        <!-- populated by script -->
+      </div>
+
+      <div class="plot-footer">
+        <div class="muted">Model order <span id="model_order_label">4</span> · Derived from shared 4-DOF solver core</div>
+        <div class="link-row">
+          <span class="small muted">Blue = current · Gold dashed = What-If</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="../vendor/plotly/plotly.min.js" defer></script>
+  <script src="../common/atmosphere.js" defer></script>
+  <script src="../common/solver_core.js" defer></script>
+  <script src="../common/4dof/model_core.js" defer></script>
+  <script src="main.js" defer></script>
+</body>
+
+</html>
