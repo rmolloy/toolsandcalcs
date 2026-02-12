@@ -13,130 +13,29 @@
   <div class="tl-app">
     <header class="tl-topbar"></header>
     <div class="tl-page">
-      <header class="card pad tl-card tl-card-info">
-        <h1>Target Panel Thickness Calculator</h1>
-        <p class="tl-card-desc">
-          Use this tool to estimate the thickness for a top or back panel using its dimensions, mass, and tap-tone frequencies, so
-          you can achieve consistent stiffness and a predictable acoustic response.
-        </p>
-        <p class="tl-card-desc">
-          This calculator is based on the Gore &amp; Gilet “Design” book (sections 4.5.2–4.5.3) and validated against their
-          reference tables.
-        </p>
-        <details class="tl-accordion">
-          <summary>Overview &amp; Required Measurements</summary>
-          <p class="tl-card-desc">
-            Thickness isn’t the target, stiffness is. And one of the most straightforward ways to estimate stiffness in a
-            guitar panel is by measuring its modal frequencies.
-          </p>
-          <div class="before-columns">
-            <div class="before-card">
-              <h3>How to use this tool</h3>
-              <ol class="tl-steps">
-                <li>Prepare the panel so it is smooth, rectangular, and evenly thicknessed.</li>
-                <li>Tap to identify the long grain, cross grain, and twisting modes.</li>
-                <li>Enter your measurements into the controls below.</li>
-                <li>Review the recommended target thickness.</li>
-              </ol>
-            </div>
-            <div class="before-card">
-              <h3>Measurements required</h3>
-              <ul class="tl-list">
-                <li>Guitar box length & lower-bout width (mm)</li>
-                <li>Panel length, width, and thickness (mm)</li>
-                <li>Panel mass (g)</li>
-                <li>Tap-tone frequencies: long, cross, twist (Hz)</li>
-                <li>Target modal frequency for the finished top or back (Hz)</li>
-              </ul>
-            </div>
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <h1>Plate Thickness</h1>
           </div>
-          <div class="before-card">
-            <h3>Accuracy &amp; troubleshooting</h3>
-            <p class="tl-card-desc">
-              Measure the fundamental of each mode (an FFT helps). Uneven thickness or coarse sanding can shift the tap
-              frequencies; planing or scraping gives the most reliable readings. </p>
-            <p class="tl-card-desc">
-              If the recommended thickness seems unusually thin, re-measure your tap frequencies and compare them to the
-              examples in the Gore &amp; Gilet book. They should be in the same ballpark. If they’re not, send your numbers
-              using the form below and we’ll take a look.
-            </p>
+          <div class="hero-actions">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Site sections">
+                <a class="hero-menu-home" href="https://rickmolloyguitars.com/">Rick Molloy Guitars</a>
+                <a href="https://rickmolloyguitars.com/">Instruments</a>
+                <a href="https://rickmolloyguitars.com/" aria-current="page">Tools</a>
+                <a href="https://rickmolloyguitars.com/">Workshops</a>
+                <a href="https://rickmolloyguitars.com/">Practice</a>
+                <a href="https://rickmolloyguitars.com/">Inquiry</a>
+              </nav>
+            </details>
           </div>
-        </details>
-      </header>
+        </div>
+      </section>
 
-      <main class="tl-layout">
-
-        <aside class="tl-controls">
-    <section class="card pad tl-card tl-card-controls tl-control-column">
-      <h2>Panel measurements</h2>
-      <div class="input-block">
-        <h3 class="input-block__title">Geometry</h3>
-        <form id="plate_form_geometry" class="tl-control-stack">
-          <label class="field">
-            <span class="field-label">Guitar box length (mm)</span>
-            <input type="number" step="1" min="200" data-field="body_length" value="490">
-          </label>
-          <label class="field">
-            <span class="field-label">Lower bout width (mm)</span>
-            <input type="number" step="1" min="200" data-field="lower_bout" value="390">
-          </label>
-          <label class="field">
-            <span class="field-label">Panel length (mm)</span>
-            <input type="number" step="1" min="200" data-field="panel_length" value="555">
-          </label>
-          <label class="field">
-            <span class="field-label">Panel width (mm)</span>
-            <input type="number" step="1" min="200" data-field="panel_width" value="227">
-          </label>
-        </form>
-      </div>
-      <div class="input-block">
-        <h3 class="input-block__title">Mass &amp; thickness</h3>
-        <form class="tl-control-stack">
-          <label class="field">
-            <span class="field-label">Mass of panel (g)</span>
-            <input type="number" step="0.1" min="10" data-field="panel_mass" value="211.4">
-          </label>
-          <label class="field">
-            <span class="field-label">Panel thickness (mm)</span>
-            <input type="number" step="0.1" min="1" data-field="panel_height" value="4.1">
-          </label>
-        </form>
-      </div>
-      <div class="input-block">
-        <h3 class="input-block__title">Modal taps</h3>
-        <form class="tl-control-stack">
-          <label class="field">
-            <span class="field-label">Long-grain mode f<sub>L</sub> (Hz)</span>
-            <input type="number" step="0.1" min="10" data-field="long_freq" value="74">
-          </label>
-          <label class="field">
-            <span class="field-label">Cross-grain mode f<sub>C</sub> (Hz)</span>
-            <input type="number" step="0.1" min="10" data-field="cross_freq" value="109">
-          </label>
-          <label class="field">
-            <span class="field-label">Twist mode f<sub>T</sub> (Hz)</span>
-            <input type="number" step="0.1" min="10" data-field="twist_freq" value="42">
-          </label>
-        </form>
-      </div>
-      <div class="input-block">
-        <h3 class="input-block__title">Target</h3>
-        <form class="tl-control-stack">
-          <label class="field">
-            <span class="field-label">Target main tap frequency (Hz)</span>
-            <input type="number" step="0.1" min="20" data-field="target_freq" value="75">
-          </label>
-        </form>
-      </div>
-      <div class="tl-action-row">
-        <button id="reset_inputs">Reset defaults</button>
-      </div>
-    </section>
-
-        </aside>
-
-        <section class="tl-content">
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
     <section class="card pad tl-card tl-card-output">
       <h2>Results</h2>
       <p class="small muted">Results update automatically as you enter measurements.</p>
@@ -172,9 +71,129 @@
       </div>
       <p id="result_status" class="status">Live: computed from current inputs</p>
     </section>
+        </section>
 
+        <aside class="tl-controls">
+    <section class="card pad tl-card tl-card-controls tl-control-column">
+      <h2>Panel measurements</h2>
+      <div class="plate-target-row">
+        <label class="field field-target">
+          <span class="field-label">Target main tap frequency (Hz)</span>
+          <input type="number" step="0.1" min="20" data-field="target_freq" value="75">
+        </label>
+        <div class="tl-action-row">
+          <button id="reset_inputs">Reset defaults</button>
+        </div>
+      </div>
 
+      <div class="plate-input-grid">
+        <div class="input-block">
+          <h3 class="input-block__title">Geometry</h3>
+          <form id="plate_form_geometry" class="tl-control-stack">
+            <label class="field">
+              <span class="field-label">Guitar box length (mm)</span>
+              <input type="number" step="1" min="200" data-field="body_length" value="490">
+            </label>
+            <label class="field">
+              <span class="field-label">Lower bout width (mm)</span>
+              <input type="number" step="1" min="200" data-field="lower_bout" value="390">
+            </label>
+            <label class="field">
+              <span class="field-label">Panel length (mm)</span>
+              <input type="number" step="1" min="200" data-field="panel_length" value="555">
+            </label>
+            <label class="field">
+              <span class="field-label">Panel width (mm)</span>
+              <input type="number" step="1" min="200" data-field="panel_width" value="227">
+            </label>
+          </form>
+        </div>
+        <div class="input-block">
+          <h3 class="input-block__title">Mass &amp; thickness</h3>
+          <form class="tl-control-stack">
+            <label class="field">
+              <span class="field-label">Mass of panel (g)</span>
+              <input type="number" step="0.1" min="10" data-field="panel_mass" value="211.4">
+            </label>
+            <label class="field">
+              <span class="field-label">Panel thickness (mm)</span>
+              <input type="number" step="0.1" min="1" data-field="panel_height" value="4.1">
+            </label>
+          </form>
+        </div>
+        <div class="input-block">
+          <h3 class="input-block__title">Modal taps</h3>
+          <form class="tl-control-stack">
+            <label class="field">
+              <span class="field-label">Long-grain mode f<sub>L</sub> (Hz)</span>
+              <input type="number" step="0.1" min="10" data-field="long_freq" value="74">
+            </label>
+            <label class="field">
+              <span class="field-label">Cross-grain mode f<sub>C</sub> (Hz)</span>
+              <input type="number" step="0.1" min="10" data-field="cross_freq" value="109">
+            </label>
+            <label class="field">
+              <span class="field-label">Twist mode f<sub>T</sub> (Hz)</span>
+              <input type="number" step="0.1" min="10" data-field="twist_freq" value="42">
+            </label>
+          </form>
+        </div>
+      </div>
+    </section>
 
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+    <header class="card pad tl-card tl-card-info">
+      <h1>Target Panel Thickness Calculator</h1>
+      <p class="tl-card-desc">
+        Use this tool to estimate the thickness for a top or back panel using its dimensions, mass, and tap-tone frequencies, so
+        you can achieve consistent stiffness and a predictable acoustic response.
+      </p>
+      <p class="tl-card-desc">
+        This calculator is based on the Gore &amp; Gilet “Design” book (sections 4.5.2–4.5.3) and validated against their
+        reference tables.
+      </p>
+      <details class="tl-accordion">
+        <summary>Overview &amp; Required Measurements</summary>
+        <p class="tl-card-desc">
+          Thickness isn’t the target, stiffness is. And one of the most straightforward ways to estimate stiffness in a
+          guitar panel is by measuring its modal frequencies.
+        </p>
+        <div class="before-columns">
+          <div class="before-card">
+            <h3>How to use this tool</h3>
+            <ol class="tl-steps">
+              <li>Prepare the panel so it is smooth, rectangular, and evenly thicknessed.</li>
+              <li>Tap to identify the long grain, cross grain, and twisting modes.</li>
+              <li>Enter your measurements into the controls below.</li>
+              <li>Review the recommended target thickness.</li>
+            </ol>
+          </div>
+          <div class="before-card">
+            <h3>Measurements required</h3>
+            <ul class="tl-list">
+              <li>Guitar box length & lower-bout width (mm)</li>
+              <li>Panel length, width, and thickness (mm)</li>
+              <li>Panel mass (g)</li>
+              <li>Tap-tone frequencies: long, cross, twist (Hz)</li>
+              <li>Target modal frequency for the finished top or back (Hz)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="before-card">
+          <h3>Accuracy &amp; troubleshooting</h3>
+          <p class="tl-card-desc">
+            Measure the fundamental of each mode (an FFT helps). Uneven thickness or coarse sanding can shift the tap
+            frequencies; planing or scraping gives the most reliable readings. </p>
+          <p class="tl-card-desc">
+            If the recommended thickness seems unusually thin, re-measure your tap frequencies and compare them to the
+            examples in the Gore &amp; Gilet book. They should be in the same ballpark. If they’re not, send your numbers
+            using the form below and we’ll take a look.
+          </p>
+        </div>
+      </details>
+    </header>
     <section class="card pad tl-card tl-card-info">
       <h2>How the calculation works</h2>
       <p class="tl-card-desc">
