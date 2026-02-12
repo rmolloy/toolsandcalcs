@@ -1,18 +1,33 @@
 @import url("../common/styles.css");
+@import url("../common/theme_resonance_shared.css");
 
-body {
-  background: var(--bg);
-  color: var(--ink);
+:root {
+  --tl-page-max: min(1800px, 92vw);
+  --tl-page-pad: 18px;
+  --tl-grid-gap: 14px;
+  --tl-controls-min: 320px;
+  --tl-controls-max: 380px;
+}
+
+.tl-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .tl-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  background: linear-gradient(150deg, rgba(22, 27, 39, 0.64), rgba(13, 17, 25, 0.42));
+  border: 1px solid var(--frame-ghost);
+  border-radius: 20px;
+  box-shadow: 0 16px 46px rgba(0, 0, 0, 0.26), 0 0 28px rgba(94, 121, 220, 0.08);
+  backdrop-filter: blur(10px);
 }
 .tl-card-controls {
   gap: 16px;
-  background: var(--panel);
+  background: linear-gradient(152deg, rgba(19, 24, 35, 0.74), rgba(10, 14, 22, 0.58));
 }
 .tl-card-output {
   gap: 16px;
@@ -41,14 +56,14 @@ body {
 }
 
 .tl-control-column {
-  background: var(--panel);
+  background: linear-gradient(152deg, rgba(19, 24, 35, 0.74), rgba(10, 14, 22, 0.58));
 }
 
 .input-block {
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--frame-ghost);
   border-radius: var(--radius);
   padding: 12px;
-  background: color-mix(in srgb, var(--panel) 90%, var(--bg));
+  background: linear-gradient(145deg, rgba(17, 21, 31, 0.62), rgba(12, 15, 22, 0.4));
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -150,10 +165,10 @@ body {
 }
 
 .tl-accordion {
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--frame-ghost);
   border-radius: var(--radius);
   padding: 10px 12px;
-  background: color-mix(in srgb, var(--panel) 85%, var(--bg));
+  background: linear-gradient(145deg, rgba(17, 21, 31, 0.62), rgba(12, 15, 22, 0.4));
 }
 .before-columns {
   display: grid;
@@ -161,10 +176,10 @@ body {
   gap: 12px;
 }
 .before-card {
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--frame-ghost);
   border-radius: var(--radius);
   padding: 10px 12px;
-  background: color-mix(in srgb, var(--panel) 90%, var(--bg));
+  background: linear-gradient(145deg, rgba(17, 21, 31, 0.62), rgba(12, 15, 22, 0.4));
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -252,9 +267,9 @@ body {
 
 .result-card {
   border-radius: var(--radius);
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--frame-ghost);
   padding: 14px;
-  background: color-mix(in srgb, var(--panel) 90%, var(--bg));
+  background: linear-gradient(145deg, rgba(17, 21, 31, 0.62), rgba(12, 15, 22, 0.4));
   text-align: center;
 }
 
@@ -284,4 +299,23 @@ body {
 ol.small {
   margin-left: 18px;
   line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --tl-controls-min: 100%;
+    --tl-controls-max: 100%;
+    --tl-page-pad: 12px;
+  }
+
+  .field {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .field input {
+    max-width: 100%;
+    width: 100%;
+    text-align: left;
+  }
 }
