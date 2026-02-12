@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resonance Reader - ToneLab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="page-shell">
+    <section class="hero">
+      <div class="hero-row">
+        <div class="hero-controls-left">
+          <h1>Resonance Reader</h1>
+          <div class="measure-select hero-control" id="measure_chip">
+            <span class="measure-label">Measuring:</span>
+            <select class="measure-dropdown" id="measure_mode">
+              <option value="guitar" selected>Guitar</option>
+              <option value="top">Top Plate</option>
+              <option value="back">Back Plate</option>
+            </select>
+          </div>
+          <select class="recording-dropdown hero-control" id="recording_select">
+            <option value="" selected>Demo (read-only)</option>
+          </select>
+          <button class="ghost-btn hero-control" id="btn_save_audio">Save</button>
+          <input type="file" id="file_input" accept="audio/*" hidden>
+        </div>
+        <div class="hero-actions">
+          <details class="hero-menu">
+            <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+            <nav class="hero-menu-panel" aria-label="Site sections">
+              <a class="hero-menu-home" href="https://rickmolloyguitars.com/">Rick Molloy Guitars</a>
+              <a href="https://rickmolloyguitars.com/">Instruments</a>
+              <a href="https://rickmolloyguitars.com/" aria-current="page">Tools</a>
+              <a href="https://rickmolloyguitars.com/">Workshops</a>
+              <a href="https://rickmolloyguitars.com/">Practice</a>
+              <a href="https://rickmolloyguitars.com/">Inquiry</a>
+            </nav>
+          </details>
+        </div>
+      </div>
+      <p class="hero-subtitle">Tap the guitar or import a .wav recording to reveal its low-frequency coupled resonances.</p>
+    </section>
+
+    <section class="card-surface">
+      <div id="plot_fft" class="plot"></div>
+
+      <section class="wave-surface" id="wave_nav">
+        <div id="plot_waveform" class="plot waveform"></div>
+        <div class="plot-header">
+          <div class="plot-header-copy">
+            <h2>Frequency Response</h2>
+            <p class="muted small">Select a region in the waveform file to analyze.</p>
+          </div>
+          <div class="wave-transport-inline">
+            <button class="ghost-btn btn-small" id="btn_wave_tone"><span class="transport-icon" aria-hidden="true">∿</span>Tone</button>
+            <button class="ghost-btn btn-small" id="btn_wave_record"><span class="transport-icon" aria-hidden="true">⏺</span>Record</button>
+            <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Play</button>
+            <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Stop</button>
+            <button class="ghost-btn btn-small" id="btn_import"><span class="transport-icon" aria-hidden="true">⬆</span>Import</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="mode-grid" id="mode_grid">
+        <!-- Mode cards populated by script -->
+      </div>
+
+      <section class="dof-model-row">
+        <div class="dof-model-copy">
+          <h2>4DOF Model</h2>
+        </div>
+        <div class="dof-model-actions">
+          <label class="toggle dof-toggle">
+            <input type="checkbox" id="toggle_overlay" checked>
+            <span class="toggle-label sr-only">Toggle 4DOF model overlay</span>
+            <span class="toggle-knob"></span>
+          </label>
+        </div>
+        <a href="../dof_model/" class="link dof-model-link" data-view-model>Open in 4-DOF model</a>
+      </section>
+
+      <div class="try-panel" id="try_panel" hidden>
+        <div class="try-cards">
+          <div class="try-card" id="try_card_structural" hidden>
+            <div class="try-label">Try (structural):</div>
+            <ul class="try-list" id="try_list_structural"></ul>
+          </div>
+          <div class="try-card" id="try_card_reversible" hidden>
+            <div class="try-label">Try (reversible / non-structural):</div>
+            <ul class="try-list" id="try_list_reversible"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+    </section>
+  </div>
+
+  <script src="../vendor/plotly/plotly.min.js" defer></script>
+  <script src="../common/atmosphere.js" defer></script>
+  <script src="../common/solver_core.js" defer></script>
+  <script src="../modal_frequency_shared/state.js" defer></script>
+  <script src="../modal_frequency_shared/utils.js" defer></script>
+  <script src="../modal_frequency_shared/audio.js" defer></script>
+  <script src="../modal_frequency_shared/waveform.js" defer></script>
+  <script src="../modal_frequency_shared/segmentation.js" defer></script>
+  <script src="../modal_frequency_shared/fft_engine.js" defer></script>
+  <script src="../modal_frequency_shared/fft_plot.js" defer></script>
+  <script src="../common/4dof/model_core.js" defer></script>
+  <script type="module" src="dist/resonate_ingest_stage.js"></script>
+  <script type="module" src="dist/resonate_startup.js"></script>
+  <script type="module" src="dist/resonate_artifact_event.js"></script>
+  <script type="module" src="dist/resonate_stage_events.js"></script>
+  <script type="module" src="dist/resonate_ui_events.js"></script>
+  <script type="module" src="dist/resonate_render_events.js"></script>
+  <script type="module" src="dist/main.js"></script>
+</body>
+
+</html>

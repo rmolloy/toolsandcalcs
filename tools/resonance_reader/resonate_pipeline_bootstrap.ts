@@ -1,0 +1,73 @@
+import { pipelineRunnerRun } from "./resonate_pipeline_runner.js";
+import { uiBindingsAttach } from "./resonate_ui_bindings.js";
+import { createPipelineBus } from "./resonate_pipeline_bus.js";
+import { wireResonatePipeline } from "./resonate_pipeline_wiring.js";
+
+type ResonatePipelineBootstrapDeps = {
+  state: Record<string, any> & import("./resonate_boundary_state.js").ResonanceBoundaryState;
+  refreshPipeline: () => Promise<void>;
+  runPipelineRunner: (trigger: string) => Promise<void>;
+  renderMock: () => void;
+  setStatus: (text: string) => void;
+  renderSpectrum: (payload: { freqs: number[]; mags: number[]; overlay?: number[]; modes?: any[] }) => void;
+  renderModes: (modes: any[]) => void;
+  renderWaveform: (wave: any) => void;
+  analysisBoundary?: import("./resonate_analysis_boundary.js").AnalysisBoundary;
+  signalBoundary?: import("./resonate_signal_boundary.js").SignalBoundary;
+  overlayBoundary?: import("./resonate_overlay_boundary.js").OverlayBoundary;
+};
+
+function pipelineRunnerEventEmitToBus(
+  bus: ReturnType<typeof createPipelineBus>,
+  event: { eventType: string; payload: Record<string, unknown>; runId?: string; stageId?: string },
+) {
+  void bus.emit("pipeline.event", {
+    eventType: event.eventType,
+    runId: event.runId,
+    stageId: event.stageId,
+    payload: event.payload,
+  });
+  void bus.emit(event.eventType, {
+    ...event.payload,
+    runId: event.runId,
+    stageId: event.stageId,
+  });
+}
+
+function pipelineRunnerWindowExpose(
+  bus: ReturnType<typeof createPipelineBus>,
+  deps: ResonatePipelineBootstrapDeps,
+) {
+  (window as any).ResonatePipelineRunner = {
+    run: (input: Record<string, unknown>, config: Record<string, unknown>) =>
+      pipelineRunnerRun(
+        input,
+        config,
+        (event) => pipelineRunnerEventEmitToBus(bus, event),
+        {
+          state: deps.state,
+          refreshAll: deps.refreshPipeline,
+          analysisBoundary: deps.analysisBoundary,
+          signalBoundary: deps.signalBoundary,
+          overlayBoundary: deps.overlayBoundary,
+        },
+      ),
+  };
+}
+
+export function resonatePipelineBootstrapAttach(deps: ResonatePipelineBootstrapDeps) {
+  const bus = createPipelineBus();
+  (window as any).ResonatePipelineBus = bus;
+  wireResonatePipeline(bus);
+  pipelineRunnerWindowExpose(bus, deps);
+  uiBindingsAttach({
+    state: deps.state,
+    runResonatePipeline: deps.runPipelineRunner,
+    renderMock: deps.renderMock,
+    setStatus: deps.setStatus,
+    renderSpectrum: deps.renderSpectrum,
+    renderModes: deps.renderModes,
+    renderWaveform: deps.renderWaveform,
+    pipelineBus: bus,
+  });
+}
