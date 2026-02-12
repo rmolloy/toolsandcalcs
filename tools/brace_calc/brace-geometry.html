@@ -444,11 +444,47 @@
       };
   }
 </script>
-<script
-  src="../calculator.js"
-  onerror="this.onerror=null;this.src='../flexural_rigidity/calculator.js';"
-></script>
-<script src="brace-geometry.js"></script>
-<script src="brace-geometry-ui.js"></script>
+<script>
+  (function loadBraceCalculatorAndUi() {
+    const candidateCalculatorSources = [
+      "../calculator.js",
+      "../flexural_rigidity/calculator.js"
+    ];
+
+    function appendScript(src, onLoad, onError) {
+      const script = document.createElement("script");
+      script.src = src;
+      script.onload = onLoad;
+      script.onerror = onError;
+      document.body.appendChild(script);
+    }
+
+    function loadSequentialScripts(sources, done) {
+      if (!sources.length) {
+        done();
+        return;
+      }
+      const [current, ...rest] = sources;
+      appendScript(current, () => loadSequentialScripts(rest, done), () => {
+        throw new Error("Brace Geometry UI failed to load.");
+      });
+    }
+
+    function loadCalculatorWithFallback(sources) {
+      const [current, ...rest] = sources;
+      if (!current) {
+        throw new Error("FlexuralRigidity calculator is unavailable.");
+      }
+
+      appendScript(
+        current,
+        () => loadSequentialScripts(["brace-geometry.js", "brace-geometry-ui.js"], () => {}),
+        () => loadCalculatorWithFallback(rest)
+      );
+    }
+
+    loadCalculatorWithFallback(candidateCalculatorSources);
+  })();
+</script>
 </body>
 </html>
