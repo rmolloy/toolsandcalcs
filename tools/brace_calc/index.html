@@ -444,12 +444,10 @@
       };
   }
 </script>
-<script>
-  const braceCalculatorScriptPath = window.location.pathname.includes("/tools/brace_calc/")
-    ? "../flexural_rigidity/calculator.js"
-    : "../calculator.js";
-  document.write(`<script src="${braceCalculatorScriptPath}"><\\/script>`);
-</script>
+<script
+  src="../calculator.js"
+  onerror="this.onerror=null;this.src='../flexural_rigidity/calculator.js';"
+></script>
 <script src="brace-geometry.js"></script>
 <script src="brace-geometry-ui.js"></script>
 </body>
