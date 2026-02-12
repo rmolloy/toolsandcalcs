@@ -1,75 +1,9 @@
 @import url("../common/styles.css");
-
-:root {
-  --card-bg: linear-gradient(135deg, rgba(32, 38, 52, 0.92), rgba(18, 22, 30, 0.9));
-  --panel-glow: 0 14px 44px rgba(0, 0, 0, 0.25);
-  --edge-soft: 1px solid rgba(255, 255, 255, 0.03);
-  --frame-soft: 1px solid rgba(150, 178, 255, 0.13);
-  --nebula-blue: rgba(84, 116, 214, 0.24);
-  --nebula-gold: rgba(238, 178, 94, 0.18);
-  --nebula-cyan: rgba(82, 202, 194, 0.14);
-  --frame-ghost: rgba(150, 178, 255, 0.08);
-  --type-title-size: 22px;
-  --type-title-line: 1.3;
-  --type-title-weight: 600;
-  --type-value-size: 34px;
-  --type-value-line: 1.05;
-  --type-value-weight: 500;
-  --type-label-size: 14px;
-  --type-label-line: 1.5;
-  --type-label-weight: 500;
-  --type-meta-size: 12px;
-  --type-meta-line: 1.5;
-  --type-meta-weight: 400;
-  --hero-control-height: 28px;
-  --hero-control-radius: 999px;
-  --hero-control-border: 1px solid rgba(255, 255, 255, 0.08);
-  --hero-control-bg: color-mix(in srgb, var(--panel) 74%, var(--bg));
-  --hero-control-text: var(--ink);
-  --hero-control-padding-inline: 14px;
-}
+@import url("../common/theme_resonance_shared.css");
 
 * { box-sizing: border-box; }
 
-body {
-  position: relative;
-  margin: 0;
-  font: 14px/1.5 "Inter", system-ui, -apple-system, Segoe UI, sans-serif;
-  background: radial-gradient(circle at 20% 20%, rgba(70, 88, 130, 0.12), transparent 35%),
-              radial-gradient(circle at 80% 0%, rgba(182, 140, 90, 0.14), transparent 32%),
-              #0c0f14;
-  color: var(--ink);
-  min-height: 100vh;
-  padding: 28px;
-  overflow-x: hidden;
-}
-
-body::before,
-body::after {
-  content: "";
-  position: fixed;
-  inset: -12%;
-  pointer-events: none;
-  z-index: -2;
-}
-
-body::before {
-  background:
-    radial-gradient(circle at 25% 14%, var(--nebula-blue), transparent 48%),
-    radial-gradient(circle at 52% 46%, var(--nebula-gold), transparent 44%),
-    radial-gradient(circle at 76% 30%, var(--nebula-cyan), transparent 46%);
-  filter: blur(24px);
-}
-
-body::after {
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(circle at 50% 38%, rgba(104, 132, 218, 0.14), transparent 48%),
-    radial-gradient(circle at 49% 52%, rgba(244, 177, 87, 0.1), transparent 40%),
-    radial-gradient(circle at 73% 56%, rgba(112, 226, 204, 0.08), transparent 38%);
-  filter: blur(40px);
-}
+body { padding: 28px; }
 
 .container {
   width: min(1120px, 92vw);
