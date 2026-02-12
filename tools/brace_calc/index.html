@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Brace Geometry Calculator - ToneLab</title>
+  <link rel="stylesheet" href="../../common/styles.css">
+  <style>
+    :root {
+      --card-bg: #0d1116;
+      --card-border: rgba(255, 255, 255, 0.06);
+      --card-border-strong: rgba(255, 255, 255, 0.12);
+      --text-strong: #f7f8fa;
+      --text-body: #c7cfdb;
+      --text-muted: #7c869b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-body);
+      font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      letter-spacing: -0.01em;
+    }
+
+    header {
+      max-width: 960px;
+      margin: 32px auto 16px;
+      color: var(--text-body);
+    }
+
+    .brace-app {
+      max-width: 1200px;
+      margin: 0 auto 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .brace-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .brace-toolbar button {
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 6px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-body);
+      transition: background 160ms ease, border 160ms ease;
+    }
+    .brace-toolbar button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--card-border-strong);
+    }
+    .brace-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .brace-gallery {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+
+    .brace-card {
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 24px 20px;
+      background: var(--card-bg);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      transition: box-shadow 200ms ease, border 200ms ease;
+    }
+    .brace-card:hover {
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+      border-color: var(--card-border-strong);
+    }
+
+    .brace-card header {
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brace-card header input {
+      flex: 1;
+      border: none;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-strong);
+      padding: 4px 0;
+    }
+
+    .brace-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brace-preview-svg {
+      width: 140px;
+      height: 160px;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      flex-shrink: 0;
+    }
+
+    .preview-shape {
+      stroke: rgba(0, 0, 0, 0.2);
+      stroke-width: 1;
+    }
+    .preview-outline {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.7);
+      stroke-width: 1.4;
+      pointer-events: none;
+    }
+
+    .segment-rectangle {
+      fill: var(--blue);
+    }
+
+    .segment-triangle {
+      fill: var(--orange);
+    }
+
+    .segment-parabolic {
+      fill: var(--yellow);
+    }
+
+    .brace-preview-meta {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: 0.01em;
+    }
+
+    .brace-info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--card-border);
+      padding-top: 12px;
+      gap: 12px;
+      font-size: 15px;
+    }
+    .brace-info-row span {
+      color: var(--text-body);
+      font-weight: 500;
+    }
+    .brace-info-row button {
+      border: none;
+      background: transparent;
+      color: var(--orange);
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .brace-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 8px 20px;
+      font-size: 15px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .metric-label {
+      color: var(--text-body);
+    }
+    .metric-value {
+      color: var(--text-strong);
+      font-weight: 500;
+      text-align: right;
+    }
+    .metric-value.primary {
+      color: var(--blue);
+    }
+
+    .brace-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .brace-stack-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .segment-chip {
+      align-self: flex-start;
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #05060a;
+    }
+    .segment-chip-rectangle {
+      background: var(--blue);
+    }
+    .segment-chip-triangle {
+      background: var(--orange);
+    }
+    .segment-chip-parabolic {
+      background: var(--yellow);
+      color: #0b0d12;
+    }
+    .stack-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .stack-field span {
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .stack-field input,
+    .stack-field select {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text-strong);
+      font-size: 13px;
+      transition: border 160ms ease, box-shadow 160ms ease;
+    }
+    .stack-field input:focus,
+    .stack-field select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue);
+      outline: none;
+    }
+
+    .brace-stack-row input,
+    .brace-stack-row select {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .brace-stack-row button {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      color: var(--text-body);
+    }
+
+    .brace-stack-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .brace-stack-actions button {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      color: var(--text-body);
+    }
+
+    .brace-design {
+      border-top: 1px solid var(--card-border);
+      padding-top: 12px;
+    }
+    .brace-design summary {
+      list-style: none;
+      cursor: pointer;
+      height: 56px;
+      padding: 0 4px;
+      font-size: 15px;
+      color: var(--text-body);
+      display: flex;
+      align-items: center;
+    }
+    .brace-design summary::marker {
+      content: "";
+    }
+    .brace-design-summary::after {
+      content: "›";
+      font-size: 18px;
+      color: var(--text-muted);
+      transition: transform 200ms ease;
+      margin-left: 8px;
+    }
+    .brace-design[open] .brace-design-summary::after {
+      transform: rotate(90deg);
+    }
+    .brace-design-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      gap: 12px;
+    }
+    .brace-design-summary .design-label {
+      font-weight: 600;
+      color: var(--text-body);
+    }
+    .brace-design-summary .design-detail {
+      color: var(--text-muted);
+      font-size: 14px;
+      text-align: right;
+    }
+    .brace-design-body {
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .brace-design-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .comparison-panel .brace-summary-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .brace-summary-card {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px 18px;
+      background: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .brace-summary-card h4 {
+      margin: 0;
+      font-size: 15px;
+      color: var(--text-strong);
+    }
+
+    .brace-summary-card .metric {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-body);
+    }
+
+    .metric span:first-child {
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+
+    .empty-state {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="card pad tl-card">
+  <div class="pill">ToneLab Utility</div>
+  <h1>Brace Geometry Calculator</h1>
+  <p class="small">
+    Computes the geometric centroid and second moment of area (I) of a brace cross-section.
+    Matches the derivations and examples in Gore & Gilet.
+  </p>
+</header>
+
+<main class="brace-app">
+  <section class="card pad tl-card">
+    <div class="brace-toolbar">
+      <div>
+        <h2>Brace gallery</h2>
+        <p class="small muted">Add braces, stack geometric components, and explore their centroid and stiffness.</p>
+      </div>
+      <div class="brace-toolbar-actions">
+        <button type="button" id="add_brace">+ Add brace</button>
+        <button type="button" id="save_braces">Save layout</button>
+        <button type="button" id="load_braces">Load layout</button>
+        <input type="file" id="brace_file_input" accept="application/json" hidden>
+      </div>
+    </div>
+    <div id="brace_gallery" class="brace-gallery"></div>
+  </section>
+
+  <section class="card pad tl-card comparison-panel">
+    <h2>Brace comparison</h2>
+    <p class="small muted">Relative mass uses total area as a proxy. Relative stiffness is based on I.</p>
+    <div id="brace_summary" class="brace-summary-grid"></div>
+  </section>
+</main>
+
+<script>
+  if (typeof window !== "undefined") {
+    window.exports = window.exports || {};
+    window.module = window.module || { exports: window.exports };
+    window.require =
+      window.require ||
+      function (name) {
+        if (name === "../calculator" || name === "./calculator") {
+          return { FlexuralRigidity: window.FlexuralRigidity };
+        }
+        return window[name] || {};
+      };
+  }
+</script>
+<script src="../calculator.js"></script>
+<script src="brace-geometry.js"></script>
+<script src="brace-geometry-ui.js"></script>
+</body>
+</html>
