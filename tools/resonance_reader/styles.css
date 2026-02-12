@@ -605,6 +605,9 @@ body::after {
 .mode-card.mode-air { background: linear-gradient(135deg, rgba(105,140,200,0.4), rgba(24,29,39,0.9)); }
 .mode-card.mode-top { background: linear-gradient(135deg, rgba(200,150,85,0.45), rgba(32,26,20,0.9)); }
 .mode-card.mode-back { background: linear-gradient(135deg, rgba(90,190,150,0.4), rgba(20,30,24,0.9)); }
+.mode-card.mode-long { background: linear-gradient(135deg, rgba(0,114,178,0.45), rgba(19,28,42,0.92)); }
+.mode-card.mode-cross { background: linear-gradient(135deg, rgba(213,94,0,0.44), rgba(40,23,15,0.92)); }
+.mode-card.mode-transverse { background: linear-gradient(135deg, rgba(204,121,167,0.42), rgba(38,24,36,0.92)); }
 .mode-card.mode-custom { background: linear-gradient(140deg, rgba(20, 24, 34, 0.95), rgba(10, 12, 18, 0.96)); }
 .mode-card h3 {
   margin: 0;
@@ -615,6 +618,9 @@ body::after {
 .mode-card.mode-air { --mode-dot: #8ecbff; }
 .mode-card.mode-top { --mode-dot: #f5c46f; }
 .mode-card.mode-back { --mode-dot: #7ce3b1; }
+.mode-card.mode-long { --mode-dot: #0072b2; }
+.mode-card.mode-cross { --mode-dot: #d55e00; }
+.mode-card.mode-transverse { --mode-dot: #cc79a7; }
 .mode-card.mode-custom { --mode-dot: #d7dde8; }
 .mode-card.mode-card-add {
   border: 1px solid rgba(255,255,255,0.08);
