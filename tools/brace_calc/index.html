@@ -433,14 +433,23 @@
     window.require =
       window.require ||
       function (name) {
-        if (name === "../calculator" || name === "./calculator") {
+        if (
+          name === "../calculator" ||
+          name === "./calculator" ||
+          name === "../flexural_rigidity/calculator"
+        ) {
           return { FlexuralRigidity: window.FlexuralRigidity };
         }
         return window[name] || {};
       };
   }
 </script>
-<script src="../calculator.js"></script>
+<script>
+  const braceCalculatorScriptPath = window.location.pathname.includes("/tools/brace_calc/")
+    ? "../flexural_rigidity/calculator.js"
+    : "../calculator.js";
+  document.write(`<script src="${braceCalculatorScriptPath}"><\\/script>`);
+</script>
 <script src="brace-geometry.js"></script>
 <script src="brace-geometry-ui.js"></script>
 </body>
