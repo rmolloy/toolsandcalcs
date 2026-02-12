@@ -218,6 +218,8 @@ function modeTargetResetRowHtmlBuildFromMode(m: ModeCard, targetHtml: string) {
 }
 
 function modeTargetRenderAllowed() {
+  const measureMode = (document.getElementById("measure_mode") as HTMLSelectElement | null)?.value;
+  if (measureMode && measureMode !== "guitar") return false;
   const toggle = document.getElementById("toggle_overlay") as HTMLInputElement | null;
   return overlayToggleShouldRender(toggle);
 }

@@ -1,4 +1,5 @@
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
+import { measureModeNormalize } from "./resonate_mode_config.js";
 function saveButtonElementGet() {
     return document.getElementById("btn_save_audio");
 }
@@ -262,6 +263,7 @@ export function uiBindingsAttach(deps) {
         bindSaveAudio(deps);
         bindRecord(deps);
         bindWaveTransport(deps);
+        bindMeasureMode(deps);
         let hasStartup = false;
         const startup = window.ResonateStartup;
         if (startup?.startupPlanBuildFromMode && startup?.startupModeSelectFromFlag && startup?.startupExecuteFromPlan) {
@@ -296,4 +298,41 @@ function recordingSelectInitialWidthSync() {
     const selected = select.options[select.selectedIndex];
     const label = (selected?.textContent || "Demo (read-only)").trim();
     recordingSelectWidthSyncFromLabel(select, label);
+}
+function measureModeSelectElementGet() {
+    return document.getElementById("measure_mode");
+}
+function measureModeStateSeedFromSelect(state) {
+    const select = measureModeSelectElementGet();
+    state.measureMode = measureModeNormalize(select?.value);
+}
+function measureModeChangeHandle(deps) {
+    const select = measureModeSelectElementGet();
+    if (!select)
+        return;
+    const nextMode = measureModeNormalize(select.value);
+    if (deps.state.measureMode === nextMode)
+        return;
+    deps.state.measureMode = nextMode;
+    deps.state.lastOverlay = undefined;
+    renderTryModePanelForMeasureMode(nextMode, deps);
+    deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
+}
+function renderTryModePanelForMeasureMode(measureMode, deps) {
+    if (measureMode === "guitar")
+        return;
+    deps.state.modeTargets = {};
+}
+function rerenderFromLastSpectrumIfPossible(state) {
+    if (typeof state?.rerenderFromLastSpectrum !== "function")
+        return;
+    state.preserveSpectrumRangesOnNextRender = true;
+    state.rerenderFromLastSpectrum({ skipDof: true });
+}
+function bindMeasureMode(deps) {
+    measureModeStateSeedFromSelect(deps.state);
+    const select = measureModeSelectElementGet();
+    if (!select)
+        return;
+    select.addEventListener("change", () => measureModeChangeHandle(deps));
 }

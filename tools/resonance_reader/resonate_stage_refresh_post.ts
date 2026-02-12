@@ -40,6 +40,11 @@ function stageRefreshCardsBuild(args: {
   modeTargets: Record<string, number>;
   modeOverrides: Record<string, number>;
 }): ModeCard[] {
+  const labelFromModeKey = (modeKey: string) =>
+    modeKey
+      .split("_")
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(" ");
   const noteCache = new Map<string, { note: string | null; cents: number | null }>();
   const qCache = new Map<string, number | null>();
   const getNote = (f: number | null) => {
@@ -66,8 +71,8 @@ function stageRefreshCardsBuild(args: {
     const overrideHz = Number.isFinite(args.modeOverrides[m.mode]) ? (args.modeOverrides[m.mode] as number) : null;
     return {
       kind: "built-in",
-      key: m.mode as "air" | "top" | "back",
-      label: args.modeMeta[m.mode]?.label || (m.mode === "air" ? "Air" : m.mode === "top" ? "Top" : "Back"),
+      key: m.mode,
+      label: args.modeMeta[m.mode]?.label || labelFromModeKey(m.mode),
       freq: m.peakFreq,
       note: note.note,
       cents: note.cents,

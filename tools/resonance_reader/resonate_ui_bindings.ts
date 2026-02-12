@@ -1,4 +1,5 @@
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
+import { measureModeNormalize } from "./resonate_mode_config.js";
 
 type UiBindingsDeps = {
   state: Record<string, any>;
@@ -285,6 +286,7 @@ export function uiBindingsAttach(deps: UiBindingsDeps) {
     bindSaveAudio(deps);
     bindRecord(deps);
     bindWaveTransport(deps);
+    bindMeasureMode(deps);
     let hasStartup = false;
     const startup = (window as any).ResonateStartup;
     if (startup?.startupPlanBuildFromMode && startup?.startupModeSelectFromFlag && startup?.startupExecuteFromPlan) {
@@ -318,4 +320,42 @@ function recordingSelectInitialWidthSync() {
   const selected = select.options[select.selectedIndex];
   const label = (selected?.textContent || "Demo (read-only)").trim();
   recordingSelectWidthSyncFromLabel(select, label);
+}
+
+function measureModeSelectElementGet() {
+  return document.getElementById("measure_mode") as HTMLSelectElement | null;
+}
+
+function measureModeStateSeedFromSelect(state: Record<string, any>) {
+  const select = measureModeSelectElementGet();
+  state.measureMode = measureModeNormalize(select?.value);
+}
+
+function measureModeChangeHandle(deps: UiBindingsDeps) {
+  const select = measureModeSelectElementGet();
+  if (!select) return;
+  const nextMode = measureModeNormalize(select.value);
+  if (deps.state.measureMode === nextMode) return;
+  deps.state.measureMode = nextMode;
+  deps.state.lastOverlay = undefined;
+  renderTryModePanelForMeasureMode(nextMode, deps);
+  deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
+}
+
+function renderTryModePanelForMeasureMode(measureMode: "guitar" | "top" | "back", deps: UiBindingsDeps) {
+  if (measureMode === "guitar") return;
+  deps.state.modeTargets = {};
+}
+
+function rerenderFromLastSpectrumIfPossible(state: Record<string, any>) {
+  if (typeof state?.rerenderFromLastSpectrum !== "function") return;
+  state.preserveSpectrumRangesOnNextRender = true;
+  state.rerenderFromLastSpectrum({ skipDof: true });
+}
+
+function bindMeasureMode(deps: UiBindingsDeps) {
+  measureModeStateSeedFromSelect(deps.state);
+  const select = measureModeSelectElementGet();
+  if (!select) return;
+  select.addEventListener("change", () => measureModeChangeHandle(deps));
 }

@@ -1,8 +1,8 @@
 // Orchestrate resonance reader runtime wiring.
 
 import { renderWaveform } from "./resonate_waveform_view.js";
-import { MODE_META } from "./resonate_mode_config.js";
-import { FREQ_AXIS_MAX, FREQ_MIN, FFT_MAX_HZ } from "./resonate_spectrum_config.js";
+import { modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js";
+import { FFT_MAX_HZ, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js";
 import { type ModeDetection } from "./resonate_mode_detection.js";
 import { renderModesFromState, renderSpectrumFromConfig, setStatusText } from "./resonate_ui_render.js";
 import { fullWaveFromState, sliceCurrentWaveFromState } from "./resonate_wave_slices.js";
@@ -19,6 +19,8 @@ import { resonatePipelineRefreshAllFromState } from "./resonate_pipeline_refresh
 import { resonanceReaderBootstrap } from "./resonate_bootstrap_entry.js";
 import type { ModeCard, SpectrumPayload } from "./resonate_types.js";
 import { customMeasurementModeMetaBuildFromState } from "./resonate_custom_measurements.js";
+import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
+import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
 
 const state = (window as any).FFTState as ResonanceBoundaryState & Record<string, any>;
 
@@ -72,12 +74,14 @@ function renderSpectrum(payload: SpectrumPayloadLocal) {
 }
 
 function renderSpectrumConfigBuild() {
-  return { modeMeta: modeMetaBuildFromState(), freqMin: FREQ_MIN, freqAxisMax: FREQ_AXIS_MAX };
+  const range = spectrumViewRangeResolveFromMeasureMode(state.measureMode);
+  return { modeMeta: modeMetaBuildFromState(), freqMin: range.freqMin, freqAxisMax: range.freqAxisMax };
 }
 
 function modeMetaBuildFromState() {
+  const profile = modeProfileResolveFromMeasureMode(state.measureMode);
   return {
-    ...MODE_META,
+    ...profile.meta,
     ...customMeasurementModeMetaBuildFromState(state),
   };
 }
@@ -120,7 +124,7 @@ function refreshFftStaticArgsBuild() {
   return {
     state,
     setStatus,
-    modeMeta: MODE_META,
+    modeMeta: modeMetaBuildFromState(),
     fftMaxHz: FFT_MAX_HZ,
     sliceCurrentWave,
     solveDofFromState: () => stageSolveDofRun({ state }),
@@ -199,10 +203,47 @@ function resonanceUiExpose() {
   };
 }
 
+function overlayToggleActionsElementGet() {
+  return document.querySelector<HTMLElement>(".dof-model-actions");
+}
+
+function viewModelCopyElementGet() {
+  return document.querySelector<HTMLElement>(".dof-model-copy");
+}
+
+function viewModelMeasureModeElementGet() {
+  return document.getElementById("measure_mode") as HTMLSelectElement | null;
+}
+
+function viewModelMeasureModeResolve() {
+  const selectValue = viewModelMeasureModeElementGet()?.value;
+  return selectValue || state.measureMode;
+}
+
+function viewModelDestinationApplyToUi(link: HTMLAnchorElement) {
+  const destination = externalModelDestinationResolveFromMeasureMode(viewModelMeasureModeResolve());
+  link.textContent = destination.label;
+  link.href = destination.href;
+  const actions = overlayToggleActionsElementGet();
+  if (actions) actions.style.display = destination.showOverlayToggle ? "inline-flex" : "none";
+  const copy = viewModelCopyElementGet();
+  if (copy) copy.style.display = destination.kind === "dof" ? "" : "none";
+}
+
 function viewModelLinkAttach() {
   const link = document.querySelector<HTMLAnchorElement>('a[data-view-model]');
   if (!link) return;
+  viewModelDestinationApplyToUi(link);
+  viewModelMeasureModeElementGet()?.addEventListener("change", () => viewModelDestinationApplyToUi(link));
   link.addEventListener("click", (e) => {
+    const destination = externalModelDestinationResolveFromMeasureMode(viewModelMeasureModeResolve());
+    if (destination.kind === "plate-thickness") {
+      const modesDetected = Array.isArray(state.lastModesDetected) ? state.lastModesDetected as ModeDetection[] : [];
+      const href = plateThicknessHrefBuildFromModes(link.href, modesDetected);
+      e.preventDefault();
+      window.location.href = href;
+      return;
+    }
     const href = viewModelHrefBuildFromState(link.href);
     if (!href) return;
     e.preventDefault();

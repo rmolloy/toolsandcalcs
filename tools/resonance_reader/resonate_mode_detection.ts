@@ -79,8 +79,15 @@ function refineParabolicPeak(freqs: number[], ys: number[], idx: number): { freq
 }
 
 export function analyzeModes(spectrum: { freqs: number[]; dbs: number[] }): ModeDetection[] {
+  return analyzeModesWithBands(spectrum, modeBands);
+}
+
+export function analyzeModesWithBands(
+  spectrum: { freqs: number[]; dbs: number[] },
+  bands: Record<string, { low: number; high: number }>,
+): ModeDetection[] {
   const { freqs, dbs } = spectrum;
-  return Object.entries(modeBands).map(([key, band]) => {
+  return Object.entries(bands).map(([key, band]) => {
     const peaks: { idx: number; db: number; prominence: number }[] = [];
     for (let i = 1; i < freqs.length - 1; i += 1) {
       if (!(dbs[i] > dbs[i - 1] && dbs[i] > dbs[i + 1])) continue;

@@ -1,22 +1,23 @@
-const MOCK_MODES = [
-    { key: "air", label: "Air", freq: 83.4, note: "E2", cents: +18, q: 52, wolfRisk: "None", deltaHz: null, targetHz: null },
-    { key: "top", label: "Top", freq: 196.5, note: "G3", cents: +5, q: 120, wolfRisk: "Med", deltaHz: 12.0, targetHz: 184.5 },
-    { key: "back", label: "Back", freq: 231.5, note: "A#3", cents: -12, q: 98, wolfRisk: "Low", deltaHz: null, targetHz: null },
-];
+import { measureModeNormalize, modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js";
 export function renderMock(deps) {
-    deps.renderModes(MOCK_MODES);
+    const measureMode = measureModeNormalize(window.FFTState?.measureMode);
+    const mockModes = mockModesBuildFromMeasureMode(measureMode);
+    deps.renderModes(mockModes);
     const freqs = [];
     const mags = [];
+    const peaks = mockModes
+        .map((mode) => mode.freq)
+        .filter((freq) => Number.isFinite(freq));
     for (let f = 50; f <= 400; f += 2) {
         freqs.push(f);
-        const air = Math.exp(-Math.abs(f - 83) / 18) * 14;
-        const top = Math.exp(-Math.abs(f - 196) / 12) * 22;
-        const back = Math.exp(-Math.abs(f - 232) / 10) * 18;
+        const p0 = Math.exp(-Math.abs(f - (peaks[0] ?? 83)) / 18) * 14;
+        const p1 = Math.exp(-Math.abs(f - (peaks[1] ?? 196)) / 12) * 22;
+        const p2 = Math.exp(-Math.abs(f - (peaks[2] ?? 232)) / 10) * 18;
         const noise = Math.sin(f / 6) * 0.6;
-        mags.push(-50 + air + top + back + noise);
+        mags.push(-50 + p0 + p1 + p2 + noise);
     }
     const overlay = mags.map((m, i) => m + (Math.sin(i / 30) * 4.5));
-    const mockDetections = MOCK_MODES.map((m) => {
+    const mockDetections = mockModes.map((m) => {
         const f0 = Number.isFinite(m.freq) ? m.freq : null;
         if (!Number.isFinite(f0))
             return { mode: m.key, peakFreq: null, peakDb: null, peakIdx: null, prominenceDb: null };
@@ -28,4 +29,30 @@ export function renderMock(deps) {
         return { mode: m.key, peakFreq: f0, peakDb: mags[bestIdx] ?? null, peakIdx: bestIdx, prominenceDb: 10 };
     });
     deps.renderSpectrum({ freqs, mags, overlay, modes: mockDetections });
+}
+function mockModesBuildFromMeasureMode(measureMode) {
+    const profile = modeProfileResolveFromMeasureMode(measureMode);
+    const keys = Object.keys(profile.meta);
+    const freqs = mockModeFrequenciesForMeasureMode(measureMode);
+    return keys.map((key, idx) => mockModeBuildFromKeyAndFreq(key, profile.meta[key]?.label || key, freqs[idx] ?? null));
+}
+function mockModeFrequenciesForMeasureMode(measureMode) {
+    if (measureMode === "top")
+        return [182.0, 278.0, 372.0];
+    if (measureMode === "back")
+        return [196.0, 294.0, 386.0];
+    return [83.4, 196.5, 231.5];
+}
+function mockModeBuildFromKeyAndFreq(key, label, freq) {
+    return {
+        key,
+        label,
+        freq,
+        note: null,
+        cents: null,
+        q: 90,
+        wolfRisk: "Low",
+        deltaHz: null,
+        targetHz: null,
+    };
 }

@@ -14,6 +14,10 @@ export function stageRefreshPostApply(args) {
     args.state.lastModeCards = [...cards, ...customCards];
 }
 function stageRefreshCardsBuild(args) {
+    const labelFromModeKey = (modeKey) => modeKey
+        .split("_")
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(" ");
     const noteCache = new Map();
     const qCache = new Map();
     const getNote = (f) => {
@@ -41,7 +45,7 @@ function stageRefreshCardsBuild(args) {
         return {
             kind: "built-in",
             key: m.mode,
-            label: args.modeMeta[m.mode]?.label || (m.mode === "air" ? "Air" : m.mode === "top" ? "Top" : "Back"),
+            label: args.modeMeta[m.mode]?.label || labelFromModeKey(m.mode),
             freq: m.peakFreq,
             note: note.note,
             cents: note.cents,

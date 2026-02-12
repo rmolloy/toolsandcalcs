@@ -5,6 +5,7 @@ import { overlayBoundaryEnsure } from "./resonate_overlay_boundary_guard.js";
 import { buildMassOnlyRecipes, buildWhatIfRecipes } from "./resonate_whatif_recipes.js";
 import { renderTryPanel } from "./resonate_try_panel.js";
 import { ensureBaselineFitFromDetected, hasAnyTargets, normalizedWhatIfTargets } from "./resonate_target_state.js";
+import { measureModeNormalize } from "./resonate_mode_config.js";
 
 export function computeOverlayCurveFromState(
   state: Record<string, any>,
@@ -14,6 +15,10 @@ export function computeOverlayCurveFromState(
   overlayBoundary: OverlayBoundary = overlayBoundaryDefault,
   opts: { fitMaxIter?: number } = {},
 ): number[] | undefined {
+  if (measureModeNormalize(state.measureMode) !== "guitar") {
+    renderTryPanel([], [], false);
+    return undefined;
+  }
   const boundary = overlayBoundaryEnsure(overlayBoundary);
   const fitMaxIter = opts.fitMaxIter ?? 12;
 

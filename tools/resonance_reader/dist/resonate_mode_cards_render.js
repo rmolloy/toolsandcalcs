@@ -175,6 +175,9 @@ function modeTargetResetRowHtmlBuildFromMode(m, targetHtml) {
     return `<span class="mode-target-row"><span class="mode-target-main">${targetHtml}</span>${resetHtml}</span>`;
 }
 function modeTargetRenderAllowed() {
+    const measureMode = document.getElementById("measure_mode")?.value;
+    if (measureMode && measureMode !== "guitar")
+        return false;
     const toggle = document.getElementById("toggle_overlay");
     return overlayToggleShouldRender(toggle);
 }

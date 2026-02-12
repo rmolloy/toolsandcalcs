@@ -1,3 +1,5 @@
+import { demoWaveBuildFromMeasureMode } from "./resonate_demo_wave.js";
+
 export async function resonatePipelineRefreshAllFromState(deps: {
   state: Record<string, any>;
   setStatus: (text: string) => void;
@@ -7,7 +9,7 @@ export async function resonatePipelineRefreshAllFromState(deps: {
 }) {
   deps.prepareBoundaries?.();
   if (!deps.state.currentWave) {
-    deps.state.currentWave = (window as any).FFTAudio.generateDemoWave(1500);
+    deps.state.currentWave = demoWaveBuildFromMeasureMode(deps.state.measureMode, 1500);
   }
   const waveAll = deps.fullWave();
   if (!waveAll) {
