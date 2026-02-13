@@ -31,14 +31,7 @@
         <div class="hero-actions">
           <details class="hero-menu">
             <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
-            <nav class="hero-menu-panel" aria-label="Site sections">
-              <a class="hero-menu-home" href="https://rickmolloyguitars.com/">Rick Molloy Guitars</a>
-              <a href="https://rickmolloyguitars.com/">Instruments</a>
-              <a href="https://rickmolloyguitars.com/" aria-current="page">Tools</a>
-              <a href="https://rickmolloyguitars.com/">Workshops</a>
-              <a href="https://rickmolloyguitars.com/">Practice</a>
-              <a href="https://rickmolloyguitars.com/">Inquiry</a>
-            </nav>
+            <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
           </details>
         </div>
       </div>
@@ -112,6 +105,7 @@
   <script src="../modal_frequency_shared/fft_engine.js" defer></script>
   <script src="../modal_frequency_shared/fft_plot.js" defer></script>
   <script src="../common/4dof/model_core.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
   <script type="module" src="dist/resonate_ingest_stage.js"></script>
   <script type="module" src="dist/resonate_startup.js"></script>
   <script type="module" src="dist/resonate_artifact_event.js"></script>
