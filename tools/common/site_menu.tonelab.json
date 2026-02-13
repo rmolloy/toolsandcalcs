@@ -1,0 +1,15 @@
+{
+  "hideWhenEmpty": true,
+  "items": [
+    {
+      "label": "Rick Molloy Guitars",
+      "href": "https://rickmolloyguitars.com/",
+      "className": "hero-menu-home"
+    },
+    {
+      "label": "Tools",
+      "href": "https://rickmolloyguitars.com/",
+      "ariaCurrent": "page"
+    }
+  ]
+}

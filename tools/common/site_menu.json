@@ -1,0 +1,10 @@
+{
+  "hideWhenEmpty": true,
+  "items": [
+    {
+      "label": "Lutherie Academy",
+      "href": "https://lutherieacademy.com/",
+      "className": "hero-menu-home"
+    }
+  ]
+}
