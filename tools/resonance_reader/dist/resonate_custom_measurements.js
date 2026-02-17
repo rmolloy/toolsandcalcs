@@ -1,4 +1,5 @@
 import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js";
+import { resolveColorHexFromRole } from "./resonate_color_roles.js";
 const CUSTOM_MEASUREMENT_KEY_PREFIX = "custom_";
 const CUSTOM_MEASUREMENT_LABEL_PREFIX = "Custom";
 const CUSTOM_MEASUREMENT_FALLBACK_FREQ_HZ = 180;
@@ -46,9 +47,9 @@ export function customMeasurementRenameFromState(state, key, label) {
         return;
     target.label = normalizedLabel;
 }
-export function customMeasurementCardsBuildFromState(state) {
+export function customMeasurementCardsBuildFromState(state, args) {
     const customMeasurements = customMeasurementsGetOrInit(state);
-    return customMeasurements.map((measurement) => customMeasurementCardBuild(measurement));
+    return customMeasurements.map((measurement) => customMeasurementCardBuild(measurement, args));
 }
 export function customMeasurementModesBuildFromState(state, spectrum) {
     const customMeasurements = customMeasurementsGetOrInit(state);
@@ -63,7 +64,7 @@ export function customMeasurementModeMetaBuildFromState(state) {
             aliasHtml: "",
             aliasText: "",
             tooltip: `${measurement.label}\nCustom measurement`,
-            color: "#d7dde8",
+            color: resolveColorHexFromRole("customMode"),
         };
     }
     return modeMeta;
@@ -79,21 +80,55 @@ function customMeasurementModeBuild(measurement, spectrum) {
         cents: note.cents,
     };
 }
-function customMeasurementCardBuild(measurement) {
+function customMeasurementCardBuild(measurement, args) {
+    const peak = customMeasurementPeakResolveFromSpectrum(args?.spectrum, measurement.freqHz);
     const note = noteAndCentsFromFreq(measurement.freqHz);
+    const q = customMeasurementQEstimateFromPeak(args, peak);
     return {
         kind: "custom",
         key: measurement.key,
         label: measurement.label,
         freq: measurement.freqHz,
+        isPeak: peak.isPeak,
         note: note.note,
         cents: note.cents,
-        q: null,
+        q,
         wolfRisk: null,
         targetHz: null,
         deltaHz: null,
         peakOverrideHz: null,
     };
+}
+function customMeasurementQEstimateFromPeak(args, peak) {
+    if (!peak.isPeak || !Number.isFinite(peak.freq) || !Number.isFinite(peak.db))
+        return null;
+    const estimateQ = args?.analysis?.estimateQFromDb;
+    if (typeof estimateQ !== "function")
+        return null;
+    const freqs = Array.isArray(args?.spectrum?.freqs) ? args?.spectrum?.freqs : [];
+    const dbs = Array.isArray(args?.spectrum?.dbs) ? args?.spectrum?.dbs : [];
+    if (!freqs.length || !dbs.length)
+        return null;
+    return estimateQ(freqs, dbs, { freq: peak.freq, db: peak.db });
+}
+function customMeasurementPeakResolveFromSpectrum(spectrum, freqHz) {
+    const point = customMeasurementSpectrumPointReadFromFrequency(spectrum, freqHz);
+    if (!point || !Number.isFinite(point.idx) || !customMeasurementIndexIsLocalPeak(spectrum, point.idx)) {
+        return { isPeak: false, freq: null, db: null };
+    }
+    return { isPeak: true, freq: point.freq, db: point.db };
+}
+function customMeasurementIndexIsLocalPeak(spectrum, index) {
+    if (!spectrum?.dbs?.length)
+        return false;
+    if (index <= 0 || index >= spectrum.dbs.length - 1)
+        return false;
+    const center = Number(spectrum.dbs[index]);
+    const left = Number(spectrum.dbs[index - 1]);
+    const right = Number(spectrum.dbs[index + 1]);
+    if (!Number.isFinite(center) || !Number.isFinite(left) || !Number.isFinite(right))
+        return false;
+    return center >= left && center >= right;
 }
 function customMeasurementSequenceNextFromState(state) {
     const current = Number(state.customMeasurementSequence || 0);
@@ -150,6 +185,7 @@ function customMeasurementSpectrumPointReadFromFrequency(spectrum, freqHz) {
             bestIndex = index;
     }
     return {
+        idx: bestIndex,
         freq: Number(spectrum.freqs[bestIndex]),
         db: Number(spectrum.dbs[bestIndex]),
     };

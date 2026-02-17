@@ -1,8 +1,13 @@
+import { measureModeNormalize } from "./resonate_mode_config.js";
+
 export function sliceCurrentWaveFromState(state: Record<string, any>) {
   const src = state.currentWave;
   if (!src) return null;
   if (state.viewRangeMs) {
     return (window as any).FFTWaveform.sliceWaveRange(src, state.viewRangeMs.start, state.viewRangeMs.end);
+  }
+  if (measureModeNormalize(state.measureMode) === "played_note") {
+    return fullWaveFromState(state);
   }
   const desired = Math.min(5000, src.fullLengthMs || 5000);
   return (window as any).FFTWaveform.sliceWave(src, desired);

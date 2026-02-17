@@ -15,7 +15,8 @@ export function computeOverlayCurveFromState(
   overlayBoundary: OverlayBoundary = overlayBoundaryDefault,
   opts: { fitMaxIter?: number } = {},
 ): number[] | undefined {
-  if (measureModeNormalize(state.measureMode) !== "guitar") {
+  const measureMode = measureModeNormalize(state.measureMode);
+  if (measureMode !== "guitar") {
     renderTryPanel([], [], false);
     return undefined;
   }

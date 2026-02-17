@@ -1,11 +1,21 @@
 import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js";
 import type { ModeCard } from "./resonate_types.js";
 import type { ModeMeta } from "./resonate_mode_config.js";
+import { resolveColorHexFromRole } from "./resonate_color_roles.js";
 
 export type CustomMeasurement = {
   key: string;
   label: string;
   freqHz: number;
+};
+
+type CustomMeasurementAnalysis = {
+  estimateQFromDb?: (freqs: number[], dbs: number[], peak: { freq: number; db: number }) => number | null;
+};
+
+type CustomMeasurementCardsBuildArgs = {
+  spectrum?: { freqs: number[]; dbs: number[] } | null;
+  analysis?: CustomMeasurementAnalysis | null;
 };
 
 const CUSTOM_MEASUREMENT_KEY_PREFIX = "custom_";
@@ -57,9 +67,9 @@ export function customMeasurementRenameFromState(state: Record<string, any>, key
   target.label = normalizedLabel;
 }
 
-export function customMeasurementCardsBuildFromState(state: Record<string, any>) {
+export function customMeasurementCardsBuildFromState(state: Record<string, any>, args?: CustomMeasurementCardsBuildArgs) {
   const customMeasurements = customMeasurementsGetOrInit(state);
-  return customMeasurements.map((measurement) => customMeasurementCardBuild(measurement));
+  return customMeasurements.map((measurement) => customMeasurementCardBuild(measurement, args));
 }
 
 export function customMeasurementModesBuildFromState(
@@ -79,7 +89,7 @@ export function customMeasurementModeMetaBuildFromState(state: Record<string, an
       aliasHtml: "",
       aliasText: "",
       tooltip: `${measurement.label}\nCustom measurement`,
-      color: "#d7dde8",
+      color: resolveColorHexFromRole("customMode"),
     };
   }
   return modeMeta;
@@ -100,21 +110,58 @@ function customMeasurementModeBuild(
   };
 }
 
-function customMeasurementCardBuild(measurement: CustomMeasurement): ModeCard {
+function customMeasurementCardBuild(measurement: CustomMeasurement, args?: CustomMeasurementCardsBuildArgs): ModeCard {
+  const peak = customMeasurementPeakResolveFromSpectrum(args?.spectrum, measurement.freqHz);
   const note = noteAndCentsFromFreq(measurement.freqHz);
+  const q = customMeasurementQEstimateFromPeak(args, peak);
   return {
     kind: "custom",
     key: measurement.key,
     label: measurement.label,
     freq: measurement.freqHz,
+    isPeak: peak.isPeak,
     note: note.note,
     cents: note.cents,
-    q: null,
+    q,
     wolfRisk: null,
     targetHz: null,
     deltaHz: null,
     peakOverrideHz: null,
   };
+}
+
+function customMeasurementQEstimateFromPeak(args: CustomMeasurementCardsBuildArgs | undefined, peak: { isPeak: boolean; freq: number | null; db: number | null }) {
+  if (!peak.isPeak || !Number.isFinite(peak.freq) || !Number.isFinite(peak.db)) return null;
+  const estimateQ = args?.analysis?.estimateQFromDb;
+  if (typeof estimateQ !== "function") return null;
+  const freqs = Array.isArray(args?.spectrum?.freqs) ? args?.spectrum?.freqs : [];
+  const dbs = Array.isArray(args?.spectrum?.dbs) ? args?.spectrum?.dbs : [];
+  if (!freqs.length || !dbs.length) return null;
+  return estimateQ(freqs, dbs, { freq: peak.freq as number, db: peak.db as number });
+}
+
+function customMeasurementPeakResolveFromSpectrum(
+  spectrum: { freqs: number[]; dbs: number[] } | null | undefined,
+  freqHz: number,
+) {
+  const point = customMeasurementSpectrumPointReadFromFrequency(spectrum, freqHz);
+  if (!point || !Number.isFinite(point.idx) || !customMeasurementIndexIsLocalPeak(spectrum, point.idx)) {
+    return { isPeak: false, freq: null, db: null };
+  }
+  return { isPeak: true, freq: point.freq, db: point.db };
+}
+
+function customMeasurementIndexIsLocalPeak(
+  spectrum: { freqs: number[]; dbs: number[] } | null | undefined,
+  index: number,
+) {
+  if (!spectrum?.dbs?.length) return false;
+  if (index <= 0 || index >= spectrum.dbs.length - 1) return false;
+  const center = Number(spectrum.dbs[index]);
+  const left = Number(spectrum.dbs[index - 1]);
+  const right = Number(spectrum.dbs[index + 1]);
+  if (!Number.isFinite(center) || !Number.isFinite(left) || !Number.isFinite(right)) return false;
+  return center >= left && center >= right;
 }
 
 function customMeasurementSequenceNextFromState(state: Record<string, any>) {
@@ -177,6 +224,7 @@ function customMeasurementSpectrumPointReadFromFrequency(
     if (candidateDistance < bestDistance) bestIndex = index;
   }
   return {
+    idx: bestIndex,
     freq: Number(spectrum.freqs[bestIndex]),
     db: Number(spectrum.dbs[bestIndex]),
   };

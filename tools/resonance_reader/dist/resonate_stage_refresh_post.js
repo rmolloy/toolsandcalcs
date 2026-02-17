@@ -9,7 +9,10 @@ export function stageRefreshPostApply(args) {
         modeTargets: args.state.modeTargets || (args.state.modeTargets = {}),
         modeOverrides: args.state.modePeakOverrides || (args.state.modePeakOverrides = {}),
     });
-    const customCards = customMeasurementCardsBuildFromState(args.state);
+    const customCards = customMeasurementCardsBuildFromState(args.state, {
+        spectrum: { freqs: args.freqs, dbs: args.dbs },
+        analysis: args.analysis,
+    });
     args.state.lastModesDetected = args.modesDetected;
     args.state.lastModeCards = [...cards, ...customCards];
 }
@@ -47,6 +50,7 @@ function stageRefreshCardsBuild(args) {
             key: m.mode,
             label: args.modeMeta[m.mode]?.label || labelFromModeKey(m.mode),
             freq: m.peakFreq,
+            isPeak: Number.isFinite(m.peakFreq) && Number.isFinite(m.peakDb),
             note: note.note,
             cents: note.cents,
             q,

@@ -75,7 +75,7 @@ function updateWaveTransportLabels() {
         btnRecord.classList.toggle("is-active", recording);
     }
     if (btnPlay) {
-        btnPlay.innerHTML = playing ? '<span class="transport-icon" aria-hidden="true">⏸</span>Pause' : '<span class="transport-icon" aria-hidden="true">▶</span>Play';
+        btnPlay.innerHTML = playing ? '<span class="transport-icon" aria-hidden="true">■</span>Stop' : '<span class="transport-icon" aria-hidden="true">▶</span>Play';
         btnPlay.classList.toggle("is-active", playing);
     }
     if (btnStop)
@@ -83,6 +83,7 @@ function updateWaveTransportLabels() {
 }
 function recordCaptureRunFromMic(deps) {
     deps.state.viewRangeMs = null;
+    deps.state.noteSelectionRangeMs = null;
     updateWaveTransportLabels();
     const current = window.FFTState?.currentWave || null;
     const wave = current?.wave || current?.samples || null;
@@ -113,6 +114,8 @@ function recordToggleFromMic(deps) {
     deps.setStatus("Recording...");
     FFTAudio.startRecording(() => {
         recordCaptureRunFromMic(deps);
+    }).then(() => {
+        updateWaveTransportLabels();
     }).catch((err) => {
         console.error("[Resonance Reader] record failed", err);
         deps.setStatus("Recording failed or denied.");
@@ -133,6 +136,7 @@ function bindImport(deps) {
         recordingSelectLabelSet(file.name);
         try {
             deps.state.viewRangeMs = null;
+            deps.state.noteSelectionRangeMs = null;
             const runner = window.ResonatePipelineRunner;
             if (!runner?.run) {
                 throw new Error("Resonance pipeline runner not available");
@@ -296,7 +300,7 @@ function recordingSelectInitialWidthSync() {
     if (!select)
         return;
     const selected = select.options[select.selectedIndex];
-    const label = (selected?.textContent || "Demo (read-only)").trim();
+    const label = (selected?.textContent || "Demo (click record)").trim();
     recordingSelectWidthSyncFromLabel(select, label);
 }
 function measureModeSelectElementGet() {
@@ -305,6 +309,12 @@ function measureModeSelectElementGet() {
 function measureModeStateSeedFromSelect(state) {
     const select = measureModeSelectElementGet();
     state.measureMode = measureModeNormalize(select?.value);
+}
+function energyTransferPanelSyncFromState(state) {
+    const render = window.ResonateUiRender?.renderEnergyTransferFromState;
+    if (typeof render !== "function")
+        return;
+    render(state);
 }
 function measureModeChangeHandle(deps) {
     const select = measureModeSelectElementGet();
@@ -316,10 +326,11 @@ function measureModeChangeHandle(deps) {
     deps.state.measureMode = nextMode;
     deps.state.lastOverlay = undefined;
     renderTryModePanelForMeasureMode(nextMode, deps);
+    energyTransferPanelSyncFromState(deps.state);
     deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
 }
 function renderTryModePanelForMeasureMode(measureMode, deps) {
-    if (measureMode === "guitar")
+    if (measureMode === "guitar" || measureMode === "played_note")
         return;
     deps.state.modeTargets = {};
 }
@@ -331,6 +342,7 @@ function rerenderFromLastSpectrumIfPossible(state) {
 }
 function bindMeasureMode(deps) {
     measureModeStateSeedFromSelect(deps.state);
+    energyTransferPanelSyncFromState(deps.state);
     const select = measureModeSelectElementGet();
     if (!select)
         return;

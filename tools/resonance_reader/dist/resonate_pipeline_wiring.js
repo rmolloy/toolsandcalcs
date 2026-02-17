@@ -10,6 +10,8 @@ function pipelineUiRenderGet() {
         return null;
     if (typeof ui.renderWaveform !== "function")
         return null;
+    if (typeof ui.renderEnergyTransferFromState !== "function")
+        return null;
     if (typeof ui.setStatus !== "function")
         return null;
     return ui;
@@ -46,6 +48,7 @@ function pipelineSpectrumReadyEventHandle(payload, ctx) {
     ctx.log("spectrum.ready");
     const ui = pipelineUiRenderGet();
     const spectrum = payload?.spectrum;
+    const secondarySpectrum = payload?.secondarySpectrum;
     if (!ui || !spectrum?.freqs || !spectrum?.mags)
         return;
     const state = window.FFTState;
@@ -58,7 +61,16 @@ function pipelineSpectrumReadyEventHandle(payload, ctx) {
         })
         : [];
     const modes = [...builtinModes, ...customModes];
-    ui.renderSpectrum({ freqs: spectrum.freqs, mags: spectrum.dbs || spectrum.mags, overlay, modes });
+    const secondary = secondarySpectrum?.freqs && secondarySpectrum?.mags
+        ? { freqs: secondarySpectrum.freqs, mags: secondarySpectrum.mags }
+        : null;
+    ui.renderSpectrum({
+        freqs: spectrum.freqs,
+        mags: spectrum.dbs || spectrum.mags,
+        overlay,
+        modes,
+        secondarySpectrum: secondary,
+    });
 }
 function pipelineModesReadyEventHandle(payload, ctx) {
     ctx.log("modes.ready");
@@ -67,6 +79,9 @@ function pipelineModesReadyEventHandle(payload, ctx) {
     if (!ui || !cards.length)
         return;
     ui.renderModes(cards);
+    const state = window.FFTState;
+    if (state)
+        ui.renderEnergyTransferFromState(state);
 }
 function pipelineWaveformReadyEventHandle(payload, ctx) {
     ctx.log("waveform.ready");
@@ -112,6 +127,8 @@ function pipelineNotesReadyEventHandle(payload, ctx) {
     const waveSlice = state?.lastWaveSlice;
     if (waveSlice)
         ui.renderWaveform(waveSlice);
+    if (state)
+        ui.renderEnergyTransferFromState(state);
     if (!noteCount) {
         ui.setStatus("No notes detected yet.");
         return;

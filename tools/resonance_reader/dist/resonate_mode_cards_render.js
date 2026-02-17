@@ -150,6 +150,8 @@ function modeNoteCentsClassFromValue(cents) {
     return (cents ?? 0) >= 0 ? "positive" : "negative";
 }
 function modeBehaviorHtmlBuildFromMode(m, proximity, formatQ) {
+    if (m.isPeak === false)
+        return `<span class="behavior">No peak</span>`;
     const wolf = proximity ? ` • ${proximity.label}` : "";
     return `<span class="behavior">${formatQ(m.q)}${wolf}</span>`;
 }
@@ -176,7 +178,7 @@ function modeTargetResetRowHtmlBuildFromMode(m, targetHtml) {
 }
 function modeTargetRenderAllowed() {
     const measureMode = document.getElementById("measure_mode")?.value;
-    if (measureMode && measureMode !== "guitar")
+    if (measureMode && measureMode !== "guitar" && measureMode !== "played_note")
         return false;
     const toggle = document.getElementById("toggle_overlay");
     return overlayToggleShouldRender(toggle);

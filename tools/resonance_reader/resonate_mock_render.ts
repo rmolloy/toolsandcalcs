@@ -47,14 +47,14 @@ export function renderMock(deps: MockRenderDeps) {
   deps.renderSpectrum({ freqs, mags, overlay, modes: mockDetections });
 }
 
-function mockModesBuildFromMeasureMode(measureMode: "guitar" | "top" | "back"): ModeCard[] {
+function mockModesBuildFromMeasureMode(measureMode: "guitar" | "played_note" | "top" | "back"): ModeCard[] {
   const profile = modeProfileResolveFromMeasureMode(measureMode);
   const keys = Object.keys(profile.meta);
   const freqs = mockModeFrequenciesForMeasureMode(measureMode);
   return keys.map((key, idx) => mockModeBuildFromKeyAndFreq(key, profile.meta[key]?.label || key, freqs[idx] ?? null));
 }
 
-function mockModeFrequenciesForMeasureMode(measureMode: "guitar" | "top" | "back") {
+function mockModeFrequenciesForMeasureMode(measureMode: "guitar" | "played_note" | "top" | "back") {
   if (measureMode === "top") return [182.0, 278.0, 372.0];
   if (measureMode === "back") return [196.0, 294.0, 386.0];
   return [83.4, 196.5, 231.5];

@@ -1,3 +1,4 @@
+import { resolveColorHexFromRole } from "./resonate_color_roles.js";
 const GUITAR_BANDS = {
     air: { low: 75, high: 115 },
     top: { low: 150, high: 205 },
@@ -9,21 +10,21 @@ const GUITAR_META = {
         aliasHtml: "T(1,1)<sub>1</sub>",
         aliasText: "T(1,1)₁",
         tooltip: "Air (T(1,1)₁)\nHelmholtz air resonance of the cavity.",
-        color: "#8ecbff",
+        color: resolveColorHexFromRole("airMode"),
     },
     top: {
         label: "Top",
         aliasHtml: "T(1,1)<sub>2</sub>",
         aliasText: "T(1,1)₂",
         tooltip: "Top (T(1,1)₂)\nPrimary top-plate low-frequency mode.",
-        color: "#f5c46f",
+        color: resolveColorHexFromRole("topMode"),
     },
     back: {
         label: "Back",
         aliasHtml: "T(1,1)<sub>3</sub>",
         aliasText: "T(1,1)₃",
         tooltip: "Back (T(1,1)₃)\nPrimary back-plate low-frequency mode.",
-        color: "#7ce3b1",
+        color: resolveColorHexFromRole("backMode"),
     },
 };
 const TOP_PLATE_BANDS = {
@@ -37,21 +38,21 @@ const TOP_PLATE_META = {
         aliasHtml: "T",
         aliasText: "T",
         tooltip: "Transverse\nTransverse/twisting plate mode.",
-        color: "#CC79A7",
+        color: resolveColorHexFromRole("plateTransverseMode"),
     },
     long: {
         label: "Long",
         aliasHtml: "L",
         aliasText: "L",
         tooltip: "Long\nLong-grain plate mode.",
-        color: "#0072B2",
+        color: resolveColorHexFromRole("plateLongMode"),
     },
     cross: {
         label: "Cross",
         aliasHtml: "C",
         aliasText: "C",
         tooltip: "Cross\nCross-grain plate mode.",
-        color: "#D55E00",
+        color: resolveColorHexFromRole("plateCrossMode"),
     },
 };
 const BACK_PLATE_BANDS = {
@@ -65,31 +66,34 @@ const BACK_PLATE_META = {
         aliasHtml: "T",
         aliasText: "T",
         tooltip: "Transverse\nTransverse/twisting plate mode.",
-        color: "#CC79A7",
+        color: resolveColorHexFromRole("plateTransverseMode"),
     },
     long: {
         label: "Long",
         aliasHtml: "L",
         aliasText: "L",
         tooltip: "Long\nLong-grain plate mode.",
-        color: "#0072B2",
+        color: resolveColorHexFromRole("plateLongMode"),
     },
     cross: {
         label: "Cross",
         aliasHtml: "C",
         aliasText: "C",
         tooltip: "Cross\nCross-grain plate mode.",
-        color: "#D55E00",
+        color: resolveColorHexFromRole("plateCrossMode"),
     },
 };
 const MODE_PROFILES = {
     guitar: { bands: GUITAR_BANDS, meta: GUITAR_META },
+    played_note: { bands: GUITAR_BANDS, meta: GUITAR_META },
     top: { bands: TOP_PLATE_BANDS, meta: TOP_PLATE_META },
     back: { bands: BACK_PLATE_BANDS, meta: BACK_PLATE_META },
 };
 export const modeBands = GUITAR_BANDS;
 export const MODE_META = GUITAR_META;
 export function measureModeNormalize(input) {
+    if (input === "played_note")
+        return "played_note";
     if (input === "top")
         return "top";
     if (input === "back")

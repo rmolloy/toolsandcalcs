@@ -4,7 +4,7 @@ import { renderWaveform } from "./resonate_waveform_view.js";
 import { modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js";
 import { FFT_MAX_HZ, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js";
 import { type ModeDetection } from "./resonate_mode_detection.js";
-import { renderModesFromState, renderSpectrumFromConfig, setStatusText } from "./resonate_ui_render.js";
+import { renderEnergyTransferFromState, renderModesFromState, renderSpectrumFromConfig, setStatusText } from "./resonate_ui_render.js";
 import { fullWaveFromState, sliceCurrentWaveFromState } from "./resonate_wave_slices.js";
 import { computeOverlayCurveFromState } from "./resonate_overlay_controller.js";
 import { resonanceBoundaryDefaults } from "./resonate_boundary_defaults.js";
@@ -23,6 +23,8 @@ import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
 
 const state = (window as any).FFTState as ResonanceBoundaryState & Record<string, any>;
+let pipelineRunActive = false;
+let pipelineRunQueuedTrigger: string | null = null;
 
 type SpectrumPayloadLocal = SpectrumPayload & { modes?: ModeDetection[] };
 
@@ -179,15 +181,26 @@ function pipelineRefreshStaticArgsBuild() {
   };
 }
 
-async function resonatePipelineRunnerRun(trigger: string) {
+export async function resonatePipelineRunnerRun(trigger: string) {
   const runner = (window as any).ResonatePipelineRunner;
   if (!runner?.run) {
     console.warn("[Resonance Reader] Pipeline runner missing while event rendering is enabled.");
     return;
   }
-  const input = { trigger };
-  const config = { version: "v1", stages: ["refresh"] };
-  await runner.run(input, config);
+  if (pipelineRunActive) {
+    pipelineRunQueuedTrigger = trigger;
+    return;
+  }
+  pipelineRunActive = true;
+  try {
+    await runner.run({ trigger }, { version: "v1", stages: ["refresh"] });
+    const queuedTrigger = pipelineRunQueuedTrigger;
+    pipelineRunQueuedTrigger = null;
+    if (!queuedTrigger) return;
+    await runner.run({ trigger: queuedTrigger }, { version: "v1", stages: ["refresh"] });
+  } finally {
+    pipelineRunActive = false;
+  }
 }
 
 function resonanceStatusExpose(setStatusFn: (text: string) => void) {
@@ -199,6 +212,7 @@ function resonanceUiExpose() {
     renderSpectrum,
     renderModes,
     renderWaveform: renderWaveformBoundBuild(),
+    renderEnergyTransferFromState: (nextState: Record<string, any>) => renderEnergyTransferFromState(nextState),
     setStatus,
   };
 }
@@ -207,8 +221,16 @@ function overlayToggleActionsElementGet() {
   return document.querySelector<HTMLElement>(".dof-model-actions");
 }
 
+function overlayToggleInputElementGet() {
+  return document.getElementById("toggle_overlay") as HTMLInputElement | null;
+}
+
 function viewModelCopyElementGet() {
   return document.querySelector<HTMLElement>(".dof-model-copy");
+}
+
+function viewModelRowElementGet() {
+  return document.querySelector<HTMLElement>(".dof-model-row");
 }
 
 function viewModelMeasureModeElementGet() {
@@ -222,6 +244,10 @@ function viewModelMeasureModeResolve() {
 
 function viewModelDestinationApplyToUi(link: HTMLAnchorElement) {
   const destination = externalModelDestinationResolveFromMeasureMode(viewModelMeasureModeResolve());
+  const overlayToggle = overlayToggleInputElementGet();
+  if (overlayToggle && !destination.showModelRow) overlayToggle.checked = false;
+  const row = viewModelRowElementGet();
+  if (row) row.style.display = destination.showModelRow ? "" : "none";
   link.textContent = destination.label;
   link.href = destination.href;
   const actions = overlayToggleActionsElementGet();

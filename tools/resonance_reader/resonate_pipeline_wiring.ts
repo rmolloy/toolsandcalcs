@@ -10,9 +10,16 @@ type PipelineBus = {
 };
 
 type PipelineUiRender = {
-  renderSpectrum: (payload: { freqs: number[]; mags: number[]; overlay?: number[]; modes?: any[] }) => void;
+  renderSpectrum: (payload: {
+    freqs: number[];
+    mags: number[];
+    overlay?: number[];
+    modes?: any[];
+    secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+  }) => void;
   renderModes: (modes: any[]) => void;
   renderWaveform: (wave: any) => void;
+  renderEnergyTransferFromState: (state: Record<string, any>) => void;
   setStatus: (text: string) => void;
 };
 
@@ -22,6 +29,7 @@ function pipelineUiRenderGet(): PipelineUiRender | null {
   if (typeof ui.renderSpectrum !== "function") return null;
   if (typeof ui.renderModes !== "function") return null;
   if (typeof ui.renderWaveform !== "function") return null;
+  if (typeof ui.renderEnergyTransferFromState !== "function") return null;
   if (typeof ui.setStatus !== "function") return null;
   return ui as PipelineUiRender;
 }
@@ -63,6 +71,7 @@ function pipelineSpectrumReadyEventHandle(payload: unknown, ctx: { log: (message
   ctx.log("spectrum.ready");
   const ui = pipelineUiRenderGet();
   const spectrum = (payload as { spectrum?: { freqs?: number[]; mags?: number[]; dbs?: number[] } } | null)?.spectrum;
+  const secondarySpectrum = (payload as { secondarySpectrum?: { freqs?: number[]; mags?: number[] } | null } | null)?.secondarySpectrum;
   if (!ui || !spectrum?.freqs || !spectrum?.mags) return;
   const state = (window as any).FFTState;
   const overlay = Array.isArray(state?.lastOverlay) ? state.lastOverlay : undefined;
@@ -74,7 +83,16 @@ function pipelineSpectrumReadyEventHandle(payload: unknown, ctx: { log: (message
       })
     : [];
   const modes = [...builtinModes, ...customModes];
-  ui.renderSpectrum({ freqs: spectrum.freqs, mags: spectrum.dbs || spectrum.mags, overlay, modes });
+  const secondary = secondarySpectrum?.freqs && secondarySpectrum?.mags
+    ? { freqs: secondarySpectrum.freqs, mags: secondarySpectrum.mags }
+    : null;
+  ui.renderSpectrum({
+    freqs: spectrum.freqs,
+    mags: spectrum.dbs || spectrum.mags,
+    overlay,
+    modes,
+    secondarySpectrum: secondary,
+  });
 }
 
 function pipelineModesReadyEventHandle(payload: unknown, ctx: { log: (message: string) => void }) {
@@ -83,6 +101,8 @@ function pipelineModesReadyEventHandle(payload: unknown, ctx: { log: (message: s
   const cards = Array.isArray((payload as { cards?: any[] } | null)?.cards) ? (payload as { cards?: any[] }).cards : [];
   if (!ui || !cards.length) return;
   ui.renderModes(cards);
+  const state = (window as any).FFTState;
+  if (state) ui.renderEnergyTransferFromState(state);
 }
 
 function pipelineWaveformReadyEventHandle(payload: unknown, ctx: { log: (message: string) => void }) {
@@ -125,6 +145,7 @@ function pipelineNotesReadyEventHandle(payload: unknown, ctx: { log: (message: s
   const state = (window as any).FFTState;
   const waveSlice = state?.lastWaveSlice;
   if (waveSlice) ui.renderWaveform(waveSlice);
+  if (state) ui.renderEnergyTransferFromState(state);
   if (!noteCount) {
     ui.setStatus("No notes detected yet.");
     return;

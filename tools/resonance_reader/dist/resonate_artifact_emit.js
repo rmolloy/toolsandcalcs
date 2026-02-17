@@ -15,11 +15,18 @@ export function emitArtifactEventFromState(state) {
     if (!renderPayload)
         return false;
     const spectrum = state.lastSpectrum || null;
+    const secondarySpectrum = state.lastSpectrumNoteSelection || null;
     if (spectrum?.freqs && spectrum?.mags) {
         const freqs = Array.from(spectrum.freqs);
         const mags = Array.from(spectrum.mags);
         const dbs = Array.isArray(spectrum.dbs) ? Array.from(spectrum.dbs) : null;
-        pipelineBusEventEmit("spectrum.ready", { spectrum: { freqs, mags, dbs } }, "spectrum");
+        const secondary = secondarySpectrum?.freqs && secondarySpectrum?.mags
+            ? {
+                freqs: Array.from(secondarySpectrum.freqs),
+                mags: Array.from(secondarySpectrum.mags),
+            }
+            : null;
+        pipelineBusEventEmit("spectrum.ready", { spectrum: { freqs, mags, dbs }, secondarySpectrum: secondary }, "spectrum");
     }
     const modes = Array.isArray(state.lastModesDetected) ? state.lastModesDetected : null;
     const cards = Array.isArray(state.lastModeCards) ? state.lastModeCards : null;

@@ -1,6 +1,7 @@
 import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js";
 import { emitModeOverrideRequested } from "./resonate_override_commands.js";
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
+import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
 const MOCK_OVERLAY = {
     min: 85,
     max: 260,
@@ -18,7 +19,7 @@ export function renderSpectrum(payload, deps) {
     const priorRanges = spectrumAxisRangesReadFromPlot(plot);
     const preserveRanges = spectrumRangesPreserveNextRenderConsumeFromState();
     resetModeOverrideLabelBindState();
-    const { freqs, mags, overlay, modes } = payload;
+    const { freqs, mags, overlay, modes, secondarySpectrum } = payload;
     const { overlaySegments, overlayVisible, toggle } = overlayContextResolve(freqs, overlay);
     const hoverNoteData = hoverNoteDataResolveFromFreqs(freqs);
     const { plotData, layout, modeAnnotationKeys, modeAnnotationAnchorX, modeTraceIndexByKey, modeAnnotationIndexByKey, toneTraceIndex, } = spectrumRenderModelAssemble({
@@ -28,6 +29,7 @@ export function renderSpectrum(payload, deps) {
         overlaySegments,
         overlayVisible,
         hoverNoteData,
+        secondarySpectrum: secondarySpectrum || null,
         deps,
     });
     if (preserveRanges)
@@ -130,10 +132,23 @@ function buildMeasuredTrace(freqs, mags, hoverNoteData) {
         y: mags,
         type: "scatter",
         mode: "lines",
-        line: { color: "#8ecbff", width: 3 },
+        line: { color: resolveColorHexFromRole("fftLine"), width: 3 },
         name: "Measured",
         customdata: hoverNoteData,
         hovertemplate: "%{x:.1f} Hz<br>%{y:.1f} dB<br>%{customdata[0]} %{customdata[1]}<extra></extra>",
+    };
+}
+function buildSecondaryMeasuredTrace(secondarySpectrum, shouldRender) {
+    if (!shouldRender || !secondarySpectrum?.freqs?.length || !secondarySpectrum?.mags?.length)
+        return null;
+    return {
+        x: secondarySpectrum.freqs,
+        y: secondarySpectrum.mags,
+        type: "scatter",
+        mode: "lines",
+        line: { color: resolveColorHexFromRole("waveNoteSelection"), width: 2.5 },
+        name: "Selected Note Window",
+        hovertemplate: "%{x:.1f} Hz<br>%{y:.1f} dB<extra></extra>",
     };
 }
 function buildOverlayTraces(overlaySegments, overlayVisible) {
@@ -142,13 +157,13 @@ function buildOverlayTraces(overlaySegments, overlayVisible) {
         y: seg.y,
         type: "scatter",
         mode: "lines",
-        line: { color: `rgba(245,196,111,${seg.opacity})`, width: seg.width, dash: "dash" },
+        line: { color: resolveColorRgbaFromRole("modelOverlay", seg.opacity), width: seg.width, dash: "dash" },
         name: "Model",
         showlegend: false,
         hovertemplate: "%{x:.1f} Hz<br>%{y:.1f} dB<extra></extra>",
         hoverlabel: {
             bgcolor: "rgba(14,17,25,0.95)",
-            bordercolor: "rgba(245,196,111,0.6)",
+            bordercolor: resolveColorRgbaFromRole("modelOverlay", 0.6),
             font: { family: "Inter, system-ui, -apple-system, Segoe UI, sans-serif", size: 14, color: "rgba(255,255,255,0.95)" },
         },
         visible: overlayVisible,
@@ -169,7 +184,13 @@ function buildModeTracesAndAnnotations(freqs, mags, modes, modeMetaByKey) {
                 bestIdx = i;
         }
         const y0 = Number.isFinite(m.peakDb) ? m.peakDb : mags[bestIdx];
-        const meta = modeMetaByKey[m.mode] || { label: m.mode, aliasHtml: "", aliasText: m.mode, tooltip: m.mode, color: "rgba(255,255,255,0.75)" };
+        const meta = modeMetaByKey[m.mode] || {
+            label: m.mode,
+            aliasHtml: "",
+            aliasText: m.mode,
+            tooltip: m.mode,
+            color: resolveColorRgbaFromRole("fftLine", 0.75),
+        };
         const noteLabel = typeof m.note === "string" ? m.note : "—";
         const centsLabel = Number.isFinite(m.cents)
             ? `${m.cents >= 0 ? "+" : ""}${Math.round(m.cents)}¢`
@@ -262,15 +283,16 @@ function buildSpectrumLayout(deps, modeAnnotations) {
         annotations: modeAnnotations,
     };
 }
-function buildSpectrumPlotData(measuredTrace, overlayTraces, modeTraces, toneTrace) {
+function buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, overlayTraces, modeTraces, toneTrace) {
     const flatModeTraces = modeTraces.flatMap((m) => m.traces);
-    return [measuredTrace, ...overlayTraces, ...flatModeTraces, toneTrace];
+    return [measuredTrace, ...(secondaryMeasuredTrace ? [secondaryMeasuredTrace] : []), ...overlayTraces, ...flatModeTraces, toneTrace];
 }
-function buildModeTraceIndexByKey(modeTraces, modes, overlayTraces) {
+function buildModeTraceIndexByKey(modeTraces, modes, overlayTraces, hasSecondaryMeasuredTrace) {
     const baseOverlayCount = overlayTraces.length;
+    const measuredTraceCount = 1 + (hasSecondaryMeasuredTrace ? 1 : 0);
     const modeTraceIndexByKey = {};
     modeTraces.forEach((_, idx) => {
-        const base = 1 + baseOverlayCount + idx * 2;
+        const base = measuredTraceCount + baseOverlayCount + idx * 2;
         const modeKey = modes?.[idx]?.mode;
         if (modeKey)
             modeTraceIndexByKey[modeKey] = { dotBig: base, dotSmall: base + 1 };
@@ -458,12 +480,13 @@ function dragPreviewSnapFromFreq(freqs, mags, freqHz) {
 }
 function spectrumRenderModelAssemble(args) {
     const measuredTrace = buildMeasuredTrace(args.freqs, args.mags, args.hoverNoteData);
+    const secondaryMeasuredTrace = buildSecondaryMeasuredTrace(args.secondarySpectrum, spectrumSecondaryTraceShouldRenderForMeasureMode());
     const overlayTraces = buildOverlayTraces(args.overlaySegments, args.overlayVisible);
     const toneTrace = toneSpikeTraceBuild(args.freqs, args.mags);
     const { modeTraces, modeAnnotations, modeAnnotationKeys, modeAnnotationAnchorX } = buildModeTracesAndAnnotations(args.freqs, args.mags, args.modes, args.deps.modeMeta);
     const layout = buildSpectrumLayout(args.deps, modeAnnotations);
-    const plotData = buildSpectrumPlotData(measuredTrace, overlayTraces, modeTraces, toneTrace);
-    const modeTraceIndexByKey = buildModeTraceIndexByKey(modeTraces, args.modes, overlayTraces);
+    const plotData = buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, overlayTraces, modeTraces, toneTrace);
+    const modeTraceIndexByKey = buildModeTraceIndexByKey(modeTraces, args.modes, overlayTraces, Boolean(secondaryMeasuredTrace));
     const modeAnnotationIndexByKey = buildModeAnnotationIndexByKey(modeAnnotationKeys);
     const toneTraceIndex = plotData.length - 1;
     return {
@@ -476,6 +499,10 @@ function spectrumRenderModelAssemble(args) {
         toneTraceIndex,
     };
 }
+function spectrumSecondaryTraceShouldRenderForMeasureMode() {
+    const measureMode = document.getElementById("measure_mode")?.value;
+    return measureMode === "played_note";
+}
 function toneSpikeTraceBuild(freqs, mags) {
     const yBottom = toneSpikeFloorDbResolve(mags);
     const yTop = toneSpikeCeilingDbResolve(mags);
@@ -485,7 +512,7 @@ function toneSpikeTraceBuild(freqs, mags) {
         y: [yBottom, yTop],
         type: "scatter",
         mode: "lines",
-        line: { color: "rgba(245,196,111,0.95)", width: 2, dash: "dot" },
+        line: { color: resolveColorRgbaFromRole("modelOverlay", 0.95), width: 2, dash: "dot" },
         hoverinfo: "skip",
         showlegend: false,
         visible: false,

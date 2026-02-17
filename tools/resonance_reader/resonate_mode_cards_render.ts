@@ -192,6 +192,7 @@ function modeBehaviorHtmlBuildFromMode(
   proximity: { label: string; tone: string } | null,
   formatQ: (q: number | null) => string,
 ) {
+  if (m.isPeak === false) return `<span class="behavior">No peak</span>`;
   const wolf = proximity ? ` • ${proximity.label}` : "";
   return `<span class="behavior">${formatQ(m.q)}${wolf}</span>`;
 }
@@ -219,7 +220,7 @@ function modeTargetResetRowHtmlBuildFromMode(m: ModeCard, targetHtml: string) {
 
 function modeTargetRenderAllowed() {
   const measureMode = (document.getElementById("measure_mode") as HTMLSelectElement | null)?.value;
-  if (measureMode && measureMode !== "guitar") return false;
+  if (measureMode && measureMode !== "guitar" && measureMode !== "played_note") return false;
   const toggle = document.getElementById("toggle_overlay") as HTMLInputElement | null;
   return overlayToggleShouldRender(toggle);
 }

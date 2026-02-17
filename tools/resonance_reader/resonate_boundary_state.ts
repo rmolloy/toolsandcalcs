@@ -21,4 +21,6 @@ export type ResonanceBoundaryState = {
   overlayBoundary?: OverlayBoundary;
   noteSlices?: NoteSliceState[];
   noteResults?: NoteResultState[];
+  viewRangeMs?: { start: number; end: number } | null;
+  noteSelectionRangeMs?: { start: number; end: number } | null;
 };

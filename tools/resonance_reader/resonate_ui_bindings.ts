@@ -101,7 +101,7 @@ function updateWaveTransportLabels() {
     btnRecord.classList.toggle("is-active", recording);
   }
   if (btnPlay) {
-    btnPlay.innerHTML = playing ? '<span class="transport-icon" aria-hidden="true">⏸</span>Pause' : '<span class="transport-icon" aria-hidden="true">▶</span>Play';
+    btnPlay.innerHTML = playing ? '<span class="transport-icon" aria-hidden="true">■</span>Stop' : '<span class="transport-icon" aria-hidden="true">▶</span>Play';
     btnPlay.classList.toggle("is-active", playing);
   }
   if (btnStop) btnStop.innerHTML = '<span class="transport-icon" aria-hidden="true">■</span>Stop';
@@ -109,6 +109,7 @@ function updateWaveTransportLabels() {
 
 function recordCaptureRunFromMic(deps: UiBindingsDeps) {
   deps.state.viewRangeMs = null;
+  deps.state.noteSelectionRangeMs = null;
   updateWaveTransportLabels();
   const current = (window as any).FFTState?.currentWave || null;
   const wave = current?.wave || current?.samples || null;
@@ -138,6 +139,8 @@ function recordToggleFromMic(deps: UiBindingsDeps) {
   deps.setStatus("Recording...");
   FFTAudio.startRecording(() => {
     recordCaptureRunFromMic(deps);
+  }).then(() => {
+    updateWaveTransportLabels();
   }).catch((err: any) => {
     console.error("[Resonance Reader] record failed", err);
     deps.setStatus("Recording failed or denied.");
@@ -157,6 +160,7 @@ function bindImport(deps: UiBindingsDeps) {
     recordingSelectLabelSet(file.name);
     try {
       deps.state.viewRangeMs = null;
+      deps.state.noteSelectionRangeMs = null;
       const runner = (window as any).ResonatePipelineRunner;
       if (!runner?.run) {
         throw new Error("Resonance pipeline runner not available");
@@ -318,7 +322,7 @@ function recordingSelectInitialWidthSync() {
   const select = document.getElementById("recording_select") as HTMLSelectElement | null;
   if (!select) return;
   const selected = select.options[select.selectedIndex];
-  const label = (selected?.textContent || "Demo (read-only)").trim();
+  const label = (selected?.textContent || "Demo (click record)").trim();
   recordingSelectWidthSyncFromLabel(select, label);
 }
 
@@ -331,6 +335,12 @@ function measureModeStateSeedFromSelect(state: Record<string, any>) {
   state.measureMode = measureModeNormalize(select?.value);
 }
 
+function energyTransferPanelSyncFromState(state: Record<string, any>) {
+  const render = (window as any).ResonateUiRender?.renderEnergyTransferFromState;
+  if (typeof render !== "function") return;
+  render(state);
+}
+
 function measureModeChangeHandle(deps: UiBindingsDeps) {
   const select = measureModeSelectElementGet();
   if (!select) return;
@@ -339,11 +349,12 @@ function measureModeChangeHandle(deps: UiBindingsDeps) {
   deps.state.measureMode = nextMode;
   deps.state.lastOverlay = undefined;
   renderTryModePanelForMeasureMode(nextMode, deps);
+  energyTransferPanelSyncFromState(deps.state);
   deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
 }
 
-function renderTryModePanelForMeasureMode(measureMode: "guitar" | "top" | "back", deps: UiBindingsDeps) {
-  if (measureMode === "guitar") return;
+function renderTryModePanelForMeasureMode(measureMode: "guitar" | "played_note" | "top" | "back", deps: UiBindingsDeps) {
+  if (measureMode === "guitar" || measureMode === "played_note") return;
   deps.state.modeTargets = {};
 }
 
@@ -355,6 +366,7 @@ function rerenderFromLastSpectrumIfPossible(state: Record<string, any>) {
 
 function bindMeasureMode(deps: UiBindingsDeps) {
   measureModeStateSeedFromSelect(deps.state);
+  energyTransferPanelSyncFromState(deps.state);
   const select = measureModeSelectElementGet();
   if (!select) return;
   select.addEventListener("change", () => measureModeChangeHandle(deps));

@@ -6,7 +6,8 @@ import { renderTryPanel } from "./resonate_try_panel.js";
 import { ensureBaselineFitFromDetected, hasAnyTargets, normalizedWhatIfTargets } from "./resonate_target_state.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
 export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, overlayBoundary = overlayBoundaryDefault, opts = {}) {
-    if (measureModeNormalize(state.measureMode) !== "guitar") {
+    const measureMode = measureModeNormalize(state.measureMode);
+    if (measureMode !== "guitar") {
         renderTryPanel([], [], false);
         return undefined;
     }

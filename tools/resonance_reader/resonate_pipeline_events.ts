@@ -26,7 +26,10 @@ export type ResonatePipelineEventPayloads = {
   "waveform.ready": PipelineEventMeta & { wave: unknown };
   "notes.ready": PipelineEventMeta & { notes: unknown };
   "artifact.emitted": PipelineEventMeta & { summary?: unknown; renderPayload?: unknown };
-  "spectrum.ready": PipelineEventMeta & { spectrum: { freqs: number[]; mags: number[]; dbs: number[] } };
+  "spectrum.ready": PipelineEventMeta & {
+    spectrum: { freqs: number[]; mags: number[]; dbs: number[] };
+    secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+  };
   "modes.ready": PipelineEventMeta & { modes: unknown[]; cards: unknown[] };
   "mode.override.requested": PipelineEventMeta & {
     modeKey: string;

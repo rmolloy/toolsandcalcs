@@ -3,6 +3,7 @@ export type ModeCard = {
   kind?: "built-in" | "custom";
   label: string;
   freq: number | null;
+  isPeak?: boolean | null;
   note: string | null;
   cents: number | null;
   q: number | null;
@@ -12,4 +13,10 @@ export type ModeCard = {
   peakOverrideHz?: number | null;
 };
 
-export type SpectrumPayload = { freqs: number[]; mags: number[]; overlay?: number[]; modes?: any[] };
+export type SpectrumPayload = {
+  freqs: number[];
+  mags: number[];
+  overlay?: number[];
+  modes?: any[];
+  secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+};
