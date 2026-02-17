@@ -536,9 +536,9 @@ body { padding: 28px; }
   row-gap: 6px;
   align-content: start;
 }
-.mode-card.mode-air { background: linear-gradient(135deg, rgba(105,140,200,0.4), rgba(24,29,39,0.9)); }
-.mode-card.mode-top { background: linear-gradient(135deg, rgba(200,150,85,0.45), rgba(32,26,20,0.9)); }
-.mode-card.mode-back { background: linear-gradient(135deg, rgba(90,190,150,0.4), rgba(20,30,24,0.9)); }
+.mode-card.mode-air { background: linear-gradient(135deg, rgba(213,94,0,0.40), rgba(36,22,15,0.9)); }
+.mode-card.mode-top { background: linear-gradient(135deg, rgba(0,158,115,0.42), rgba(17,30,24,0.9)); }
+.mode-card.mode-back { background: linear-gradient(135deg, rgba(204,121,167,0.40), rgba(30,22,30,0.9)); }
 .mode-card.mode-long { background: linear-gradient(135deg, rgba(0,114,178,0.45), rgba(19,28,42,0.92)); }
 .mode-card.mode-cross { background: linear-gradient(135deg, rgba(213,94,0,0.44), rgba(40,23,15,0.92)); }
 .mode-card.mode-transverse { background: linear-gradient(135deg, rgba(204,121,167,0.42), rgba(38,24,36,0.92)); }
@@ -549,13 +549,13 @@ body { padding: 28px; }
   line-height: var(--type-label-line);
   font-weight: var(--type-label-weight);
 }
-.mode-card.mode-air { --mode-dot: #8ecbff; }
-.mode-card.mode-top { --mode-dot: #f5c46f; }
-.mode-card.mode-back { --mode-dot: #7ce3b1; }
+.mode-card.mode-air { --mode-dot: #D55E00; }
+.mode-card.mode-top { --mode-dot: #009E73; }
+.mode-card.mode-back { --mode-dot: #CC79A7; }
 .mode-card.mode-long { --mode-dot: #0072b2; }
 .mode-card.mode-cross { --mode-dot: #d55e00; }
 .mode-card.mode-transverse { --mode-dot: #cc79a7; }
-.mode-card.mode-custom { --mode-dot: #d7dde8; }
+.mode-card.mode-custom { --mode-dot: #0072b2; }
 .mode-card.mode-card-add {
   border: 1px solid rgba(255,255,255,0.08);
   background: linear-gradient(150deg, rgba(8, 11, 17, 0.96), rgba(4, 6, 10, 0.96));
@@ -954,11 +954,28 @@ body { padding: 28px; }
     drop-shadow(0 0 10px rgba(245,196,111,0.20));
 }
 
+#plot_energy_transfer .hoverlayer .hovertext {
+  filter:
+    drop-shadow(0 18px 45px rgba(0,0,0,0.55))
+    drop-shadow(0 0 10px rgba(245,196,111,0.20));
+}
+
 .wave-surface {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+
+.energy-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.energy-transfer-plot {
+  height: clamp(140px, 22vh, 260px);
+}
+
 .wave-transport-inline {
   display: inline-flex;
   align-items: center;
