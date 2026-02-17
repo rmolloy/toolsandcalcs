@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wolf Note Analyzer - ToneLab</title>
+  <link rel="stylesheet" href="../resonance_reader/styles.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-text">
+        <h1>Wolf Note Analyzer</h1>
+        <p>Diagnose wolf notes as energy exchange between string and body resonances.</p>
+      </div>
+      <div class="hero-actions">
+        <div class="measure-chip" id="measure_chip">Session: Tap + Notes</div>
+        <button class="ghost-btn" id="btn_record">Record</button>
+        <button class="primary-btn" id="btn_import">Import Recording</button>
+        <input type="file" id="file_input" accept="audio/*" hidden>
+        <button class="ghost-btn" id="btn_save_audio">Save WAV</button>
+        <button class="ghost-btn" id="btn_play">Play</button>
+        <button class="ghost-btn" id="btn_stop">Stop</button>
+      </div>
+    </header>
+
+    <section class="card-surface">
+      <div class="summary-grid">
+        <article class="summary-card" id="card_body_modes">
+          <div class="summary-header">
+            <div>
+              <h2>Body Modes (Tap)</h2>
+              <p class="muted small">Tap-derived body resonances used as coupling references.</p>
+            </div>
+            <div class="summary-actions">
+              <span class="data-chip">Tap</span>
+              <button class="ghost-btn btn-small" id="btn_detect_taps">Detect</button>
+              <button class="ghost-btn btn-small" id="btn_add_mode">Add resonance</button>
+            </div>
+          </div>
+          <div class="summary-list" id="body_modes_list"></div>
+          <div class="summary-footer">
+            <span class="muted small" id="tap_summary">No taps detected yet.</span>
+          </div>
+        </article>
+
+        <article class="summary-card" id="card_played_note">
+          <div class="summary-header">
+            <div>
+              <h2>Played Note (String)</h2>
+              <p class="muted small">Detected from played audio; harmonics tracked automatically.</p>
+            </div>
+            <div class="summary-actions">
+              <span class="data-chip">Note</span>
+              <span class="status-chip" id="note_status">Stable</span>
+            </div>
+          </div>
+          <div class="note-summary" id="note_summary"></div>
+          <div class="note-harmonics" id="note_harmonics"></div>
+        </article>
+
+        <article class="summary-card" id="card_wolf_risk">
+          <div class="summary-header">
+            <div>
+              <h2>Wolf Risk</h2>
+              <p class="muted small">Derived from energy exchange and beat depth.</p>
+            </div>
+            <div class="summary-actions">
+              <span class="data-chip">Derived</span>
+              <span class="risk-chip" id="wolf_risk">None</span>
+            </div>
+          </div>
+          <div class="risk-detail" id="wolf_reason">No coupling flags yet.</div>
+          <div class="risk-meta" id="wolf_meta"></div>
+        </article>
+      </div>
+
+      <div class="section-divider"></div>
+
+      <div class="plot-header">
+        <div>
+          <h2>Energy Transfer</h2>
+          <p class="muted small">Energy exchange between string fundamentals, harmonics, and body modes.</p>
+        </div>
+        <div class="energy-legend">
+          <span class="data-chip">Derived</span>
+          <label class="select-label" for="energy_view_mode">Energy view</label>
+          <select id="energy_view_mode" class="select-input">
+            <option value="stacked-normalized" selected>Stacked 100%</option>
+            <option value="stacked-decay">Stacked decay</option>
+            <option value="separate-decay">Separate decay</option>
+          </select>
+          <div id="energy_legend"></div>
+        </div>
+      </div>
+      <div id="plot_energy" class="plot energy-plot"></div>
+    </section>
+
+    <section class="card-surface">
+      <div class="plot-header">
+        <div>
+          <h2>Frequency Context</h2>
+          <p class="muted small">FFT view showing harmonics and implicated body-mode band.</p>
+        </div>
+        <div class="toolbar">
+          <span class="data-chip">Note</span>
+          <button class="ghost-btn btn-small" id="btn_reset_fft" title="Reset zoom">Reset</button>
+        </div>
+      </div>
+      <div id="plot_fft" class="plot"></div>
+    </section>
+
+    <section class="card-surface wave-surface">
+      <div class="plot-header">
+        <div>
+          <h2>Waveform Navigator</h2>
+          <p class="muted small">Click a note segment to analyze; drag to select a custom note region.</p>
+        </div>
+        <div class="toolbar">
+          <span class="data-chip">Note</span>
+          <button class="ghost-btn btn-small" id="btn_reset_zoom" title="Reset zoom">Reset</button>
+          <div class="wave-legend">
+            <span class="legend-chip note"><span class="legend-dot"></span>Note</span>
+            <span class="legend-chip tap"><span class="legend-dot"></span>Tap</span>
+            <span class="legend-chip manual"><span class="legend-dot"></span>Manual</span>
+          </div>
+        </div>
+      </div>
+      <div id="plot_waveform" class="plot waveform"></div>
+      <div class="transport-row">
+        <button class="ghost-btn btn-small" id="btn_wave_record">Record</button>
+        <button class="ghost-btn btn-small" id="btn_wave_play">Play</button>
+        <button class="ghost-btn btn-small" id="btn_wave_stop">Stop</button>
+        <div class="transport-spacer"></div>
+        <span class="muted small" id="wave_status">Load or record to detect taps and notes.</span>
+      </div>
+    </section>
+  </div>
+
+  <script src="../vendor/plotly/plotly.min.js" defer></script>
+  <script src="../modal_frequency_shared/state.js" defer></script>
+  <script src="../modal_frequency_shared/utils.js" defer></script>
+  <script src="../modal_frequency_shared/audio.js" defer></script>
+  <script src="../modal_frequency_shared/waveform.js" defer></script>
+  <script src="../modal_frequency_shared/fft_engine.js" defer></script>
+  <script src="../modal_frequency_shared/fft_plot.js" defer></script>
+  <script src="../modal_frequency_shared/segmentation.js" defer></script>
+  <script src="../modal_frequency_shared/modal_analysis/ringdown.js" defer></script>
+  <script src="../modal_frequency_shared/wolf_logic.js" defer></script>
+  <script type="module" src="dist/orchestrator.js"></script>
+</body>
+
+</html>
