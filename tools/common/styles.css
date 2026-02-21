@@ -1,3 +1,5 @@
+@import url("./theme_profile.css");
+
 /* ==========================================================
    LUTHERIELAB DARK THEME (Color-blind safe • Okabe & Ito)
    ========================================================== */
@@ -31,10 +33,42 @@
 * { box-sizing: border-box; }
 
 body {
+  position: relative;
   margin: 0;
   font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
-  background: var(--bg);
+  background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 35%),
+    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--orange) 16%, transparent), transparent 32%),
+    var(--bg);
   color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  pointer-events: none;
+  z-index: -2;
+}
+
+body::before {
+  background:
+    radial-gradient(circle at 25% 14%, var(--atmo-nebula-blue), transparent 48%),
+    radial-gradient(circle at 52% 46%, var(--atmo-nebula-gold), transparent 44%),
+    radial-gradient(circle at 76% 30%, var(--atmo-nebula-cyan), transparent 46%);
+  filter: blur(24px);
+}
+
+body::after {
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--blue) 18%, transparent), transparent 48%),
+    radial-gradient(circle at 49% 52%, color-mix(in srgb, var(--orange) 13%, transparent), transparent 40%),
+    radial-gradient(circle at 73% 56%, color-mix(in srgb, var(--green) 10%, transparent), transparent 38%);
+  filter: blur(40px);
 }
 
 /* ---------- Header ---------- */
