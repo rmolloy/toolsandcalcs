@@ -18,57 +18,70 @@ No redistribution, modification, or commercial use without written consent from 
 
 <body>
   <div class="tl-app">
-    <header class="tl-topbar"></header>
     <div class="tl-page">
-      <header class="card pad tl-card tl-card-info">
-        <h1>Monopole Mobility Calculator</h1>
-        <p class="tl-card-desc">
-          <strong>Use this tool to</strong> translate your measurements into top stiffness K,
-          effective modal mass M<sub>eff</sub>, and a monopole mobility score using either the
-          classic Gore jig (Static Mode) or a two-reading mass-loading FFT method (Dynamic Mode).
-        </p>
-        <p class="tl-card-desc">
-          <strong>Why this matters:</strong> Monopole mobility shows how freely the top pumps air at its main resonance and is a measure of how responsive a guitar is across a whole range of frequencies. It shows how much sound you can get out for how hard you pluck the strings. It doesn’t help guard against structural issues, but does show that low mass, low stiffness tops will be more responsive (provided they hold up!)
-        </p>
-        <div class="sample-note badge">
-          Default dataset (Static Mode): Rick Molloy OM (10/25/2025) (spruce / steel-string, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <h1>Monopole Mobility Calculator</h1>
+          </div>
+          <div class="hero-actions">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
+            </details>
+          </div>
         </div>
-        <details class="tl-accordion">
-          <summary>Overview &amp; required measurements</summary>
-          <p class="tl-card-desc">
-            Choose your measurement path. Static Mode uses the Gore &amp; Gilet jig: load the bridge with a known force and record the deflection. Dynamic Mode skips the dial gauge and instead uses two monopole resonance readings: unloaded and with a small added mass.
-          </p>
-          <div class="before-card">
-            <h3>Measurements required</h3>
-            <ul class="tl-list">
-              <li>Uncoupled top monopole frequency, f<sub>0</sub> (Hz)</li>
-              <li>Static Mode: bridge deflection under test load, x (mm)</li>
-              <li>Static Mode: test mass, m (kg)</li>
-              <li>Dynamic Mode: loaded frequency f<sub>1</sub> (Hz) and added mass (g)</li>
-              <li>Guitar type (steel-string, classical, other)</li>
-            </ul>
-          </div>
-          <div class="before-card">
-            <h3>How to use this tool</h3>
-            <ol class="tl-steps">
-              <li>Seal the sound hole with a low mass, rigid cover so the box is airtight.</li>
-              <li>Mute the strings, tap the top, and record the uncoupled top frequency f<sub>0</sub> with your FFT app.</li>
-              <li>Pick a mode:
-                <ul class="tl-list">
-                  <li class="muted">Static Mode — Mount the mobility jig, load it over the bridge using a known test mass (m) and measure the panel deflection (x) in millimeters.</li>
-                  <li class="muted">Dynamic Mode — Add a small known mass at the bridge, measure the shifted monopole frequency f<sub>1</sub> with your FFT app. No dial indicator required.</li>
-                </ul>
-              </li>
-              <li>Enter the mode-specific inputs. The calculator computes K, M<sub>eff</sub>, and mobility.</li>
-              <li>Review the score and compare to the target ranges.</li>
-            </ol>
-          </div>
-        </details>
-      </header>
+      </section>
 
-      <main class="tl-layout">
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output results">
+            <div class="results-header">
+              <h2>Calculated Properties</h2>
+              <div class="results-meta">
+                <span id="instrument_display" class="badge">Rick Molloy OM (10/25/2025) • Steel-string</span>
+                <span id="status" class="status muted">Live: Rick Molloy OM (10/25/2025)</span>
+              </div>
+            </div>
+            <div class="result-grid">
+              <article class="result-card highlighted">
+                <div class="label">Monopole mobility score</div>
+                <div class="value-row">
+                  <div id="mobilityScore" class="value">--</div>
+                  <span class="unit-inline">score</span>
+                </div>
+                <div class="note">1000 / √(K · M<sub>eff</sub>)</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Top stiffness K</div>
+                <div class="value-row">
+                  <div id="stiffness" class="value">--</div>
+                  <span class="unit-inline">N/m</span>
+                </div>
+                <div class="note">K = m·g / x</div>
+              </article>
+              <article class="result-card">
+                <div class="label">EFFECTIVE MASS M<sub>eff</sub></div>
+                <div class="value-row">
+                  <div id="effMass" class="value">--</div>
+                  <span class="unit-inline">g</span>
+                </div>
+                <div class="note">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </article>
+            </div>
+            <div class="muted small">
+              Lower scores mean a stiffer and/or heavier top. Guitars scoring highly (&gt; 20 for steel string guitars, &gt; 30 for classicals) will likely require composite construction to survive over time.
+            </div>
+            <div id="warnings" class="muted small"></div>
+            <div class="muted small">
+              Top stiffness, K and effective mass, M<sub>eff</sub> can be entered into the 4‑DOF solver to model your guitar’s
+              air/top/back coupling and to indicate realistic brace/plate tuning changes when aiming at specific frequencies.
+            </div>
+          </section>
+        </section>
+
         <aside class="tl-controls">
-          <section class="card pad controls">
+          <section class="card pad tl-card tl-card-controls controls">
             <h2>Measurement Inputs</h2>
             <div class="mode-toggle" role="group" aria-label="Select calculation mode">
               <button id="mode_static" class="mode-btn active" type="button">
@@ -149,127 +162,129 @@ No redistribution, modification, or commercial use without written consent from 
           </section>
         </aside>
 
-        <section class="tl-content">
-          <section class="card pad results">
-            <div class="results-header">
-              <h2>Calculated Properties</h2>
-              <div class="results-meta">
-                <span id="instrument_display" class="badge">Rick Molloy OM (10/25/2025) • Steel-string</span>
-                <span id="status" class="status muted">Live: Rick Molloy OM (10/25/2025)</span>
+        <section class="tl-content tl-content-secondary">
+          <header class="card pad tl-card tl-card-info">
+            <h2>Overview &amp; required measurements</h2>
+            <p class="tl-card-desc">
+              <strong>Use this tool to</strong> translate your measurements into top stiffness K,
+              effective modal mass M<sub>eff</sub>, and a monopole mobility score using either the
+              classic Gore jig (Static Mode) or a two-reading mass-loading FFT method (Dynamic Mode).
+            </p>
+            <p class="tl-card-desc">
+              <strong>Why this matters:</strong> Monopole mobility shows how freely the top pumps air at its main resonance and is a measure of how responsive a guitar is across a whole range of frequencies. It shows how much sound you can get out for how hard you pluck the strings. It doesn’t help guard against structural issues, but does show that low mass, low stiffness tops will be more responsive (provided they hold up!)
+            </p>
+            <div class="sample-note badge">
+              Default dataset (Static Mode): Rick Molloy OM (10/25/2025) (spruce / steel-string, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
+            </div>
+            <details class="tl-accordion">
+              <summary>Overview &amp; setup workflow</summary>
+              <p class="tl-card-desc">
+                Choose your measurement path. Static Mode uses the Gore &amp; Gilet jig: load the bridge with a known force and record the deflection. Dynamic Mode skips the dial gauge and instead uses two monopole resonance readings: unloaded and with a small added mass.
+              </p>
+              <div class="before-card">
+                <h3>Measurements required</h3>
+                <ul class="tl-list">
+                  <li>Uncoupled top monopole frequency, f<sub>0</sub> (Hz)</li>
+                  <li>Static Mode: bridge deflection under test load, x (mm)</li>
+                  <li>Static Mode: test mass, m (kg)</li>
+                  <li>Dynamic Mode: loaded frequency f<sub>1</sub> (Hz) and added mass (g)</li>
+                  <li>Guitar type (steel-string, classical, other)</li>
+                </ul>
               </div>
+              <div class="before-card">
+                <h3>How to use this tool</h3>
+                <ol class="tl-steps">
+                  <li>Seal the sound hole with a low mass, rigid cover so the box is airtight.</li>
+                  <li>Mute the strings, tap the top, and record the uncoupled top frequency f<sub>0</sub> with your FFT app.</li>
+                  <li>Pick a mode:
+                    <ul class="tl-list">
+                      <li class="muted">Static Mode — Mount the mobility jig, load it over the bridge using a known test mass (m) and measure the panel deflection (x) in millimeters.</li>
+                      <li class="muted">Dynamic Mode — Add a small known mass at the bridge, measure the shifted monopole frequency f<sub>1</sub> with your FFT app. No dial indicator required.</li>
+                    </ul>
+                  </li>
+                  <li>Enter the mode-specific inputs. The calculator computes K, M<sub>eff</sub>, and mobility.</li>
+                  <li>Review the score and compare to the target ranges.</li>
+                </ol>
+              </div>
+            </details>
+          </header>
+
+          <section class="card pad tl-card tl-card-info tl-span-2">
+            <h2>How this tool works</h2>
+            <p class="tl-card-desc">
+              The calculator supports two workflows: the classic Gore &amp; Gilet monopole mobility jig (Static Mode) and a mass-loading frequency shift method (Dynamic Mode). Both paths output stiffness K at the bridge, effective modal mass (M<sub>eff</sub>), and the standard monopole mobility score for build-to-build comparisons.
+            </p>
+
+            <div class="tl-eq-block">
+              <h3>Static Mode: Force from test mass</h3>
+              <p class="small muted">The mass sets the applied force through the jig.</p>
+              <div class="tl-equation">F = m · g</div>
             </div>
-            <div class="result-grid">
-              <article class="result-card highlighted">
-                <div class="label">Monopole mobility score</div>
-                <div class="value-row">
-                  <div id="mobilityScore" class="value">--</div>
-                  <span class="unit-inline">score</span>
-                </div>
-                <div class="note">1000 / √(K · M<sub>eff</sub>)</div>
-              </article>
-              <article class="result-card">
-                <div class="label">Top stiffness K</div>
-                <div class="value-row">
-                  <div id="stiffness" class="value">--</div>
-                  <span class="unit-inline">N/m</span>
-                </div>
-                <div class="note">K = m·g / x</div>
-              </article>
-              <article class="result-card">
-                <div class="label">EFFECTIVE MASS M<sub>eff</sub></div>
-                <div class="value-row">
-                  <div id="effMass" class="value">--</div>
-                  <span class="unit-inline">g</span>
-                </div>
-                <div class="note">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
-              </article>
+
+            <div class="tl-eq-block">
+              <h3>Static Mode: Top stiffness at the bridge</h3>
+              <p class="small muted">The applied force divided by the deflection x (converted to meters) gives the stiffness, K.</p>
+              <div class="tl-equation">K = F / x</div>
             </div>
-            <div class="muted small">
-              Lower scores mean a stiffer and/or heavier top. Guitars scoring highly (&gt; 20 for steel string guitars, &gt; 30 for classicals) will likely require composite construction to survive over time.
+
+            <div class="tl-eq-block">
+              <h3>Dynamic Mode: Effective modal mass from frequency shift</h3>
+              <p class="small muted">Two frequency measurements and the added mass give M<sub>eff</sub> directly.</p>
+              <div class="tl-equation">M<sub>eff</sub> = (f<sub>1</sub><sup>2</sup> · m) / (f<sub>0</sub><sup>2</sup> − f<sub>1</sub><sup>2</sup>)</div>
             </div>
-            <div id="warnings" class="muted small"></div>
-            <div class="muted small">
-              Top stiffness, K and effective mass, M<sub>eff</sub> can be entered into the 4‑DOF solver to model your guitar’s
-              air/top/back coupling and to indicate realistic brace/plate tuning changes when aiming at specific frequencies.
+
+            <div class="tl-eq-block">
+              <h3>Effective stiffness (Dynamic Mode)</h3>
+              <p class="small muted">Once M<sub>eff</sub> is known, stiffness follows from f<sub>0</sub>.</p>
+              <div class="tl-equation">K = (2π f<sub>0</sub>)<sup>2</sup> · M<sub>eff</sub></div>
+            </div>
+
+            <div class="tl-eq-block">
+              <h3>Effective modal mass (Static Mode)</h3>
+              <p class="small muted">Derived from stiffness, K and the uncoupled top frequency, f<sub>u</sub>.</p>
+              <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+            </div>
+
+            <div class="tl-eq-block">
+              <h3>Monopole mobility score</h3>
+              <p class="small muted">Index used for build-to-build responsiveness comparisons. Monopole mobility has dimensions of admittance, (s/Kg)</p>
+              <div class="tl-equation">Mobility score = 1000 / √(K · M<sub>eff</sub>)</div>
             </div>
           </section>
 
-    <section class="card pad tl-card tl-card-info tl-span-2">
-      <h2>How this tool works</h2>
-      <p class="tl-card-desc">
-        The calculator supports two workflows: the classic Gore &amp; Gilet monopole mobility jig (Static Mode) and a mass-loading frequency shift method (Dynamic Mode). Both paths output stiffness K at the bridge, effective modal mass (M<sub>eff</sub>), and the standard monopole mobility score for build-to-build comparisons.
-      </p>
-
-      <div class="tl-eq-block">
-        <h3>Static Mode: Force from test mass</h3>
-        <p class="small muted">The mass sets the applied force through the jig.</p>
-        <div class="tl-equation">F = m · g</div>
-      </div>
-
-      <div class="tl-eq-block">
-        <h3>Static Mode: Top stiffness at the bridge</h3>
-        <p class="small muted">The applied force divided by the deflection x (converted to meters) gives the stiffness, K.</p>
-        <div class="tl-equation">K = F / x</div>
-      </div>
-
-      <div class="tl-eq-block">
-        <h3>Dynamic Mode: Effective modal mass from frequency shift</h3>
-        <p class="small muted">Two frequency measurements and the added mass give M<sub>eff</sub> directly.</p>
-        <div class="tl-equation">M<sub>eff</sub> = (f<sub>1</sub><sup>2</sup> · m) / (f<sub>0</sub><sup>2</sup> − f<sub>1</sub><sup>2</sup>)</div>
-      </div>
-
-      <div class="tl-eq-block">
-        <h3>Effective stiffness (Dynamic Mode)</h3>
-        <p class="small muted">Once M<sub>eff</sub> is known, stiffness follows from f<sub>0</sub>.</p>
-        <div class="tl-equation">K = (2π f<sub>0</sub>)<sup>2</sup> · M<sub>eff</sub></div>
-      </div>
-
-      <div class="tl-eq-block">
-        <h3>Effective modal mass (Static Mode)</h3>
-        <p class="small muted">Derived from stiffness, K and the uncoupled top frequency, f<sub>u</sub>.</p>
-        <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
-      </div>
-
-      <div class="tl-eq-block">
-        <h3>Monopole mobility score</h3>
-        <p class="small muted">Index used for build-to-build responsiveness comparisons. Monopole mobility has dimensions of admittance, (s/Kg)</p>
-        <div class="tl-equation">Mobility score = 1000 / √(K · M<sub>eff</sub>)</div>
-      </div>
-    </section>
-
-    <section class="card pad tl-card tl-card-info">
-      <details class="tl-accordion help-accordion">
-        <summary>Need help with this tool? <span class="muted">I read every message.</span></summary>
-        <p class="muted">If your results don’t match what you’re hearing, share your measurements and a short tap clip. I’ll take a look.</p>
-        <div id="mc_embed_shell">
-          <link href="//cdn-images.mailchimp.com/embedcode/classic-061523.css" rel="stylesheet" type="text/css">
-          <div id="mc_embed_signup">
-            <form action="https://celestialinstruments.us12.list-manage.com/subscribe/post?u=64b5700d159e15ecf6f527445&amp;id=4d023713d1&amp;f_id=00f844e0f0" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank">
-              <div id="mc_embed_signup_scroll">
-                <h2>Reach out to Rick</h2>
-                <div class="indicates-required"><span class="asterisk">*</span> indicates required</div>
-                <div class="mc-field-group">
-                  <label for="mce-EMAIL">Email Address <span class="asterisk">*</span></label>
-                  <input type="email" name="EMAIL" class="required email" id="mce-EMAIL" required value="">
+          <section class="card pad tl-card tl-card-info">
+            <details class="tl-accordion help-accordion">
+              <summary>Need help with this tool? <span class="muted">I read every message.</span></summary>
+              <p class="muted">If your results don’t match what you’re hearing, share your measurements and a short tap clip. I’ll take a look.</p>
+              <div id="mc_embed_shell">
+                <link href="//cdn-images.mailchimp.com/embedcode/classic-061523.css" rel="stylesheet" type="text/css">
+                <div id="mc_embed_signup">
+                  <form action="https://celestialinstruments.us12.list-manage.com/subscribe/post?u=64b5700d159e15ecf6f527445&amp;id=4d023713d1&amp;f_id=00f844e0f0" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank">
+                    <div id="mc_embed_signup_scroll">
+                      <h2>Reach out to Rick</h2>
+                      <div class="indicates-required"><span class="asterisk">*</span> indicates required</div>
+                      <div class="mc-field-group">
+                        <label for="mce-EMAIL">Email Address <span class="asterisk">*</span></label>
+                        <input type="email" name="EMAIL" class="required email" id="mce-EMAIL" required value="">
+                      </div>
+                      <div class="mc-field-group">
+                        <label for="mce-FNAME">First Name </label>
+                        <input type="text" name="FNAME" class=" text" id="mce-FNAME" value="">
+                      </div>
+                      <div id="mce-responses" class="clear">
+                        <div class="response" id="mce-error-response" style="display: none;"></div>
+                        <div class="response" id="mce-success-response" style="display: none;"></div>
+                      </div>
+                      <div aria-hidden="true" style="position: absolute; left: -5000px;"><input type="text" name="b_64b5700d159e15ecf6f527445_4d023713d1" tabindex="-1" value=""></div>
+                      <div class="clear"><input type="submit" name="subscribe" id="mc-embedded-subscribe" class="button" value="Send"></div>
+                    </div>
+                  </form>
                 </div>
-                <div class="mc-field-group">
-                  <label for="mce-FNAME">First Name </label>
-                  <input type="text" name="FNAME" class=" text" id="mce-FNAME" value="">
-                </div>
-                <div id="mce-responses" class="clear">
-                  <div class="response" id="mce-error-response" style="display: none;"></div>
-                  <div class="response" id="mce-success-response" style="display: none;"></div>
-                </div>
-                <div aria-hidden="true" style="position: absolute; left: -5000px;"><input type="text" name="b_64b5700d159e15ecf6f527445_4d023713d1" tabindex="-1" value=""></div>
-                <div class="clear"><input type="submit" name="subscribe" id="mc-embedded-subscribe" class="button" value="Send"></div>
+                <script type="text/javascript" src="//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js"></script>
+                <script type="text/javascript">(function($) {window.fnames = new Array(); window.ftypes = new Array();fnames[0]='EMAIL';ftypes[0]='email';fnames[1]='FNAME';ftypes[1]='text';fnames[7]='SMSPHONE';ftypes[7]='smsphone';fnames[2]='LNAME';ftypes[2]='text';fnames[3]='ADDRESS';ftypes[3]='address';fnames[4]='PHONE';ftypes[4]='phone';fnames[5]='BIRTHDAY';ftypes[5]='birthday';fnames[6]='COMPANY';ftypes[6]='text';}(jQuery));var $mcj = jQuery.noConflict(true);</script>
               </div>
-            </form>
-          </div>
-          <script type="text/javascript" src="//s3.amazonaws.com/downloads.mailchimp.com/js/mc-validate.js"></script>
-          <script type="text/javascript">(function($) {window.fnames = new Array(); window.ftypes = new Array();fnames[0]='EMAIL';ftypes[0]='email';fnames[1]='FNAME';ftypes[1]='text';fnames[7]='SMSPHONE';ftypes[7]='smsphone';fnames[2]='LNAME';ftypes[2]='text';fnames[3]='ADDRESS';ftypes[3]='address';fnames[4]='PHONE';ftypes[4]='phone';fnames[5]='BIRTHDAY';ftypes[5]='birthday';fnames[6]='COMPANY';ftypes[6]='text';}(jQuery));var $mcj = jQuery.noConflict(true);</script>
-        </div>
-      </details>
-    </section>
+            </details>
+          </section>
         </section>
       </main>
 
@@ -281,6 +296,7 @@ No redistribution, modification, or commercial use without written consent from 
     </div>
   </div>
 
+  <script src="../common/site_menu_loader.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 
