@@ -13,8 +13,10 @@ type WaveformViewDeps = {
 };
 
 let waveUpdatingShapes = false;
-const TAP_CLUSTER_GAP_MS = 220;
-const NOTE_CLUSTER_GAP_MS = 320;
+const TAP_CLUSTER_GAP_MS = 950;
+const NOTE_CLUSTER_GAP_MS = 2600;
+const TAP_CLUSTER_OUTLIER_MIN_RATIO = 0.6;
+const TAP_CLUSTER_OUTLIER_MAX_RATIO = 1.8;
 const FALLBACK_WINDOW_MIN_MS = 900;
 const FALLBACK_WINDOW_MAX_MS = 3000;
 const FALLBACK_WINDOW_RATIO = 0.22;
@@ -433,7 +435,7 @@ export function noteSelectionRangeAutoSelectFromState(slice: any, state: Record<
   const noteSlices = Array.isArray(state.noteSlices) ? state.noteSlices : [];
   if (!noteSlices.length) return fallbackRangeOnRightFromDuration(waveDurationMsResolve(state, slice));
   const range = largestContiguousRangeClusterBuild(
-    noteSlices.map((slice: { startMs: number; endMs: number }) => ({ start: slice.startMs, end: slice.endMs })),
+    noteSlices.map((entry: { startMs: number; endMs: number }) => ({ start: entry.startMs, end: entry.endMs })),
     NOTE_CLUSTER_GAP_MS,
   );
   return range || fallbackRangeOnRightFromDuration(waveDurationMsResolve(state, slice));
@@ -449,8 +451,9 @@ export function primaryRangeAutoSelectFromState(slice: any, state: Record<string
       end: (tap.end / slice.sampleRate) * 1000,
     }))
     .filter((range: { start: number; end: number }) => Number.isFinite(range.start) && Number.isFinite(range.end) && range.end > range.start);
-  const range = largestContiguousRangeClusterBuild(ranges, TAP_CLUSTER_GAP_MS);
-  return range || fallbackRangeOnLeftFromDuration(waveDurationMsResolve(state, slice));
+  const bestCluster = contiguousRangeClusterBestBuild(ranges, TAP_CLUSTER_GAP_MS, { preferCount: true });
+  const normalizedRange = rangeClusterNormalizeByMedianDuration(bestCluster);
+  return normalizedRange || fallbackRangeOnLeftFromDuration(waveDurationMsResolve(state, slice));
 }
 
 function waveDurationMsResolve(state: Record<string, any>, slice?: any) {
@@ -480,28 +483,79 @@ function fallbackRangeOnRightFromDuration(durationMs: number) {
   return { start, end: Math.max(start, durationMs) };
 }
 
-function largestContiguousRangeClusterBuild(ranges: Array<{ start: number; end: number }>, gapMs: number) {
+function largestContiguousRangeClusterBuild(
+  ranges: Array<{ start: number; end: number }>,
+  gapMs: number,
+  options: { preferCount?: boolean } = {},
+) {
+  const bestCluster = contiguousRangeClusterBestBuild(ranges, gapMs, options);
+  if (!bestCluster) return null;
+  return { start: bestCluster.start, end: bestCluster.end };
+}
+
+function contiguousRangeClusterBestBuild(
+  ranges: Array<{ start: number; end: number }>,
+  gapMs: number,
+  options: { preferCount?: boolean } = {},
+) {
   if (!ranges.length) return null;
   const sorted = ranges
     .slice()
     .sort((left, right) => left.start - right.start || left.end - right.end);
-  let clusters: Array<{ start: number; end: number }> = [];
-  sorted.forEach((range) => {
-    const current = clusters[clusters.length - 1];
-    if (!current || range.start - current.end > gapMs) {
-      clusters.push({ ...range });
-      return;
-    }
-    current.end = Math.max(current.end, range.end);
-  });
+  const clusters = contiguousRangeClustersBuildFromSortedRanges(sorted, gapMs);
   return clusters.reduce((best, cluster) => {
     if (!best) return cluster;
+    if (options.preferCount) {
+      const bestCount = (best as any).ranges?.length ?? 0;
+      const clusterCount = (cluster as any).ranges?.length ?? 0;
+      if (clusterCount > bestCount) return cluster;
+      if (clusterCount < bestCount) return best;
+    }
     const bestWidth = best.end - best.start;
     const currentWidth = cluster.end - cluster.start;
     if (currentWidth > bestWidth) return cluster;
     if (currentWidth === bestWidth && cluster.start < best.start) return cluster;
     return best;
-  }, null as { start: number; end: number } | null);
+  }, null as ({ start: number; end: number; ranges?: Array<{ start: number; end: number }> } | null));
+}
+
+function contiguousRangeClustersBuildFromSortedRanges(
+  sortedRanges: Array<{ start: number; end: number }>,
+  gapMs: number,
+) {
+  const clusters: Array<{ start: number; end: number; ranges: Array<{ start: number; end: number }> }> = [];
+  sortedRanges.forEach((range) => {
+    const current = clusters[clusters.length - 1];
+    if (!current || range.start - current.end > gapMs) {
+      clusters.push({ ...range, ranges: [{ ...range }] });
+      return;
+    }
+    current.end = Math.max(current.end, range.end);
+    current.ranges.push({ ...range });
+  });
+  return clusters;
+}
+
+function rangeClusterNormalizeByMedianDuration(range: ({ start: number; end: number; ranges?: Array<{ start: number; end: number }> } | null)) {
+  if (!range?.ranges?.length) return range ? { start: range.start, end: range.end } : null;
+  const durations = range.ranges
+    .map((entry) => rangeDurationMs(entry))
+    .filter((duration) => Number.isFinite(duration) && duration > 0)
+    .sort((left, right) => left - right);
+  if (!durations.length) return { start: range.start, end: range.end };
+  const median = durations[Math.floor(durations.length / 2)];
+  const minDuration = median * TAP_CLUSTER_OUTLIER_MIN_RATIO;
+  const maxDuration = median * TAP_CLUSTER_OUTLIER_MAX_RATIO;
+  const normalized = range.ranges.filter((entry) => {
+    const duration = rangeDurationMs(entry);
+    return duration >= minDuration && duration <= maxDuration;
+  });
+  if (!normalized.length) return { start: range.start, end: range.end };
+  return { start: normalized[0].start, end: normalized[normalized.length - 1].end };
+}
+
+function rangeDurationMs(range: { start: number; end: number }) {
+  return range.end - range.start;
 }
 
 function bindNoteSelectionResizeModifierTracking(plot: HTMLElement) {
