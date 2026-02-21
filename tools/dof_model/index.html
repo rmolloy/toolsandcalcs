@@ -5,7 +5,6 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>4-DOF Model - ToneLab</title>
-  <link rel="stylesheet" href="../resonance_reader/styles.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -30,11 +29,11 @@
       <div class="plot-header dof-frf-header">
         <div>
           <h2>Frequency Response</h2>
-          <p class="muted small">Solid line shows current model solution. Dashed line shows What-If overlay.</p>
+          <p class="muted small">Solid line shows current model solution. Dashed line shows Target overlay.</p>
         </div>
         <label class="toggle">
           <input type="checkbox" id="toggle_overlay">
-          <span class="toggle-label">Overlay What-If</span>
+          <span class="toggle-label">Compare</span>
           <span class="toggle-knob"></span>
         </label>
       </div>
@@ -59,9 +58,43 @@
       <div class="plot-footer">
         <div class="muted">Model order <span id="model_order_label">4</span> · Derived from shared 4-DOF solver core</div>
         <div class="link-row">
-          <span class="small muted">Blue = current · Gold dashed = What-If</span>
+          <span class="small muted">Blue = current · Gold dashed = Target</span>
         </div>
       </div>
+
+      <section class="dof-fit-panel" aria-label="Fit model to target frequencies">
+        <div class="dof-fit-copy">
+          <h3>Fit My Guitar</h3>
+          <p class="muted small">Enter target mode frequencies and solve toward those targets.</p>
+        </div>
+        <div class="dof-fit-controls">
+          <label class="dof-fit-field">
+            <span>Air (Hz)</span>
+            <input id="fit_target_air" type="number" min="50" max="140" step="0.1" inputmode="decimal" placeholder="100">
+          </label>
+          <label class="dof-fit-field">
+            <span>Top (Hz)</span>
+            <input id="fit_target_top" type="number" min="120" max="240" step="0.1" inputmode="decimal" placeholder="185">
+          </label>
+          <label class="dof-fit-field">
+            <span>Back (Hz)</span>
+            <input id="fit_target_back" type="number" min="180" max="300" step="0.1" inputmode="decimal" placeholder="230">
+          </label>
+          <label class="dof-fit-field">
+            <span>Top Effective Mass (g)</span>
+            <input id="fit_target_mass_top" type="number" min="5" max="120" step="0.1" inputmode="decimal" placeholder="43">
+          </label>
+          <label class="dof-fit-field">
+            <span>Top Effective Stiffness (N/m)</span>
+            <input id="fit_target_stiffness_top" type="number" min="10000" max="150000" step="100" inputmode="decimal" placeholder="42700">
+          </label>
+          <button id="btn_fit_guitar" class="ghost-btn btn-small" type="button">Fit My Guitar</button>
+          <button id="btn_fit_guitar_fast" class="ghost-btn btn-small" type="button">Fit 2</button>
+          <button id="btn_fit_guitar_measured" class="ghost-btn btn-small" type="button">Fit 3</button>
+          <button id="btn_fit_clear" class="ghost-btn btn-small" type="button">Clear</button>
+        </div>
+        <p id="fit_status" class="muted small dof-fit-status"></p>
+      </section>
     </section>
   </div>
 

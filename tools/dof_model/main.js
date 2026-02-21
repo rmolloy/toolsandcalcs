@@ -27,10 +27,10 @@ const DEFAULT_PARAMS = {
 const CARD_DEFS = [
     {
         key: "air",
-        label: "Air / Helmholtz",
-        alias: "T(1,1)₁",
+        label: "Air",
+        alias: "T(1,1)1",
         degree: 1,
-        color: "#8ecbff",
+        color: "var(--purple)",
         badgeText: "DOF 1",
         fields: [
             { label: "Soundhole Area (m²)", param: "area_hole", step: 0.0001, min: 0.003, max: 0.01 },
@@ -41,38 +41,38 @@ const CARD_DEFS = [
     },
     {
         key: "top",
-        label: "Top Plate",
-        alias: "T(1,1)₂",
+        label: "Top",
+        alias: "T(1,1)2",
         degree: 2,
-        color: "#f5c46f",
+        color: "var(--blue)",
         badgeText: "DOF 2",
         fields: [
-            { label: "Mass mₜ (g)", param: "mass_top", step: 0.1, min: 20, max: 120 },
-            { label: "Stiffness kₜ (N/m)", param: "stiffness_top", step: 100, min: 20000, max: 150000 },
+            { label: "Mass mₜ (g)", param: "mass_top", step: 0.1, min: 5, max: 120 },
+            { label: "Stiffness kₜ (N/m)", param: "stiffness_top", step: 100, min: 10000, max: 150000 },
             { label: "Damping Rₜ", param: "damping_top", step: 0.1, min: 0.5, max: 6.0 },
             { label: "Radiating Area Aₜ (m²)", param: "area_top", step: 0.0005, min: 0.02, max: 0.06 },
         ],
     },
     {
         key: "back",
-        label: "Back Plate",
-        alias: "T(1,1)₃",
+        label: "Back",
+        alias: "T(1,1)3",
         degree: 3,
-        color: "#7ce3b1",
+        color: "var(--green)",
         badgeText: "DOF 3",
         fields: [
             { label: "Mass mᵦ (g)", param: "mass_back", step: 0.5, min: 40, max: 220 },
-            { label: "Stiffness kᵦ (N/m)", param: "stiffness_back", step: 200, min: 80000, max: 220000 },
+            { label: "Stiffness kᵦ (N/m)", param: "stiffness_back", step: 200, min: 80000, max: 400000 },
             { label: "Damping Rᵦ", param: "damping_back", step: 0.1, min: 1.0, max: 15.0 },
             { label: "Radiating Area Aᵦ (m²)", param: "area_back", step: 0.0005, min: 0.02, max: 0.06 },
         ],
     },
     {
         key: "sides",
-        label: "Sides / Coupling",
+        label: "Sides",
         alias: "External",
         degree: 4,
-        color: "#b4a5ff",
+        color: "var(--yellow)",
         badgeText: "DOF 4",
         fields: [
             { label: "Sides Mass (g)", param: "mass_sides", step: 5, min: 300, max: 1500 },
@@ -86,7 +86,7 @@ const CARD_DEFS = [
         label: "Environment",
         alias: "Inputs",
         degree: 0,
-        color: "#9aa4b6",
+        color: "var(--muted)",
         badgeText: "Always",
         fields: [
             { label: "Ambient Temp (°C)", param: "ambient_temp", step: 0.5, min: -10, max: 40 },
@@ -96,9 +96,9 @@ const CARD_DEFS = [
     },
 ];
 const MODE_META = {
-    air: { label: "Air", color: "#8ecbff" },
-    top: { label: "Top", color: "#f5c46f" },
-    back: { label: "Back", color: "#7ce3b1" },
+    air: { label: "Air", color: "var(--purple)" },
+    top: { label: "Top", color: "var(--blue)" },
+    back: { label: "Back", color: "var(--green)" },
 };
 const MODE_BANDS = {
     air: { low: 75, high: 115 },
@@ -106,11 +106,20 @@ const MODE_BANDS = {
     back: { low: 210, high: 260 },
 };
 const MODE_KEYS = ["air", "top", "back"];
+const TRACE_DEFAULT_VISIBLE = {
+    Current: true,
+    Target: true,
+    Top: false,
+    Air: false,
+    Back: false,
+    Sides: false,
+};
 const FIT_BOUNDS = {
     area_hole: { min: 0.003, max: 0.01 },
     volume_air: { min: 0.01, max: 0.025 },
-    stiffness_top: { min: 20000, max: 150000 },
-    stiffness_back: { min: 80000, max: 220000 },
+    mass_top: { min: 0.005, max: 0.12 },
+    stiffness_top: { min: 10000, max: 150000 },
+    stiffness_back: { min: 80000, max: 400000 },
 };
 const SOLVE_TWEAK_IDS = ["stiffness_top", "stiffness_back", "volume_air", "area_hole"];
 let currentParams = { ...DEFAULT_PARAMS };
@@ -124,6 +133,11 @@ const modeCardEls = {};
 const paramInputs = {};
 const paramSliders = {};
 const overlaySliders = {};
+const paramDeltaBars = {};
+const paramGlowDots = {};
+const paramWhatIfRows = {};
+const paramWhatIfValues = {};
+const paramWhatIfDeltas = {};
 const overlayLatched = new Set();
 let lastWhatIfResponse = null;
 const dragState = {
@@ -136,6 +150,7 @@ let pendingDragMode = null;
 let pendingDragFreq = null;
 let dragLockedTargets = null;
 let dragUseWhatIf = false;
+const traceVisibilityState = { ...TRACE_DEFAULT_VISIBLE };
 function dofParamsFromLocation() {
     const raw = new URLSearchParams(window.location.search).get("params");
     if (!raw)
@@ -184,6 +199,106 @@ function updateParam(param, value) {
         scheduleRender();
     }
 }
+function isTraceName(value) {
+    return typeof value === "string" && value in TRACE_DEFAULT_VISIBLE;
+}
+function traceVisibleValue(name) {
+    const visible = traceVisibilityState[name];
+    const fallback = TRACE_DEFAULT_VISIBLE[name];
+    return (visible !== null && visible !== void 0 ? visible : fallback) ? true : "legendonly";
+}
+function applyTraceVisibility(trace, name) {
+    if (!trace)
+        return;
+    trace.visible = traceVisibleValue(name);
+}
+function syncTraceVisibilityStateFromPlot(plotEl) {
+    const traces = plotEl.data;
+    if (!Array.isArray(traces))
+        return;
+    traces.forEach((trace) => {
+        const name = trace === null || trace === void 0 ? void 0 : trace.name;
+        if (!isTraceName(name))
+            return;
+        traceVisibilityState[name] = trace.visible === undefined || trace.visible === true;
+    });
+}
+function tokenColor(token, fallbackToken = "--ink") {
+    const styles = getComputedStyle(document.documentElement);
+    return styles.getPropertyValue(token).trim()
+        || styles.getPropertyValue(fallbackToken).trim()
+        || "currentColor";
+}
+function colorWithAlpha(color, alpha) {
+    const hex = color.trim().replace(/^#/, "");
+    if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+        const r = parseInt(`${hex[0]}${hex[0]}`, 16);
+        const g = parseInt(`${hex[1]}${hex[1]}`, 16);
+        const b = parseInt(`${hex[2]}${hex[2]}`, 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    if (/^[0-9a-fA-F]{6}$/.test(hex)) {
+        const r = parseInt(hex.slice(0, 2), 16);
+        const g = parseInt(hex.slice(2, 4), 16);
+        const b = parseInt(hex.slice(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+    const rgb = color.match(/^rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i);
+    if (rgb)
+        return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${alpha})`;
+    const rgba = color.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*[\d.]+\s*\)$/i);
+    if (rgba)
+        return `rgba(${rgba[1]}, ${rgba[2]}, ${rgba[3]}, ${alpha})`;
+    return color;
+}
+function plotThemeColors() {
+    const blue = tokenColor("--blue");
+    const green = tokenColor("--green");
+    const purple = tokenColor("--purple");
+    const yellow = tokenColor("--yellow");
+    const orange = tokenColor("--orange");
+    const ink = tokenColor("--ink");
+    return {
+        current: blue,
+        top: blue,
+        air: purple,
+        back: green,
+        sides: yellow,
+        whatIf: colorWithAlpha(orange, 0.9),
+        ink,
+        grid: colorWithAlpha(ink, 0.08),
+    };
+}
+function sliderFillPercent(slider, value) {
+    const min = parseFloat(slider.min);
+    const max = parseFloat(slider.max);
+    if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min)
+        return 0;
+    const normalized = (value - min) / (max - min);
+    return Math.max(0, Math.min(100, normalized * 100));
+}
+function decimalPlacesFromStep(stepValue) {
+    if (!Number.isFinite(stepValue) || stepValue <= 0)
+        return 0;
+    const text = stepValue.toString();
+    const decimal = text.split(".")[1];
+    return decimal ? decimal.length : 0;
+}
+function formatOverlayDisplayValue(value, stepValue) {
+    if (!Number.isFinite(value))
+        return "--";
+    const decimals = Math.min(4, decimalPlacesFromStep(stepValue));
+    return value.toFixed(decimals);
+}
+function overlayRangeFillGradient(start, end) {
+    const overlayBand = "color-mix(in srgb, var(--orange) 48%, transparent)";
+    return `linear-gradient(90deg, transparent 0%, transparent ${start}%, ${overlayBand} ${start}%, ${overlayBand} ${end}%, transparent ${end}%, transparent 100%)`;
+}
+function baseRangeFillGradient(end) {
+    const fill = "color-mix(in srgb, var(--ink) 28%, transparent)";
+    const track = "color-mix(in srgb, var(--ink) 8%, transparent)";
+    return `linear-gradient(90deg, ${fill} 0%, ${fill} ${end}%, ${track} ${end}%, ${track} 100%)`;
+}
 function buildCards() {
     const container = document.getElementById("dof_cards");
     if (!container)
@@ -198,7 +313,8 @@ function buildCards() {
         const title = document.createElement("div");
         title.className = "dof-card-title";
         const badge = card.badgeText || `DOF ${card.degree}`;
-        title.innerHTML = `<div><div class="mode-label">${card.label}</div><div class="muted small">${card.alias}</div></div><span class="badge" style="background:${card.color};">${badge}</span>`;
+        const aliasInline = card.alias ? `<span class="mode-label-alias">${card.alias}</span>` : "";
+        title.innerHTML = `<div class="mode-label">${card.label}${aliasInline}</div><span class="badge" style="background:${card.color};">${badge}</span>`;
         cardEl.appendChild(title);
         if (isModeKey(card.key)) {
             const modeKey = card.key;
@@ -227,7 +343,7 @@ function buildCards() {
             whatIfRow.style.display = "none";
             const whatIfLabel = document.createElement("span");
             whatIfLabel.className = "mode-whatif-label";
-            whatIfLabel.textContent = "What-If";
+            whatIfLabel.textContent = "Target";
             const whatIfValue = document.createElement("span");
             whatIfValue.className = "mode-whatif-value";
             whatIfValue.textContent = "--";
@@ -322,10 +438,30 @@ function buildCards() {
                 scheduleRender();
             });
             sliderWrap.appendChild(overlay);
+            const deltaBar = document.createElement("div");
+            deltaBar.className = "param-slider-delta";
+            sliderWrap.appendChild(deltaBar);
+            const glowDot = document.createElement("div");
+            glowDot.className = "param-slider-glow";
+            sliderWrap.appendChild(glowDot);
+            const whatIfRow = document.createElement("div");
+            whatIfRow.className = "param-whatif-row";
+            const whatIfValue = document.createElement("span");
+            whatIfValue.className = "param-whatif-value";
+            whatIfValue.textContent = "--";
+            const whatIfDelta = document.createElement("span");
+            whatIfDelta.className = "param-whatif-delta";
+            whatIfDelta.textContent = "";
+            whatIfRow.append(whatIfValue, whatIfDelta);
             paramInputs[field.param] = input;
             paramSliders[field.param] = slider;
             overlaySliders[field.param] = overlay;
-            row.append(label, input, sliderWrap);
+            paramDeltaBars[field.param] = deltaBar;
+            paramGlowDots[field.param] = glowDot;
+            paramWhatIfRows[field.param] = whatIfRow;
+            paramWhatIfValues[field.param] = whatIfValue;
+            paramWhatIfDeltas[field.param] = whatIfDelta;
+            row.append(label, input, sliderWrap, whatIfRow);
             grid.appendChild(row);
         });
         cardEl.appendChild(grid);
@@ -366,8 +502,14 @@ function syncOverlayToBase(param) {
         overlay.value = String(baseValue);
 }
 function updateOverlayLatch(param) {
+    const slider = paramSliders[param];
     const overlay = overlaySliders[param];
-    if (!overlay)
+    const deltaBar = paramDeltaBars[param];
+    const glowDot = paramGlowDots[param];
+    const whatIfRow = paramWhatIfRows[param];
+    const whatIfValue = paramWhatIfValues[param];
+    const whatIfDelta = paramWhatIfDeltas[param];
+    if (!slider || !overlay)
         return;
     const baseValue = internalToDisplay(param, currentParams[param]);
     const overlayValue = parseFloat(overlay.value);
@@ -381,6 +523,34 @@ function updateOverlayLatch(param) {
     else
         overlayLatched.delete(param);
     overlay.classList.toggle("overlay-active", isActive);
+    const baseFill = sliderFillPercent(slider, baseValue);
+    const overlayFill = sliderFillPercent(overlay, overlayValue);
+    const start = Math.min(baseFill, overlayFill);
+    const end = Math.max(baseFill, overlayFill);
+    slider.style.background = baseRangeFillGradient(baseFill);
+    overlay.style.background = overlayRangeFillGradient(start, end);
+    if (deltaBar) {
+        const width = Math.max(0, end - start);
+        deltaBar.style.left = `${start}%`;
+        deltaBar.style.width = `${width}%`;
+        deltaBar.classList.toggle("active", isActive && width > 0);
+    }
+    if (glowDot) {
+        glowDot.style.left = `${overlayFill}%`;
+        glowDot.classList.toggle("active", isActive);
+    }
+    if (whatIfRow && whatIfValue && whatIfDelta) {
+        const showMode = isWhatIfEnabled();
+        const delta = overlayValue - baseValue;
+        whatIfRow.classList.toggle("active", showMode && isActive);
+        whatIfValue.textContent = formatOverlayDisplayValue(overlayValue, step);
+        whatIfDelta.textContent = isActive ? formatSigned(delta, decimalPlacesFromStep(step)) : "";
+    }
+}
+function refreshOverlayVisuals() {
+    Object.keys(overlaySliders).forEach((key) => {
+        updateOverlayLatch(key);
+    });
 }
 function resetWhatIf() {
     overlayLatched.clear();
@@ -394,6 +564,7 @@ function resetWhatIf() {
             overlay.value = String(baseValue);
         overlay.classList.remove("overlay-active");
     });
+    refreshOverlayVisuals();
     lastWhatIfResponse = null;
     updateModeCards(lastResponse, null);
 }
@@ -449,7 +620,7 @@ function getModeDisplayFreq(mode, peaks) {
 function updateModeCards(baseResponse = lastResponse, whatIfResponse = lastWhatIfResponse) {
     const basePeaks = baseResponse ? modelPeaksFromResponse(baseResponse) : null;
     const whatIfPeaks = whatIfResponse ? modelPeaksFromResponse(whatIfResponse) : null;
-    const showWhatIf = Boolean(whatIfResponse);
+    const showWhatIf = false;
     MODE_KEYS.forEach((mode) => {
         const els = modeCardEls[mode];
         if (!els)
@@ -765,8 +936,10 @@ function fit4DofFromTargets(targets, opts = {}) {
         air: Number.isFinite(targets.air) ? targets.air : null,
         top: Number.isFinite(targets.top) ? targets.top : null,
         back: Number.isFinite(targets.back) ? targets.back : null,
+        mass_top: Number.isFinite(targets.mass_top) ? targets.mass_top : null,
+        stiffness_top: Number.isFinite(targets.stiffness_top) ? targets.stiffness_top : null,
     };
-    if (!desired.air && !desired.top && !desired.back)
+    if (!desired.air && !desired.top && !desired.back && !desired.mass_top && !desired.stiffness_top)
         return null;
     const baselineResp = computeResponseSafe(adaptParamsToSolver(baseParams));
     const baselinePeaks = baselineResp ? modelPeaksFromResponse(baselineResp) : null;
@@ -788,6 +961,12 @@ function fit4DofFromTargets(targets, opts = {}) {
         const ratio = desired.air / baselinePeaks.air;
         warm.volume_air = clampCandidate("volume_air", warm.volume_air / (ratio * ratio));
     }
+    if (tweakIds.includes("mass_top") && Number.isFinite(desired.mass_top)) {
+        warm.mass_top = clampCandidate("mass_top", desired.mass_top);
+    }
+    if (tweakIds.includes("stiffness_top") && Number.isFinite(desired.stiffness_top)) {
+        warm.stiffness_top = clampCandidate("stiffness_top", desired.stiffness_top);
+    }
     const evaluate = (rawParams) => {
         const resp = computeResponseSafe(adaptParamsToSolver(rawParams));
         const peaks = resp ? modelPeaksFromResponse(resp) : null;
@@ -802,6 +981,14 @@ function fit4DofFromTargets(targets, opts = {}) {
             const diff = (predicted - target) / target;
             cost += diff * diff;
         });
+        if (Number.isFinite(desired.mass_top) && Number.isFinite(rawParams.mass_top) && desired.mass_top > 0) {
+            const diff = (rawParams.mass_top - desired.mass_top) / desired.mass_top;
+            cost += diff * diff;
+        }
+        if (Number.isFinite(desired.stiffness_top) && Number.isFinite(rawParams.stiffness_top) && desired.stiffness_top > 0) {
+            const diff = (rawParams.stiffness_top - desired.stiffness_top) / desired.stiffness_top;
+            cost += diff * diff;
+        }
         return { cost, peaks };
     };
     let best = { ...warm };
@@ -1014,7 +1201,7 @@ function solveTargets(targets, opts = {}) {
     const baseParams = useWhatIf ? (getWhatIfParams() || currentParams) : currentParams;
     const fit = fit4DofFromTargets(targets, {
         maxIter: 12,
-        tweakIds: Array.from(SOLVE_TWEAK_IDS),
+        tweakIds: opts.tweakIds || Array.from(SOLVE_TWEAK_IDS),
         baseParams: { ...baseParams },
     });
     if (fit === null || fit === void 0 ? void 0 : fit.raw) {
@@ -1027,6 +1214,123 @@ function solveTargets(targets, opts = {}) {
             scheduleRender();
         }
     }
+}
+function solveTargetsMeasured(targets, opts = {}) {
+    const useWhatIf = Boolean(opts.useWhatIf && isWhatIfEnabled());
+    const baseParams = useWhatIf ? (getWhatIfParams() || currentParams) : currentParams;
+    const constrainedBase = { ...baseParams };
+    if (Number.isFinite(targets.mass_top)) {
+        constrainedBase.mass_top = clampToBounds("mass_top", targets.mass_top);
+    }
+    if (Number.isFinite(targets.stiffness_top)) {
+        constrainedBase.stiffness_top = clampToBounds("stiffness_top", targets.stiffness_top);
+    }
+    const tweakIds = ["stiffness_back", "volume_air", "area_hole"];
+    if (!Number.isFinite(targets.stiffness_top))
+        tweakIds.push("stiffness_top");
+    const fit = fit4DofFromTargets(targets, {
+        maxIter: 14,
+        tweakIds,
+        baseParams: constrainedBase,
+    });
+    if (fit === null || fit === void 0 ? void 0 : fit.raw) {
+        if (useWhatIf) {
+            applyWhatIfParams(fit.raw);
+        }
+        else {
+            currentParams = { ...currentParams, ...fit.raw };
+            syncCardInputs();
+            scheduleRender();
+        }
+    }
+}
+function fitTargetFromInput(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element)
+        return null;
+    const value = parseFloat(element.value);
+    return Number.isFinite(value) ? value : null;
+}
+function fitTargetsFromInputs() {
+    const massTopDisplay = fitTargetFromInput("fit_target_mass_top");
+    return {
+        air: fitTargetFromInput("fit_target_air"),
+        top: fitTargetFromInput("fit_target_top"),
+        back: fitTargetFromInput("fit_target_back"),
+        mass_top: Number.isFinite(massTopDisplay) ? displayToInternal("mass_top", massTopDisplay) : null,
+        stiffness_top: fitTargetFromInput("fit_target_stiffness_top"),
+    };
+}
+function fitStatusSet(message) {
+    const status = document.getElementById("fit_status");
+    if (!status)
+        return;
+    status.textContent = message;
+}
+function bindFitMyGuitarActions() {
+    const fitButton = document.getElementById("btn_fit_guitar");
+    const fitFastButton = document.getElementById("btn_fit_guitar_fast");
+    const fitMeasuredButton = document.getElementById("btn_fit_guitar_measured");
+    const clearButton = document.getElementById("btn_fit_clear");
+    if (!fitButton || !fitFastButton || !fitMeasuredButton || !clearButton)
+        return;
+    fitButton.addEventListener("click", () => {
+        const targets = fitTargetsFromInputs();
+        const hasTarget = MODE_KEYS.some((mode) => Number.isFinite(targets[mode]))
+            || Number.isFinite(targets.mass_top)
+            || Number.isFinite(targets.stiffness_top);
+        if (!hasTarget) {
+            fitStatusSet("Enter at least one target frequency.");
+            return;
+        }
+        const tweakIds = Array.from(SOLVE_TWEAK_IDS);
+        if (Number.isFinite(targets.mass_top))
+            tweakIds.push("mass_top");
+        solveTargets(targets, {
+            useWhatIf: isWhatIfEnabled(),
+            tweakIds,
+        });
+        fitStatusSet("Fit applied.");
+    });
+    fitFastButton.addEventListener("click", () => {
+        const targets = fitTargetsFromInputs();
+        const hasFrequencyTarget = MODE_KEYS.some((mode) => Number.isFinite(targets[mode]));
+        if (!hasFrequencyTarget) {
+            fitStatusSet("Fit 2 needs at least one Air/Top/Back target.");
+            return;
+        }
+        solveTargetsFast(targets, {
+            useWhatIf: isWhatIfEnabled(),
+        });
+        fitStatusSet("Fit 2 applied (fast).");
+    });
+    fitMeasuredButton.addEventListener("click", () => {
+        const targets = fitTargetsFromInputs();
+        const hasFrequencyTarget = MODE_KEYS.some((mode) => Number.isFinite(targets[mode]));
+        if (!hasFrequencyTarget) {
+            fitStatusSet("Fit 3 needs at least one Air/Top/Back target.");
+            return;
+        }
+        solveTargetsMeasured(targets, {
+            useWhatIf: isWhatIfEnabled(),
+        });
+        fitStatusSet("Fit 3 applied (measured-constrained).");
+    });
+    clearButton.addEventListener("click", () => {
+        [
+            "fit_target_air",
+            "fit_target_top",
+            "fit_target_back",
+            "fit_target_mass_top",
+            "fit_target_stiffness_top",
+        ].forEach((elementId) => {
+            const input = document.getElementById(elementId);
+            if (!input)
+                return;
+            input.value = "";
+        });
+        fitStatusSet("");
+    });
 }
 function solveTargetsFast(targets, opts = {}) {
     const useWhatIf = Boolean(opts.useWhatIf && isWhatIfEnabled());
@@ -1153,6 +1457,10 @@ function bindPlotInteractions(plotEl) {
         return;
     plotListenersBound = true;
     plotEl.on("plotly_relayout", () => updateThumbs());
+    plotEl.on("plotly_restyle", () => syncTraceVisibilityStateFromPlot(plotEl));
+    plotEl.on("plotly_legendclick", () => {
+        requestAnimationFrame(() => syncTraceVisibilityStateFromPlot(plotEl));
+    });
     window.addEventListener("resize", () => updateThumbs());
     window.addEventListener("pointermove", handleThumbPointerMove);
     window.addEventListener("pointerup", handleThumbPointerUp);
@@ -1175,36 +1483,43 @@ function renderPlot() {
         updateThumbs(null);
         return;
     }
+    const colors = plotThemeColors();
     const traces = [];
-    const totalTrace = toTrace(response.total, "Current", "#5fa8ff", { width: 3 });
+    const totalTrace = toTrace(response.total, "Current", colors.current, { width: 3 });
+    applyTraceVisibility(totalTrace, "Current");
     if (totalTrace)
         traces.push(totalTrace);
-    const topTrace = toTrace(response.top, "Top", "#f5c46f", { width: 1.5, dash: "dot" });
-    const airTrace = toTrace(response.air, "Air", "#8ecbff", { width: 1.5, dash: "dot" });
-    const backTrace = toTrace(response.back, "Back", "#7ce3b1", { width: 1.5, dash: "dot" });
-    const sidesTrace = toTrace(response.sides, "Sides", "#b4a5ff", { width: 1, dash: "dot" });
+    if ((_a = whatIfResponse === null || whatIfResponse === void 0 ? void 0 : whatIfResponse.total) === null || _a === void 0 ? void 0 : _a.length) {
+        const targetTrace = toTrace(whatIfResponse.total, "Target", colors.whatIf, { width: 2.5, dash: "dash" });
+        applyTraceVisibility(targetTrace, "Target");
+        if (targetTrace)
+            traces.push(targetTrace);
+    }
+    const topTrace = toTrace(response.top, "Top", colors.top, { width: 1.5, dash: "dot" });
+    const airTrace = toTrace(response.air, "Air", colors.air, { width: 1.5, dash: "dot" });
+    const backTrace = toTrace(response.back, "Back", colors.back, { width: 1.5, dash: "dot" });
+    const sidesTrace = toTrace(response.sides, "Sides", colors.sides, { width: 1, dash: "dot" });
+    applyTraceVisibility(topTrace, "Top");
+    applyTraceVisibility(airTrace, "Air");
+    applyTraceVisibility(backTrace, "Back");
+    applyTraceVisibility(sidesTrace, "Sides");
     [topTrace, airTrace, backTrace, sidesTrace].forEach((t) => { if (t)
         traces.push(t); });
-    if ((_a = whatIfResponse === null || whatIfResponse === void 0 ? void 0 : whatIfResponse.total) === null || _a === void 0 ? void 0 : _a.length) {
-        const whatIfTrace = toTrace(whatIfResponse.total, "What-If", "rgba(245,196,111,0.9)", { width: 2.5, dash: "dash" });
-        if (whatIfTrace)
-            traces.push(whatIfTrace);
-    }
     const xRange = [50, 300];
     const layout = {
         margin: { l: 40, r: 20, t: 20, b: 50 },
         paper_bgcolor: "transparent",
         plot_bgcolor: "transparent",
-        font: { color: "#eef2ff" },
+        font: { color: colors.ink },
         xaxis: {
             title: "Frequency (Hz)",
             range: xRange,
-            gridcolor: "rgba(255,255,255,0.08)",
+            gridcolor: colors.grid,
             zeroline: false,
         },
         yaxis: {
             title: "Level (dB)",
-            gridcolor: "rgba(255,255,255,0.08)",
+            gridcolor: colors.grid,
             autorange: false,
             zeroline: false,
         },
@@ -1218,6 +1533,7 @@ function renderPlot() {
         return;
     plotly.react(plotEl, traces, layout, { displayModeBar: true, displaylogo: false })
         .then(() => {
+        syncTraceVisibilityStateFromPlot(plotEl);
         bindPlotInteractions(plotEl);
         updateThumbs(response);
     })
@@ -1241,6 +1557,7 @@ function init() {
             currentOrder = fromUrl.model_order;
     }
     bindTabs();
+    bindFitMyGuitarActions();
     buildCards();
     setOrder(currentOrder);
     if (fromUrl)
@@ -1252,9 +1569,11 @@ function init() {
             document.body.classList.toggle("whatif-mode", overlayToggle.checked);
             if (!overlayToggle.checked)
                 resetWhatIf();
+            refreshOverlayVisuals();
             scheduleRender();
         });
         document.body.classList.toggle("whatif-mode", overlayToggle.checked);
+        refreshOverlayVisuals();
     }
 }
 if (document.readyState === "loading") {
