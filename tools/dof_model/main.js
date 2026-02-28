@@ -114,6 +114,13 @@ const TRACE_DEFAULT_VISIBLE = {
     Back: false,
     Sides: false,
 };
+const TARGET_OVERLAY = {
+    min: 85,
+    max: 260,
+    feather: 60,
+    widths: { thin: 1.0, mid: 2.0, thick: 3.0 },
+    opacities: { thin: 0.25, mid: 0.8, thick: 0.9 },
+};
 const FIT_BOUNDS = {
     area_hole: { min: 0.003, max: 0.01 },
     volume_air: { min: 0.01, max: 0.025 },
@@ -216,11 +223,19 @@ function syncTraceVisibilityStateFromPlot(plotEl) {
     const traces = plotEl.data;
     if (!Array.isArray(traces))
         return;
+    const nextState = {};
     traces.forEach((trace) => {
+        var _a;
         const name = trace === null || trace === void 0 ? void 0 : trace.name;
         if (!isTraceName(name))
             return;
-        traceVisibilityState[name] = trace.visible === undefined || trace.visible === true;
+        const isVisible = trace.visible === undefined || trace.visible === true;
+        nextState[name] = ((_a = nextState[name]) !== null && _a !== void 0 ? _a : false) || isVisible;
+    });
+    Object.keys(nextState).forEach((name) => {
+        if (!isTraceName(name))
+            return;
+        traceVisibilityState[name] = Boolean(nextState[name]);
     });
 }
 function tokenColor(token, fallbackToken = "--ink") {
@@ -690,10 +705,43 @@ function scheduleRender() {
         cancelAnimationFrame(pendingRender);
     pendingRender = requestAnimationFrame(() => {
         pendingRender = null;
-        renderPlot();
+        dofRenderExecute();
     });
 }
-function computeResponseSafe(params) {
+function dofPipelineEnabledRead() {
+    return Boolean(window.DofPipelineEnabled);
+}
+function dofPipelineEmitBuild() {
+    return (event) => {
+        console.info("[DOF Pipeline]", event.eventType, event.stageId || "-", event.payload || {});
+    };
+}
+function dofPipelineRunnerRead() {
+    return window.DofPipelineRunner;
+}
+function dofRenderExecute() {
+    if (!dofPipelineEnabledRead()) {
+        renderPlot();
+        return;
+    }
+    const runner = dofPipelineRunnerRead();
+    if (!(runner === null || runner === void 0 ? void 0 : runner.run)) {
+        renderPlot();
+        return;
+    }
+    void runner.run({ trigger: "render.schedule" }, { useStageList: true, stages: ["refresh"] }, dofPipelineEmitBuild());
+}
+function sharedDofSolverAdapterRead() {
+    const adapter = window.dof_solver_adapter;
+    if (!adapter)
+        return null;
+    const adapt = adapter.adaptParamsToSolver;
+    const compute = adapter.computeResponseSafe;
+    if (typeof adapt !== "function" || typeof compute !== "function")
+        return null;
+    return { adaptParamsToSolver: adapt, computeResponseSafe: compute };
+}
+function computeResponseSafeLegacy(params) {
     var _a;
     try {
         const fn = window.computeResponse || ((_a = window.ModelCore) === null || _a === void 0 ? void 0 : _a.computeResponse);
@@ -705,7 +753,7 @@ function computeResponseSafe(params) {
     }
     return null;
 }
-function adaptParamsToSolver(raw) {
+function adaptParamsToSolverLegacy(raw) {
     var _a;
     const out = { ...raw };
     const AtmosphereLib = window.Atmosphere;
@@ -727,6 +775,25 @@ function adaptParamsToSolver(raw) {
         out._atm = atm;
     }
     return out;
+}
+function computeResponseSafe(params) {
+    const sharedAdapter = sharedDofSolverAdapterRead();
+    if (sharedAdapter)
+        return sharedAdapter.computeResponseSafe(params);
+    return computeResponseSafeLegacy(params);
+}
+function adaptParamsToSolver(raw) {
+    const sharedAdapter = sharedDofSolverAdapterRead();
+    if (sharedAdapter)
+        return sharedAdapter.adaptParamsToSolver(raw);
+    return adaptParamsToSolverLegacy(raw);
+}
+function sharedSeriesSamplerRead() {
+    const sampler = window.series_sampling;
+    const sample = sampler === null || sampler === void 0 ? void 0 : sampler.seriesValueSampleAtFrequency;
+    if (typeof sample !== "function")
+        return null;
+    return { seriesValueSampleAtFrequency: sample };
 }
 function clampToBounds(id, value) {
     const bounds = FIT_BOUNDS[id];
@@ -912,7 +979,7 @@ function modelPeaksFromResponse(resp) {
     };
     return assignPeaksToModes(totalPeaks, targets);
 }
-function sampleSeriesAtFreq(series, freq) {
+function sampleSeriesAtFreqLegacy(series, freq) {
     if (!Array.isArray(series) || !series.length || !Number.isFinite(freq))
         return null;
     let i = 0;
@@ -926,6 +993,12 @@ function sampleSeriesAtFreq(series, freq) {
         return a.y;
     const t = (freq - a.x) / (b.x - a.x);
     return a.y + t * (b.y - a.y);
+}
+function sampleSeriesAtFreq(series, freq) {
+    const sharedSampler = sharedSeriesSamplerRead();
+    if (sharedSampler)
+        return sharedSampler.seriesValueSampleAtFrequency(series, freq);
+    return sampleSeriesAtFreqLegacy(series, freq);
 }
 function fit4DofFromTargets(targets, opts = {}) {
     var _a, _b;
@@ -1048,6 +1121,68 @@ function toTrace(points, name, color, opts = {}) {
         line: { color, ...(opts || {}) },
         hovertemplate: "%{x:.1f} Hz · %{y:.1f} dB<extra>" + name + "</extra>"
     };
+}
+function buildTargetOverlaySegments(points) {
+    const shared = window.overlay_segments;
+    const buildShared = shared === null || shared === void 0 ? void 0 : shared.overlaySegmentsBuildFromPoints;
+    if (typeof buildShared === "function") {
+        return buildShared(points, TARGET_OVERLAY);
+    }
+    const { min, max, feather, widths, opacities } = TARGET_OVERLAY;
+    const pickBucket = (weight) => {
+        if (weight > 0.66)
+            return { width: widths.thick, opacity: opacities.thick };
+        if (weight > 0.33)
+            return { width: widths.mid, opacity: opacities.mid };
+        return { width: widths.thin, opacity: opacities.thin };
+    };
+    const segments = [];
+    let current = null;
+    points.forEach((point) => {
+        const frequency = point === null || point === void 0 ? void 0 : point.x;
+        const level = point === null || point === void 0 ? void 0 : point.y;
+        if (!Number.isFinite(frequency) || !Number.isFinite(level)) {
+            current = null;
+            return;
+        }
+        let weight = 0;
+        if (frequency >= min && frequency <= max)
+            weight = 1;
+        else if (frequency >= min - feather && frequency < min)
+            weight = 1 - (min - frequency) / feather;
+        else if (frequency > max && frequency <= max + feather)
+            weight = 1 - (frequency - max) / feather;
+        if (weight <= 0) {
+            current = null;
+            return;
+        }
+        const bucket = pickBucket(weight);
+        const isSameBucket = current && current.width === bucket.width && current.opacity === bucket.opacity;
+        if (!isSameBucket) {
+            current = { x: [], y: [], width: bucket.width, opacity: bucket.opacity };
+            segments.push(current);
+        }
+        current.x.push(frequency);
+        current.y.push(level);
+    });
+    return segments;
+}
+function buildTargetOverlayTraces(points, color) {
+    const segments = buildTargetOverlaySegments(points);
+    return segments.map((segment, index) => ({
+        x: segment.x,
+        y: segment.y,
+        mode: "lines",
+        name: "Target",
+        legendgroup: "target",
+        showlegend: index === 0,
+        line: {
+            color: colorWithAlpha(color, segment.opacity),
+            width: segment.width,
+            dash: "dash",
+        },
+        hovertemplate: "%{x:.1f} Hz · %{y:.1f} dB<extra>Target</extra>",
+    }));
 }
 function computeYRange(series, pad = 6, minX, maxX) {
     if (!Array.isArray(series) || !series.length)
@@ -1490,10 +1625,11 @@ function renderPlot() {
     if (totalTrace)
         traces.push(totalTrace);
     if ((_a = whatIfResponse === null || whatIfResponse === void 0 ? void 0 : whatIfResponse.total) === null || _a === void 0 ? void 0 : _a.length) {
-        const targetTrace = toTrace(whatIfResponse.total, "Target", colors.whatIf, { width: 2.5, dash: "dash" });
-        applyTraceVisibility(targetTrace, "Target");
-        if (targetTrace)
-            traces.push(targetTrace);
+        const targetTraces = buildTargetOverlayTraces(whatIfResponse.total, colors.whatIf);
+        targetTraces.forEach((trace) => {
+            applyTraceVisibility(trace, "Target");
+            traces.push(trace);
+        });
     }
     const topTrace = toTrace(response.top, "Top", colors.top, { width: 1.5, dash: "dot" });
     const airTrace = toTrace(response.air, "Air", colors.air, { width: 1.5, dash: "dot" });
@@ -1549,6 +1685,63 @@ function bindTabs() {
         });
     });
 }
+function dofPipelineRunnerExpose() {
+    var _a;
+    const sharedRunner = (_a = window.dof_pipeline_runner) === null || _a === void 0 ? void 0 : _a.dofPipelineRunnerRun;
+    window.DofPipelineRunner = {
+        run: (input, config, emit) => {
+            if (typeof sharedRunner === "function") {
+                return sharedRunner(input || {}, config || {}, emit, {
+                    refresh: async () => {
+                        renderPlot();
+                    },
+                });
+            }
+            return dofPipelineFallbackRun(input || {}, config || {}, emit);
+        },
+    };
+}
+function dofPipelineFallbackRun(input, config, emit) {
+    const runId = `dof_fallback_${Date.now()}`;
+    dofPipelineFallbackStartedEmit(emit, runId, input, config);
+    dofPipelineFallbackRefreshStartedEmit(emit, runId);
+    renderPlot();
+    dofPipelineFallbackRefreshCompletedEmit(emit, runId);
+    dofPipelineFallbackCompletedEmit(emit, runId, (input === null || input === void 0 ? void 0 : input.trigger) || null);
+    return Promise.resolve();
+}
+function dofPipelineFallbackStartedEmit(emit, runId, input, config) {
+    emit === null || emit === void 0 ? void 0 : emit({
+        eventType: "pipeline.started",
+        stageId: undefined,
+        payload: { input, config },
+        runId,
+    });
+}
+function dofPipelineFallbackRefreshStartedEmit(emit, runId) {
+    emit === null || emit === void 0 ? void 0 : emit({
+        eventType: "stage.started",
+        stageId: "refresh",
+        payload: { stage: "refresh" },
+        runId,
+    });
+}
+function dofPipelineFallbackRefreshCompletedEmit(emit, runId) {
+    emit === null || emit === void 0 ? void 0 : emit({
+        eventType: "stage.completed",
+        stageId: "refresh",
+        payload: { stage: "refresh" },
+        runId,
+    });
+}
+function dofPipelineFallbackCompletedEmit(emit, runId, trigger) {
+    emit === null || emit === void 0 ? void 0 : emit({
+        eventType: "pipeline.completed",
+        stageId: undefined,
+        payload: { summary: { trigger } },
+        runId,
+    });
+}
 function init() {
     const fromUrl = dofParamsFromLocation();
     if (fromUrl) {
@@ -1560,6 +1753,7 @@ function init() {
     bindFitMyGuitarActions();
     buildCards();
     setOrder(currentOrder);
+    dofPipelineRunnerExpose();
     if (fromUrl)
         syncCardInputs();
     scheduleRender();
