@@ -1,4 +1,4 @@
-(function attachSiteMenus(global) {
+(function attachSiteMenus() {
   function menuConfigUrlResolve(panel) {
     return panel.getAttribute("data-menu-config") || "../common/site_menu.json";
   }
@@ -8,7 +8,7 @@
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) return null;
       return await response.json();
-    } catch (_error) {
+    } catch {
       return null;
     }
   }
