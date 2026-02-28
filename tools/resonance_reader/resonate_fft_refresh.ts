@@ -7,8 +7,18 @@ import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js";
 import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js";
 import { emitArtifactEventFromState } from "./resonate_artifact_emit.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
+import { resonanceSpectrumSmoothingEnabled, resonanceSpectrumSmoothingHzResolve } from "./resonate_debug_flags.js";
 
 const FFT_SMOOTH_HZ = 0.05;
+
+function spectrumMaybeSmooth(
+  analysis: AnalysisBoundary,
+  freqsRaw: number[],
+  magsRaw: number[],
+) {
+  if (!resonanceSpectrumSmoothingEnabled()) return magsRaw;
+  return analysis.smoothSpectrumFast(freqsRaw, magsRaw, resonanceSpectrumSmoothingHzResolve(FFT_SMOOTH_HZ));
+}
 
 export async function refreshFftFromState(deps: {
   state: Record<string, any>;
@@ -38,7 +48,7 @@ export async function refreshFftFromState(deps: {
   });
   const freqsRaw = Array.from(spectrum.freqs || [], (v) => Number(v));
   const magsRaw = Array.from(spectrum.mags || [], (v) => Number(v));
-  const magsSmoothed = analysis.smoothSpectrumFast(freqsRaw, magsRaw, FFT_SMOOTH_HZ);
+  const magsSmoothed = spectrumMaybeSmooth(analysis, freqsRaw, magsRaw);
   const withDb = (window as any).FFTPlot.applyDb({ freqs: freqsRaw, mags: magsSmoothed });
   deps.state.lastSpectrum = withDb;
   deps.state.lastSpectrumNoteSelection = await secondarySpectrumBuildFromNoteSelectionRange({
@@ -108,7 +118,7 @@ async function secondarySpectrumBuildFromNoteSelectionRange(args: {
   });
   const freqsRaw = Array.from(spectrum.freqs || [], (v) => Number(v));
   const magsRaw = Array.from(spectrum.mags || [], (v) => Number(v));
-  const magsSmoothed = args.analysis.smoothSpectrumFast(freqsRaw, magsRaw, FFT_SMOOTH_HZ);
+  const magsSmoothed = spectrumMaybeSmooth(args.analysis, freqsRaw, magsRaw);
   const withDb = (window as any).FFTPlot.applyDb({ freqs: freqsRaw, mags: magsSmoothed });
   return {
     freqs: Array.from(withDb.freqs || [], (v: number) => Number(v)),

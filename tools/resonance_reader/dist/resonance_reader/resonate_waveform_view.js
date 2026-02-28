@@ -1,6 +1,7 @@
 import { waveformLabelResolveFromContext } from "./resonate_waveform_label.js";
 import { noteWindowRangeBuildFromSlice, noteWindowSliceFindByTime, noteSelectionWindowRequestedFromPlotlyClick, } from "./resonate_note_window_selection.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
+import { measureModeNormalize } from "./resonate_mode_config.js";
 let waveUpdatingShapes = false;
 const TAP_CLUSTER_GAP_MS = 950;
 const NOTE_CLUSTER_GAP_MS = 2600;
@@ -11,6 +12,7 @@ const FALLBACK_WINDOW_MAX_MS = 3000;
 const FALLBACK_WINDOW_RATIO = 0.22;
 const RANGE_DRAG_EDGE_TOLERANCE_PX = 10;
 const RANGE_DRAG_MIN_WIDTH_MS = 80;
+const NOTE_EDITOR_POPOVER_ID = "wave_note_override_editor";
 function waveRangeFingerprint(range) {
     if (!range)
         return "none";
@@ -161,6 +163,31 @@ function noteLabelFromFreq(freq) {
         return null;
     }
 }
+export function noteLabelOverridesGetOrInit(state) {
+    return (state.noteLabelOverrides || (state.noteLabelOverrides = {}));
+}
+export function noteLabelOverrideSet(state, noteSliceId, label) {
+    const normalized = noteLabelOverrideNormalized(label);
+    if (!normalized)
+        return;
+    const overrides = noteLabelOverridesGetOrInit(state);
+    overrides[noteSliceId] = normalized;
+}
+export function noteLabelOverrideReset(state, noteSliceId) {
+    const overrides = noteLabelOverridesGetOrInit(state);
+    delete overrides[noteSliceId];
+}
+function noteLabelOverrideResolveFromState(state, noteSliceId) {
+    if (!Number.isFinite(noteSliceId))
+        return null;
+    const overrides = noteLabelOverridesGetOrInit(state);
+    const value = overrides[noteSliceId];
+    return typeof value === "string" && value.length ? value : null;
+}
+function noteLabelOverrideNormalized(rawLabel) {
+    const compact = String(rawLabel || "").trim().replace(/\s+/g, "");
+    return compact ? compact.toUpperCase() : "";
+}
 function resolveWaveLabelFromContext(f0, noteSlice, deps) {
     return waveformLabelResolveFromContext({
         f0,
@@ -177,11 +204,17 @@ function resolveWaveLabelFromContext(f0, noteSlice, deps) {
         noteNameResolve: (freq) => noteLabelFromFreq(freq),
     });
 }
+function resolveWaveLabelFromStateOrContext(noteSlice, detectedF0, deps) {
+    const override = noteLabelOverrideResolveFromState(deps.state, noteSlice?.id);
+    if (override)
+        return override;
+    return resolveWaveLabelFromContext(detectedF0, noteSlice, deps);
+}
 function buildWaveAnnotations(noteSlices, noteResults, deps) {
     const annotations = [];
     noteSlices.forEach((note) => {
         const result = noteResults.find((n) => n.id === note.id);
-        const label = resolveWaveLabelFromContext(result?.f0 ?? null, note, deps);
+        const label = resolveWaveLabelFromStateOrContext(note, result?.f0 ?? null, deps);
         if (!label)
             return;
         const mid = (note.startMs + note.endMs) / 2;
@@ -193,17 +226,23 @@ function buildWaveAnnotations(noteSlices, noteResults, deps) {
             text: label,
             showarrow: false,
             font: { color: "rgba(255,255,255,0.7)", size: 11 },
+            noteSliceId: note.id,
         });
     });
     return annotations;
 }
-function buildWaveShapes(sampleRate, primaryRange, noteSelectionRange, tapSegments, noteSlices) {
+function buildWaveShapes(sampleRate, primaryRange, noteSelectionRange, tapSegments, noteSlices, measureMode) {
     const shapes = [];
     shapes.push(...buildNoteSliceShapes(noteSlices || [], primaryRange));
     shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate));
-    shapes.push(...buildNoteSelectionShapes(noteSelectionRange));
+    if (noteSelectionRangeVisibleForMeasureMode(measureMode)) {
+        shapes.push(...buildNoteSelectionShapes(noteSelectionRange));
+    }
     shapes.push(...buildSelectionShapes(primaryRange));
     return shapes;
+}
+export function noteSelectionRangeVisibleForMeasureMode(measureMode) {
+    return measureModeNormalize(measureMode) === "played_note";
 }
 function renderWaveSelection(primaryRange, noteSelectionRange, deps, slice) {
     const plot = document.getElementById("plot_waveform");
@@ -212,11 +251,21 @@ function renderWaveSelection(primaryRange, noteSelectionRange, deps, slice) {
     const Plotly = window.Plotly;
     if (!Plotly)
         return;
-    const shapes = buildWaveShapes(slice.sampleRate, primaryRange, noteSelectionRange, deps.state.tapSegments, deps.state.noteSlices);
+    const shapes = buildWaveShapes(slice.sampleRate, primaryRange, noteSelectionRange, deps.state.tapSegments, deps.state.noteSlices, deps.state.measureMode);
     waveUpdatingShapes = true;
     Promise.resolve(Plotly.relayout(plot, { shapes })).finally(() => {
         waveUpdatingShapes = false;
     });
+}
+function renderWaveAnnotations(deps, slice) {
+    const plot = document.getElementById("plot_waveform");
+    if (!plot)
+        return;
+    const Plotly = window.Plotly;
+    if (!Plotly)
+        return;
+    const annotations = buildWaveAnnotations(deps.state.noteSlices || [], deps.state.noteResults || [], deps);
+    void Plotly.relayout(plot, { annotations });
 }
 function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectionRangeChange) {
     const plot = document.getElementById("plot_waveform");
@@ -261,7 +310,7 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
             showticklabels: false,
             fixedrange: true,
         },
-        shapes: buildWaveShapes(slice.sampleRate, deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps.state.tapSegments, deps.state.noteSlices),
+        shapes: buildWaveShapes(slice.sampleRate, deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps.state.tapSegments, deps.state.noteSlices, deps.state.measureMode),
         annotations: buildWaveAnnotations(deps.state.noteSlices || [], deps.state.noteResults || [], deps),
     };
     Plotly.newPlot(plot, [trace], layout, {
@@ -275,7 +324,10 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
     if (typeof plot.removeAllListeners === "function") {
         plot.removeAllListeners("plotly_relayout");
         plot.removeAllListeners("plotly_click");
+        plot.removeAllListeners("plotly_clickannotation");
     }
+    bindWaveNoteOverrideDismissInteractions(plot);
+    bindWaveNoteOverrideModifierClickInteractions(plot, deps, slice);
     plot.on("plotly_click", (ev) => {
         if (plot.__resonateSuppressClick) {
             plot.__resonateSuppressClick = false;
@@ -289,6 +341,10 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
             return;
         const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], x);
         if (note) {
+            if (waveNoteOverrideRequestedFromClickEvent(ev?.event)) {
+                openWaveNoteOverrideEditorFromSlice(note.id, x, deps, slice);
+                return;
+            }
             const range = noteWindowRangeBuildFromSlice(note);
             if (noteSelectionWindowRequestedFromPlotlyClick(ev)) {
                 deps.state.noteSelectionRangeMs = range;
@@ -315,6 +371,15 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
         deps.state.viewRangeMs = range;
         renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
         onPrimaryRangeChange?.(range);
+    });
+    plot.on("plotly_clickannotation", (ev) => {
+        const anchorMs = Number(ev?.annotation?.x);
+        if (!Number.isFinite(anchorMs))
+            return;
+        const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], anchorMs);
+        if (!note)
+            return;
+        openWaveNoteOverrideEditorFromSlice(note.id, anchorMs, deps, slice);
     });
     plot.on("plotly_relayout", (ev) => {
         if (waveUpdatingShapes)
@@ -355,6 +420,234 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
     bindNoteSelectionResizeModifierTracking(plot);
     bindRangeDirectDragInteractions(plot, deps, slice, onPrimaryRangeChange, onNoteSelectionRangeChange);
 }
+function openWaveNoteOverrideEditorFromSlice(noteSliceId, anchorMs, deps, slice) {
+    const noteSlice = (deps.state.noteSlices || []).find((entry) => entry.id === noteSliceId);
+    if (!noteSlice)
+        return;
+    const detectedLabel = waveDetectedLabelResolveForNoteSlice(noteSlice, deps);
+    if (!detectedLabel || detectedLabel === "Tap") {
+        deps.setStatus("Tap labels are automatic; note override is available on note slices.");
+        return;
+    }
+    const plot = document.getElementById("plot_waveform");
+    if (!(plot instanceof HTMLElement))
+        return;
+    const editor = waveNoteOverrideEditorGetOrCreate(plot);
+    const header = editor.querySelector("[data-wave-note-detected]");
+    const quick = editor.querySelector("[data-wave-note-quick]");
+    const input = editor.querySelector("[data-wave-note-input]");
+    const applyBtn = editor.querySelector("[data-wave-note-apply]");
+    const clearBtn = editor.querySelector("[data-wave-note-clear]");
+    const closeBtn = editor.querySelector("[data-wave-note-close]");
+    if (!header || !quick || !input || !applyBtn || !clearBtn || !closeBtn)
+        return;
+    const currentOverride = noteLabelOverrideResolveFromState(deps.state, noteSliceId);
+    header.textContent = `Detected: ${detectedLabel}`;
+    input.value = currentOverride || detectedLabel;
+    waveNoteQuickChoicesRender(quick, detectedLabel, input);
+    const apply = () => {
+        const normalized = noteLabelOverrideNormalized(input.value);
+        if (normalized)
+            noteLabelOverrideSet(deps.state, noteSliceId, normalized);
+        else
+            noteLabelOverrideReset(deps.state, noteSliceId);
+        renderWaveAnnotations(deps, slice);
+        waveNoteOverrideEditorHide(plot);
+    };
+    const clear = () => {
+        noteLabelOverrideReset(deps.state, noteSliceId);
+        renderWaveAnnotations(deps, slice);
+        waveNoteOverrideEditorHide(plot);
+    };
+    applyBtn.onclick = apply;
+    clearBtn.onclick = clear;
+    closeBtn.onclick = () => waveNoteOverrideEditorHide(plot);
+    input.onkeydown = (event) => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            apply();
+            return;
+        }
+        if (event.key === "Escape") {
+            event.preventDefault();
+            waveNoteOverrideEditorHide(plot);
+        }
+    };
+    waveNoteOverrideEditorPosition(plot, editor, anchorMs);
+    editor.hidden = false;
+    input.focus();
+    input.select();
+}
+function waveDetectedLabelResolveForNoteSlice(noteSlice, deps) {
+    const result = (deps.state.noteResults || []).find((entry) => entry.id === noteSlice.id);
+    return resolveWaveLabelFromContext(result?.f0 ?? null, noteSlice, deps);
+}
+function waveNoteOverrideEditorGetOrCreate(plot) {
+    const existing = document.getElementById(NOTE_EDITOR_POPOVER_ID);
+    if (existing)
+        return existing;
+    const host = plot.closest(".wave-surface") || plot.parentElement || plot;
+    const editor = document.createElement("div");
+    editor.id = NOTE_EDITOR_POPOVER_ID;
+    editor.className = "wave-note-override-popover";
+    editor.hidden = true;
+    editor.innerHTML = [
+        '<div class="wave-note-override-header">',
+        '  <span data-wave-note-detected>Detected:</span>',
+        '  <button type="button" class="ghost-btn btn-small" data-wave-note-close>Close</button>',
+        "</div>",
+        '<div class="wave-note-override-row" data-wave-note-quick></div>',
+        '<div class="wave-note-override-row">',
+        '  <input type="text" class="wave-note-override-input" data-wave-note-input placeholder="Type note (e.g. E4)" />',
+        "</div>",
+        '<div class="wave-note-override-actions">',
+        '  <button type="button" class="ghost-btn btn-small" data-wave-note-clear>Clear</button>',
+        '  <button type="button" class="ghost-btn btn-small" data-wave-note-apply>Apply</button>',
+        "</div>",
+    ].join("");
+    host.appendChild(editor);
+    return editor;
+}
+function waveNoteOverrideEditorHide(plot) {
+    const editor = document.getElementById(NOTE_EDITOR_POPOVER_ID);
+    if (!editor)
+        return;
+    if (!plot.closest(".wave-surface")?.contains(editor))
+        return;
+    editor.hidden = true;
+}
+function bindWaveNoteOverrideDismissInteractions(plot) {
+    const anyPlot = plot;
+    if (anyPlot.__resonateWaveNoteOverrideDismissBound)
+        return;
+    const onPointerDown = (event) => {
+        const editor = document.getElementById(NOTE_EDITOR_POPOVER_ID);
+        if (!editor || editor.hidden)
+            return;
+        const target = event.target;
+        if (!target)
+            return;
+        if (editor.contains(target))
+            return;
+        if (plot.contains(target))
+            return;
+        waveNoteOverrideEditorHide(plot);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    anyPlot.__resonateWaveNoteOverrideDismissBound = true;
+}
+function bindWaveNoteOverrideModifierClickInteractions(plot, deps, slice) {
+    const anyPlot = plot;
+    if (anyPlot.__resonateWaveNoteOverrideModifierClickBound)
+        return;
+    const onMouseDown = (event) => {
+        if (!waveNoteOverrideRequestedFromClickEvent(event))
+            return;
+        const cursorMs = waveformMsAtPointerResolve(plot, event);
+        if (!Number.isFinite(cursorMs))
+            return;
+        const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], cursorMs);
+        if (!note)
+            return;
+        anyPlot.__resonateSuppressClick = true;
+        event.preventDefault();
+        event.stopPropagation();
+        openWaveNoteOverrideEditorFromSlice(note.id, cursorMs, deps, slice);
+    };
+    plot.addEventListener("mousedown", onMouseDown);
+    anyPlot.__resonateWaveNoteOverrideModifierClickBound = true;
+}
+function waveNoteOverrideEditorPosition(plot, editor, anchorMs) {
+    const axis = waveformAxisRangeResolve(plot);
+    if (!axis || !Number.isFinite(anchorMs)) {
+        editor.style.left = "24px";
+        editor.style.top = "16px";
+        return;
+    }
+    const ratio = clamp01((anchorMs - axis.min) / (axis.max - axis.min));
+    const anchorPx = axis.leftPx + ratio * axis.widthPx;
+    const leftPx = Math.max(12, Math.min(axis.leftPx + axis.widthPx - 280, anchorPx - 130));
+    editor.style.left = `${leftPx}px`;
+    editor.style.top = "16px";
+}
+function waveNoteQuickChoicesRender(host, detectedLabel, input) {
+    host.innerHTML = "";
+    const candidates = waveNoteQuickChoiceLabelsResolve(detectedLabel);
+    candidates.forEach((label) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "ghost-btn btn-small";
+        button.textContent = label;
+        button.onclick = () => {
+            input.value = label;
+            input.focus();
+            input.select();
+        };
+        host.appendChild(button);
+    });
+}
+export function waveNoteOverrideRequestedFromClickEvent(event) {
+    if (!event)
+        return false;
+    return Boolean(event.altKey || event.metaKey);
+}
+export function waveNoteQuickChoiceLabelsResolve(detectedLabel) {
+    const out = [];
+    const previous = waveNoteLabelTransposeBySemitone(detectedLabel, -1);
+    if (previous)
+        out.push(previous);
+    out.push(noteLabelOverrideNormalized(detectedLabel));
+    const next = waveNoteLabelTransposeBySemitone(detectedLabel, 1);
+    if (next)
+        out.push(next);
+    return Array.from(new Set(out));
+}
+function waveNoteLabelTransposeBySemitone(noteLabel, semitoneDelta) {
+    const pitch = waveNotePitchParse(noteLabel);
+    if (!pitch)
+        return null;
+    const absolute = pitch.octave * 12 + pitch.semitone + semitoneDelta;
+    const nextSemitone = ((absolute % 12) + 12) % 12;
+    const nextOctave = Math.floor((absolute - nextSemitone) / 12);
+    return `${waveSemitoneNameResolve(nextSemitone)}${nextOctave}`;
+}
+function waveNotePitchParse(noteLabel) {
+    const match = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(String(noteLabel || "").trim());
+    if (!match)
+        return null;
+    const letter = match[1].toUpperCase();
+    const accidental = match[2];
+    const octave = Number(match[3]);
+    if (!Number.isFinite(octave))
+        return null;
+    const base = waveNaturalSemitoneResolve(letter);
+    if (base === null)
+        return null;
+    const accidentalOffset = accidental === "#" ? 1 : accidental === "b" ? -1 : 0;
+    const semitone = ((base + accidentalOffset) % 12 + 12) % 12;
+    return { semitone, octave };
+}
+function waveNaturalSemitoneResolve(letter) {
+    if (letter === "C")
+        return 0;
+    if (letter === "D")
+        return 2;
+    if (letter === "E")
+        return 4;
+    if (letter === "F")
+        return 5;
+    if (letter === "G")
+        return 7;
+    if (letter === "A")
+        return 9;
+    if (letter === "B")
+        return 11;
+    return null;
+}
+function waveSemitoneNameResolve(semitone) {
+    const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    return names[((semitone % 12) + 12) % 12];
+}
 export function renderWaveform(slice, deps) {
     const handlers = waveformRangeHandlersBuild(deps);
     const autoPrimaryRange = primaryRangeAutoSelectFromState(slice, deps.state);
@@ -368,13 +661,52 @@ export function renderWaveform(slice, deps) {
     makeWaveNavigatorPlot(slice, deps, handlers.onPrimaryRangeChange, handlers.onNoteSelectionRangeChange);
 }
 export function noteSelectionRangeAutoSelectFromState(slice, state) {
-    if (state.noteSelectionRangeMs)
+    if (noteSelectionRangeShouldPreserveExistingFromState(slice, state))
         return null;
-    const noteSlices = Array.isArray(state.noteSlices) ? state.noteSlices : [];
+    const noteSlices = noteSlicesAfterPrimaryRangeResolve(noteSlicesAutoSelectionCandidatesResolve(state), state.viewRangeMs || null);
     if (!noteSlices.length)
         return fallbackRangeOnRightFromDuration(waveDurationMsResolve(state, slice));
     const range = largestContiguousRangeClusterBuild(noteSlices.map((entry) => ({ start: entry.startMs, end: entry.endMs })), NOTE_CLUSTER_GAP_MS);
     return range || fallbackRangeOnRightFromDuration(waveDurationMsResolve(state, slice));
+}
+function noteSelectionRangeShouldPreserveExistingFromState(slice, state) {
+    const existingRange = state.noteSelectionRangeMs;
+    if (!existingRange)
+        return false;
+    const fallbackRange = fallbackRangeOnRightFromDuration(waveDurationMsResolve(state, slice));
+    const existingLooksLikeFallback = rangeMatchesExactly(existingRange, fallbackRange);
+    if (!existingLooksLikeFallback)
+        return true;
+    const noteSlices = noteSlicesAutoSelectionCandidatesResolve(state);
+    return !noteSlices.length;
+}
+function noteSlicesAutoSelectionCandidatesResolve(state) {
+    const noteSlices = Array.isArray(state.noteSlices) ? state.noteSlices : [];
+    if (!noteSlices.length)
+        return [];
+    const noteResults = Array.isArray(state.noteResults) ? state.noteResults : [];
+    if (!noteResults.length)
+        return noteSlices;
+    const noteOnlySlices = noteSlices.filter((noteSlice) => !noteSliceClassifiedAsTap(noteSlice, noteResults, state));
+    return noteOnlySlices.length ? noteOnlySlices : noteSlices;
+}
+function noteSlicesAfterPrimaryRangeResolve(noteSlices, primaryRange) {
+    if (!primaryRange || !Number.isFinite(primaryRange.end))
+        return noteSlices;
+    const slicesAfterPrimaryRange = noteSlices.filter((slice) => Number(slice.startMs) >= Number(primaryRange.end));
+    return slicesAfterPrimaryRange.length ? slicesAfterPrimaryRange : noteSlices;
+}
+function noteSliceClassifiedAsTap(noteSlice, noteResults, state) {
+    const result = noteResults.find((entry) => entry.id === noteSlice.id);
+    const label = waveformLabelResolveFromContext({
+        f0: result?.f0 ?? null,
+        measureMode: state.measureMode,
+        modesDetected: state.lastModesDetected || [],
+        noteSliceSampleCount: noteSlice?.samples?.length,
+        noteSliceSampleRate: noteSlice?.sampleRate,
+        noteNameResolve: () => "Note",
+    });
+    return label === "Tap";
 }
 export function primaryRangeAutoSelectFromState(slice, state) {
     if (state.viewRangeMs)
@@ -603,6 +935,11 @@ function waveformAxisRangeResolve(plot) {
 }
 function clamp01(value) {
     return Math.min(1, Math.max(0, value));
+}
+function rangeMatchesExactly(left, right) {
+    if (!left || !right)
+        return false;
+    return left.start === right.start && left.end === right.end;
 }
 export function rangeDragTargetResolve(cursorMs, axisMinMs, axisMaxMs, axisWidthPx, primaryRange, noteRange) {
     const toleranceMs = ((axisMaxMs - axisMinMs) / axisWidthPx) * RANGE_DRAG_EDGE_TOLERANCE_PX;

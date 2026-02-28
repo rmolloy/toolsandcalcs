@@ -1,5 +1,6 @@
 import { modeBands } from "./resonate_mode_config.js";
 import { median } from "./resonate_mode_metrics.js";
+import { resonanceParabolicPeakRefineEnabled } from "./resonate_debug_flags.js";
 
 export type ModeDetection = {
   mode: string;
@@ -104,7 +105,7 @@ export function analyzeModesWithBands(
     if (!peaks.length) return { mode: key, peakFreq: null, peakDb: null, peakIdx: null, prominenceDb: null };
     peaks.sort((a, b) => b.db - a.db);
     const primary = peaks[0];
-    const refined = refineParabolicPeak(freqs, dbs, primary.idx);
+    const refined = resonanceParabolicPeakRefineEnabled() ? refineParabolicPeak(freqs, dbs, primary.idx) : null;
     if (refined) return { mode: key, peakFreq: refined.freq, peakDb: refined.y, peakIdx: primary.idx, prominenceDb: primary.prominence };
     return { mode: key, peakFreq: freqs[primary.idx], peakDb: dbs[primary.idx], peakIdx: primary.idx, prominenceDb: primary.prominence };
   });

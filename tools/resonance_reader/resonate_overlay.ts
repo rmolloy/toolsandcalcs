@@ -1,32 +1,10 @@
 import { adaptParamsToSolver, computeResponseSafe } from "./resonate_solver_fit.js";
-
-function sampleSeriesAtFreqs(series: any[], freqs: number[]) {
-  if (!Array.isArray(series) || !series.length) return null;
-  const out: number[] = [];
-  let j = 0;
-  for (let i = 0; i < freqs.length; i += 1) {
-    const f = freqs[i];
-    while (j + 1 < series.length && series[j + 1].x < f) j += 1;
-    const a = series[j];
-    const b = series[Math.min(j + 1, series.length - 1)];
-    if (!Number.isFinite(a?.x) || !Number.isFinite(a?.y)) {
-      out.push(Number.isFinite(b?.y) ? b.y : 0);
-      continue;
-    }
-    if (!Number.isFinite(b?.x) || !Number.isFinite(b?.y) || a.x === b.x) {
-      out.push(a.y);
-      continue;
-    }
-    const t = (f - a.x) / (b.x - a.x);
-    out.push(a.y + t * (b.y - a.y));
-  }
-  return out;
-}
+import { seriesValuesSampleAtFrequencies } from "../common/series_sampling.js";
 
 export function responseOverlayFromSolver(rawParams: Record<string, number | boolean | undefined>, freqs: number[]): number[] | null {
   const resp = computeResponseSafe(adaptParamsToSolver(rawParams));
   if (!resp?.total?.length) return null;
-  return sampleSeriesAtFreqs(resp.total, freqs);
+  return seriesValuesSampleAtFrequencies(resp.total, freqs);
 }
 
 export function buildOverlayFromModes(freqs: number[], dbs: number[], modes: { mode: string; peakFreq: number | null }[]) {

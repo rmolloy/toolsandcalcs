@@ -5,6 +5,7 @@ import {
   noteSelectionWindowRequestedFromPlotlyClick,
 } from "./resonate_note_window_selection.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
+import { measureModeNormalize } from "./resonate_mode_config.js";
 
 type WaveformViewDeps = {
   state: Record<string, any>;
@@ -22,6 +23,7 @@ const FALLBACK_WINDOW_MAX_MS = 3000;
 const FALLBACK_WINDOW_RATIO = 0.22;
 const RANGE_DRAG_EDGE_TOLERANCE_PX = 10;
 const RANGE_DRAG_MIN_WIDTH_MS = 80;
+const NOTE_EDITOR_POPOVER_ID = "wave_note_override_editor";
 
 type WaveRange = { start: number; end: number };
 type RangeDragMode = "move" | "resize-left" | "resize-right";
@@ -31,6 +33,8 @@ type RangeDragSession = {
   startCursorMs: number;
   startRange: WaveRange;
 };
+type NoteLabelOverrideMap = Record<number, string>;
+type NotePitch = { semitone: number; octave: number };
 
 function waveRangeFingerprint(range: WaveRange | null | undefined) {
   if (!range) return "none";
@@ -188,6 +192,34 @@ function noteLabelFromFreq(freq: number | null) {
   }
 }
 
+export function noteLabelOverridesGetOrInit(state: Record<string, any>) {
+  return (state.noteLabelOverrides || (state.noteLabelOverrides = {})) as NoteLabelOverrideMap;
+}
+
+export function noteLabelOverrideSet(state: Record<string, any>, noteSliceId: number, label: string) {
+  const normalized = noteLabelOverrideNormalized(label);
+  if (!normalized) return;
+  const overrides = noteLabelOverridesGetOrInit(state);
+  overrides[noteSliceId] = normalized;
+}
+
+export function noteLabelOverrideReset(state: Record<string, any>, noteSliceId: number) {
+  const overrides = noteLabelOverridesGetOrInit(state);
+  delete overrides[noteSliceId];
+}
+
+function noteLabelOverrideResolveFromState(state: Record<string, any>, noteSliceId: number | null | undefined) {
+  if (!Number.isFinite(noteSliceId)) return null;
+  const overrides = noteLabelOverridesGetOrInit(state);
+  const value = overrides[noteSliceId as number];
+  return typeof value === "string" && value.length ? value : null;
+}
+
+function noteLabelOverrideNormalized(rawLabel: string) {
+  const compact = String(rawLabel || "").trim().replace(/\s+/g, "");
+  return compact ? compact.toUpperCase() : "";
+}
+
 function resolveWaveLabelFromContext(
   f0: number | null,
   noteSlice: { id?: number; startMs?: number; endMs?: number; samples?: Float32Array; sampleRate?: number } | null,
@@ -209,6 +241,16 @@ function resolveWaveLabelFromContext(
   });
 }
 
+function resolveWaveLabelFromStateOrContext(
+  noteSlice: { id?: number; samples?: Float32Array; sampleRate?: number },
+  detectedF0: number | null,
+  deps: WaveformViewDeps,
+) {
+  const override = noteLabelOverrideResolveFromState(deps.state, noteSlice?.id);
+  if (override) return override;
+  return resolveWaveLabelFromContext(detectedF0, noteSlice, deps);
+}
+
 function buildWaveAnnotations(
   noteSlices: Array<{ id: number; startMs: number; endMs: number }>,
   noteResults: Array<{ id: number; f0: number | null }>,
@@ -217,7 +259,7 @@ function buildWaveAnnotations(
   const annotations: any[] = [];
   noteSlices.forEach((note) => {
     const result = noteResults.find((n) => n.id === note.id);
-    const label = resolveWaveLabelFromContext(result?.f0 ?? null, note as any, deps);
+    const label = resolveWaveLabelFromStateOrContext(note as any, result?.f0 ?? null, deps);
     if (!label) return;
     const mid = (note.startMs + note.endMs) / 2;
     annotations.push({
@@ -228,6 +270,7 @@ function buildWaveAnnotations(
       text: label,
       showarrow: false,
       font: { color: "rgba(255,255,255,0.7)", size: 11 },
+      noteSliceId: note.id,
     });
   });
   return annotations;
@@ -239,13 +282,20 @@ function buildWaveShapes(
   noteSelectionRange: { start: number; end: number } | null,
   tapSegments: Array<{ start: number; end: number }> | null | undefined,
   noteSlices: Array<{ id: number; startMs: number; endMs: number }> | null | undefined,
+  measureMode: unknown,
 ) {
   const shapes: any[] = [];
   shapes.push(...buildNoteSliceShapes(noteSlices || [], primaryRange));
   shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate));
-  shapes.push(...buildNoteSelectionShapes(noteSelectionRange));
+  if (noteSelectionRangeVisibleForMeasureMode(measureMode)) {
+    shapes.push(...buildNoteSelectionShapes(noteSelectionRange));
+  }
   shapes.push(...buildSelectionShapes(primaryRange));
   return shapes;
+}
+
+export function noteSelectionRangeVisibleForMeasureMode(measureMode: unknown) {
+  return measureModeNormalize(measureMode) === "played_note";
 }
 
 function renderWaveSelection(
@@ -264,12 +314,22 @@ function renderWaveSelection(
     noteSelectionRange,
     deps.state.tapSegments,
     deps.state.noteSlices,
+    deps.state.measureMode,
   );
 
   waveUpdatingShapes = true;
   Promise.resolve(Plotly.relayout(plot, { shapes })).finally(() => {
     waveUpdatingShapes = false;
   });
+}
+
+function renderWaveAnnotations(deps: WaveformViewDeps, slice: any) {
+  const plot = document.getElementById("plot_waveform");
+  if (!plot) return;
+  const Plotly = (window as any).Plotly;
+  if (!Plotly) return;
+  const annotations = buildWaveAnnotations(deps.state.noteSlices || [], deps.state.noteResults || [], deps);
+  void Plotly.relayout(plot, { annotations });
 }
 
 function makeWaveNavigatorPlot(
@@ -326,6 +386,7 @@ function makeWaveNavigatorPlot(
       deps.state.noteSelectionRangeMs || null,
       deps.state.tapSegments,
       deps.state.noteSlices,
+      deps.state.measureMode,
     ),
     annotations: buildWaveAnnotations(deps.state.noteSlices || [], deps.state.noteResults || [], deps),
   };
@@ -342,7 +403,10 @@ function makeWaveNavigatorPlot(
   if (typeof (plot as any).removeAllListeners === "function") {
     (plot as any).removeAllListeners("plotly_relayout");
     (plot as any).removeAllListeners("plotly_click");
+    (plot as any).removeAllListeners("plotly_clickannotation");
   }
+  bindWaveNoteOverrideDismissInteractions(plot as HTMLElement);
+  bindWaveNoteOverrideModifierClickInteractions(plot as HTMLElement, deps, slice);
   (plot as any).on("plotly_click", (ev: any) => {
     if ((plot as any).__resonateSuppressClick) {
       (plot as any).__resonateSuppressClick = false;
@@ -354,6 +418,10 @@ function makeWaveNavigatorPlot(
     if (!Number.isFinite(x)) return;
     const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], x);
     if (note) {
+      if (waveNoteOverrideRequestedFromClickEvent(ev?.event)) {
+        openWaveNoteOverrideEditorFromSlice(note.id, x, deps, slice);
+        return;
+      }
       const range = noteWindowRangeBuildFromSlice(note);
       if (noteSelectionWindowRequestedFromPlotlyClick(ev)) {
         deps.state.noteSelectionRangeMs = range;
@@ -379,6 +447,13 @@ function makeWaveNavigatorPlot(
     deps.state.viewRangeMs = range;
     renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
     onPrimaryRangeChange?.(range);
+  });
+  (plot as any).on("plotly_clickannotation", (ev: any) => {
+    const anchorMs = Number(ev?.annotation?.x);
+    if (!Number.isFinite(anchorMs)) return;
+    const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], anchorMs);
+    if (!note) return;
+    openWaveNoteOverrideEditorFromSlice(note.id, anchorMs, deps, slice);
   });
   (plot as any).on("plotly_relayout", (ev: any) => {
     if (waveUpdatingShapes) return;
@@ -417,6 +492,222 @@ function makeWaveNavigatorPlot(
   bindRangeDirectDragInteractions(plot as HTMLElement, deps, slice, onPrimaryRangeChange, onNoteSelectionRangeChange);
 }
 
+function openWaveNoteOverrideEditorFromSlice(
+  noteSliceId: number,
+  anchorMs: number,
+  deps: WaveformViewDeps,
+  slice: any,
+) {
+  const noteSlice = (deps.state.noteSlices || []).find((entry: { id: number }) => entry.id === noteSliceId);
+  if (!noteSlice) return;
+  const detectedLabel = waveDetectedLabelResolveForNoteSlice(noteSlice, deps);
+  if (!detectedLabel || detectedLabel === "Tap") {
+    deps.setStatus("Tap labels are automatic; note override is available on note slices.");
+    return;
+  }
+  const plot = document.getElementById("plot_waveform");
+  if (!(plot instanceof HTMLElement)) return;
+  const editor = waveNoteOverrideEditorGetOrCreate(plot);
+  const header = editor.querySelector("[data-wave-note-detected]") as HTMLElement | null;
+  const quick = editor.querySelector("[data-wave-note-quick]") as HTMLElement | null;
+  const input = editor.querySelector("[data-wave-note-input]") as HTMLInputElement | null;
+  const applyBtn = editor.querySelector("[data-wave-note-apply]") as HTMLButtonElement | null;
+  const clearBtn = editor.querySelector("[data-wave-note-clear]") as HTMLButtonElement | null;
+  const closeBtn = editor.querySelector("[data-wave-note-close]") as HTMLButtonElement | null;
+  if (!header || !quick || !input || !applyBtn || !clearBtn || !closeBtn) return;
+  const currentOverride = noteLabelOverrideResolveFromState(deps.state, noteSliceId);
+  header.textContent = `Detected: ${detectedLabel}`;
+  input.value = currentOverride || detectedLabel;
+  waveNoteQuickChoicesRender(quick, detectedLabel, input);
+  const apply = () => {
+    const normalized = noteLabelOverrideNormalized(input.value);
+    if (normalized) noteLabelOverrideSet(deps.state, noteSliceId, normalized);
+    else noteLabelOverrideReset(deps.state, noteSliceId);
+    renderWaveAnnotations(deps, slice);
+    waveNoteOverrideEditorHide(plot);
+  };
+  const clear = () => {
+    noteLabelOverrideReset(deps.state, noteSliceId);
+    renderWaveAnnotations(deps, slice);
+    waveNoteOverrideEditorHide(plot);
+  };
+  applyBtn.onclick = apply;
+  clearBtn.onclick = clear;
+  closeBtn.onclick = () => waveNoteOverrideEditorHide(plot);
+  input.onkeydown = (event: KeyboardEvent) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      apply();
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      waveNoteOverrideEditorHide(plot);
+    }
+  };
+  waveNoteOverrideEditorPosition(plot, editor, anchorMs);
+  editor.hidden = false;
+  input.focus();
+  input.select();
+}
+
+function waveDetectedLabelResolveForNoteSlice(noteSlice: any, deps: WaveformViewDeps) {
+  const result = (deps.state.noteResults || []).find((entry: { id: number }) => entry.id === noteSlice.id);
+  return resolveWaveLabelFromContext(result?.f0 ?? null, noteSlice, deps);
+}
+
+function waveNoteOverrideEditorGetOrCreate(plot: HTMLElement) {
+  const existing = document.getElementById(NOTE_EDITOR_POPOVER_ID) as HTMLElement | null;
+  if (existing) return existing;
+  const host = plot.closest(".wave-surface") || plot.parentElement || plot;
+  const editor = document.createElement("div");
+  editor.id = NOTE_EDITOR_POPOVER_ID;
+  editor.className = "wave-note-override-popover";
+  editor.hidden = true;
+  editor.innerHTML = [
+    '<div class="wave-note-override-header">',
+    '  <span data-wave-note-detected>Detected:</span>',
+    '  <button type="button" class="ghost-btn btn-small" data-wave-note-close>Close</button>',
+    "</div>",
+    '<div class="wave-note-override-row" data-wave-note-quick></div>',
+    '<div class="wave-note-override-row">',
+    '  <input type="text" class="wave-note-override-input" data-wave-note-input placeholder="Type note (e.g. E4)" />',
+    "</div>",
+    '<div class="wave-note-override-actions">',
+    '  <button type="button" class="ghost-btn btn-small" data-wave-note-clear>Clear</button>',
+    '  <button type="button" class="ghost-btn btn-small" data-wave-note-apply>Apply</button>',
+    "</div>",
+  ].join("");
+  host.appendChild(editor);
+  return editor;
+}
+
+function waveNoteOverrideEditorHide(plot: HTMLElement) {
+  const editor = document.getElementById(NOTE_EDITOR_POPOVER_ID) as HTMLElement | null;
+  if (!editor) return;
+  if (!plot.closest(".wave-surface")?.contains(editor)) return;
+  editor.hidden = true;
+}
+
+function bindWaveNoteOverrideDismissInteractions(plot: HTMLElement) {
+  const anyPlot = plot as any;
+  if (anyPlot.__resonateWaveNoteOverrideDismissBound) return;
+  const onPointerDown = (event: MouseEvent) => {
+    const editor = document.getElementById(NOTE_EDITOR_POPOVER_ID) as HTMLElement | null;
+    if (!editor || editor.hidden) return;
+    const target = event.target as Node | null;
+    if (!target) return;
+    if (editor.contains(target)) return;
+    if (plot.contains(target)) return;
+    waveNoteOverrideEditorHide(plot);
+  };
+  document.addEventListener("mousedown", onPointerDown);
+  anyPlot.__resonateWaveNoteOverrideDismissBound = true;
+}
+
+function bindWaveNoteOverrideModifierClickInteractions(plot: HTMLElement, deps: WaveformViewDeps, slice: any) {
+  const anyPlot = plot as any;
+  if (anyPlot.__resonateWaveNoteOverrideModifierClickBound) return;
+  const onMouseDown = (event: MouseEvent) => {
+    if (!waveNoteOverrideRequestedFromClickEvent(event)) return;
+    const cursorMs = waveformMsAtPointerResolve(plot, event);
+    if (!Number.isFinite(cursorMs)) return;
+    const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], cursorMs);
+    if (!note) return;
+    anyPlot.__resonateSuppressClick = true;
+    event.preventDefault();
+    event.stopPropagation();
+    openWaveNoteOverrideEditorFromSlice(note.id, cursorMs, deps, slice);
+  };
+  plot.addEventListener("mousedown", onMouseDown);
+  anyPlot.__resonateWaveNoteOverrideModifierClickBound = true;
+}
+
+function waveNoteOverrideEditorPosition(plot: HTMLElement, editor: HTMLElement, anchorMs: number) {
+  const axis = waveformAxisRangeResolve(plot);
+  if (!axis || !Number.isFinite(anchorMs)) {
+    editor.style.left = "24px";
+    editor.style.top = "16px";
+    return;
+  }
+  const ratio = clamp01((anchorMs - axis.min) / (axis.max - axis.min));
+  const anchorPx = axis.leftPx + ratio * axis.widthPx;
+  const leftPx = Math.max(12, Math.min(axis.leftPx + axis.widthPx - 280, anchorPx - 130));
+  editor.style.left = `${leftPx}px`;
+  editor.style.top = "16px";
+}
+
+function waveNoteQuickChoicesRender(host: HTMLElement, detectedLabel: string, input: HTMLInputElement) {
+  host.innerHTML = "";
+  const candidates = waveNoteQuickChoiceLabelsResolve(detectedLabel);
+  candidates.forEach((label) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "ghost-btn btn-small";
+    button.textContent = label;
+    button.onclick = () => {
+      input.value = label;
+      input.focus();
+      input.select();
+    };
+    host.appendChild(button);
+  });
+}
+
+export function waveNoteOverrideRequestedFromClickEvent(event: { altKey?: boolean; metaKey?: boolean } | null | undefined) {
+  if (!event) return false;
+  return Boolean(event.altKey || event.metaKey);
+}
+
+export function waveNoteQuickChoiceLabelsResolve(detectedLabel: string) {
+  const out: string[] = [];
+  const previous = waveNoteLabelTransposeBySemitone(detectedLabel, -1);
+  if (previous) out.push(previous);
+  out.push(noteLabelOverrideNormalized(detectedLabel));
+  const next = waveNoteLabelTransposeBySemitone(detectedLabel, 1);
+  if (next) out.push(next);
+  return Array.from(new Set(out));
+}
+
+function waveNoteLabelTransposeBySemitone(noteLabel: string, semitoneDelta: number) {
+  const pitch = waveNotePitchParse(noteLabel);
+  if (!pitch) return null;
+  const absolute = pitch.octave * 12 + pitch.semitone + semitoneDelta;
+  const nextSemitone = ((absolute % 12) + 12) % 12;
+  const nextOctave = Math.floor((absolute - nextSemitone) / 12);
+  return `${waveSemitoneNameResolve(nextSemitone)}${nextOctave}`;
+}
+
+function waveNotePitchParse(noteLabel: string): NotePitch | null {
+  const match = /^([A-Ga-g])([#b]?)(-?\d+)$/.exec(String(noteLabel || "").trim());
+  if (!match) return null;
+  const letter = match[1].toUpperCase();
+  const accidental = match[2];
+  const octave = Number(match[3]);
+  if (!Number.isFinite(octave)) return null;
+  const base = waveNaturalSemitoneResolve(letter);
+  if (base === null) return null;
+  const accidentalOffset = accidental === "#" ? 1 : accidental === "b" ? -1 : 0;
+  const semitone = ((base + accidentalOffset) % 12 + 12) % 12;
+  return { semitone, octave };
+}
+
+function waveNaturalSemitoneResolve(letter: string) {
+  if (letter === "C") return 0;
+  if (letter === "D") return 2;
+  if (letter === "E") return 4;
+  if (letter === "F") return 5;
+  if (letter === "G") return 7;
+  if (letter === "A") return 9;
+  if (letter === "B") return 11;
+  return null;
+}
+
+function waveSemitoneNameResolve(semitone: number) {
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  return names[((semitone % 12) + 12) % 12];
+}
+
 export function renderWaveform(slice: any, deps: WaveformViewDeps) {
   const handlers = waveformRangeHandlersBuild(deps);
   const autoPrimaryRange = primaryRangeAutoSelectFromState(slice, deps.state);
@@ -431,14 +722,59 @@ export function renderWaveform(slice: any, deps: WaveformViewDeps) {
 }
 
 export function noteSelectionRangeAutoSelectFromState(slice: any, state: Record<string, any>) {
-  if (state.noteSelectionRangeMs) return null;
-  const noteSlices = Array.isArray(state.noteSlices) ? state.noteSlices : [];
+  if (noteSelectionRangeShouldPreserveExistingFromState(slice, state)) return null;
+  const noteSlices = noteSlicesAfterPrimaryRangeResolve(noteSlicesAutoSelectionCandidatesResolve(state), state.viewRangeMs || null);
   if (!noteSlices.length) return fallbackRangeOnRightFromDuration(waveDurationMsResolve(state, slice));
   const range = largestContiguousRangeClusterBuild(
     noteSlices.map((entry: { startMs: number; endMs: number }) => ({ start: entry.startMs, end: entry.endMs })),
     NOTE_CLUSTER_GAP_MS,
   );
   return range || fallbackRangeOnRightFromDuration(waveDurationMsResolve(state, slice));
+}
+
+function noteSelectionRangeShouldPreserveExistingFromState(slice: any, state: Record<string, any>) {
+  const existingRange = state.noteSelectionRangeMs;
+  if (!existingRange) return false;
+  const fallbackRange = fallbackRangeOnRightFromDuration(waveDurationMsResolve(state, slice));
+  const existingLooksLikeFallback = rangeMatchesExactly(existingRange, fallbackRange);
+  if (!existingLooksLikeFallback) return true;
+  const noteSlices = noteSlicesAutoSelectionCandidatesResolve(state);
+  return !noteSlices.length;
+}
+
+function noteSlicesAutoSelectionCandidatesResolve(state: Record<string, any>) {
+  const noteSlices = Array.isArray(state.noteSlices) ? state.noteSlices : [];
+  if (!noteSlices.length) return [];
+  const noteResults = Array.isArray(state.noteResults) ? state.noteResults : [];
+  if (!noteResults.length) return noteSlices;
+  const noteOnlySlices = noteSlices.filter((noteSlice) => !noteSliceClassifiedAsTap(noteSlice, noteResults, state));
+  return noteOnlySlices.length ? noteOnlySlices : noteSlices;
+}
+
+function noteSlicesAfterPrimaryRangeResolve(
+  noteSlices: Array<{ startMs: number; endMs: number }>,
+  primaryRange: { start: number; end: number } | null,
+) {
+  if (!primaryRange || !Number.isFinite(primaryRange.end)) return noteSlices;
+  const slicesAfterPrimaryRange = noteSlices.filter((slice) => Number(slice.startMs) >= Number(primaryRange.end));
+  return slicesAfterPrimaryRange.length ? slicesAfterPrimaryRange : noteSlices;
+}
+
+function noteSliceClassifiedAsTap(
+  noteSlice: { id?: number; samples?: Float32Array; sampleRate?: number },
+  noteResults: Array<{ id: number; f0: number | null }>,
+  state: Record<string, any>,
+) {
+  const result = noteResults.find((entry) => entry.id === noteSlice.id);
+  const label = waveformLabelResolveFromContext({
+    f0: result?.f0 ?? null,
+    measureMode: state.measureMode,
+    modesDetected: state.lastModesDetected || [],
+    noteSliceSampleCount: noteSlice?.samples?.length,
+    noteSliceSampleRate: noteSlice?.sampleRate,
+    noteNameResolve: () => "Note",
+  });
+  return label === "Tap";
 }
 
 export function primaryRangeAutoSelectFromState(slice: any, state: Record<string, any>) {
@@ -679,6 +1015,14 @@ function waveformAxisRangeResolve(plot: HTMLElement) {
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
+}
+
+function rangeMatchesExactly(
+  left: { start: number; end: number } | null | undefined,
+  right: { start: number; end: number } | null | undefined,
+) {
+  if (!left || !right) return false;
+  return left.start === right.start && left.end === right.end;
 }
 
 export function rangeDragTargetResolve(

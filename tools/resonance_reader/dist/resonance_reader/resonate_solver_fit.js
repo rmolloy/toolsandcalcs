@@ -1,5 +1,6 @@
-import { BASE_PARAMS, FIT_BOUNDS, MASS_PARAM_IDS } from "./resonate_fit_defaults.js";
+import { BASE_PARAMS, FIT_BOUNDS } from "./resonate_fit_defaults.js";
 import { modeBands } from "./resonate_mode_config.js";
+import { adaptParamsToSolver as adaptParamsToSolverShared, computeResponseSafe as computeResponseSafeShared, } from "../common/dof_solver_adapter.js";
 function clampToBounds(id, value) {
     const b = FIT_BOUNDS[id];
     if (!b || !Number.isFinite(value))
@@ -7,52 +8,10 @@ function clampToBounds(id, value) {
     return Math.max(b.min, Math.min(b.max, value));
 }
 export function adaptParamsToSolver(raw) {
-    const out = { ...raw };
-    MASS_PARAM_IDS.forEach((k) => {
-        const v = out[k];
-        if (typeof v === "number" && Number.isFinite(v))
-            out[k] = v / 1000;
-    });
-    const AtmosphereLib = window.Atmosphere;
-    const deriveAtmosphere = AtmosphereLib?.deriveAtmosphere;
-    const referenceRho = AtmosphereLib?.REFERENCE_RHO ?? 1.205;
-    const altitude = typeof out.altitude === "number" && Number.isFinite(out.altitude) ? out.altitude : 0;
-    const temp = typeof out.ambient_temp === "number" && Number.isFinite(out.ambient_temp) ? out.ambient_temp : 20;
-    if (typeof deriveAtmosphere === "function") {
-        const atm = deriveAtmosphere(altitude, temp);
-        out.air_density = atm.rho;
-        out.speed_of_sound = atm.c;
-        out.air_pressure = atm.pressure;
-        out.air_temp_k = atm.tempK;
-        const baseMassAirKg = typeof out.mass_air === "number" && Number.isFinite(out.mass_air) ? out.mass_air : null;
-        if (baseMassAirKg !== null) {
-            const densityScale = atm.rho / referenceRho;
-            out.mass_air = baseMassAirKg * densityScale;
-        }
-        out._atm = atm;
-    }
-    return out;
+    return adaptParamsToSolverShared(raw);
 }
 export function computeResponseSafe(params) {
-    const computeResponse = window.computeResponse;
-    if (typeof computeResponse !== "function")
-        return null;
-    try {
-        return computeResponse(params);
-    }
-    catch (err) {
-        console.error("[Resonance Reader] computeResponse failed; attempting JS fallback.", err);
-        const js = window.computeResponseJs;
-        if (typeof js === "function") {
-            try {
-                return js(params);
-            }
-            catch (err2) {
-                console.error("[Resonance Reader] JS fallback computeResponse failed.", err2);
-            }
-        }
-        return null;
-    }
+    return computeResponseSafeShared(params);
 }
 function peakFreqInBand(series, band) {
     let bestX = null;

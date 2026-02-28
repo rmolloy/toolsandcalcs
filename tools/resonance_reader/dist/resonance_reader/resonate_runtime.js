@@ -16,9 +16,16 @@ import { resonanceReaderBootstrap } from "./resonate_bootstrap_entry.js";
 import { customMeasurementModeMetaBuildFromState } from "./resonate_custom_measurements.js";
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
+import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js";
 const state = window.FFTState;
-let pipelineRunActive = false;
-let pipelineRunQueuedTrigger = null;
+const resonatePipelineTriggerRun = pipelineRunCoalescedTriggerBuild(async (trigger) => {
+    const runner = window.ResonatePipelineRunner;
+    if (!runner?.run) {
+        console.warn("[Resonance Reader] Pipeline runner missing while event rendering is enabled.");
+        return;
+    }
+    await runner.run({ trigger }, { version: "v1", stages: ["refresh"] });
+});
 function computeOverlayCurve(freqs, dbs, modesDetected, boundaries) {
     return computeOverlayCurveFromState(state, freqs, dbs, modesDetected, overlayBoundaryFromSet(boundaries));
 }
@@ -125,27 +132,7 @@ function pipelineRefreshStaticArgsBuild() {
     };
 }
 export async function resonatePipelineRunnerRun(trigger) {
-    const runner = window.ResonatePipelineRunner;
-    if (!runner?.run) {
-        console.warn("[Resonance Reader] Pipeline runner missing while event rendering is enabled.");
-        return;
-    }
-    if (pipelineRunActive) {
-        pipelineRunQueuedTrigger = trigger;
-        return;
-    }
-    pipelineRunActive = true;
-    try {
-        await runner.run({ trigger }, { version: "v1", stages: ["refresh"] });
-        const queuedTrigger = pipelineRunQueuedTrigger;
-        pipelineRunQueuedTrigger = null;
-        if (!queuedTrigger)
-            return;
-        await runner.run({ trigger: queuedTrigger }, { version: "v1", stages: ["refresh"] });
-    }
-    finally {
-        pipelineRunActive = false;
-    }
+    await resonatePipelineTriggerRun(trigger);
 }
 function resonanceStatusExpose(setStatusFn) {
     window.ResonateStatus = { setStatus: setStatusFn };

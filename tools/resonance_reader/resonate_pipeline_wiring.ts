@@ -1,4 +1,4 @@
-import type { PipelineEventName, PipelineHandler } from "./resonate_pipeline_events.js";
+import type { PipelineEventName, PipelineHandler } from "../common/pipeline_events.js";
 import { modeOverrideStateReset, modeOverrideStateSet } from "./resonate_mode_override_state.js";
 import {
   customMeasurementFrequencySetFromState,
@@ -102,6 +102,8 @@ function pipelineModesReadyEventHandle(payload: unknown, ctx: { log: (message: s
   if (!ui || !cards.length) return;
   ui.renderModes(cards);
   const state = (window as any).FFTState;
+  const waveSlice = state?.lastWaveSlice;
+  if (waveSlice) ui.renderWaveform(waveSlice);
   if (state) ui.renderEnergyTransferFromState(state);
 }
 

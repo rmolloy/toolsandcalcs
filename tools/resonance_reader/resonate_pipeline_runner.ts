@@ -6,7 +6,19 @@ import type { NoteResultState, NoteSliceState, ResonanceBoundaryState } from "./
 import { resonanceBoundarySeedIntoState } from "./resonate_boundary_seed.js";
 import { waveformStageRun } from "./resonate_stage_waveform.js";
 import { stageSolveDofRun } from "./resonate_stage_solve_dof.js";
-import { createPipelineBus } from "./resonate_pipeline_bus.js";
+import {
+  pipelineEventEmit as pipelineRunnerEventEmit,
+  pipelineStageIdsResolveFromConfig,
+  type PipelineRuntimeEmit as PipelineEmit,
+} from "../common/pipeline_runtime.js";
+import { pipelineStageTimingEmitWithCaptureBuild } from "../common/pipeline_stage_timing.js";
+import { pipelineStageIdsExecuteSequential } from "../common/pipeline_stage_executor.js";
+import { pipelineRunWithLifecycle } from "../common/pipeline_lifecycle.js";
+import { pipelineEmitAdapterBuild } from "../common/pipeline_emit_adapter.js";
+import {
+  pipelineStageCompletedEmit,
+  pipelineStageStartedEmit,
+} from "../common/pipeline_stage_events.js";
 
 type PipelineRunnerDeps = {
   state: Record<string, any> & import("./resonate_boundary_state.js").ResonanceBoundaryState;
@@ -15,17 +27,6 @@ type PipelineRunnerDeps = {
   signalBoundary?: SignalBoundary;
   overlayBoundary?: OverlayBoundary;
 };
-
-type PipelineEvent = {
-  eventId: string;
-  eventType: string;
-  timestampIso: string;
-  runId: string;
-  stageId?: string;
-  payload: Record<string, unknown>;
-};
-
-type PipelineEmit = (event: PipelineEvent) => void;
 
 type PipelineStageId =
   | "ingest"
@@ -57,7 +58,7 @@ async function pipelineStageNoteSegmentationRun(
   emit: PipelineEmit,
   deps: PipelineRunnerDeps,
 ) {
-  pipelineRunnerEventEmit(emit, "stage.started", runId, { stage: "segment.notes" }, "segment.notes");
+  pipelineStageStartedEmit(emit, runId, "segment.notes");
   const { wave, sampleRate } = pipelineNoteSegmentationInputBuild(deps);
   if (!wave || !Number.isFinite(sampleRate)) {
     pipelineNoteSegmentationResetState(deps.state);
@@ -103,111 +104,14 @@ function pipelineStageSegmentNotesCompletedEmit(
   runId: string,
   noteCount: number,
 ) {
-  pipelineRunnerEventEmit(
-    emit,
-    "stage.completed",
-    runId,
-    { stage: "segment.notes", noteCount },
-    "segment.notes",
-  );
+  pipelineStageCompletedEmit(emit, runId, "segment.notes", { noteCount });
 }
 
 function pipelineStageSegmentNotesSkippedEmit(
   emit: PipelineEmit,
   runId: string,
 ) {
-  pipelineRunnerEventEmit(
-    emit,
-    "stage.completed",
-    runId,
-    { stage: "segment.notes", skipped: true },
-    "segment.notes",
-  );
-}
-
-function buildPipelineEvent(
-  eventType: string,
-  runId: string,
-  payload: Record<string, unknown>,
-  stageId?: string,
-): PipelineEvent {
-  return {
-    eventId: pipelineEventIdBuild(runId),
-    eventType,
-    timestampIso: pipelineTimestampIsoBuild(),
-    runId,
-    stageId,
-    payload,
-  };
-}
-
-function pipelineEventIdBuild(runId: string) {
-  return `${runId}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function pipelineTimestampIsoBuild() {
-  return new Date().toISOString();
-}
-
-function pipelineRunnerEventEmit(
-  emit: PipelineEmit,
-  eventType: string,
-  runId: string,
-  payload: Record<string, unknown>,
-  stageId?: string,
-) {
-  emit(buildPipelineEvent(eventType, runId, payload, stageId));
-}
-
-function pipelineEmitWithStageTimingBuild(emit: PipelineEmit) {
-  const stageStartMsById = new Map<string, number>();
-  return (event: PipelineEvent) => {
-    pipelineStageTimingCaptureFromEvent(stageStartMsById, event);
-    emit(event);
-  };
-}
-
-function pipelineStageTimingCaptureFromEvent(
-  stageStartMsById: Map<string, number>,
-  event: PipelineEvent,
-) {
-  const stageId = pipelineStageTimingKeySelectFromEvent(event);
-  if (!stageId) return;
-  if (event.eventType === "stage.started") {
-    stageStartMsById.set(stageId, Date.now());
-    return;
-  }
-  if (event.eventType === "stage.completed") {
-    const startMs = stageStartMsById.get(stageId);
-    if (!Number.isFinite(startMs)) return;
-    console.info("[Resonance Reader] stage.completed ms", stageId, Date.now() - startMs);
-  }
-}
-
-function pipelineStageTimingKeySelectFromEvent(event: PipelineEvent) {
-  const payloadStage = (event.payload as { stage?: string } | null)?.stage;
-  return event.stageId || payloadStage || null;
-}
-
-function pipelineStartEventEmit(
-  emit: PipelineEmit,
-  runId: string,
-  input: Record<string, unknown>,
-  config: Record<string, unknown>,
-) {
-  pipelineRunnerEventEmit(emit, "pipeline.started", runId, { input, config });
-}
-
-function pipelineRunIdBuild() {
-  return `resonate_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function pipelineStageIdsSelectFromConfig(config: Record<string, unknown>): PipelineStageId[] {
-  const useStageList = (config as { useStageList?: boolean } | null)?.useStageList;
-  const stages = (config as { stages?: string[] } | null)?.stages || null;
-  const defaultStages = pipelineDefaultStageIdsBuild();
-  if (!useStageList || !Array.isArray(stages) || !stages.length) return defaultStages;
-  return pipelineStageIdsFilterAllowed(stages, defaultStages);
+  pipelineStageCompletedEmit(emit, runId, "segment.notes", { skipped: true });
 }
 
 function pipelineDefaultStageIdsBuild(): PipelineStageId[] {
@@ -222,72 +126,26 @@ function pipelineDefaultStageIdsBuild(): PipelineStageId[] {
   ];
 }
 
-function pipelineStageIdsFilterAllowed(
-  stages: string[],
-  allowedStages: PipelineStageId[],
-): PipelineStageId[] {
-  const allowed = new Set<PipelineStageId>(allowedStages);
-  return stages.filter((stage): stage is PipelineStageId => allowed.has(stage as PipelineStageId));
-}
-
-function pipelineEmitAdapterBuild(emit: PipelineEmit) {
-  return (
-    eventType: string,
-    run: string,
-    payload: Record<string, unknown>,
-    stageId?: string,
-  ) => {
-    pipelineRunnerEventEmit(emit, eventType, run, payload, stageId);
-  };
-}
-
-async function pipelineStageRunById(stageId: PipelineStageId, ctx: PipelineStageContext) {
-  if (stageId === "ingest") {
-    await pipelineStageIngestRunWithTiming(ctx.input, ctx.runId, ctx.emit, ctx.deps);
-    return;
-  }
-  if (stageId === "waveform") {
-    pipelineStageWaveformRunWithTiming(ctx.runId, ctx.emit, ctx.deps);
-    return;
-  }
-  if (stageId === "segment.notes") {
-    await pipelineStageNoteSegmentationRunWithTiming(ctx.runId, ctx.emit, ctx.deps);
-    return;
-  }
-  if (stageId === "refresh") {
-    await pipelineStageRefreshRunWithTiming(ctx.runId, ctx.emit, ctx.deps);
-    return;
-  }
-  if (stageId === "solve.dof") {
-    pipelineStageSolveDofRunWithTiming(ctx.runId, ctx.emit, ctx.deps);
-    return;
-  }
-  if (stageId === "stage.events") {
-    pipelineStageEventsEmitWithTiming(ctx.runId, ctx.emit, ctx.deps);
-    return;
-  }
-  if (stageId === "artifact") {
-    pipelineArtifactEventEmitWithTiming(ctx.runId, ctx.emit, ctx.deps);
-  }
+function pipelineStageHandlersBuild(ctx: PipelineStageContext) {
+  return {
+    ingest: () => pipelineStageIngestRun(ctx.input, ctx.runId, ctx.emit, ctx.deps),
+    waveform: () => Promise.resolve(pipelineStageWaveformRun(ctx.runId, ctx.emit, ctx.deps)),
+    "segment.notes": () => pipelineStageNoteSegmentationRun(ctx.runId, ctx.emit, ctx.deps),
+    refresh: () => pipelineStageRefreshRun(ctx.runId, ctx.emit, ctx.deps),
+    "solve.dof": () => Promise.resolve(pipelineStageSolveDofRun(ctx.runId, ctx.emit, ctx.deps)),
+    "stage.events": () => Promise.resolve(pipelineStageEventsEmit(ctx.runId, ctx.emit, ctx.deps)),
+    artifact: () => Promise.resolve(pipelineArtifactEventEmit(ctx.runId, ctx.emit, ctx.deps)),
+  } as const satisfies Record<PipelineStageId, () => Promise<void>>;
 }
 
 async function pipelineStagesEventExecute(
   stageIds: PipelineStageId[],
   ctx: PipelineStageContext,
 ) {
-  const stageBus = createPipelineBus();
-  stageBus.wire("stage.execute", pipelineStageExecuteHandleBuild(ctx));
-  for (const stageId of stageIds) {
-    await stageBus.emit("stage.execute", { stageId });
-  }
-}
-
-function pipelineStageExecuteHandleBuild(ctx: PipelineStageContext) {
-  return async (payload: unknown) => {
-    const stageId = (payload as { stageId?: PipelineStageId } | null)?.stageId;
-    if (!stageId) return;
-    await pipelineStageRunById(stageId, ctx);
-  };
+  const handlers = pipelineStageHandlersBuild(ctx);
+  await pipelineStageIdsExecuteSequential(stageIds, async (stageId) => {
+    await handlers[stageId]();
+  });
 }
 
 async function pipelineStageIngestRun(
@@ -311,15 +169,15 @@ async function pipelineStageIngestRun(
 }
 
 function pipelineStageIngestStartedEmit(emit: PipelineEmit, runId: string) {
-  pipelineRunnerEventEmit(emit, "stage.started", runId, { stage: "ingest" }, "ingest");
+  pipelineStageStartedEmit(emit, runId, "ingest");
 }
 
 function pipelineStageIngestSkippedEmit(emit: PipelineEmit, runId: string) {
-  pipelineRunnerEventEmit(emit, "stage.completed", runId, { stage: "ingest", skipped: true }, "ingest");
+  pipelineStageCompletedEmit(emit, runId, "ingest", { skipped: true });
 }
 
 function pipelineStageIngestCompletedEmit(emit: PipelineEmit, runId: string) {
-  pipelineRunnerEventEmit(emit, "stage.completed", runId, { stage: "ingest" }, "ingest");
+  pipelineStageCompletedEmit(emit, runId, "ingest");
 }
 
 function pipelineIngestDepsBuild() {
@@ -330,15 +188,15 @@ function pipelineIngestDepsBuild() {
 }
 
 async function pipelineStageRefreshRun(runId: string, emit: PipelineEmit, deps: PipelineRunnerDeps) {
-  pipelineRunnerEventEmit(emit, "stage.started", runId, { stage: "refresh" }, "refresh");
+  pipelineStageStartedEmit(emit, runId, "refresh");
   await deps.refreshAll();
-  pipelineRunnerEventEmit(emit, "stage.completed", runId, { stage: "refresh" }, "refresh");
+  pipelineStageCompletedEmit(emit, runId, "refresh");
 }
 
 function pipelineStageSolveDofRun(runId: string, emit: PipelineEmit, deps: PipelineRunnerDeps) {
-  pipelineRunnerEventEmit(emit, "stage.started", runId, { stage: "solve.dof" }, "solve.dof");
+  pipelineStageStartedEmit(emit, runId, "solve.dof");
   stageSolveDofRun({ state: deps.state });
-  pipelineRunnerEventEmit(emit, "stage.completed", runId, { stage: "solve.dof" }, "solve.dof");
+  pipelineStageCompletedEmit(emit, runId, "solve.dof");
 }
 
 function pipelineStageEventsEmit(runId: string, emit: PipelineEmit, deps: PipelineRunnerDeps) {
@@ -353,9 +211,9 @@ function pipelineStageSummaryEventsEmit(
   emit: PipelineEmit,
   summary: unknown,
 ) {
-  pipelineRunnerEventEmit(emit, "stage.completed", runId, { stage: "preprocess", summary }, "preprocess");
-  pipelineRunnerEventEmit(emit, "stage.completed", runId, { stage: "segment", summary }, "segment");
-  pipelineRunnerEventEmit(emit, "stage.completed", runId, { stage: "tap.analyze", summary }, "tap.analyze");
+  (["preprocess", "segment", "tap.analyze"] as const).forEach((stageId) => {
+    pipelineStageCompletedEmit(emit, runId, stageId, { summary });
+  });
 }
 
 function pipelineArtifactEventEmit(runId: string, emit: PipelineEmit, deps: PipelineRunnerDeps) {
@@ -380,22 +238,6 @@ function pipelineArtifactPayloadBuildFromState(
   return payload;
 }
 
-function pipelineCompletedEventEmit(
-  emit: PipelineEmit,
-  runId: string,
-  trigger: unknown,
-) {
-  pipelineRunnerEventEmit(emit, "pipeline.completed", runId, { summary: { trigger } });
-}
-
-function pipelineFailedEventEmit(
-  emit: PipelineEmit,
-  runId: string,
-  err: unknown,
-) {
-  pipelineRunnerEventEmit(emit, "pipeline.failed", runId, { error: String(err) });
-}
-
 function pipelineTotalTimingLog(pipelineStartMs: number) {
   console.info("[Resonance Reader] pipeline.total ms", Date.now() - pipelineStartMs);
 }
@@ -406,24 +248,29 @@ async function pipelineRunnerExecute(
   emit: PipelineEmit,
   deps: PipelineRunnerDeps,
 ) {
-  const runId = pipelineRunIdBuild();
   const pipelineStartMs = Date.now();
-  const emitWithTiming = pipelineEmitWithStageTimingBuild(emit);
-  const stageIds = pipelineStageIdsSelectFromConfig(config);
+  const emitWithTiming = pipelineStageTimingEmitWithCaptureBuild(
+    emit,
+    Date.now,
+    (stageId, durationMs) => console.info("[Resonance Reader] stage.completed ms", stageId, durationMs),
+  );
+  const stageIds = pipelineStageIdsResolveFromConfig(config, pipelineDefaultStageIdsBuild());
   pipelineBoundariesSeedIntoState(deps.state, deps);
-  pipelineStartEventEmit(emitWithTiming, runId, input, config);
   try {
-    await pipelineStagesEventExecute(
-      stageIds,
-      pipelineStageContextBuild(input, runId, emitWithTiming, deps),
-    );
-
+    await pipelineRunWithLifecycle({
+      runIdPrefix: "resonate",
+      input,
+      config,
+      emit: emitWithTiming,
+      run: async (runId) => {
+        await pipelineStagesEventExecute(
+          stageIds,
+          pipelineStageContextBuild(input, runId, emitWithTiming, deps),
+        );
+      },
+    });
+  } finally {
     pipelineTotalTimingLog(pipelineStartMs);
-    pipelineCompletedEventEmit(emitWithTiming, runId, input?.trigger || null);
-  } catch (err) {
-    pipelineTotalTimingLog(pipelineStartMs);
-    pipelineFailedEventEmit(emitWithTiming, runId, err);
-    throw err;
   }
 }
 
@@ -432,77 +279,16 @@ function pipelineStageContextBuild(
   runId: string,
   emit: PipelineEmit,
   deps: PipelineRunnerDeps,
-): PipelineStageContext {
+) : PipelineStageContext {
   return { input, runId, emit, deps };
 }
 
-async function pipelineStageNoteSegmentationRunWithTiming(
+function pipelineStageWaveformRun(
   runId: string,
   emit: PipelineEmit,
   deps: PipelineRunnerDeps,
 ) {
-  const noteSegStartMs = Date.now();
-  await pipelineStageNoteSegmentationRun(runId, emit, deps);
-  void noteSegStartMs;
-}
-
-async function pipelineStageRefreshRunWithTiming(
-  runId: string,
-  emit: PipelineEmit,
-  deps: PipelineRunnerDeps,
-) {
-  const refreshStartMs = Date.now();
-  await pipelineStageRefreshRun(runId, emit, deps);
-  void refreshStartMs;
-}
-
-function pipelineStageSolveDofRunWithTiming(
-  runId: string,
-  emit: PipelineEmit,
-  deps: PipelineRunnerDeps,
-) {
-  const solveStartMs = Date.now();
-  pipelineStageSolveDofRun(runId, emit, deps);
-  void solveStartMs;
-}
-
-function pipelineStageEventsEmitWithTiming(
-  runId: string,
-  emit: PipelineEmit,
-  deps: PipelineRunnerDeps,
-) {
-  const stageEventsStartMs = Date.now();
-  pipelineStageEventsEmit(runId, emit, deps);
-  void stageEventsStartMs;
-}
-
-function pipelineArtifactEventEmitWithTiming(
-  runId: string,
-  emit: PipelineEmit,
-  deps: PipelineRunnerDeps,
-) {
-  const artifactStartMs = Date.now();
-  pipelineArtifactEventEmit(runId, emit, deps);
-  void artifactStartMs;
-}
-function pipelineStageWaveformRunWithTiming(
-  runId: string,
-  emit: PipelineEmit,
-  deps: PipelineRunnerDeps,
-) {
-  const waveformStartMs = Date.now();
   waveformStageRun(runId, pipelineEmitAdapterBuild(emit), deps);
-  void waveformStartMs;
-}
-async function pipelineStageIngestRunWithTiming(
-  input: Record<string, unknown>,
-  runId: string,
-  emit: PipelineEmit,
-  deps: PipelineRunnerDeps,
-) {
-  const ingestStartMs = Date.now();
-  await pipelineStageIngestRun(input, runId, emit, deps);
-  void ingestStartMs;
 }
 
 export function pipelineRunnerRun(

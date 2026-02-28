@@ -15,6 +15,10 @@ function massDeltaGrams(g0, g1) {
         return null;
     return g1 - g0;
 }
+const MASS_ONLY_SOUNDPHOLE_REDUCTION_MAX_MM = 1;
+function massOnlySoundholeReductionMmResolve(deltaMm) {
+    return Math.min(Math.abs(deltaMm), MASS_ONLY_SOUNDPHOLE_REDUCTION_MAX_MM);
+}
 export function buildWhatIfRecipes(baseline, whatIf) {
     if (!baseline || !whatIf)
         return [];
@@ -54,7 +58,8 @@ export function buildMassOnlyRecipes(baseline, massOnly) {
     const area1 = massOnly.area_hole;
     const dMm = recipeSoundholeDeltaMm(area0, area1);
     if (Number.isFinite(dMm) && dMm < -0.2) {
-        out.push(`Reduce soundhole diameter by ${Math.abs(dMm).toFixed(1)} mm`);
+        const reductionMm = massOnlySoundholeReductionMmResolve(dMm);
+        out.push(`Reduce soundhole diameter by ${reductionMm.toFixed(1)} mm`);
     }
     const dt = massDeltaGrams(baseline.mass_top, massOnly.mass_top);
     if (Number.isFinite(dt) && dt > 0.2)

@@ -15,6 +15,12 @@ function massDeltaGrams(g0: number, g1: number): number | null {
   return g1 - g0;
 }
 
+const MASS_ONLY_SOUNDPHOLE_REDUCTION_MAX_MM = 1;
+
+function massOnlySoundholeReductionMmResolve(deltaMm: number) {
+  return Math.min(Math.abs(deltaMm), MASS_ONLY_SOUNDPHOLE_REDUCTION_MAX_MM);
+}
+
 export function buildWhatIfRecipes(baseline: Record<string, any> | null, whatIf: Record<string, any> | null): string[] {
   if (!baseline || !whatIf) return [];
   const out: string[] = [];
@@ -58,7 +64,8 @@ export function buildMassOnlyRecipes(baseline: Record<string, any> | null, massO
   const area1 = massOnly.area_hole;
   const dMm = recipeSoundholeDeltaMm(area0, area1);
   if (Number.isFinite(dMm) && (dMm as number) < -0.2) {
-    out.push(`Reduce soundhole diameter by ${Math.abs(dMm as number).toFixed(1)} mm`);
+    const reductionMm = massOnlySoundholeReductionMmResolve(dMm as number);
+    out.push(`Reduce soundhole diameter by ${reductionMm.toFixed(1)} mm`);
   }
   const dt = massDeltaGrams(baseline.mass_top, massOnly.mass_top);
   if (Number.isFinite(dt) && (dt as number) > 0.2) out.push(`Add ${(dt as number).toFixed(1)} g mass near bridge (top)`);

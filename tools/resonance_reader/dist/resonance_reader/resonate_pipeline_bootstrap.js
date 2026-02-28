@@ -1,23 +1,11 @@
 import { pipelineRunnerRun } from "./resonate_pipeline_runner.js";
 import { uiBindingsAttach } from "./resonate_ui_bindings.js";
-import { createPipelineBus } from "./resonate_pipeline_bus.js";
 import { wireResonatePipeline } from "./resonate_pipeline_wiring.js";
-function pipelineRunnerEventEmitToBus(bus, event) {
-    void bus.emit("pipeline.event", {
-        eventType: event.eventType,
-        runId: event.runId,
-        stageId: event.stageId,
-        payload: event.payload,
-    });
-    void bus.emit(event.eventType, {
-        ...event.payload,
-        runId: event.runId,
-        stageId: event.stageId,
-    });
-}
+import { pipelineRuntimeEventForwardToBus } from "../common/pipeline_event_forwarder.js";
+import { createPipelineBus } from "../common/pipeline_bus.js";
 function pipelineRunnerWindowExpose(bus, deps) {
     window.ResonatePipelineRunner = {
-        run: (input, config) => pipelineRunnerRun(input, config, (event) => pipelineRunnerEventEmitToBus(bus, event), {
+        run: (input, config) => pipelineRunnerRun(input, config, (event) => pipelineRuntimeEventForwardToBus(bus, event), {
             state: deps.state,
             refreshAll: deps.refreshPipeline,
             analysisBoundary: deps.analysisBoundary,
@@ -27,7 +15,7 @@ function pipelineRunnerWindowExpose(bus, deps) {
     };
 }
 export function resonatePipelineBootstrapAttach(deps) {
-    const bus = createPipelineBus();
+    const bus = createPipelineBus({ logPrefix: "[Resonate Pipeline]" });
     window.ResonatePipelineBus = bus;
     wireResonatePipeline(bus);
     pipelineRunnerWindowExpose(bus, deps);

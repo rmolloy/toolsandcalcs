@@ -1,11 +1,12 @@
-export function createPipelineBus() {
+export function createPipelineBus(options = {}) {
     const handlers = new Map();
+    const logPrefix = options.logPrefix || "[Pipeline]";
     const context = {
         emit: (event, payload) => {
             void emit(event, payload);
         },
         log: (message) => {
-            console.info("[Resonate Pipeline]", message);
+            console.info(logPrefix, message);
         },
     };
     function wire(event, handler) {

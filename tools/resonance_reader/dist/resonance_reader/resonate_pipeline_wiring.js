@@ -80,6 +80,9 @@ function pipelineModesReadyEventHandle(payload, ctx) {
         return;
     ui.renderModes(cards);
     const state = window.FFTState;
+    const waveSlice = state?.lastWaveSlice;
+    if (waveSlice)
+        ui.renderWaveform(waveSlice);
     if (state)
         ui.renderEnergyTransferFromState(state);
 }

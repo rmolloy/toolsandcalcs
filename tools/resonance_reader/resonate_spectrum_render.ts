@@ -3,6 +3,7 @@ import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js";
 import { emitModeOverrideRequested } from "./resonate_override_commands.js";
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
+import { overlaySegmentsBuildFromArrays, type OverlaySegment } from "../common/overlay_segments.js";
 
 type SpectrumPayload = {
   freqs: number[];
@@ -20,7 +21,6 @@ type SpectrumRenderDeps = {
   freqAxisMax: number;
 };
 
-type OverlaySegment = { x: number[]; y: number[]; width: number; opacity: number };
 type SpectrumDragPreview = { idx: number; x: number; y: number };
 type SpectrumAxisRanges = { x: [number, number] | null; y: [number, number] | null };
 
@@ -35,6 +35,7 @@ const MOCK_OVERLAY = {
 let overlayToggleBound = false;
 let modeOverrideLabelBound = false;
 let toneHoverBound = false;
+const TONE_FREQ_DEDUPE_EPSILON_HZ = 0.05;
 
 export function renderSpectrum(payload: SpectrumPayload, deps: SpectrumRenderDeps) {
   const plot = spectrumPlotElementSelect();
@@ -181,7 +182,8 @@ function buildMeasuredTrace(freqs: number[], mags: number[], hoverNoteData: Arra
     line: { color: resolveColorHexFromRole("fftLine"), width: 3 },
     name: "Measured",
     customdata: hoverNoteData,
-    hovertemplate: "%{x:.1f} Hz<br>%{y:.1f} dB<br>%{customdata[0]} %{customdata[1]}<extra></extra>",
+    hovertemplate: spectrumLineHoverTemplateBuild(),
+    hoverlabel: spectrumLineHoverLabelStyleBuild(),
   };
 }
 
@@ -197,7 +199,27 @@ function buildSecondaryMeasuredTrace(
     mode: "lines",
     line: { color: resolveColorHexFromRole("waveNoteSelection"), width: 2.5 },
     name: "Selected Note Window",
-    hovertemplate: "%{x:.1f} Hz<br>%{y:.1f} dB<extra></extra>",
+    customdata: spectrumHoverNoteDataBuild(secondarySpectrum.freqs),
+    hovertemplate: spectrumLineHoverTemplateBuild(),
+    hoverlabel: spectrumLineHoverLabelStyleBuild(),
+  };
+}
+
+function spectrumLineHoverTemplateBuild() {
+  return [
+    "<b>%{fullData.name}</b>",
+    "%{x:.1f} Hz · %{y:.1f} dB",
+    "Note: %{customdata[0]} %{customdata[1]}",
+    "<extra></extra>",
+  ].join("<br>");
+}
+
+function spectrumLineHoverLabelStyleBuild() {
+  return {
+    bgcolor: "rgba(10,14,24,0.9)",
+    bordercolor: "rgba(255,255,255,0.18)",
+    font: { family: "Inter, system-ui, -apple-system, Segoe UI, sans-serif", size: 14, color: "#eef1ff" },
+    align: "left",
   };
 }
 
@@ -444,7 +466,7 @@ function bindFftToneHoverFollow(plot: HTMLElement, toneTraceIndex: number, mags:
   plotAny.on("plotly_hover", (evt: any) => {
     toneHoverApplyFromEvent(evt, plot, toneTraceIndex, mags);
   });
-  plotAny.on("plotly_unhover", () => {
+  plot.addEventListener("mouseleave", () => {
     toneHoverClear(plot, toneTraceIndex);
   });
 }
@@ -454,19 +476,32 @@ function toneHoverApplyFromEvent(evt: any, plot: HTMLElement, toneTraceIndex: nu
   if (!state?.toneEnabled) return;
   const freqHz = toneFreqResolveFromHoverEvent(evt);
   if (!Number.isFinite(freqHz)) return;
-  state.toneFreqHz = freqHz;
-  const tone = toneControllerCreateFromWindow(window);
-  tone.toneFrequencySetHz(freqHz as number);
-  toneSpikeTraceUpdate(plot, toneTraceIndex, freqHz as number, mags);
+  const nextFreqHz = freqHz as number;
+  if (toneFrequencyUpdateRequired(state.toneFreqHz, nextFreqHz)) {
+    state.toneFreqHz = nextFreqHz;
+    const tone = toneControllerCreateFromWindow(window);
+    tone.toneFrequencySetHz(nextFreqHz);
+  }
+  toneSpikeTraceUpdate(plot, toneTraceIndex, nextFreqHz, mags);
 }
 
 function toneHoverClear(plot: HTMLElement, toneTraceIndex: number) {
   const state = (window as any).FFTState as Record<string, any> | undefined;
   if (!state?.toneEnabled) return;
+  if (!Number.isFinite(state.toneFreqHz)) {
+    toneSpikeTraceVisibilitySet(plot, toneTraceIndex, false);
+    return;
+  }
   state.toneFreqHz = null;
   const tone = toneControllerCreateFromWindow(window);
   tone.toneStop();
   toneSpikeTraceVisibilitySet(plot, toneTraceIndex, false);
+}
+
+export function toneFrequencyUpdateRequired(lastFreqHz: unknown, nextFreqHz: unknown) {
+  if (!Number.isFinite(nextFreqHz)) return false;
+  if (!Number.isFinite(lastFreqHz)) return true;
+  return Math.abs((nextFreqHz as number) - (lastFreqHz as number)) > TONE_FREQ_DEDUPE_EPSILON_HZ;
 }
 
 function toneFreqResolveFromHoverEvent(evt: any) {
@@ -490,33 +525,7 @@ function spectrumRangesPreserveNextRenderConsumeFromState() {
 }
 
 function buildOverlaySegments(freqs: number[], overlay: number[]): OverlaySegment[] {
-  const { min, max, feather, widths, opacities } = MOCK_OVERLAY;
-  const pickBucket = (w: number) => {
-    if (w > 0.66) return { width: widths.thick, opacity: opacities.thick };
-    if (w > 0.33) return { width: widths.mid, opacity: opacities.mid };
-    return { width: widths.thin, opacity: opacities.thin };
-  };
-  const segments: OverlaySegment[] = [];
-  let cur: OverlaySegment | null = null;
-  freqs.forEach((f, i) => {
-    let w = 0;
-    if (f >= min && f <= max) w = 1;
-    else if (f >= min - feather && f < min) w = 1 - (min - f) / feather;
-    else if (f > max && f <= max + feather) w = 1 - (f - max) / feather;
-    if (w <= 0) {
-      cur = null;
-      return;
-    }
-    const bucket = pickBucket(w);
-    const same = cur && cur.width === bucket.width && cur.opacity === bucket.opacity;
-    if (!same) {
-      cur = { x: [], y: [], width: bucket.width, opacity: bucket.opacity };
-      segments.push(cur);
-    }
-    cur!.x.push(f);
-    cur!.y.push(overlay[i]);
-  });
-  return segments;
+  return overlaySegmentsBuildFromArrays(freqs, overlay, MOCK_OVERLAY);
 }
 
 function spectrumOverlaySegmentsResolve(freqs: number[], overlay: number[] | undefined) {

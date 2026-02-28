@@ -1,7 +1,9 @@
 import { pipelineRunnerRun } from "./resonate_pipeline_runner.js";
 import { uiBindingsAttach } from "./resonate_ui_bindings.js";
-import { createPipelineBus } from "./resonate_pipeline_bus.js";
 import { wireResonatePipeline } from "./resonate_pipeline_wiring.js";
+import { pipelineRuntimeEventForwardToBus } from "../common/pipeline_event_forwarder.js";
+import { createPipelineBus } from "../common/pipeline_bus.js";
+import type { PipelineRuntimeEvent } from "../common/pipeline_runtime.js";
 
 type ResonatePipelineBootstrapDeps = {
   state: Record<string, any> & import("./resonate_boundary_state.js").ResonanceBoundaryState;
@@ -17,23 +19,6 @@ type ResonatePipelineBootstrapDeps = {
   overlayBoundary?: import("./resonate_overlay_boundary.js").OverlayBoundary;
 };
 
-function pipelineRunnerEventEmitToBus(
-  bus: ReturnType<typeof createPipelineBus>,
-  event: { eventType: string; payload: Record<string, unknown>; runId?: string; stageId?: string },
-) {
-  void bus.emit("pipeline.event", {
-    eventType: event.eventType,
-    runId: event.runId,
-    stageId: event.stageId,
-    payload: event.payload,
-  });
-  void bus.emit(event.eventType, {
-    ...event.payload,
-    runId: event.runId,
-    stageId: event.stageId,
-  });
-}
-
 function pipelineRunnerWindowExpose(
   bus: ReturnType<typeof createPipelineBus>,
   deps: ResonatePipelineBootstrapDeps,
@@ -43,7 +28,7 @@ function pipelineRunnerWindowExpose(
       pipelineRunnerRun(
         input,
         config,
-        (event) => pipelineRunnerEventEmitToBus(bus, event),
+        (event: PipelineRuntimeEvent) => pipelineRuntimeEventForwardToBus(bus, event),
         {
           state: deps.state,
           refreshAll: deps.refreshPipeline,
@@ -56,7 +41,7 @@ function pipelineRunnerWindowExpose(
 }
 
 export function resonatePipelineBootstrapAttach(deps: ResonatePipelineBootstrapDeps) {
-  const bus = createPipelineBus();
+  const bus = createPipelineBus({ logPrefix: "[Resonate Pipeline]" });
   (window as any).ResonatePipelineBus = bus;
   wireResonatePipeline(bus);
   pipelineRunnerWindowExpose(bus, deps);

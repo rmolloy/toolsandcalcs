@@ -57,7 +57,7 @@
         <div class="plot-header">
           <div class="plot-header-copy">
             <h2>Frequency Response</h2>
-            <p class="muted small">Drag yellow range for FFT analysis. Drag green range for note selection.</p>
+            <p class="muted small">Drag yellow range for FFT analysis. Drag green range for note selection. Click a note label (or Option/Command-click a note slice) to override its note.</p>
           </div>
           <div class="wave-transport-inline">
             <button class="ghost-btn btn-small" id="btn_wave_tone"><span class="transport-icon" aria-hidden="true">∿</span>Tone</button>
@@ -118,14 +118,14 @@
   <script src="../common/4dof/model_core.js" defer></script>
   <script src="../common/site_menu_loader.js" defer></script>
   <script type="module" src="../wolf_note_analyzer/dist/core.js"></script>
-  <script type="module" src="dist/resonate_ingest_stage.js"></script>
-  <script type="module" src="dist/resonate_waveform_interactions.js"></script>
-  <script type="module" src="dist/resonate_startup.js"></script>
-  <script type="module" src="dist/resonate_artifact_event.js"></script>
-  <script type="module" src="dist/resonate_stage_events.js"></script>
-  <script type="module" src="dist/resonate_ui_events.js"></script>
-  <script type="module" src="dist/resonate_render_events.js"></script>
-  <script type="module" src="dist/main.js"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js"></script>
+  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js"></script>
+  <script type="module" src="dist/resonance_reader/resonate_startup.js"></script>
+  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js"></script>
+  <script type="module" src="dist/resonance_reader/resonate_stage_events.js"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ui_events.js"></script>
+  <script type="module" src="dist/resonance_reader/resonate_render_events.js"></script>
+  <script type="module" src="dist/resonance_reader/main.js"></script>
 </body>
 
 </html>
