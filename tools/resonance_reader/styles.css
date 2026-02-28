@@ -415,6 +415,8 @@ body { padding: 28px; }
   transform: translateX(22px);
 }
 .mode-grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 180px));
   justify-content: start;
@@ -859,8 +861,60 @@ body { padding: 28px; }
 }
 
 .wave-surface {
+  position: relative;
+  z-index: 4;
   display: flex;
   flex-direction: column;
+  gap: 8px;
+}
+
+.wave-note-override-popover {
+  position: absolute;
+  z-index: 120;
+  width: min(320px, calc(100% - 24px));
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(140, 166, 255, 0.28);
+  background: rgba(8, 12, 21, 0.94);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45);
+}
+
+.wave-note-override-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: var(--type-meta-size);
+  line-height: var(--type-meta-line);
+  font-weight: 700;
+}
+
+.wave-note-override-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wave-note-override-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(140, 166, 255, 0.36);
+  background: rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.95);
+  padding: 8px 10px;
+  outline: none;
+}
+
+.wave-note-override-input:focus {
+  box-shadow: 0 0 0 2px rgba(110, 236, 216, 0.25);
+}
+
+.wave-note-override-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
   gap: 8px;
 }
 
