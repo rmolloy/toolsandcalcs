@@ -1,0 +1,67 @@
+@import url("../common/styles.css");
+@import url("../common/theme_resonance_shared.css");
+
+:root {
+  --tl-topbar-h: 0px;
+  --tl-page-max: min(1800px, 92vw);
+  --tl-page-pad: 18px;
+  --tl-grid-gap: 14px;
+  --tl-controls-min: 320px;
+  --tl-controls-max: 380px;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.result-card {
+  background: color-mix(in srgb, var(--panel) 86%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.result-card .label {
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.result-card .value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  padding: 8px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+th:first-child,
+td:first-child {
+  text-align: left;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --tl-controls-min: 100%;
+    --tl-controls-max: 100%;
+    --tl-page-pad: 12px;
+  }
+}
