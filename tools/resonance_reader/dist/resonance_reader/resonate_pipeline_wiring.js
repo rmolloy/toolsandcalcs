@@ -70,6 +70,7 @@ function pipelineSpectrumReadyEventHandle(payload, ctx) {
         overlay,
         modes,
         secondarySpectrum: secondary,
+        polymaxCandidates: Array.isArray(state?.lastPolymaxCandidates) ? state.lastPolymaxCandidates : [],
     });
 }
 function pipelineModesReadyEventHandle(payload, ctx) {

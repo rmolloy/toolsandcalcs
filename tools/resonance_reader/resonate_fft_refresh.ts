@@ -7,7 +7,12 @@ import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js";
 import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js";
 import { emitArtifactEventFromState } from "./resonate_artifact_emit.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
-import { resonanceSpectrumSmoothingEnabled, resonanceSpectrumSmoothingHzResolve } from "./resonate_debug_flags.js";
+import {
+  resonancePolymaxValidationEnabled,
+  resonanceSpectrumSmoothingEnabled,
+  resonanceSpectrumSmoothingHzResolve,
+} from "./resonate_debug_flags.js";
+import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js";
 
 const FFT_SMOOTH_HZ = 0.05;
 
@@ -60,7 +65,14 @@ export async function refreshFftFromState(deps: {
   });
   const freqs = Array.from(withDb.freqs || [], (v: number) => Number(v));
   const dbs = Array.from(withDb.dbs || withDb.mags || [], (v: number) => Number(v));
-  const modesDetected = stageDetectModesFromSpectrum(deps.state, analysis, { freqs, dbs });
+  const modesDetectedRaw = stageDetectModesFromSpectrum(deps.state, analysis, { freqs, dbs });
+  const polymaxCandidates = polymaxCandidatesResolveFromSlice(slice.wave, slice.sampleRate, deps.fftMaxHz);
+  deps.state.lastPolymaxCandidates = polymaxCandidates;
+  const modesDetected = modesDetectedRaw.map((mode) => {
+    const peakFreq = Number(mode.peakFreq);
+    const poly = polymaxCandidates.find((candidate) => Number.isFinite(peakFreq) && Math.abs(candidate.freqHz - peakFreq) <= 2.5) || null;
+    return { ...mode, polymaxStable: Boolean(poly), polymaxStability: poly?.stability ?? null };
+  });
   stageRefreshPostApply({
     state: deps.state,
     analysis,
@@ -74,8 +86,14 @@ export async function refreshFftFromState(deps: {
     if (!last?.freqs?.length) return;
     const freqs2 = Array.from(last.freqs || [], (v: number) => Number(v));
     const dbs2 = Array.from(last.dbs || last.mags || [], (v: number) => Number(v));
-    const det = stageDetectModesFromSpectrum(deps.state, analysis, { freqs: freqs2, dbs: dbs2 });
-    if (!det.length) return;
+    const detRaw = stageDetectModesFromSpectrum(deps.state, analysis, { freqs: freqs2, dbs: dbs2 });
+    if (!detRaw.length) return;
+    const polymaxCandidates = Array.isArray(deps.state.lastPolymaxCandidates) ? deps.state.lastPolymaxCandidates : [];
+    const det = detRaw.map((mode) => {
+      const peakFreq = Number(mode.peakFreq);
+      const poly = polymaxCandidates.find((candidate: any) => Number.isFinite(peakFreq) && Math.abs(Number(candidate?.freqHz) - peakFreq) <= 2.5) || null;
+      return { ...mode, polymaxStable: Boolean(poly), polymaxStability: poly?.stability ?? null };
+    });
     stageRefreshPostApply({
       state: deps.state,
       analysis,
@@ -90,6 +108,15 @@ export async function refreshFftFromState(deps: {
     }
     deps.solveDofFromState?.();
   };
+}
+
+function polymaxCandidatesResolveFromSlice(
+  wave: Float32Array | number[],
+  sampleRate: number,
+  fftMaxHz: number,
+) {
+  if (!resonancePolymaxValidationEnabled()) return [];
+  return polymaxStableCandidatesFromWave(wave, sampleRate, { freqMin: 40, freqMax: fftMaxHz });
 }
 
 async function secondarySpectrumBuildFromNoteSelectionRange(args: {

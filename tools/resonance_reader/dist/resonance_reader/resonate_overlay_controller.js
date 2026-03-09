@@ -1,3 +1,4 @@
+import { fitModeWeightsFromDetected, fitPriorsFromState } from "./resonate_fit_priors.js";
 import { BASE_PARAMS } from "./resonate_fit_defaults.js";
 import { overlayBoundaryDefault } from "./resonate_overlay_boundary.js";
 import { overlayBoundaryEnsure } from "./resonate_overlay_boundary_guard.js";
@@ -14,9 +15,11 @@ export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, o
     const boundary = overlayBoundaryEnsure(overlayBoundary);
     const fitMaxIter = opts.fitMaxIter ?? 12;
     const modeTargets = state.modeTargets;
+    const modeWeights = fitModeWeightsFromDetected(modesDetected);
+    const priors = fitPriorsFromState(state);
     const whatIfActive = hasAnyTargets(modeTargets);
     if (whatIfActive) {
-        ensureBaselineFitFromDetected(state, modesDetected, (targets, _opts) => boundary.fit4DofFromTargets(targets, { maxIter: fitMaxIter }));
+        ensureBaselineFitFromDetected(state, modesDetected, (targets, _opts) => boundary.fit4DofFromTargets(targets, { maxIter: fitMaxIter, modeWeights, priors }));
         const userTargets = normalizedWhatIfTargets(modeTargets);
         const targetKey = JSON.stringify({
             air: Number.isFinite(userTargets.air) ? Number(userTargets.air.toFixed(1)) : null,
@@ -24,7 +27,7 @@ export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, o
             back: Number.isFinite(userTargets.back) ? Number(userTargets.back.toFixed(1)) : null,
         });
         if (state.whatIfTargetKey !== targetKey) {
-            const fit = boundary.fit4DofFromTargets(userTargets, { maxIter: fitMaxIter });
+            const fit = boundary.fit4DofFromTargets(userTargets, { maxIter: fitMaxIter, modeWeights, priors });
             state.whatIfTargetKey = targetKey;
             state.whatIfFittedParams = fit?.raw || null;
         }
@@ -33,6 +36,8 @@ export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, o
             const base = state.lastFittedParams || BASE_PARAMS;
             const fit = boundary.fit4DofFromTargets(userTargets, {
                 maxIter: fitMaxIter,
+                modeWeights,
+                priors,
                 tweakIds: ["mass_top", "mass_back", "area_hole"],
                 clampMinFromBaseIds: ["mass_top", "mass_back"],
                 clampMaxFromBaseIds: ["area_hole"],
@@ -55,7 +60,7 @@ export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, o
         return boundary.buildOverlayFromModes(freqs, dbs, targetModes);
     }
     renderTryPanel([], [], false);
-    ensureBaselineFitFromDetected(state, modesDetected, (targets, _opts) => boundary.fit4DofFromTargets(targets, { maxIter: fitMaxIter }));
+    ensureBaselineFitFromDetected(state, modesDetected, (targets, _opts) => boundary.fit4DofFromTargets(targets, { maxIter: fitMaxIter, modeWeights, priors }));
     if (state.lastFittedParams) {
         const curve = boundary.responseOverlayFromSolver(state.lastFittedParams, freqs);
         if (curve)

@@ -3,6 +3,7 @@ const DEBUG_FLAGS_DEFAULTS = {
     useTapAveraging: true,
     useSpectrumSmoothing: true,
     useParabolicPeakRefine: true,
+    usePolymaxValidation: false,
     spectrumSmoothingHz: null,
     tapSliceWindowMs: null,
     energyBandWidthHz: null,
@@ -36,6 +37,7 @@ function debugFlagsCurrentResolve() {
         useTapAveraging: debugFlagValueResolve("useTapAveraging"),
         useSpectrumSmoothing: debugFlagValueResolve("useSpectrumSmoothing"),
         useParabolicPeakRefine: debugFlagValueResolve("useParabolicPeakRefine"),
+        usePolymaxValidation: debugFlagValueResolve("usePolymaxValidation"),
         spectrumSmoothingHz: smoothingHz,
         tapSliceWindowMs,
         energyBandWidthHz,
@@ -51,6 +53,7 @@ function debugFlagsReset() {
     delete store.useTapAveraging;
     delete store.useSpectrumSmoothing;
     delete store.useParabolicPeakRefine;
+    delete store.usePolymaxValidation;
     delete store.spectrumSmoothingHz;
     delete store.tapSliceWindowMs;
     delete store.energyBandWidthHz;
@@ -99,6 +102,10 @@ export function resonanceTapSliceWindowMsResolve(defaultMs) {
 export function resonanceParabolicPeakRefineEnabled() {
     debugApiEnsureInstalled();
     return debugFlagValueResolve("useParabolicPeakRefine");
+}
+export function resonancePolymaxValidationEnabled() {
+    debugApiEnsureInstalled();
+    return debugFlagValueResolve("usePolymaxValidation");
 }
 export function resonanceEnergyBandWidthHzResolve(defaultHz) {
     debugApiEnsureInstalled();

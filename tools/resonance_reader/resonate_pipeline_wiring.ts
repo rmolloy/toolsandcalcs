@@ -16,6 +16,7 @@ type PipelineUiRender = {
     overlay?: number[];
     modes?: any[];
     secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+    polymaxCandidates?: Array<{ freqHz: number; zeta: number; stability: number; orderCount: number }> ;
   }) => void;
   renderModes: (modes: any[]) => void;
   renderWaveform: (wave: any) => void;
@@ -92,6 +93,7 @@ function pipelineSpectrumReadyEventHandle(payload: unknown, ctx: { log: (message
     overlay,
     modes,
     secondarySpectrum: secondary,
+    polymaxCandidates: Array.isArray(state?.lastPolymaxCandidates) ? state.lastPolymaxCandidates : [],
   });
 }
 

@@ -3,18 +3,25 @@ type ResonanceDebugFlags = {
   useTapAveraging: boolean;
   useSpectrumSmoothing: boolean;
   useParabolicPeakRefine: boolean;
+  usePolymaxValidation: boolean;
   spectrumSmoothingHz: number | null;
   tapSliceWindowMs: number | null;
   energyBandWidthHz: number | null;
 };
 
-type BooleanDebugFlagName = "useHannWindow" | "useTapAveraging" | "useSpectrumSmoothing" | "useParabolicPeakRefine";
+type BooleanDebugFlagName =
+  | "useHannWindow"
+  | "useTapAveraging"
+  | "useSpectrumSmoothing"
+  | "useParabolicPeakRefine"
+  | "usePolymaxValidation";
 
 const DEBUG_FLAGS_DEFAULTS: ResonanceDebugFlags = {
   useHannWindow: true,
   useTapAveraging: true,
   useSpectrumSmoothing: true,
   useParabolicPeakRefine: true,
+  usePolymaxValidation: false,
   spectrumSmoothingHz: null,
   tapSliceWindowMs: null,
   energyBandWidthHz: null,
@@ -50,6 +57,7 @@ function debugFlagsCurrentResolve(): ResonanceDebugFlags {
     useTapAveraging: debugFlagValueResolve("useTapAveraging"),
     useSpectrumSmoothing: debugFlagValueResolve("useSpectrumSmoothing"),
     useParabolicPeakRefine: debugFlagValueResolve("useParabolicPeakRefine"),
+    usePolymaxValidation: debugFlagValueResolve("usePolymaxValidation"),
     spectrumSmoothingHz: smoothingHz,
     tapSliceWindowMs,
     energyBandWidthHz,
@@ -67,6 +75,7 @@ function debugFlagsReset() {
   delete store.useTapAveraging;
   delete store.useSpectrumSmoothing;
   delete store.useParabolicPeakRefine;
+  delete store.usePolymaxValidation;
   delete store.spectrumSmoothingHz;
   delete store.tapSliceWindowMs;
   delete store.energyBandWidthHz;
@@ -120,6 +129,11 @@ export function resonanceTapSliceWindowMsResolve(defaultMs: number) {
 export function resonanceParabolicPeakRefineEnabled() {
   debugApiEnsureInstalled();
   return debugFlagValueResolve("useParabolicPeakRefine");
+}
+
+export function resonancePolymaxValidationEnabled() {
+  debugApiEnsureInstalled();
+  return debugFlagValueResolve("usePolymaxValidation");
 }
 
 export function resonanceEnergyBandWidthHzResolve(defaultHz: number) {

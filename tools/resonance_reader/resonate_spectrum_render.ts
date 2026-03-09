@@ -11,6 +11,7 @@ type SpectrumPayload = {
   overlay?: number[];
   modes?: any[];
   secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+  polymaxCandidates?: Array<{ freqHz: number; zeta: number; stability: number; orderCount: number }>;
 };
 
 type ModeMeta = { label: string; aliasHtml: string; aliasText: string; tooltip: string; color: string };
@@ -43,7 +44,7 @@ export function renderSpectrum(payload: SpectrumPayload, deps: SpectrumRenderDep
   const priorRanges = spectrumAxisRangesReadFromPlot(plot);
   const preserveRanges = spectrumRangesPreserveNextRenderConsumeFromState();
   resetModeOverrideLabelBindState();
-  const { freqs, mags, overlay, modes, secondarySpectrum } = payload;
+  const { freqs, mags, overlay, modes, secondarySpectrum, polymaxCandidates } = payload;
   const { overlaySegments, overlayVisible, toggle } = overlayContextResolve(freqs, overlay);
   const hoverNoteData = hoverNoteDataResolveFromFreqs(freqs);
   const {
@@ -62,6 +63,7 @@ export function renderSpectrum(payload: SpectrumPayload, deps: SpectrumRenderDep
     overlayVisible,
     hoverNoteData,
     secondarySpectrum: secondarySpectrum || null,
+    polymaxCandidates: polymaxCandidates || [],
     deps,
   });
   if (preserveRanges) spectrumLayoutApplyAxisRanges(layout, priorRanges);
@@ -243,6 +245,31 @@ function buildOverlayTraces(overlaySegments: OverlaySegment[], overlayVisible: b
   }));
 }
 
+
+function buildPolymaxTraces(
+  candidates: Array<{ freqHz: number; zeta: number; stability: number; orderCount: number }>,
+  freqs: number[],
+  mags: number[],
+) {
+  if (!Array.isArray(candidates) || !candidates.length) return [];
+  return candidates
+    .filter((c) => Number.isFinite(c.freqHz))
+    .map((candidate) => {
+      const idx = nearestSpectrumIndexFromFreq(freqs, candidate.freqHz);
+      const y = Number.isFinite(mags[idx]) ? mags[idx] : Math.max(...mags.filter((v) => Number.isFinite(v)).slice(0, 1), -60);
+      return {
+        x: [candidate.freqHz],
+        y: [y],
+        type: "scatter",
+        mode: "markers",
+        marker: { size: 12, symbol: "diamond", color: "rgba(255,214,102,0.95)", line: { color: "rgba(23,26,38,0.95)", width: 2 } },
+        hovertemplate: `<b>PolyMAX Stable Pole</b><br>%{x:.1f} Hz<br>ζ ${(candidate.zeta * 100).toFixed(2)}%<br>stability ${(candidate.stability * 100).toFixed(0)}%<extra></extra>`,
+        showlegend: false,
+        meta: { kind: "polymax" },
+      };
+    });
+}
+
 function buildModeTracesAndAnnotations(
   freqs: number[],
   mags: number[],
@@ -273,6 +300,7 @@ function buildModeTracesAndAnnotations(
         ? `${(m.cents as number) >= 0 ? "+" : ""}${Math.round(m.cents as number)}¢`
         : "—";
       const aliasLabel = meta.aliasText ? ` ${meta.aliasText}` : "";
+      const polyTag = m.polymaxStable ? " · PM✓" : "";
 
       if (Number.isFinite(y0)) {
         modeAnnotationKeys.push(m.mode);
@@ -282,7 +310,7 @@ function buildModeTracesAndAnnotations(
           y: y0,
           xref: "x",
           yref: "y",
-          text: modeAnnotationTextBuild(meta, aliasLabel, f0, noteLabel, centsLabel),
+          text: `${modeAnnotationTextBuild(meta, aliasLabel, f0, noteLabel, centsLabel)}${polyTag}`,
           showarrow: true,
           arrowhead: 0,
           arrowwidth: 2,
@@ -369,20 +397,21 @@ function buildSpectrumPlotData(
   measuredTrace: any,
   secondaryMeasuredTrace: any | null,
   overlayTraces: any[],
+  polymaxTraces: any[],
   modeTraces: any[],
   toneTrace: any,
 ) {
   const flatModeTraces = modeTraces.flatMap((m: any) => m.traces);
-  return [measuredTrace, ...(secondaryMeasuredTrace ? [secondaryMeasuredTrace] : []), ...overlayTraces, ...flatModeTraces, toneTrace];
+  return [measuredTrace, ...(secondaryMeasuredTrace ? [secondaryMeasuredTrace] : []), ...overlayTraces, ...polymaxTraces, ...flatModeTraces, toneTrace];
 }
 
 function buildModeTraceIndexByKey(
   modeTraces: any[],
   modes: any[] | undefined,
-  overlayTraces: any[],
+  nonModeTraceCount: number,
   hasSecondaryMeasuredTrace: boolean,
 ) {
-  const baseOverlayCount = overlayTraces.length;
+  const baseOverlayCount = nonModeTraceCount;
   const measuredTraceCount = 1 + (hasSecondaryMeasuredTrace ? 1 : 0);
   const modeTraceIndexByKey: Record<string, { dotBig: number; dotSmall: number }> = {};
   modeTraces.forEach((_, idx) => {
@@ -582,6 +611,7 @@ function spectrumRenderModelAssemble(args: {
   overlayVisible: boolean;
   hoverNoteData: Array<[string, string]>;
   secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+  polymaxCandidates: Array<{ freqHz: number; zeta: number; stability: number; orderCount: number }> ;
   deps: SpectrumRenderDeps;
 }) {
   const measuredTrace = buildMeasuredTrace(args.freqs, args.mags, args.hoverNoteData);
@@ -590,6 +620,7 @@ function spectrumRenderModelAssemble(args: {
     spectrumSecondaryTraceShouldRenderForMeasureMode(),
   );
   const overlayTraces = buildOverlayTraces(args.overlaySegments, args.overlayVisible);
+  const polymaxTraces = buildPolymaxTraces(args.polymaxCandidates, args.freqs, args.mags);
   const toneTrace = toneSpikeTraceBuild(args.freqs, args.mags);
   const { modeTraces, modeAnnotations, modeAnnotationKeys, modeAnnotationAnchorX } = buildModeTracesAndAnnotations(
     args.freqs,
@@ -598,8 +629,8 @@ function spectrumRenderModelAssemble(args: {
     args.deps.modeMeta,
   );
   const layout = buildSpectrumLayout(args.deps, modeAnnotations);
-  const plotData = buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, overlayTraces, modeTraces, toneTrace);
-  const modeTraceIndexByKey = buildModeTraceIndexByKey(modeTraces, args.modes, overlayTraces, Boolean(secondaryMeasuredTrace));
+  const plotData = buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, overlayTraces, polymaxTraces, modeTraces, toneTrace);
+  const modeTraceIndexByKey = buildModeTraceIndexByKey(modeTraces, args.modes, overlayTraces.length + polymaxTraces.length, Boolean(secondaryMeasuredTrace));
   const modeAnnotationIndexByKey = buildModeAnnotationIndexByKey(modeAnnotationKeys);
   const toneTraceIndex = plotData.length - 1;
   return {

@@ -1,3 +1,10 @@
+export type PolymaxCandidate = {
+  freqHz: number;
+  zeta: number;
+  orderCount: number;
+  stability: number;
+};
+
 export type ModeCard = {
   key: string;
   kind?: "built-in" | "custom";
@@ -19,4 +26,5 @@ export type SpectrumPayload = {
   overlay?: number[];
   modes?: any[];
   secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+  polymaxCandidates?: PolymaxCandidate[];
 };

@@ -21,7 +21,7 @@ export function renderSpectrum(payload, deps) {
     const priorRanges = spectrumAxisRangesReadFromPlot(plot);
     const preserveRanges = spectrumRangesPreserveNextRenderConsumeFromState();
     resetModeOverrideLabelBindState();
-    const { freqs, mags, overlay, modes, secondarySpectrum } = payload;
+    const { freqs, mags, overlay, modes, secondarySpectrum, polymaxCandidates } = payload;
     const { overlaySegments, overlayVisible, toggle } = overlayContextResolve(freqs, overlay);
     const hoverNoteData = hoverNoteDataResolveFromFreqs(freqs);
     const { plotData, layout, modeAnnotationKeys, modeAnnotationAnchorX, modeTraceIndexByKey, modeAnnotationIndexByKey, toneTraceIndex, } = spectrumRenderModelAssemble({
@@ -32,6 +32,7 @@ export function renderSpectrum(payload, deps) {
         overlayVisible,
         hoverNoteData,
         secondarySpectrum: secondarySpectrum || null,
+        polymaxCandidates: polymaxCandidates || [],
         deps,
     });
     if (preserveRanges)
@@ -191,6 +192,26 @@ function buildOverlayTraces(overlaySegments, overlayVisible) {
         meta: { kind: "overlay" },
     }));
 }
+function buildPolymaxTraces(candidates, freqs, mags) {
+    if (!Array.isArray(candidates) || !candidates.length)
+        return [];
+    return candidates
+        .filter((c) => Number.isFinite(c.freqHz))
+        .map((candidate) => {
+        const idx = nearestSpectrumIndexFromFreq(freqs, candidate.freqHz);
+        const y = Number.isFinite(mags[idx]) ? mags[idx] : Math.max(...mags.filter((v) => Number.isFinite(v)).slice(0, 1), -60);
+        return {
+            x: [candidate.freqHz],
+            y: [y],
+            type: "scatter",
+            mode: "markers",
+            marker: { size: 12, symbol: "diamond", color: "rgba(255,214,102,0.95)", line: { color: "rgba(23,26,38,0.95)", width: 2 } },
+            hovertemplate: `<b>PolyMAX Stable Pole</b><br>%{x:.1f} Hz<br>ζ ${(candidate.zeta * 100).toFixed(2)}%<br>stability ${(candidate.stability * 100).toFixed(0)}%<extra></extra>`,
+            showlegend: false,
+            meta: { kind: "polymax" },
+        };
+    });
+}
 function buildModeTracesAndAnnotations(freqs, mags, modes, modeMetaByKey) {
     const modeAnnotations = [];
     const modeAnnotationKeys = [];
@@ -217,6 +238,7 @@ function buildModeTracesAndAnnotations(freqs, mags, modes, modeMetaByKey) {
             ? `${m.cents >= 0 ? "+" : ""}${Math.round(m.cents)}¢`
             : "—";
         const aliasLabel = meta.aliasText ? ` ${meta.aliasText}` : "";
+        const polyTag = m.polymaxStable ? " · PM✓" : "";
         if (Number.isFinite(y0)) {
             modeAnnotationKeys.push(m.mode);
             modeAnnotationAnchorX[m.mode] = f0;
@@ -225,7 +247,7 @@ function buildModeTracesAndAnnotations(freqs, mags, modes, modeMetaByKey) {
                 y: y0,
                 xref: "x",
                 yref: "y",
-                text: modeAnnotationTextBuild(meta, aliasLabel, f0, noteLabel, centsLabel),
+                text: `${modeAnnotationTextBuild(meta, aliasLabel, f0, noteLabel, centsLabel)}${polyTag}`,
                 showarrow: true,
                 arrowhead: 0,
                 arrowwidth: 2,
@@ -304,12 +326,12 @@ function buildSpectrumLayout(deps, modeAnnotations) {
         annotations: modeAnnotations,
     };
 }
-function buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, overlayTraces, modeTraces, toneTrace) {
+function buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, overlayTraces, polymaxTraces, modeTraces, toneTrace) {
     const flatModeTraces = modeTraces.flatMap((m) => m.traces);
-    return [measuredTrace, ...(secondaryMeasuredTrace ? [secondaryMeasuredTrace] : []), ...overlayTraces, ...flatModeTraces, toneTrace];
+    return [measuredTrace, ...(secondaryMeasuredTrace ? [secondaryMeasuredTrace] : []), ...overlayTraces, ...polymaxTraces, ...flatModeTraces, toneTrace];
 }
-function buildModeTraceIndexByKey(modeTraces, modes, overlayTraces, hasSecondaryMeasuredTrace) {
-    const baseOverlayCount = overlayTraces.length;
+function buildModeTraceIndexByKey(modeTraces, modes, nonModeTraceCount, hasSecondaryMeasuredTrace) {
+    const baseOverlayCount = nonModeTraceCount;
     const measuredTraceCount = 1 + (hasSecondaryMeasuredTrace ? 1 : 0);
     const modeTraceIndexByKey = {};
     modeTraces.forEach((_, idx) => {
@@ -486,11 +508,12 @@ function spectrumRenderModelAssemble(args) {
     const measuredTrace = buildMeasuredTrace(args.freqs, args.mags, args.hoverNoteData);
     const secondaryMeasuredTrace = buildSecondaryMeasuredTrace(args.secondarySpectrum, spectrumSecondaryTraceShouldRenderForMeasureMode());
     const overlayTraces = buildOverlayTraces(args.overlaySegments, args.overlayVisible);
+    const polymaxTraces = buildPolymaxTraces(args.polymaxCandidates, args.freqs, args.mags);
     const toneTrace = toneSpikeTraceBuild(args.freqs, args.mags);
     const { modeTraces, modeAnnotations, modeAnnotationKeys, modeAnnotationAnchorX } = buildModeTracesAndAnnotations(args.freqs, args.mags, args.modes, args.deps.modeMeta);
     const layout = buildSpectrumLayout(args.deps, modeAnnotations);
-    const plotData = buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, overlayTraces, modeTraces, toneTrace);
-    const modeTraceIndexByKey = buildModeTraceIndexByKey(modeTraces, args.modes, overlayTraces, Boolean(secondaryMeasuredTrace));
+    const plotData = buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, overlayTraces, polymaxTraces, modeTraces, toneTrace);
+    const modeTraceIndexByKey = buildModeTraceIndexByKey(modeTraces, args.modes, overlayTraces.length + polymaxTraces.length, Boolean(secondaryMeasuredTrace));
     const modeAnnotationIndexByKey = buildModeAnnotationIndexByKey(modeAnnotationKeys);
     const toneTraceIndex = plotData.length - 1;
     return {

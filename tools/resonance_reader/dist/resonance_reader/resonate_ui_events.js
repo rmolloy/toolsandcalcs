@@ -1,8 +1,8 @@
 export const RESONATE_UI_EVENT_FLAG = {
     name: "resonate_ui_event_subscribe",
     owner: "resonate",
-    defaultValue: true,
-    rolloutMode: "on",
+    defaultValue: false,
+    rolloutMode: "off",
     removalCondition: "after parity is proven",
     removalTask: "remove ui event flag once subscription is default",
 };

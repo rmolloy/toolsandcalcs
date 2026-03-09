@@ -104,7 +104,10 @@ function recordToggleFromMic(deps) {
     const FFTAudio = window.FFTAudio;
     if (!FFTAudio)
         return;
+    const state = deps.state;
+    const previewDispatch = state.__livePreviewDispatch || (state.__livePreviewDispatch = livePreviewDispatchBuild());
     if (FFTAudio.isRecordingActive()) {
+        previewDispatch.stop?.();
         FFTAudio.stopRecording();
         updateWaveTransportLabels();
         deps.setStatus("Recording stopped.");
@@ -112,15 +115,75 @@ function recordToggleFromMic(deps) {
     }
     updateWaveTransportLabels();
     deps.setStatus("Recording...");
-    FFTAudio.startRecording(() => {
-        recordCaptureRunFromMic(deps);
+    previewDispatch.start?.();
+    FFTAudio.startRecording({
+        onPreview: (wave, sampleRate) => {
+            previewDispatch.push?.(wave, sampleRate, deps);
+        },
+        onDone: () => {
+            previewDispatch.stop?.();
+            recordCaptureRunFromMic(deps);
+        },
     }).then(() => {
         updateWaveTransportLabels();
     }).catch((err) => {
+        previewDispatch.stop?.();
         console.error("[Resonance Reader] record failed", err);
         deps.setStatus("Recording failed or denied.");
         updateWaveTransportLabels();
     });
+}
+function livePreviewDispatchBuild() {
+    let running = false;
+    let inFlight = false;
+    let latest = null;
+    const previewConfig = { version: "v1", stages: ["ingest", "refresh"] };
+    const runNext = (deps) => {
+        if (!running || inFlight || !latest)
+            return;
+        const payload = latest;
+        latest = null;
+        inFlight = true;
+        const runner = window.ResonatePipelineRunner;
+        if (!runner?.run) {
+            inFlight = false;
+            return;
+        }
+        const input = {
+            trigger: "record.preview",
+            source: {
+                wave: payload.wave,
+                sampleRate: payload.sampleRate,
+                sourceKind: "mic",
+            },
+        };
+        runner.run(input, previewConfig)
+            .catch((err) => {
+            console.warn("[Resonance Reader] live FFT preview failed", err);
+        })
+            .finally(() => {
+            inFlight = false;
+            if (latest)
+                runNext(deps);
+        });
+    };
+    return {
+        start() {
+            running = true;
+            latest = null;
+            inFlight = false;
+        },
+        stop() {
+            running = false;
+            latest = null;
+        },
+        push(wave, sampleRate, deps) {
+            if (!running)
+                return;
+            latest = { wave, sampleRate };
+            runNext(deps);
+        },
+    };
 }
 function bindImport(deps) {
     const btnImport = document.getElementById("btn_import");

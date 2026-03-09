@@ -51,6 +51,16 @@ export function fit4DofFromTargets(targets, opts = {}) {
     };
     if (!desired.air && !desired.top && !desired.back)
         return null;
+    const modeWeights = {
+        air: Number.isFinite(opts.modeWeights?.air) ? Math.max(0.05, Number(opts.modeWeights?.air)) : 1,
+        top: Number.isFinite(opts.modeWeights?.top) ? Math.max(0.05, Number(opts.modeWeights?.top)) : 1,
+        back: Number.isFinite(opts.modeWeights?.back) ? Math.max(0.05, Number(opts.modeWeights?.back)) : 1,
+    };
+    const priors = opts.priors || {};
+    const priorAnchors = priors.anchor || {};
+    const priorMassCeilings = priors.massCeilings || {};
+    const lambdaAnchor = Number.isFinite(priors.lambdaAnchor) ? Math.max(0, Number(priors.lambdaAnchor)) : 0.04;
+    const lambdaMassCeiling = Number.isFinite(priors.lambdaMassCeiling) ? Math.max(0, Number(priors.lambdaMassCeiling)) : 0.8;
     const baselineResp = computeResponseSafe(adaptParamsToSolver(baseParams));
     const baselinePeaks = baselineResp ? modelPeaksFromResponse(baselineResp) : null;
     const clampCandidate = (id, value) => {
@@ -85,14 +95,33 @@ export function fit4DofFromTargets(targets, opts = {}) {
         const peaks = resp ? modelPeaksFromResponse(resp) : null;
         if (!peaks)
             return { err: Infinity, resp: null, peaks: null };
-        const err = ["air", "top", "back"].reduce((acc, k) => {
+        const targetErr = ["air", "top", "back"].reduce((acc, k) => {
             const tgt = desired[k];
             const val = peaks[k];
             if (!Number.isFinite(tgt) || !Number.isFinite(val))
                 return acc;
             const diff = val - tgt;
-            return acc + diff * diff;
+            return acc + (modeWeights[k] * diff * diff);
         }, 0);
+        const massPenalty = Object.entries(priorMassCeilings).reduce((acc, [id, ceiling]) => {
+            if (!Number.isFinite(ceiling) || ceiling <= 0)
+                return acc;
+            const current = Number(rawParams[id]);
+            if (!Number.isFinite(current) || current <= ceiling)
+                return acc;
+            const excess = (current - ceiling) / ceiling;
+            return acc + (excess * excess);
+        }, 0);
+        const anchorPenalty = Object.entries(priorAnchors).reduce((acc, [id, center]) => {
+            if (!Number.isFinite(center) || center === 0)
+                return acc;
+            const current = Number(rawParams[id]);
+            if (!Number.isFinite(current))
+                return acc;
+            const norm = (current - center) / Math.abs(center);
+            return acc + (norm * norm);
+        }, 0);
+        const err = targetErr + (lambdaMassCeiling * massPenalty) + (lambdaAnchor * anchorPenalty);
         return { err, resp, peaks };
     };
     let best = { ...warm };

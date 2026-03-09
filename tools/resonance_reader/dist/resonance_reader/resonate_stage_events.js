@@ -1,8 +1,8 @@
 export const RESONATE_STAGE_EVENT_FLAG = {
     name: "resonate_stage_event",
     owner: "resonate",
-    defaultValue: true,
-    rolloutMode: "on",
+    defaultValue: false,
+    rolloutMode: "off",
     removalCondition: "after parity is proven",
     removalTask: "remove stage event flag once stage events are default",
 };
