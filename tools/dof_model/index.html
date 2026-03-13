@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>4-DOF Model - ToneLab</title>
+  <title>Four Degrees of Freedom Model - ToneLab</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -12,31 +12,28 @@
   <div class="page-shell">
     <header class="hero">
       <div class="hero-text">
-        <h1>Low-Frequency DOF Model</h1>
-        <p>Tune the coupled degrees of freedom directly. Use the cards to edit physical parameters, then preview the model response.</p>
+        <h1>Four Degrees of Freedom Model</h1>
       </div>
       <div class="hero-actions">
+        <label class="toggle">
+          <input type="checkbox" id="toggle_overlay">
+          <span class="toggle-label">Compare</span>
+          <span class="toggle-knob"></span>
+        </label>
         <div class="mode-tabs" role="tablist">
           <button class="tab-btn" data-order="1">1-DOF</button>
           <button class="tab-btn" data-order="2">2-DOF</button>
           <button class="tab-btn" data-order="3">3-DOF</button>
           <button class="tab-btn tab-btn-active" data-order="4">4-DOF</button>
         </div>
+        <details class="hero-menu">
+          <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+          <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
+        </details>
       </div>
     </header>
 
     <section class="card-surface">
-      <div class="plot-header dof-frf-header">
-        <div>
-          <h2>Frequency Response</h2>
-          <p class="muted small">Solid line shows current model solution. Dashed line shows Target overlay.</p>
-        </div>
-        <label class="toggle">
-          <input type="checkbox" id="toggle_overlay">
-          <span class="toggle-label">Compare</span>
-          <span class="toggle-knob"></span>
-        </label>
-      </div>
       <div class="plot-shell">
         <div id="plot_dof" class="plot"></div>
         <div id="plot_overlay" class="plot-overlay"></div>
@@ -44,10 +41,15 @@
 
       <div class="section-divider"></div>
 
-      <div class="lfs-header dof-modes-header">
-        <div>
-          <h2>Modes</h2>
-          <p class="muted small">Edit physical parameters for each degree of freedom.</p>
+      <div id="dof_cards_header" class="lfs-header dof-modes-header">
+        <div class="dof-cards-heading">
+          <h2 id="dof_cards_title">Current Model</h2>
+          <p id="dof_cards_copy" class="muted small">Direct parameter editing for each degree of freedom.</p>
+        </div>
+        <div class="dof-task-tabs" role="tablist" aria-label="DOF task mode">
+          <button class="task-tab-btn task-tab-btn-active" data-task-mode="edit" type="button">Edit Model</button>
+          <button class="task-tab-btn" data-task-mode="fit" type="button">Fit My Guitar</button>
+          <button class="task-tab-btn" data-task-mode="solve" type="button">Solve Targets</button>
         </div>
       </div>
 
@@ -55,55 +57,89 @@
         <!-- populated by script -->
       </div>
 
-      <div class="plot-footer">
-        <div class="muted">Model order <span id="model_order_label">4</span> · Derived from shared 4-DOF solver core</div>
-        <div class="link-row">
-          <span class="small muted">Blue = current · Gold dashed = Target</span>
-        </div>
-      </div>
+      <div class="dof-task-parking" aria-hidden="true">
+        <div id="dof_fit_panel_home"></div>
+        <section id="dof_fit_panel" class="dof-fit-panel" aria-label="Fit model to target frequencies">
+          <div class="dof-fit-copy">
+            <h3>Fit My Guitar</h3>
+            <p class="muted small">Enter modal or structural targets and solve toward those targets.</p>
+          </div>
+          <div class="dof-fit-controls">
+            <label class="dof-fit-field">
+              <span>Air (Hz)</span>
+              <input id="fit_target_air" type="number" min="50" max="140" step="0.1" inputmode="decimal" placeholder="100">
+            </label>
+            <label class="dof-fit-field">
+              <span>Top (Hz)</span>
+              <input id="fit_target_top" type="number" min="120" max="240" step="0.1" inputmode="decimal" placeholder="185">
+            </label>
+            <label class="dof-fit-field">
+              <span>Back (Hz)</span>
+              <input id="fit_target_back" type="number" min="180" max="300" step="0.1" inputmode="decimal" placeholder="230">
+            </label>
+            <label class="dof-fit-field">
+              <span>Top Effective Mass (g)</span>
+              <input id="fit_target_mass_top" type="number" min="5" max="120" step="0.1" inputmode="decimal" placeholder="43">
+            </label>
+            <label class="dof-fit-field">
+              <span>Top Effective Stiffness (N/m)</span>
+              <input id="fit_target_stiffness_top" type="number" min="10000" max="150000" step="100" inputmode="decimal" placeholder="42700">
+            </label>
+            <label class="dof-fit-field">
+              <span>Back Effective Mass (g)</span>
+              <input id="fit_target_mass_back" type="number" min="20" max="180" step="0.1" inputmode="decimal" placeholder="94">
+            </label>
+            <label class="dof-fit-field">
+              <span>Back Effective Stiffness (N/m)</span>
+              <input id="fit_target_stiffness_back" type="number" min="50000" max="400000" step="100" inputmode="decimal" placeholder="130000">
+            </label>
+            <label class="dof-fit-field">
+              <span>Cavity Volume (m³)</span>
+              <input id="fit_target_volume_air" type="number" min="0.01" max="0.025" step="0.0001" inputmode="decimal" placeholder="0.0141">
+            </label>
+            <label class="dof-fit-field">
+              <span>Soundhole Diameter (mm)</span>
+              <input id="fit_target_area_hole_diam" type="number" min="50" max="120" step="0.1" inputmode="decimal" placeholder="83.6">
+            </label>
+            <button id="btn_fit_guitar" class="ghost-btn btn-small" type="button">Fit My Guitar</button>
+            <button id="btn_fit_guitar_fast" class="ghost-btn btn-small" type="button">Fit 2</button>
+            <button id="btn_fit_guitar_measured" class="ghost-btn btn-small" type="button">Fit 3</button>
+            <button id="btn_fit_clear" class="ghost-btn btn-small" type="button">Clear</button>
+          </div>
+          <p id="fit_status" class="muted small dof-fit-status"></p>
+        </section>
 
-      <section class="dof-fit-panel" aria-label="Fit model to target frequencies">
-        <div class="dof-fit-copy">
-          <h3>Fit My Guitar</h3>
-          <p class="muted small">Enter target mode frequencies and solve toward those targets.</p>
-        </div>
-        <div class="dof-fit-controls">
-          <label class="dof-fit-field">
-            <span>Air (Hz)</span>
-            <input id="fit_target_air" type="number" min="50" max="140" step="0.1" inputmode="decimal" placeholder="100">
+        <div id="dof_solve_panel_home"></div>
+        <section id="dof_solve_panel" class="dof-guided-panel" aria-label="Solve target recipe">
+          <div class="dof-guided-copy">
+            <h3>Solve Targets</h3>
+            <p class="muted small">Run the current targets as a What-If recipe and review the suggested structural changes.</p>
+          </div>
+          <label class="dof-guided-option">
+            <input id="fit_restrict_simple" type="checkbox" checked>
+            <span>Only enlarge the soundhole and increase plate masses.</span>
           </label>
-          <label class="dof-fit-field">
-            <span>Top (Hz)</span>
-            <input id="fit_target_top" type="number" min="120" max="240" step="0.1" inputmode="decimal" placeholder="185">
-          </label>
-          <label class="dof-fit-field">
-            <span>Back (Hz)</span>
-            <input id="fit_target_back" type="number" min="180" max="300" step="0.1" inputmode="decimal" placeholder="230">
-          </label>
-          <label class="dof-fit-field">
-            <span>Top Effective Mass (g)</span>
-            <input id="fit_target_mass_top" type="number" min="5" max="120" step="0.1" inputmode="decimal" placeholder="43">
-          </label>
-          <label class="dof-fit-field">
-            <span>Top Effective Stiffness (N/m)</span>
-            <input id="fit_target_stiffness_top" type="number" min="10000" max="150000" step="100" inputmode="decimal" placeholder="42700">
-          </label>
-          <button id="btn_fit_guitar" class="ghost-btn btn-small" type="button">Fit My Guitar</button>
-          <button id="btn_fit_guitar_fast" class="ghost-btn btn-small" type="button">Fit 2</button>
-          <button id="btn_fit_guitar_measured" class="ghost-btn btn-small" type="button">Fit 3</button>
-          <button id="btn_fit_clear" class="ghost-btn btn-small" type="button">Clear</button>
-        </div>
-        <p id="fit_status" class="muted small dof-fit-status"></p>
-      </section>
+          <div class="dof-guided-actions">
+            <button id="btn_solve_targets" class="ghost-btn btn-small" type="button">Solve Targets</button>
+            <button id="btn_reset_whatif" class="ghost-btn btn-small" type="button">Reset What-If</button>
+          </div>
+          <div id="whatif_summary" class="delta-summary">
+            <h3>What-If Recipe</h3>
+            <div class="delta-summary__body muted">Run Solve Targets to see suggested adjustments.</div>
+          </div>
+        </section>
+      </div>
     </section>
   </div>
 
   <script src="../vendor/plotly/plotly.min.js" defer></script>
   <script src="../common/atmosphere.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
   <script src="../common/dof_solver_adapter.js" defer></script>
   <script src="../common/overlay_segments.js" defer></script>
   <script src="../common/solver_core.js" defer></script>
   <script src="../common/4dof/model_core.js" defer></script>
+  <script src="../common/4dof/whatif_recipe_summary.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 

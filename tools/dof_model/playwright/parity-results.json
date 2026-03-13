@@ -1,0 +1,213 @@
+{
+  "generatedAt": "2026-03-13T18:53:17.655Z",
+  "baseUrl": "http://127.0.0.1:4173",
+  "pages": {
+    "legacy": "http://127.0.0.1:4173/tools/4dof_solver/index.html",
+    "modern": "http://127.0.0.1:4173/tools/dof_model/index.html"
+  },
+  "checks": [
+    {
+      "key": "fit.button.fit_my_guitar",
+      "label": "Fit My Guitar primary action",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#btn_fit_baseline",
+          "button:has-text(\"Fit My Guitar\")"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": true,
+        "matched": [
+          "#btn_fit_guitar",
+          "button:has-text(\"Fit My Guitar\")"
+        ],
+        "missing": []
+      },
+      "status": "Parity"
+    },
+    {
+      "key": "fit.button.solve_targets",
+      "label": "Solve Targets action",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#btn_fit_whatif",
+          "button:has-text(\"Solve Targets\")"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": true,
+        "matched": [
+          "button:has-text(\"Solve Targets\")"
+        ],
+        "missing": []
+      },
+      "status": "Parity"
+    },
+    {
+      "key": "fit.toggle.whatif",
+      "label": "What-If compare toggle",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#whatif_toggle"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": true,
+        "matched": [
+          "#toggle_overlay"
+        ],
+        "missing": []
+      },
+      "status": "Parity"
+    },
+    {
+      "key": "fit.button.reset_whatif",
+      "label": "Reset What-If button",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#btn_reset_whatif",
+          "button:has-text(\"Reset What-If\")"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": true,
+        "matched": [
+          "#btn_reset_whatif",
+          "button:has-text(\"Reset What-If\")"
+        ],
+        "missing": []
+      },
+      "status": "Parity"
+    },
+    {
+      "key": "fit.form.modal_targets",
+      "label": "Modal target fields",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#fit_freq_1",
+          "#fit_freq_2",
+          "#fit_freq_3"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": true,
+        "matched": [
+          "#fit_target_air",
+          "#fit_target_top",
+          "#fit_target_back"
+        ],
+        "missing": []
+      },
+      "status": "Parity"
+    },
+    {
+      "key": "fit.form.plate_fields",
+      "label": "Plate mass/stiffness target fields",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#fit_mass_top",
+          "#fit_stiffness_top"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": true,
+        "matched": [
+          "#fit_target_mass_top",
+          "#fit_target_stiffness_top"
+        ],
+        "missing": []
+      },
+      "status": "Parity"
+    },
+    {
+      "key": "fit.form.body_fields",
+      "label": "Body information fields",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#fit_volume_air",
+          "#fit_area_hole_diam"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": false,
+        "matched": [],
+        "missing": [
+          "#fit_volume_air",
+          "#fit_area_hole_diam"
+        ]
+      },
+      "status": "Missing in modern"
+    },
+    {
+      "key": "fit.option.restrict_recipe",
+      "label": "Recipe restriction checkbox",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#fit_restrict_simple"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": true,
+        "matched": [
+          "#fit_restrict_simple"
+        ],
+        "missing": []
+      },
+      "status": "Parity"
+    },
+    {
+      "key": "fit.summary.whatif_recipe",
+      "label": "What-If recipe summary panel",
+      "legacy": {
+        "present": true,
+        "matched": [
+          "#whatif_summary"
+        ],
+        "missing": []
+      },
+      "modern": {
+        "present": true,
+        "matched": [
+          "#whatif_summary"
+        ],
+        "missing": []
+      },
+      "status": "Parity"
+    },
+    {
+      "key": "plot.draggable_thumbs",
+      "label": "Draggable mode thumbs on plot",
+      "legacy": {
+        "present": false,
+        "matched": [],
+        "missing": [
+          ".mode-thumb"
+        ]
+      },
+      "modern": {
+        "present": false,
+        "matched": [],
+        "missing": [
+          ".mode-thumb"
+        ]
+      },
+      "status": "Missing in both"
+    }
+  ]
+}

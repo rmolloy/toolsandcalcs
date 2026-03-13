@@ -5,6 +5,7 @@ type DofParams = {
 };
 
 type ModeKey = "air" | "top" | "back";
+type TaskMode = "edit" | "fit" | "solve";
 type TraceName = "Current" | "Target" | "Top" | "Air" | "Back" | "Sides";
 type OverlaySegment = { x: number[]; y: number[]; width: number; opacity: number };
 
@@ -70,6 +71,22 @@ type CardDef = {
   color: string;
   fields: CardField[];
   badgeText?: string;
+};
+type TaskCardDef = {
+  key: string;
+  label: string;
+  alias: string;
+  badgeText: string;
+  copy?: string;
+  fieldIds?: string[];
+  optionIds?: string[];
+  actionIds?: string[];
+  statusId?: string;
+  panelIds?: string[];
+};
+type TaskModeCopy = {
+  cardsTitle: string;
+  cardsCopy: string;
 };
 
 const CARD_DEFS: CardDef[] = [
@@ -144,6 +161,227 @@ const CARD_DEFS: CardDef[] = [
   },
 ];
 
+const FIT_TASK_CARD_DEFS: TaskCardDef[] = [
+  {
+    key: "air",
+    label: "Air",
+    alias: "Measured mode + body",
+    badgeText: "Fit",
+    copy: "Match the air resonance from the measured mode and the body inputs you already know.",
+    fieldIds: ["fit_target_air", "fit_target_volume_air", "fit_target_area_hole_diam"],
+  },
+  {
+    key: "top",
+    label: "Top",
+    alias: "Measured mode + plate",
+    badgeText: "Fit",
+    copy: "Anchor the top mode with the observed frequency and the effective top properties you trust.",
+    fieldIds: ["fit_target_top", "fit_target_mass_top", "fit_target_stiffness_top"],
+  },
+  {
+    key: "back",
+    label: "Back",
+    alias: "Measured mode + plate",
+    badgeText: "Fit",
+    copy: "Anchor the back mode with the observed frequency and the effective back properties you trust.",
+    fieldIds: ["fit_target_back", "fit_target_mass_back", "fit_target_stiffness_back"],
+  },
+  {
+    key: "environment",
+    label: "Environment",
+    alias: "Fitting actions",
+    badgeText: "Fit",
+    copy: "Run the fitter, compare the result, and clear the inputs when you want to start over.",
+    actionIds: ["btn_fit_guitar", "btn_fit_guitar_fast", "btn_fit_guitar_measured", "btn_fit_clear"],
+    statusId: "fit_status",
+  },
+];
+
+const SOLVE_TASK_CARD_DEFS: TaskCardDef[] = [
+  {
+    key: "air",
+    label: "Air",
+    alias: "Target mode + body",
+    badgeText: "Solve",
+    copy: "Set the air goal first, then shape the body inputs that most directly move it.",
+    fieldIds: ["fit_target_air", "fit_target_volume_air", "fit_target_area_hole_diam"],
+  },
+  {
+    key: "top",
+    label: "Top",
+    alias: "Target mode + plate",
+    badgeText: "Solve",
+    copy: "Set the top target and the effective top properties that define the move you want.",
+    fieldIds: ["fit_target_top", "fit_target_mass_top", "fit_target_stiffness_top"],
+  },
+  {
+    key: "back",
+    label: "Back",
+    alias: "Target mode + plate",
+    badgeText: "Solve",
+    copy: "Set the back target and the effective back properties you want the solver to respect.",
+    fieldIds: ["fit_target_back", "fit_target_mass_back", "fit_target_stiffness_back"],
+  },
+  {
+    key: "environment",
+    label: "Environment",
+    alias: "Recipe actions",
+    badgeText: "Solve",
+    copy: "Constrain the recipe, solve the what-if, and review the suggested structural moves.",
+    optionIds: ["fit_restrict_simple"],
+    actionIds: ["btn_solve_targets", "btn_reset_whatif"],
+    panelIds: ["whatif_summary"],
+  },
+];
+
+const TASK_MODE_COPY: Record<TaskMode, TaskModeCopy> = {
+  edit: {
+    cardsTitle: "Current Model",
+    cardsCopy: "Direct parameter editing for each degree of freedom.",
+  },
+  fit: {
+    cardsTitle: "Fit by System",
+    cardsCopy: "Use measured modes and known inputs to infer the current model.",
+  },
+  solve: {
+    cardsTitle: "Solve by System",
+    cardsCopy: "Set goals and constraints, then review the suggested moves.",
+  },
+};
+
+function cardDefsForTaskMode(taskMode: TaskMode) {
+  if (taskMode === "edit") return CARD_DEFS;
+  if (taskMode === "fit") return CARD_DEFS;
+  return CARD_DEFS;
+}
+
+function taskFieldElementRead(fieldId: string) {
+  return document.getElementById(fieldId)?.closest(".dof-fit-field") as HTMLElement | null;
+}
+
+function taskActionElementRead(actionId: string) {
+  return document.getElementById(actionId) as HTMLElement | null;
+}
+
+function taskStatusElementRead(statusId: string) {
+  return document.getElementById(statusId) as HTMLElement | null;
+}
+
+function fitTaskControlGridRead() {
+  return fitPanelSection()?.querySelector(".dof-fit-controls") as HTMLDivElement | null;
+}
+
+function fitTaskControlsRestoreHome() {
+  const controls = fitTaskControlGridRead();
+  const panel = fitPanelSection();
+  if (!controls || !panel) return;
+  FIT_TASK_CARD_DEFS.forEach((card) => {
+    card.fieldIds?.forEach((fieldId) => {
+      const field = taskFieldElementRead(fieldId);
+      if (field) controls.appendChild(field);
+    });
+    card.actionIds?.forEach((actionId) => {
+      const action = taskActionElementRead(actionId);
+      if (action) controls.appendChild(action);
+    });
+  });
+  const status = taskStatusElementRead("fit_status");
+  if (status) panel.appendChild(status);
+}
+
+function taskOptionElementRead(optionId: string) {
+  return document.getElementById(optionId)?.closest(".dof-guided-option") as HTMLElement | null;
+}
+
+function taskPanelElementRead(panelId: string) {
+  return document.getElementById(panelId) as HTMLElement | null;
+}
+
+function solveTaskActionsGroupRead() {
+  return solvePanelSection()?.querySelector(".dof-guided-actions") as HTMLDivElement | null;
+}
+
+function solveTaskControlsRestoreHome() {
+  const actions = solveTaskActionsGroupRead();
+  const panel = solvePanelSection();
+  if (!actions || !panel) return;
+  SOLVE_TASK_CARD_DEFS.forEach((card) => {
+    card.optionIds?.forEach((optionId) => {
+      const option = taskOptionElementRead(optionId);
+      if (option) panel.appendChild(option);
+    });
+    card.actionIds?.forEach((actionId) => {
+      const action = taskActionElementRead(actionId);
+      if (action) actions.appendChild(action);
+    });
+    if (card.actionIds?.length) panel.appendChild(actions);
+    card.panelIds?.forEach((panelId) => {
+      const cardPanel = taskPanelElementRead(panelId);
+      if (cardPanel) panel.appendChild(cardPanel);
+    });
+  });
+}
+
+function taskCardTitleHtml(card: TaskCardDef) {
+  return `<div class="mode-label">${card.label}<span class="mode-label-alias">${card.alias}</span></div><span class="badge">${card.badgeText}</span>`;
+}
+
+function taskCardCopyElementBuild(card: TaskCardDef) {
+  if (!card.copy) return null;
+  const copy = document.createElement("p");
+  copy.className = "task-card-copy";
+  copy.textContent = card.copy;
+  return copy;
+}
+
+function taskCardElementBuild(card: TaskCardDef) {
+  const cardEl = document.createElement("div");
+  cardEl.className = `mode-card mode-${card.key}`;
+
+  const title = document.createElement("div");
+  title.className = "dof-card-title";
+  title.innerHTML = taskCardTitleHtml(card);
+
+  const body = document.createElement("div");
+  body.className = "task-card-fields";
+  const copy = taskCardCopyElementBuild(card);
+  if (copy) body.appendChild(copy);
+  card.fieldIds?.forEach((fieldId) => {
+    const field = taskFieldElementRead(fieldId);
+    if (field) body.appendChild(field);
+  });
+  card.optionIds?.forEach((optionId) => {
+    const option = taskOptionElementRead(optionId);
+    if (option) body.appendChild(option);
+  });
+  if (card.actionIds?.length) {
+    const actions = document.createElement("div");
+    actions.className = "task-card-actions";
+    card.actionIds.forEach((actionId) => {
+      const action = taskActionElementRead(actionId);
+      if (action) actions.appendChild(action);
+    });
+    body.appendChild(actions);
+  }
+  card.panelIds?.forEach((panelId) => {
+    const panel = taskPanelElementRead(panelId);
+    if (panel) body.appendChild(panel);
+  });
+  if (card.statusId) {
+    const status = taskStatusElementRead(card.statusId);
+    if (status) body.appendChild(status);
+  }
+
+  cardEl.append(title, body);
+  return cardEl;
+}
+
+function taskCardsBuild(container: HTMLElement, cardDefs: TaskCardDef[]) {
+  cardDefs.forEach((card) => {
+    container.appendChild(taskCardElementBuild(card));
+  });
+}
+
 const MODE_META: Record<ModeKey, { label: string; color: string }> = {
   air: { label: "Air", color: "var(--purple)" },
   top: { label: "Top", color: "var(--blue)" },
@@ -187,6 +425,7 @@ const SOLVE_TWEAK_IDS = ["stiffness_top", "stiffness_back", "volume_air", "area_
 
 let currentParams: DofParams = { ...DEFAULT_PARAMS };
 let currentOrder = 4;
+let currentTaskMode: TaskMode = "edit";
 let plotlyRef: typeof Plotly | null = null;
 let pendingRender: number | null = null;
 let lastResponse: any = null;
@@ -358,22 +597,61 @@ function formatOverlayDisplayValue(value: number, stepValue: number) {
   return value.toFixed(decimals);
 }
 
-function overlayRangeFillGradient(start: number, end: number) {
-  const overlayBand = "color-mix(in srgb, var(--orange) 48%, transparent)";
-  return `linear-gradient(90deg, transparent 0%, transparent ${start}%, ${overlayBand} ${start}%, ${overlayBand} ${end}%, transparent ${end}%, transparent 100%)`;
+function cssPercentValue(value: number) {
+  return `${value}%`;
 }
 
-function baseRangeFillGradient(end: number) {
-  const fill = "color-mix(in srgb, var(--ink) 28%, transparent)";
-  const track = "color-mix(in srgb, var(--ink) 8%, transparent)";
-  return `linear-gradient(90deg, ${fill} 0%, ${fill} ${end}%, ${track} ${end}%, ${track} 100%)`;
+function cssPixelValue(value: number) {
+  return `${value}px`;
+}
+
+function styleVariableWrite(element: HTMLElement, name: string, value: string) {
+  element.style.setProperty(name, value);
+}
+
+function stylePercentVariableWrite(element: HTMLElement, name: string, value: number) {
+  styleVariableWrite(element, name, cssPercentValue(value));
+}
+
+function stylePixelVariableWrite(element: HTMLElement, name: string, value: number) {
+  styleVariableWrite(element, name, cssPixelValue(value));
+}
+
+function sliderStackElementRead(slider: HTMLInputElement) {
+  return slider.parentElement as HTMLElement | null;
+}
+
+function sliderPresentationSync(
+  slider: HTMLInputElement,
+  start: number,
+  end: number,
+  baseFill: number,
+  overlayFill: number,
+) {
+  const sliderStack = sliderStackElementRead(slider);
+  if (!sliderStack) return;
+  stylePercentVariableWrite(sliderStack, "--param-slider-fill-end", baseFill);
+  stylePercentVariableWrite(sliderStack, "--param-overlay-start", start);
+  stylePercentVariableWrite(sliderStack, "--param-overlay-end", end);
+  stylePercentVariableWrite(sliderStack, "--param-overlay-width", Math.max(0, end - start));
+  stylePercentVariableWrite(sliderStack, "--param-overlay-fill", overlayFill);
 }
 
 function buildCards() {
   const container = document.getElementById("dof_cards");
   if (!container) return;
+  fitTaskControlsRestoreHome();
+  solveTaskControlsRestoreHome();
   container.innerHTML = "";
-  CARD_DEFS.forEach((card) => {
+  if (currentTaskMode === "fit") {
+    taskCardsBuild(container, FIT_TASK_CARD_DEFS);
+    return;
+  }
+  if (currentTaskMode === "solve") {
+    taskCardsBuild(container, SOLVE_TASK_CARD_DEFS);
+    return;
+  }
+  cardDefsForTaskMode(currentTaskMode).forEach((card) => {
     const cardEl = document.createElement("div");
     cardEl.className = `mode-card mode-${card.key}`;
     cardEl.dataset.degree = String(card.degree);
@@ -553,6 +831,7 @@ function buildCards() {
 }
 
 function applyCardVisibility() {
+  if (currentTaskMode !== "edit") return;
   const cards = document.querySelectorAll<HTMLElement>(".mode-card");
   cards.forEach((card) => {
     const degree = Number(card.dataset.degree || 4);
@@ -610,17 +889,12 @@ function updateOverlayLatch(param: keyof typeof DEFAULT_PARAMS) {
   const overlayFill = sliderFillPercent(overlay, overlayValue);
   const start = Math.min(baseFill, overlayFill);
   const end = Math.max(baseFill, overlayFill);
-  slider.style.background = baseRangeFillGradient(baseFill);
-  overlay.style.background = overlayRangeFillGradient(start, end);
+  sliderPresentationSync(slider, start, end, baseFill, overlayFill);
 
   if (deltaBar) {
-    const width = Math.max(0, end - start);
-    deltaBar.style.left = `${start}%`;
-    deltaBar.style.width = `${width}%`;
-    deltaBar.classList.toggle("active", isActive && width > 0);
+    deltaBar.classList.toggle("active", isActive && Math.max(0, end - start) > 0);
   }
   if (glowDot) {
-    glowDot.style.left = `${overlayFill}%`;
     glowDot.classList.toggle("active", isActive);
   }
 
@@ -652,6 +926,7 @@ function resetWhatIf() {
   refreshOverlayVisuals();
   lastWhatIfResponse = null;
   updateModeCards(lastResponse, null);
+  whatIfSummarySet(null);
 }
 
 function getWhatIfParams(): DofParams | null {
@@ -766,14 +1041,42 @@ function syncCardInputs() {
 function setOrder(order: number) {
   currentOrder = order;
   currentParams.model_order = order;
-  const label = document.getElementById("model_order_label");
-  if (label) label.textContent = String(order);
   document.querySelectorAll(".tab-btn").forEach((btn) => {
     const isActive = Number((btn as HTMLElement).dataset.order) === order;
     btn.classList.toggle("tab-btn-active", isActive);
   });
   applyCardVisibility();
   scheduleRender();
+}
+
+function taskModeCopyRead(mode: TaskMode) {
+  return TASK_MODE_COPY[mode];
+}
+
+function taskModeCopyApply(mode: TaskMode) {
+  const copy = taskModeCopyRead(mode);
+  const cardsTitle = document.getElementById("dof_cards_title");
+  const cardsCopy = document.getElementById("dof_cards_copy");
+  if (cardsTitle) cardsTitle.textContent = copy.cardsTitle;
+  if (cardsCopy) cardsCopy.textContent = copy.cardsCopy;
+}
+
+function fitPanelSection() {
+  return document.getElementById("dof_fit_panel");
+}
+
+function solvePanelSection() {
+  return document.getElementById("dof_solve_panel");
+}
+
+function setTaskMode(mode: TaskMode) {
+  currentTaskMode = mode;
+  document.querySelectorAll(".task-tab-btn").forEach((btn) => {
+    const isActive = String((btn as HTMLElement).dataset.taskMode || "") === mode;
+    btn.classList.toggle("task-tab-btn-active", isActive);
+  });
+  taskModeCopyApply(mode);
+  buildCards();
 }
 
 function scheduleRender() {
@@ -1071,19 +1374,34 @@ function sampleSeriesAtFreq(series: Array<{ x: number; y: number }>, freq: numbe
 
 function fit4DofFromTargets(
   targets: Record<string, number | null | undefined>,
-  opts: { maxIter?: number; tweakIds?: string[]; baseParams?: Record<string, any> } = {},
+  opts: { maxIter?: number; tweakIds?: string[]; baseParams?: Record<string, any>; factorAllowed?: (id: string, factor: number) => boolean } = {},
 ) {
   const maxIter = opts.maxIter ?? 12;
   const baseParams = opts.baseParams || DEFAULT_PARAMS;
   const tweakIds = opts.tweakIds || Array.from(SOLVE_TWEAK_IDS);
+  const factorAllowed = opts.factorAllowed;
   const desired = {
     air: Number.isFinite(targets.air) ? (targets.air as number) : null,
     top: Number.isFinite(targets.top) ? (targets.top as number) : null,
     back: Number.isFinite(targets.back) ? (targets.back as number) : null,
     mass_top: Number.isFinite(targets.mass_top) ? (targets.mass_top as number) : null,
     stiffness_top: Number.isFinite(targets.stiffness_top) ? (targets.stiffness_top as number) : null,
+    mass_back: Number.isFinite(targets.mass_back) ? (targets.mass_back as number) : null,
+    stiffness_back: Number.isFinite(targets.stiffness_back) ? (targets.stiffness_back as number) : null,
+    volume_air: Number.isFinite(targets.volume_air) ? (targets.volume_air as number) : null,
+    area_hole: Number.isFinite(targets.area_hole) ? (targets.area_hole as number) : null,
   };
-  if (!desired.air && !desired.top && !desired.back && !desired.mass_top && !desired.stiffness_top) return null;
+  if (
+    !desired.air
+    && !desired.top
+    && !desired.back
+    && !desired.mass_top
+    && !desired.stiffness_top
+    && !desired.mass_back
+    && !desired.stiffness_back
+    && !desired.volume_air
+    && !desired.area_hole
+  ) return null;
 
   const baselineResp = computeResponseSafe(adaptParamsToSolver(baseParams));
   const baselinePeaks = baselineResp ? modelPeaksFromResponse(baselineResp) : null;
@@ -1112,6 +1430,18 @@ function fit4DofFromTargets(
   if (tweakIds.includes("stiffness_top") && Number.isFinite(desired.stiffness_top)) {
     warm.stiffness_top = clampCandidate("stiffness_top", desired.stiffness_top as number);
   }
+  if (tweakIds.includes("mass_back") && Number.isFinite(desired.mass_back)) {
+    warm.mass_back = clampCandidate("mass_back", desired.mass_back as number);
+  }
+  if (tweakIds.includes("stiffness_back") && Number.isFinite(desired.stiffness_back)) {
+    warm.stiffness_back = clampCandidate("stiffness_back", desired.stiffness_back as number);
+  }
+  if (tweakIds.includes("volume_air") && Number.isFinite(desired.volume_air)) {
+    warm.volume_air = clampCandidate("volume_air", desired.volume_air as number);
+  }
+  if (tweakIds.includes("area_hole") && Number.isFinite(desired.area_hole)) {
+    warm.area_hole = clampCandidate("area_hole", desired.area_hole as number);
+  }
 
   const evaluate = (rawParams: Record<string, any>) => {
     const resp = computeResponseSafe(adaptParamsToSolver(rawParams));
@@ -1131,6 +1461,22 @@ function fit4DofFromTargets(
     }
     if (Number.isFinite(desired.stiffness_top) && Number.isFinite(rawParams.stiffness_top) && (desired.stiffness_top as number) > 0) {
       const diff = (rawParams.stiffness_top - (desired.stiffness_top as number)) / (desired.stiffness_top as number);
+      cost += diff * diff;
+    }
+    if (Number.isFinite(desired.mass_back) && Number.isFinite(rawParams.mass_back) && (desired.mass_back as number) > 0) {
+      const diff = (rawParams.mass_back - (desired.mass_back as number)) / (desired.mass_back as number);
+      cost += diff * diff;
+    }
+    if (Number.isFinite(desired.stiffness_back) && Number.isFinite(rawParams.stiffness_back) && (desired.stiffness_back as number) > 0) {
+      const diff = (rawParams.stiffness_back - (desired.stiffness_back as number)) / (desired.stiffness_back as number);
+      cost += diff * diff;
+    }
+    if (Number.isFinite(desired.volume_air) && Number.isFinite(rawParams.volume_air) && (desired.volume_air as number) > 0) {
+      const diff = (rawParams.volume_air - (desired.volume_air as number)) / (desired.volume_air as number);
+      cost += diff * diff;
+    }
+    if (Number.isFinite(desired.area_hole) && Number.isFinite(rawParams.area_hole) && (desired.area_hole as number) > 0) {
+      const diff = (rawParams.area_hole - (desired.area_hole as number)) / (desired.area_hole as number);
       cost += diff * diff;
     }
     return { cost, peaks };
@@ -1154,14 +1500,15 @@ function fit4DofFromTargets(
       if (!Number.isFinite(baseVal)) continue;
       const delta = steps[id];
       const tryFactor = (factor: number) => {
+        if (factorAllowed && !factorAllowed(id, factor)) return null;
         const candidate = { ...best, [id]: clampCandidate(id, baseVal * factor) };
         return { candidate, eval: evaluate(candidate) };
       };
       const plus = tryFactor(1 + delta);
       const minus = tryFactor(1 - delta);
       let next = null;
-      if (plus.eval.cost < bestEval.cost) next = plus;
-      if (minus.eval.cost < (next?.eval.cost ?? bestEval.cost)) next = minus;
+      if (plus && plus.eval.cost < bestEval.cost) next = plus;
+      if (minus && minus.eval.cost < (next?.eval.cost ?? bestEval.cost)) next = minus;
       if (next) {
         best = next.candidate;
         bestEval = next.eval;
@@ -1324,18 +1671,18 @@ function ensureThumb(mode: ModeKey) {
 
 function positionThumb(thumb: ThumbElements, freq: number | null, db: number | null, axes: { xaxis: any; yaxis: any }) {
   if (!Number.isFinite(freq) || !Number.isFinite(db)) {
-    thumb.root.style.display = "none";
+    thumb.root.classList.add("thumb-hidden");
     return;
   }
   const x = axes.xaxis.l2p(freq) + (axes.xaxis._offset || 0);
   const y = axes.yaxis.l2p(db) + (axes.yaxis._offset || 0);
   if (!Number.isFinite(x) || !Number.isFinite(y)) {
-    thumb.root.style.display = "none";
+    thumb.root.classList.add("thumb-hidden");
     return;
   }
-  thumb.root.style.display = "";
-  thumb.root.style.left = `${x}px`;
-  thumb.root.style.top = `${y}px`;
+  thumb.root.classList.remove("thumb-hidden");
+  stylePixelVariableWrite(thumb.root, "--thumb-x", x);
+  stylePixelVariableWrite(thumb.root, "--thumb-y", y);
 }
 
 function updateThumbs(response = lastResponse) {
@@ -1348,7 +1695,7 @@ function updateThumbs(response = lastResponse) {
     : response;
   if (!axes || !activeResponse?.total?.length) {
     Object.values(thumbEls).forEach((thumb) => {
-      if (thumb) thumb.root.style.display = "none";
+      if (thumb) thumb.root.classList.add("thumb-hidden");
     });
     updateModeCards(response, lastWhatIfResponse);
     return;
@@ -1389,7 +1736,7 @@ function applyWhatIfParams(raw: DofParams) {
 
 function solveTargets(
   targets: Record<ModeKey, number | null | undefined> & Record<string, number | null | undefined>,
-  opts: { useWhatIf?: boolean; tweakIds?: string[] } = {},
+  opts: { useWhatIf?: boolean; tweakIds?: string[]; factorAllowed?: (id: string, factor: number) => boolean } = {},
 ) {
   const useWhatIf = Boolean(opts.useWhatIf && isWhatIfEnabled());
   const baseParams = useWhatIf ? (getWhatIfParams() || currentParams) : currentParams;
@@ -1397,6 +1744,7 @@ function solveTargets(
     maxIter: 12,
     tweakIds: opts.tweakIds || Array.from(SOLVE_TWEAK_IDS),
     baseParams: { ...baseParams },
+    factorAllowed: opts.factorAllowed,
   });
   if (fit?.raw) {
     if (useWhatIf) {
@@ -1453,19 +1801,121 @@ function fitTargetFromInput(elementId: string): number | null {
 
 function fitTargetsFromInputs(): Record<string, number | null> {
   const massTopDisplay = fitTargetFromInput("fit_target_mass_top");
+  const massBackDisplay = fitTargetFromInput("fit_target_mass_back");
+  const soundholeDiameter = fitTargetFromInput("fit_target_area_hole_diam");
   return {
     air: fitTargetFromInput("fit_target_air"),
     top: fitTargetFromInput("fit_target_top"),
     back: fitTargetFromInput("fit_target_back"),
     mass_top: Number.isFinite(massTopDisplay) ? displayToInternal("mass_top", massTopDisplay as number) : null,
     stiffness_top: fitTargetFromInput("fit_target_stiffness_top"),
+    mass_back: Number.isFinite(massBackDisplay) ? displayToInternal("mass_back", massBackDisplay as number) : null,
+    stiffness_back: fitTargetFromInput("fit_target_stiffness_back"),
+    volume_air: fitTargetFromInput("fit_target_volume_air"),
+    area_hole_diam: soundholeDiameter,
+    area_hole: Number.isFinite(soundholeDiameter) ? Math.PI * Math.pow((soundholeDiameter as number) / 1000, 2) / 4 : null,
   };
+}
+
+function fitTargetsHaveAnyValue(targets: Record<string, number | null>) {
+  return MODE_KEYS.some((mode) => Number.isFinite(targets[mode]))
+    || Number.isFinite(targets.mass_top)
+    || Number.isFinite(targets.stiffness_top)
+    || Number.isFinite(targets.mass_back)
+    || Number.isFinite(targets.stiffness_back)
+    || Number.isFinite(targets.volume_air)
+    || Number.isFinite(targets.area_hole);
+}
+
+function fitSolveTweakIdsFromTargets(targets: Record<string, number | null>) {
+  const tweakIds = Array.from(SOLVE_TWEAK_IDS);
+  if (Number.isFinite(targets.mass_top)) tweakIds.push("mass_top");
+  if (Number.isFinite(targets.mass_back)) tweakIds.push("mass_back");
+  return tweakIds;
+}
+
+function fitRecipeRestrictSimpleEnabled() {
+  const toggle = document.getElementById("fit_restrict_simple") as HTMLInputElement | null;
+  return Boolean(toggle?.checked);
+}
+
+function fitRecipeRestrictedTweakIds() {
+  return ["mass_top", "mass_back", "area_hole"];
+}
+
+function fitRecipeIncreaseOnlyFactorAllowed(id: string, factor: number) {
+  if (id !== "mass_top" && id !== "mass_back" && id !== "area_hole") return false;
+  return factor >= 1;
 }
 
 function fitStatusSet(message: string) {
   const status = document.getElementById("fit_status");
   if (!status) return;
   status.textContent = message;
+}
+
+function whatIfSummarySet(lines: string[] | null) {
+  const panel = document.getElementById("whatif_summary");
+  if (!panel) return;
+  const body = panel.querySelector(".delta-summary__body");
+  if (!body) return;
+  if (!lines || !lines.length) {
+    body.textContent = "Run Solve Targets to see suggested adjustments.";
+    return;
+  }
+  body.innerHTML = `<ul>${lines.map((line) => `<li>${line}</li>`).join("")}</ul>`;
+}
+
+function whatIfToggleEnsureEnabled() {
+  const toggle = document.getElementById("toggle_overlay") as HTMLInputElement | null;
+  if (!toggle) return false;
+  if (toggle.checked) return true;
+  toggle.checked = true;
+  toggle.dispatchEvent(new Event("change"));
+  return true;
+}
+
+function whatIfSummaryRefreshFromCurrentRecipe() {
+  const recipeParams = getWhatIfParams();
+  const lines = window.buildWhatIfRecipeSummaryLines?.(
+    currentParams as Record<string, number>,
+    recipeParams as Record<string, number> | null,
+  ) ?? null;
+  whatIfSummarySet(lines);
+}
+
+function solveRecipeTargetsFromFitInputs() {
+  const targets = fitTargetsFromInputs();
+  const hasTarget = fitTargetsHaveAnyValue(targets);
+  if (!hasTarget) {
+    fitStatusSet("Enter at least one target frequency.");
+    return;
+  }
+  if (!whatIfToggleEnsureEnabled()) {
+    fitStatusSet("Compare mode is unavailable.");
+    return;
+  }
+  const restrictSimple = fitRecipeRestrictSimpleEnabled();
+  solveTargets(targets as Record<ModeKey, number | null>, {
+    useWhatIf: true,
+    tweakIds: restrictSimple ? fitRecipeRestrictedTweakIds() : fitSolveTweakIdsFromTargets(targets),
+    factorAllowed: restrictSimple ? fitRecipeIncreaseOnlyFactorAllowed : undefined,
+  });
+  whatIfSummaryRefreshFromCurrentRecipe();
+  fitStatusSet("Solve Targets applied as a What-If recipe.");
+}
+
+function bindSolveRecipeActions() {
+  const solveButton = document.getElementById("btn_solve_targets");
+  const resetButton = document.getElementById("btn_reset_whatif");
+  if (!solveButton || !resetButton) return;
+  solveButton.addEventListener("click", () => {
+    solveRecipeTargetsFromFitInputs();
+  });
+  resetButton.addEventListener("click", () => {
+    resetWhatIf();
+    fitStatusSet("What-If reset.");
+  });
 }
 
 function bindFitMyGuitarActions() {
@@ -1477,18 +1927,14 @@ function bindFitMyGuitarActions() {
 
   fitButton.addEventListener("click", () => {
     const targets = fitTargetsFromInputs();
-    const hasTarget = MODE_KEYS.some((mode) => Number.isFinite(targets[mode]))
-      || Number.isFinite(targets.mass_top)
-      || Number.isFinite(targets.stiffness_top);
+    const hasTarget = fitTargetsHaveAnyValue(targets);
     if (!hasTarget) {
       fitStatusSet("Enter at least one target frequency.");
       return;
     }
-    const tweakIds = Array.from(SOLVE_TWEAK_IDS);
-    if (Number.isFinite(targets.mass_top)) tweakIds.push("mass_top");
     solveTargets(targets as Record<ModeKey, number | null>, {
       useWhatIf: isWhatIfEnabled(),
-      tweakIds,
+      tweakIds: fitSolveTweakIdsFromTargets(targets),
     });
     fitStatusSet("Fit applied.");
   });
@@ -1526,6 +1972,10 @@ function bindFitMyGuitarActions() {
       "fit_target_back",
       "fit_target_mass_top",
       "fit_target_stiffness_top",
+      "fit_target_mass_back",
+      "fit_target_stiffness_back",
+      "fit_target_volume_air",
+      "fit_target_area_hole_diam",
     ].forEach((elementId) => {
       const input = document.getElementById(elementId) as HTMLInputElement | null;
       if (!input) return;
@@ -1742,6 +2192,15 @@ function bindTabs() {
   });
 }
 
+function bindTaskModeTabs() {
+  document.querySelectorAll<HTMLButtonElement>(".task-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const mode = String(btn.dataset.taskMode || "edit") as TaskMode;
+      setTaskMode(mode);
+    });
+  });
+}
+
 function dofPipelineRunnerExpose() {
   const sharedRunner = (window as any).dof_pipeline_runner?.dofPipelineRunnerRun;
   (window as any).DofPipelineRunner = {
@@ -1834,8 +2293,10 @@ function init() {
     if (Number.isFinite(fromUrl.model_order)) currentOrder = fromUrl.model_order as number;
   }
   bindTabs();
+  bindTaskModeTabs();
   bindFitMyGuitarActions();
-  buildCards();
+  bindSolveRecipeActions();
+  setTaskMode(currentTaskMode);
   setOrder(currentOrder);
   dofPipelineRunnerExpose();
   if (fromUrl) syncCardInputs();
