@@ -7,9 +7,24 @@
       "className": "hero-menu-home"
     },
     {
-      "label": "Tools",
-      "href": "https://rickmolloyguitars.com/",
-      "ariaCurrent": "page"
+      "label": "ToneLab Home",
+      "href": "/"
+    },
+    {
+      "label": "Resonance Reader",
+      "href": "../resonance_reader/"
+    },
+    {
+      "label": "Four Degrees of Freedom Model",
+      "href": "../dof_model/"
+    },
+    {
+      "label": "Plate Thickness",
+      "href": "../plate_thickness/"
+    },
+    {
+      "label": "Monopole Mobility",
+      "href": "../monopole_mobility/"
     }
   ]
 }
