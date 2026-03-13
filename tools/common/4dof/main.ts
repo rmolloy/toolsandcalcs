@@ -29,15 +29,6 @@ This license supersedes all previous licensing for this repository.
     tripole?: TracePoint[];
   };
   type SliderMeta = Record<string, { min: number; max: number; step: number }>;
-  type WhatIfField = {
-    id: string;
-    label: string;
-    unit: string;
-    precision?: number;
-    threshold?: number;
-    transform?: (value: number) => number;
-    extra?: (baseVal: number, targetVal: number, delta?: number) => string | null | undefined;
-  };
   type FitTargets = {
     freqs: Array<number | null>;
     mass_top: number | null;
@@ -138,27 +129,6 @@ function buildSliderMeta(): SliderMeta {
   return meta;
 }
 const SLIDER_META = buildSliderMeta();
-const WHATIF_SUMMARY_FIELDS = [
-  { id: "mass_top", label: "top plate mass", unit: "g", precision: 1, threshold: 0.1 },
-  { id: "stiffness_top", label: "top plate stiffness", unit: "N/m", precision: 0, threshold: 50 },
-  { id: "mass_back", label: "back plate mass", unit: "g", precision: 1, threshold: 0.1 },
-  { id: "stiffness_back", label: "back plate stiffness", unit: "N/m", precision: 0, threshold: 50 },
-  { id: "volume_air", label: "cavity volume", unit: "m³", precision: 4, threshold: 0.00005 },
-  {
-    id: "area_hole",
-    label: "soundhole diameter",
-    unit: "mm",
-    precision: 1,
-    threshold: 0.1,
-    transform: areaToDiameterMm,
-    extra: (baseVal, targetVal)=>{
-      const deltaArea = targetVal - baseVal;
-      const sign = deltaArea >= 0 ? "+" : "-";
-      return ` (${sign}${Math.abs(deltaArea).toFixed(5)} m²)`;
-    }
-  }
-];
-
 function getAdjustableIds(raw: Record<string, number | boolean | undefined>){
   return FIT_PARAM_IDS.filter(id=>{
     return typeof raw[id] === "number" && !Number.isNaN(raw[id]) && SLIDER_META[id];
@@ -201,11 +171,6 @@ function formatSliderValue(id: string, value: number){
   }
   if(STIFFNESS_IDS.has(id)) return `${value.toFixed(0)} N/m`;
   return fmt(value);
-}
-
-function areaToDiameterMm(area: number){
-  if(!Number.isFinite(area) || area <= 0) return NaN;
-  return Math.sqrt((4 * area) / Math.PI) * 1000;
 }
 
 function diameterMmToArea(diamMm: number){
@@ -568,33 +533,8 @@ function applyWhatIfRawValues(raw: Record<string, number>){
   if(!applied) throw new Error("No What-If sliders available to adjust.");
 }
 
-function describeDeltaLine(field: WhatIfField, baseRaw: Record<string, number>, targetRaw: Record<string, number>){
-  const baseVal = baseRaw[field.id];
-  const targetVal = targetRaw[field.id];
-  if(!Number.isFinite(baseVal) || !Number.isFinite(targetVal)) return null;
-  let base = baseVal;
-  let target = targetVal;
-  if(typeof field.transform === "function"){
-    base = field.transform(baseVal);
-    target = field.transform(targetVal);
-  }
-  if(!Number.isFinite(base) || !Number.isFinite(target)) return null;
-  const delta = target - base;
-  if(Math.abs(delta) < (field.threshold ?? 0)) return null;
-  const dir = delta >= 0 ? "Increase" : "Decrease";
-  const precision = typeof field.precision === "number" ? field.precision : 2;
-  const amount = Math.abs(delta).toFixed(precision);
-  let line = `${dir} ${field.label} by ${amount} ${field.unit}`;
-  if(field.extra) line += field.extra(baseVal, targetVal, delta) || "";
-  return line;
-}
-
 function buildWhatIfSummary(baseRaw: Record<string, number> | null, targetRaw: Record<string, number> | null){
-  if(!baseRaw || !targetRaw) return null;
-  const lines = WHATIF_SUMMARY_FIELDS
-    .map(field => describeDeltaLine(field, baseRaw, targetRaw))
-    .filter(Boolean);
-  return lines.length ? lines : null;
+  return window.buildWhatIfRecipeSummaryLines?.(baseRaw, targetRaw) ?? null;
 }
 
 function updateWhatIfSummary(lines: string[] | null){

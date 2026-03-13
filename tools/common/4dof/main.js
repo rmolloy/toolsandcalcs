@@ -83,26 +83,6 @@ This license supersedes all previous licensing for this repository.
         return meta;
     }
     const SLIDER_META = buildSliderMeta();
-    const WHATIF_SUMMARY_FIELDS = [
-        { id: "mass_top", label: "top plate mass", unit: "g", precision: 1, threshold: 0.1 },
-        { id: "stiffness_top", label: "top plate stiffness", unit: "N/m", precision: 0, threshold: 50 },
-        { id: "mass_back", label: "back plate mass", unit: "g", precision: 1, threshold: 0.1 },
-        { id: "stiffness_back", label: "back plate stiffness", unit: "N/m", precision: 0, threshold: 50 },
-        { id: "volume_air", label: "cavity volume", unit: "m³", precision: 4, threshold: 0.00005 },
-        {
-            id: "area_hole",
-            label: "soundhole diameter",
-            unit: "mm",
-            precision: 1,
-            threshold: 0.1,
-            transform: areaToDiameterMm,
-            extra: (baseVal, targetVal) => {
-                const deltaArea = targetVal - baseVal;
-                const sign = deltaArea >= 0 ? "+" : "-";
-                return ` (${sign}${Math.abs(deltaArea).toFixed(5)} m²)`;
-            }
-        }
-    ];
     function getAdjustableIds(raw) {
         return FIT_PARAM_IDS.filter(id => {
             return typeof raw[id] === "number" && !Number.isNaN(raw[id]) && SLIDER_META[id];
@@ -141,11 +121,6 @@ This license supersedes all previous licensing for this repository.
         if (STIFFNESS_IDS.has(id))
             return `${value.toFixed(0)} N/m`;
         return fmt(value);
-    }
-    function areaToDiameterMm(area) {
-        if (!Number.isFinite(area) || area <= 0)
-            return NaN;
-        return Math.sqrt((4 * area) / Math.PI) * 1000;
     }
     function diameterMmToArea(diamMm) {
         if (!Number.isFinite(diamMm) || diamMm <= 0)
@@ -530,38 +505,9 @@ This license supersedes all previous licensing for this repository.
         if (!applied)
             throw new Error("No What-If sliders available to adjust.");
     }
-    function describeDeltaLine(field, baseRaw, targetRaw) {
-        var _a;
-        const baseVal = baseRaw[field.id];
-        const targetVal = targetRaw[field.id];
-        if (!Number.isFinite(baseVal) || !Number.isFinite(targetVal))
-            return null;
-        let base = baseVal;
-        let target = targetVal;
-        if (typeof field.transform === "function") {
-            base = field.transform(baseVal);
-            target = field.transform(targetVal);
-        }
-        if (!Number.isFinite(base) || !Number.isFinite(target))
-            return null;
-        const delta = target - base;
-        if (Math.abs(delta) < ((_a = field.threshold) !== null && _a !== void 0 ? _a : 0))
-            return null;
-        const dir = delta >= 0 ? "Increase" : "Decrease";
-        const precision = typeof field.precision === "number" ? field.precision : 2;
-        const amount = Math.abs(delta).toFixed(precision);
-        let line = `${dir} ${field.label} by ${amount} ${field.unit}`;
-        if (field.extra)
-            line += field.extra(baseVal, targetVal, delta) || "";
-        return line;
-    }
     function buildWhatIfSummary(baseRaw, targetRaw) {
-        if (!baseRaw || !targetRaw)
-            return null;
-        const lines = WHATIF_SUMMARY_FIELDS
-            .map(field => describeDeltaLine(field, baseRaw, targetRaw))
-            .filter(Boolean);
-        return lines.length ? lines : null;
+        var _a, _b;
+        return (_b = (_a = window.buildWhatIfRecipeSummaryLines) === null || _a === void 0 ? void 0 : _a.call(window, baseRaw, targetRaw)) !== null && _b !== void 0 ? _b : null;
     }
     function updateWhatIfSummary(lines) {
         const box = $("whatif_summary");
