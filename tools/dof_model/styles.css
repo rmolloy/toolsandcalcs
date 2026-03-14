@@ -1,40 +1,5 @@
-:root {
-  --bg: #0f1115;
-  --panel: #151922;
-  --panel-hover: #1a1f2b;
-  --ink: #e6e9ef;
-  --muted: #9aa4b2;
-  --radius: 14px;
-  --orange: #E69F00;
-  --blue: #56B4E9;
-  --green: #009E73;
-  --purple: #CC79A7;
-  --yellow: #F0E442;
-  --vermilion: #D55E00;
-  --type-title-size: 22px;
-  --type-title-line: 1.3;
-  --type-title-weight: 600;
-  --type-label-size: 14px;
-  --type-label-line: 1.5;
-  --type-label-weight: 500;
-  --type-meta-size: 12px;
-  --type-meta-line: 1.5;
-  --type-meta-weight: 400;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-  color: var(--ink);
-  background:
-    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 35%),
-    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--orange) 16%, transparent), transparent 32%),
-    var(--bg);
-}
+@import url("../common/theme_tonelab_tokens.css");
+@import url("../common/theme_resonance_shared.css");
 
 .page-shell {
   max-width: 2800px;
@@ -45,119 +10,22 @@ body {
   gap: 12px;
 }
 
-.hero {
-  position: relative;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  background: linear-gradient(
-    150deg,
-    color-mix(in srgb, var(--panel) 80%, transparent),
-    color-mix(in srgb, var(--bg) 60%, transparent)
-  );
-  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
-  border-radius: 22px;
-  padding: 8px 20px;
-  box-shadow: 0 18px 52px color-mix(in srgb, var(--bg) 70%, transparent);
-  backdrop-filter: blur(10px);
-}
-
-.hero-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  width: 100%;
-  min-height: 40px;
-}
-
-.hero-text h1 {
-  margin: 0;
-  font-size: var(--type-title-size);
-  line-height: var(--type-title-line);
-  font-weight: var(--type-title-weight);
-}
-
-.hero-text p {
-  margin: 4px 0 0;
-  color: var(--muted);
-  font-size: var(--type-meta-size);
-  line-height: var(--type-meta-line);
+.hero-controls-left {
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
 }
 
 .hero-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
   gap: 10px;
-}
-
-.hero-menu {
-  position: relative;
-  z-index: 40;
-}
-
-.hero-menu summary {
-  list-style: none;
-}
-
-.hero-menu summary::-webkit-details-marker {
-  display: none;
+  flex-wrap: nowrap;
+  min-width: 0;
+  flex: 0 0 auto;
+  margin-left: 12px;
 }
 
 .hero-menu-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
-  background: color-mix(in srgb, var(--panel) 74%, var(--bg));
-  color: var(--ink);
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  user-select: none;
-}
-
-.hero-menu-panel {
-  position: absolute;
-  z-index: 120;
-  right: 0;
-  top: calc(100% + 10px);
-  min-width: 220px;
-  display: grid;
-  gap: 2px;
-  padding: 8px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--blue) 18%, var(--ink));
-  background: color-mix(in srgb, var(--panel) 90%, var(--bg));
-  box-shadow: 0 16px 40px color-mix(in srgb, var(--bg) 78%, transparent);
-  backdrop-filter: blur(8px);
-}
-
-.hero-menu-panel a {
-  color: var(--ink);
-  text-decoration: none;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: var(--type-label-size);
-  line-height: var(--type-label-line);
-}
-
-.hero-menu-panel a:hover {
-  background: color-mix(in srgb, var(--ink) 8%, transparent);
-}
-
-.hero-menu-panel a[aria-current="page"] {
-  background: color-mix(in srgb, var(--orange) 16%, var(--panel));
-  font-weight: 600;
-}
-
-.hero-menu-panel .hero-menu-home {
-  font-weight: 500;
+  box-sizing: border-box;
 }
 
 .card-surface {
@@ -203,6 +71,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  height: var(--hero-control-height);
   user-select: none;
 }
 
@@ -213,16 +82,17 @@ body {
 .toggle-label {
   color: var(--ink);
   font-size: var(--type-label-size);
-  line-height: var(--type-label-line);
+  line-height: 1;
 }
 
 .toggle-knob {
+  box-sizing: border-box;
   position: relative;
-  width: 42px;
-  height: 24px;
+  width: calc(var(--hero-control-height) + 14px);
+  height: var(--hero-control-height);
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  border: var(--hero-control-border);
+  background: var(--hero-control-bg);
 }
 
 .toggle-knob::after {
@@ -230,8 +100,8 @@ body {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 18px;
-  height: 18px;
+  width: calc(var(--hero-control-height) - 4px);
+  height: calc(var(--hero-control-height) - 4px);
   border-radius: 999px;
   background: color-mix(in srgb, var(--ink) 90%, transparent);
   transition: transform 0.16s ease;
@@ -243,7 +113,7 @@ body {
 }
 
 .toggle input:checked + .toggle-label + .toggle-knob::after {
-  transform: translateX(18px);
+  transform: translateX(calc(var(--hero-control-height) - 14px));
 }
 
 .section-divider {
@@ -318,7 +188,6 @@ body {
 
 .plot {
   width: 100%;
-  min-height: 460px;
   border-radius: 16px;
 }
 
@@ -343,12 +212,16 @@ body {
 }
 
 .mode-tabs {
+  box-sizing: border-box;
   display: inline-flex;
-  gap: 0.4rem;
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
-  border-radius: 999px;
-  padding: 0.2rem;
-  backdrop-filter: blur(4px);
+  align-items: center;
+  gap: 2px;
+  height: var(--hero-control-height);
+  padding: 1px;
+  border-radius: var(--hero-control-radius);
+  border: var(--hero-control-border);
+  background: var(--hero-control-bg);
+  backdrop-filter: blur(8px);
 }
 
 #dof_cards.mode-grid {
@@ -361,15 +234,24 @@ body {
   align-content: normal;
 }
 
+.dof-task-rail {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+  margin-top: 2px;
+}
+
 .dof-modes-header {
-  padding-top: 2px;
-  flex-wrap: wrap;
+  padding-top: 14px;
+  align-items: flex-start;
 }
 
 .dof-cards-heading {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  max-width: 34rem;
 }
 
 @media (max-width: 1400px) {
@@ -382,9 +264,14 @@ body {
   border: none;
   background: transparent;
   color: color-mix(in srgb, var(--ink) 82%, var(--bg));
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
+  min-height: calc(var(--hero-control-height) - 4px);
+  padding: 0 var(--hero-control-padding-inline);
+  border-radius: calc(var(--hero-control-radius) - 2px);
+  font-size: var(--type-label-size);
+  line-height: 1;
+  font-family: inherit;
+  font-weight: 500;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -754,31 +641,52 @@ body.whatif-mode .param-whatif-row {
 
 .dof-task-tabs {
   display: inline-flex;
-  gap: 0.4rem;
-  align-self: center;
-  background: color-mix(in srgb, var(--ink) 4%, transparent);
-  border-radius: 999px;
-  padding: 0.2rem;
-  backdrop-filter: blur(4px);
+  gap: 28px;
+  align-self: flex-end;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
 }
 
 .task-tab-btn {
   border: none;
   background: transparent;
-  color: color-mix(in srgb, var(--ink) 82%, var(--bg));
-  padding: 0.4rem 0.9rem;
-  border-radius: 999px;
-  font-size: 0.9rem;
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+  padding: 0 0 14px;
+  border-radius: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  position: relative;
   cursor: pointer;
+  transition: color 0.18s ease;
+}
+
+.task-tab-btn::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--blue) 92%, var(--ink));
+  opacity: 0;
+  transform: scaleX(0.6);
+  transform-origin: left center;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.task-tab-btn:hover {
+  color: color-mix(in srgb, var(--ink) 92%, transparent);
 }
 
 .task-tab-btn-active {
-  background: linear-gradient(
-    120deg,
-    color-mix(in srgb, var(--orange) 68%, var(--panel)),
-    color-mix(in srgb, var(--orange) 84%, var(--ink))
-  );
-  color: var(--bg);
+  color: var(--ink);
+}
+
+.task-tab-btn-active::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .task-card-fields {
@@ -813,6 +721,8 @@ body.whatif-mode .param-whatif-row {
 
   .dof-task-tabs {
     align-self: flex-start;
+    gap: 18px;
+    flex-wrap: wrap;
   }
 }
 

@@ -6,51 +6,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Four Degrees of Freedom Model - ToneLab</title>
   <link rel="stylesheet" href="../common/tool_footer.css">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <div class="page-shell">
     <header class="hero">
-      <div class="hero-text">
-        <h1>Four Degrees of Freedom Model</h1>
-      </div>
-      <div class="hero-actions">
-        <label class="toggle">
-          <input type="checkbox" id="toggle_overlay">
-          <span class="toggle-label">Compare</span>
-          <span class="toggle-knob"></span>
-        </label>
-        <div class="mode-tabs" role="tablist">
-          <button class="tab-btn" data-order="1">1-DOF</button>
-          <button class="tab-btn" data-order="2">2-DOF</button>
-          <button class="tab-btn" data-order="3">3-DOF</button>
-          <button class="tab-btn tab-btn-active" data-order="4">4-DOF</button>
+      <div class="hero-row">
+        <div class="hero-controls-left">
+          <h1>Four Degrees of Freedom Model</h1>
         </div>
-        <details class="hero-menu">
-          <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
-          <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
-        </details>
+        <div class="hero-actions">
+          <label class="toggle">
+            <input type="checkbox" id="toggle_overlay">
+            <span class="toggle-label">Compare</span>
+            <span class="toggle-knob"></span>
+          </label>
+          <div class="mode-tabs" role="tablist">
+            <button class="tab-btn" data-order="1">1-DOF</button>
+            <button class="tab-btn" data-order="2">2-DOF</button>
+            <button class="tab-btn" data-order="3">3-DOF</button>
+            <button class="tab-btn tab-btn-active" data-order="4">4-DOF</button>
+          </div>
+          <details class="hero-menu">
+            <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+            <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
+          </details>
+        </div>
       </div>
     </header>
 
     <section class="card-surface">
       <div class="plot-shell">
-        <div id="plot_dof" class="plot"></div>
+        <div id="plot_dof" class="plot tl-resonance-primary-plot"></div>
         <div id="plot_overlay" class="plot-overlay"></div>
       </div>
 
-      <div class="section-divider"></div>
+      <div class="dof-task-rail">
+        <div class="dof-task-tabs" role="tablist" aria-label="DOF task mode">
+          <button class="task-tab-btn task-tab-btn-active" data-task-mode="edit" type="button">Edit Model</button>
+          <button class="task-tab-btn" data-task-mode="fit" type="button">Fit My Guitar</button>
+          <button class="task-tab-btn" data-task-mode="solve" type="button">Solve Targets</button>
+        </div>
+      </div>
 
       <div id="dof_cards_header" class="lfs-header dof-modes-header">
         <div class="dof-cards-heading">
           <h2 id="dof_cards_title">Current Model</h2>
           <p id="dof_cards_copy" class="muted small">Direct parameter editing for each degree of freedom.</p>
-        </div>
-        <div class="dof-task-tabs" role="tablist" aria-label="DOF task mode">
-          <button class="task-tab-btn task-tab-btn-active" data-task-mode="edit" type="button">Edit Model</button>
-          <button class="task-tab-btn" data-task-mode="fit" type="button">Fit My Guitar</button>
-          <button class="task-tab-btn" data-task-mode="solve" type="button">Solve Targets</button>
         </div>
       </div>
 
