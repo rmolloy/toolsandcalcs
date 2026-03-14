@@ -1,32 +1,9 @@
+@import url("./theme_tonelab_tokens.css");
 @import url("./theme_profile.css");
 
 /* ==========================================================
    LUTHERIELAB DARK THEME (Color-blind safe • Okabe & Ito)
    ========================================================== */
-:root {
-  /* ---- Neutrals ---- */
-  --bg: #0f1115;
-  --panel: #151922;
-  --panel-hover: #1a1f2b;
-  --ink: #e6e9ef;
-  --muted: #9aa4b2;
-  --radius: 14px;
-  --white: var(--ink);
-  --border-strong: color-mix(in srgb, var(--ink) 12%, var(--bg));
-  --border-soft: color-mix(in srgb, var(--ink) 6%, var(--bg));
-  --thumb-border: color-mix(in srgb, var(--panel) 80%, var(--bg));
-  --track-neutral: color-mix(in srgb, var(--ink) 16%, var(--bg));
-  --track-muted: color-mix(in srgb, var(--muted) 65%, var(--bg));
-
-  /* ---- Okabe & Ito palette ---- */
-  --orange:  #E69F00; /* Total / main accent */
-  --blue:    #56B4E9; /* Top */
-  --green:   #009E73; /* Back */
-  --purple:  #CC79A7; /* Air */
-  --yellow:  #F0E442; /* Sides */
-  --vermilion: #D55E00; /* Alert / secondary contrast */
-}
-
 /* ==========================================================
    BASE ELEMENTS
    ========================================================== */
