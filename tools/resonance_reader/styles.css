@@ -824,7 +824,6 @@ body { padding: 28px; }
 
 .plot {
   width: 100%;
-  height: clamp(180px, 32vh, 420px);
   border-radius: 14px;
   border: 1px solid rgba(140, 166, 255, 0.04);
   background: rgba(8, 12, 21, 0.38);
@@ -1093,7 +1092,6 @@ body { padding: 28px; }
     min-width: 0;
   }
   .hero-actions { width: 100%; flex-wrap: wrap; justify-content: flex-start; }
-  .plot { height: clamp(180px, 30vh, 360px); }
   .wave-surface .plot.waveform { height: 160px; }
 }
 
