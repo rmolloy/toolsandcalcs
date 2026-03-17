@@ -7,15 +7,15 @@
       "className": "hero-menu-home"
     },
     {
-      "label": "Tools Home",
-      "href": "/lab/"
+      "label": "Lab Home",
+      "href": "https://rickmolloyguitars.com/lab/"
     },
     {
       "label": "Resonance Reader",
       "href": "../resonance_reader/"
     },
     {
-      "label": "Four Degrees of Freedom Model",
+      "label": "DOF Model",
       "href": "../dof_model/"
     },
     {
@@ -25,6 +25,14 @@
     {
       "label": "Monopole Mobility",
       "href": "../monopole_mobility/"
+    },
+    {
+      "label": "Flexural Rigidity",
+      "href": "../flexural_rigidity/"
+    },
+    {
+      "label": "Brace Designer",
+      "href": "../brace_calc/"
     }
   ]
 }
