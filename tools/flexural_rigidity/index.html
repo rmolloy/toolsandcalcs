@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8">
   <title>Flexural Rigidity (EI) Calculator - ToneLab</title>
+  <link rel="stylesheet" href="../common/tool_footer.css">
   <link rel="stylesheet" href="../common/styles.css">
+  <link rel="stylesheet" href="../common/theme_resonance_shared.css">
   <link rel="stylesheet" href="../common/layout.css">
   <style>
     :root {
@@ -492,11 +494,23 @@
 
 <body>
 <div class="tl-app">
-  <header class="tl-topbar"></header>
   <div class="tl-page">
-    <header class="card pad tl-card">
+    <section class="hero">
+      <div class="hero-row">
+        <div class="hero-controls-left">
+          <h1>Flexural Rigidity (EI) Calculator</h1>
+        </div>
+        <div class="hero-actions">
+          <details class="hero-menu">
+            <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+            <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="card pad tl-card">
       <div class="pill">ToneLab Utility</div>
-      <h1>Flexural Rigidity (EI) Calculator</h1>
       <p class="small">
         Use this tool to calculate flexural rigidity for a guitar top along the AA line, so you can compare stiffness across
         wood species, brace patterns, and thicknesses without waiting for a full build.
@@ -515,7 +529,7 @@
           <li>Optional: applied bridge moment (N·m) and rotation limit (deg)</li>
         </ul>
       </details>
-    </header>
+    </section>
 
     <main class="tl-layout tl-single">
       <section class="tl-content">
@@ -610,9 +624,13 @@
   </div>
       </section>
     </main>
+
+    <footer class="tl-footer" data-tool-footer></footer>
   </div>
 </div>
 
+<script src="../common/site_menu_loader.js"></script>
+<script src="../common/tool_footer_loader.js"></script>
 <script>
   if (typeof window !== "undefined") {
     window.exports = window.exports || {};
