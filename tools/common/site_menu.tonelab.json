@@ -27,11 +27,11 @@
       "href": "../monopole_mobility/"
     },
     {
-      "label": "Flexural Rigidity",
+      "label": "Flexural Rigidity (Alpha)",
       "href": "../flexural_rigidity/"
     },
     {
-      "label": "Brace Designer",
+      "label": "Brace Designer (Alpha)",
       "href": "../brace_calc/"
     }
   ]

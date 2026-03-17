@@ -1,6 +1,14 @@
 (function attachSiteMenus() {
   function menuConfigUrlResolve(panel) {
-    return panel.getAttribute("data-menu-config") || "../common/site_menu.json";
+    return panel.getAttribute("data-menu-config") || menuProfileUrlResolve(panel);
+  }
+
+  function menuProfileUrlResolve(panel) {
+    const profile = panel.getAttribute("data-menu-profile");
+    if (typeof profile === "string" && profile) {
+      return `../common/site_menu.${profile}.json`;
+    }
+    return "../common/site_menu.json";
   }
 
   async function menuConfigLoadFromUrl(url) {
