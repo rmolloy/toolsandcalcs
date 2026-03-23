@@ -24,6 +24,14 @@ const PLAYED_NOTE_DESTINATION: ExternalModelDestination = {
   kind: "dof",
 };
 
+const BRACE_STOCK_DESTINATION: ExternalModelDestination = {
+  href: "",
+  label: "",
+  showOverlayToggle: false,
+  showModelRow: false,
+  kind: "plate-thickness",
+};
+
 const PLATE_DESTINATION: ExternalModelDestination = {
   href: "../plate_thickness/",
   label: "Open in Plate Thickness calculator",
@@ -36,5 +44,6 @@ export function externalModelDestinationResolveFromMeasureMode(measureMode: unkn
   const normalized = measureModeNormalize(measureMode);
   if (normalized === "guitar") return GUITAR_DESTINATION;
   if (normalized === "played_note") return PLAYED_NOTE_DESTINATION;
+  if (normalized === "brace_stock") return BRACE_STOCK_DESTINATION;
   return PLATE_DESTINATION;
 }

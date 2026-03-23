@@ -2,7 +2,7 @@ import { resolveColorHexFromRole } from "./resonate_color_roles.js";
 
 export type ModeMeta = { label: string; aliasHtml: string; aliasText: string; tooltip: string; color: string };
 
-export type MeasureMode = "guitar" | "played_note" | "top" | "back";
+export type MeasureMode = "guitar" | "played_note" | "plate_stock" | "brace_stock";
 export type ModeBand = { low: number; high: number };
 export type ModeBandMap = Record<string, ModeBand>;
 export type ModeProfile = { bands: ModeBandMap; meta: Record<string, ModeMeta> };
@@ -37,13 +37,13 @@ const GUITAR_META: Record<string, ModeMeta> = {
   },
 };
 
-const TOP_PLATE_BANDS: ModeBandMap = {
+const PLATE_STOCK_BANDS: ModeBandMap = {
   transverse: { low: 24, high: 55 },
   long: { low: 65, high: 100 },
   cross: { low: 110, high: 140 },
 };
 
-const TOP_PLATE_META: Record<string, ModeMeta> = {
+const PLATE_STOCK_META: Record<string, ModeMeta> = {
   transverse: {
     label: "Transverse",
     aliasHtml: "T",
@@ -67,32 +67,32 @@ const TOP_PLATE_META: Record<string, ModeMeta> = {
   },
 };
 
-const BACK_PLATE_BANDS: ModeBandMap = {
+const BRACE_STOCK_BANDS: ModeBandMap = {
   transverse: { low: 24, high: 55 },
   long: { low: 65, high: 100 },
   cross: { low: 110, high: 140 },
 };
 
-const BACK_PLATE_META: Record<string, ModeMeta> = {
+const BRACE_STOCK_META: Record<string, ModeMeta> = {
   transverse: {
-    label: "Transverse",
-    aliasHtml: "T",
-    aliasText: "T",
-    tooltip: "Transverse\nTransverse/twisting plate mode.",
+    label: "Flex",
+    aliasHtml: "F",
+    aliasText: "F",
+    tooltip: "Flex\nBrace-stock flex/twisting mode.",
     color: resolveColorHexFromRole("plateTransverseMode"),
   },
   long: {
     label: "Long",
     aliasHtml: "L",
     aliasText: "L",
-    tooltip: "Long\nLong-grain plate mode.",
+    tooltip: "Long\nLong-grain brace-stock mode.",
     color: resolveColorHexFromRole("plateLongMode"),
   },
   cross: {
     label: "Cross",
     aliasHtml: "C",
     aliasText: "C",
-    tooltip: "Cross\nCross-grain plate mode.",
+    tooltip: "Cross\nCross-grain brace-stock mode.",
     color: resolveColorHexFromRole("plateCrossMode"),
   },
 };
@@ -100,8 +100,8 @@ const BACK_PLATE_META: Record<string, ModeMeta> = {
 const MODE_PROFILES: Record<MeasureMode, ModeProfile> = {
   guitar: { bands: GUITAR_BANDS, meta: GUITAR_META },
   played_note: { bands: GUITAR_BANDS, meta: GUITAR_META },
-  top: { bands: TOP_PLATE_BANDS, meta: TOP_PLATE_META },
-  back: { bands: BACK_PLATE_BANDS, meta: BACK_PLATE_META },
+  plate_stock: { bands: PLATE_STOCK_BANDS, meta: PLATE_STOCK_META },
+  brace_stock: { bands: BRACE_STOCK_BANDS, meta: BRACE_STOCK_META },
 };
 
 export const modeBands = GUITAR_BANDS;
@@ -109,8 +109,8 @@ export const MODE_META = GUITAR_META;
 
 export function measureModeNormalize(input: unknown): MeasureMode {
   if (input === "played_note") return "played_note";
-  if (input === "top") return "top";
-  if (input === "back") return "back";
+  if (input === "plate_stock" || input === "top" || input === "back") return "plate_stock";
+  if (input === "brace_stock") return "brace_stock";
   return "guitar";
 }
 

@@ -6,11 +6,11 @@ type DemoWave = {
   sampleRate: number;
 };
 
-const DEMO_PEAKS_BY_MODE: Record<"guitar" | "played_note" | "top" | "back", readonly number[]> = {
+const DEMO_PEAKS_BY_MODE: Record<"guitar" | "played_note" | "plate_stock" | "brace_stock", readonly number[]> = {
   guitar: [98, 178, 220],
   played_note: [98, 178, 220],
-  top: [42, 82, 126],
-  back: [38, 88, 134],
+  plate_stock: [42, 82, 126],
+  brace_stock: [36, 78, 122],
 };
 
 export function demoPeakFrequenciesResolveFromMeasureMode(measureMode: unknown): readonly number[] {

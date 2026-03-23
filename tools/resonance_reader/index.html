@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Resonance Reader - ToneLab</title>
+  <title>Resonance Reader | The Lab at Rick Molloy Guitars</title>
   <link rel="stylesheet" href="../common/tool_footer.css">
   <link rel="stylesheet" href="../common/resonance_plot_surface.css">
   <link rel="stylesheet" href="styles.css">
@@ -21,8 +21,8 @@
             <select class="measure-dropdown" id="measure_mode">
               <option value="guitar" selected>Guitar</option>
               <option value="played_note">Played Note</option>
-              <option value="top">Top Plate</option>
-              <option value="back">Back Plate</option>
+              <option value="plate_stock">Plate Stock</option>
+              <option value="brace_stock">Brace Stock</option>
             </select>
           </div>
           <select class="recording-dropdown hero-control" id="recording_select">
@@ -73,6 +73,37 @@
       <div class="mode-grid" id="mode_grid">
         <!-- Mode cards populated by script -->
       </div>
+
+      <section class="card plate-material-card" id="plate_material_card" hidden>
+        <div class="plot-header">
+          <div class="plot-header-copy">
+            <h2 id="plate_material_title">Material Properties</h2>
+            <p class="muted small" id="plate_material_description">These measurements travel with the detected plate modes into the Plate Thickness calculator.</p>
+          </div>
+        </div>
+        <div class="plate-material-grid">
+          <label class="plate-material-field">
+            <span class="plate-material-label">Length</span>
+            <input id="plate_material_length" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="555">
+            <span class="plate-material-unit">mm</span>
+          </label>
+          <label class="plate-material-field">
+            <span class="plate-material-label">Width</span>
+            <input id="plate_material_width" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="227">
+            <span class="plate-material-unit">mm</span>
+          </label>
+          <label class="plate-material-field">
+            <span class="plate-material-label">Height</span>
+            <input id="plate_material_height" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="4.1">
+            <span class="plate-material-unit">mm</span>
+          </label>
+          <label class="plate-material-field">
+            <span class="plate-material-label">Mass</span>
+            <input id="plate_material_mass" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="211.4">
+            <span class="plate-material-unit">g</span>
+          </label>
+        </div>
+      </section>
 
       <section class="dof-model-row">
         <div class="dof-model-copy">

@@ -37,10 +37,10 @@ function mockModesBuildFromMeasureMode(measureMode) {
     return keys.map((key, idx) => mockModeBuildFromKeyAndFreq(key, profile.meta[key]?.label || key, freqs[idx] ?? null));
 }
 function mockModeFrequenciesForMeasureMode(measureMode) {
-    if (measureMode === "top")
+    if (measureMode === "plate_stock")
         return [182.0, 278.0, 372.0];
-    if (measureMode === "back")
-        return [196.0, 294.0, 386.0];
+    if (measureMode === "brace_stock")
+        return [52.0, 91.0, 132.0];
     return [83.4, 196.5, 231.5];
 }
 function mockModeBuildFromKeyAndFreq(key, label, freq) {

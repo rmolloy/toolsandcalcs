@@ -27,12 +27,12 @@ const GUITAR_META = {
         color: resolveColorHexFromRole("backMode"),
     },
 };
-const TOP_PLATE_BANDS = {
+const PLATE_STOCK_BANDS = {
     transverse: { low: 24, high: 55 },
     long: { low: 65, high: 100 },
     cross: { low: 110, high: 140 },
 };
-const TOP_PLATE_META = {
+const PLATE_STOCK_META = {
     transverse: {
         label: "Transverse",
         aliasHtml: "T",
@@ -55,49 +55,49 @@ const TOP_PLATE_META = {
         color: resolveColorHexFromRole("plateCrossMode"),
     },
 };
-const BACK_PLATE_BANDS = {
+const BRACE_STOCK_BANDS = {
     transverse: { low: 24, high: 55 },
     long: { low: 65, high: 100 },
     cross: { low: 110, high: 140 },
 };
-const BACK_PLATE_META = {
+const BRACE_STOCK_META = {
     transverse: {
-        label: "Transverse",
-        aliasHtml: "T",
-        aliasText: "T",
-        tooltip: "Transverse\nTransverse/twisting plate mode.",
+        label: "Flex",
+        aliasHtml: "F",
+        aliasText: "F",
+        tooltip: "Flex\nBrace-stock flex/twisting mode.",
         color: resolveColorHexFromRole("plateTransverseMode"),
     },
     long: {
         label: "Long",
         aliasHtml: "L",
         aliasText: "L",
-        tooltip: "Long\nLong-grain plate mode.",
+        tooltip: "Long\nLong-grain brace-stock mode.",
         color: resolveColorHexFromRole("plateLongMode"),
     },
     cross: {
         label: "Cross",
         aliasHtml: "C",
         aliasText: "C",
-        tooltip: "Cross\nCross-grain plate mode.",
+        tooltip: "Cross\nCross-grain brace-stock mode.",
         color: resolveColorHexFromRole("plateCrossMode"),
     },
 };
 const MODE_PROFILES = {
     guitar: { bands: GUITAR_BANDS, meta: GUITAR_META },
     played_note: { bands: GUITAR_BANDS, meta: GUITAR_META },
-    top: { bands: TOP_PLATE_BANDS, meta: TOP_PLATE_META },
-    back: { bands: BACK_PLATE_BANDS, meta: BACK_PLATE_META },
+    plate_stock: { bands: PLATE_STOCK_BANDS, meta: PLATE_STOCK_META },
+    brace_stock: { bands: BRACE_STOCK_BANDS, meta: BRACE_STOCK_META },
 };
 export const modeBands = GUITAR_BANDS;
 export const MODE_META = GUITAR_META;
 export function measureModeNormalize(input) {
     if (input === "played_note")
         return "played_note";
-    if (input === "top")
-        return "top";
-    if (input === "back")
-        return "back";
+    if (input === "plate_stock" || input === "top" || input === "back")
+        return "plate_stock";
+    if (input === "brace_stock")
+        return "brace_stock";
     return "guitar";
 }
 export function modeProfileResolveFromMeasureMode(measureMode) {

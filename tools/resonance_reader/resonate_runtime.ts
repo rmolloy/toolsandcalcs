@@ -20,6 +20,11 @@ import { resonanceReaderBootstrap } from "./resonate_bootstrap_entry.js";
 import type { ModeCard, SpectrumPayload } from "./resonate_types.js";
 import { customMeasurementModeMetaBuildFromState } from "./resonate_custom_measurements.js";
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
+import {
+  plateMaterialMeasurementsResolveFromState,
+  plateMaterialPanelInitialize,
+  plateMaterialPanelRenderFromState,
+} from "./resonate_plate_material_panel.js";
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
 import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js";
 
@@ -232,7 +237,8 @@ function viewModelMeasureModeResolve() {
 }
 
 function viewModelDestinationApplyToUi(link: HTMLAnchorElement) {
-  const destination = externalModelDestinationResolveFromMeasureMode(viewModelMeasureModeResolve());
+  const measureMode = viewModelMeasureModeResolve();
+  const destination = externalModelDestinationResolveFromMeasureMode(measureMode);
   const overlayToggle = overlayToggleInputElementGet();
   if (overlayToggle && !destination.showModelRow) overlayToggle.checked = false;
   const row = viewModelRowElementGet();
@@ -243,6 +249,8 @@ function viewModelDestinationApplyToUi(link: HTMLAnchorElement) {
   if (actions) actions.style.display = destination.showOverlayToggle ? "inline-flex" : "none";
   const copy = viewModelCopyElementGet();
   if (copy) copy.style.display = destination.kind === "dof" ? "" : "none";
+  state.measureMode = measureMode;
+  plateMaterialPanelRenderFromState(state);
 }
 
 function viewModelLinkAttach() {
@@ -254,7 +262,8 @@ function viewModelLinkAttach() {
     const destination = externalModelDestinationResolveFromMeasureMode(viewModelMeasureModeResolve());
     if (destination.kind === "plate-thickness") {
       const modesDetected = Array.isArray(state.lastModesDetected) ? state.lastModesDetected as ModeDetection[] : [];
-      const href = plateThicknessHrefBuildFromModes(link.href, modesDetected);
+      const materialMeasurements = plateMaterialMeasurementsResolveFromState(state);
+      const href = plateThicknessHrefBuildFromModes(link.href, modesDetected, materialMeasurements);
       e.preventDefault();
       window.location.href = href;
       return;
@@ -295,6 +304,7 @@ export function resonanceReaderRuntimeStart() {
   const boundaries: ResonanceBoundarySet = boundariesResolveFromState();
   resonanceStatusExpose(setStatus);
   resonanceUiExpose();
+  plateMaterialPanelInitialize(state);
   viewModelLinkAttach();
   resonanceReaderBootstrap(runtimeBootstrapArgsBuild(boundaries));
 }

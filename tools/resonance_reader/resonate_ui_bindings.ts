@@ -415,7 +415,10 @@ function measureModeChangeHandle(deps: UiBindingsDeps) {
   deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
 }
 
-function renderTryModePanelForMeasureMode(measureMode: "guitar" | "played_note" | "top" | "back", deps: UiBindingsDeps) {
+function renderTryModePanelForMeasureMode(
+  measureMode: "guitar" | "played_note" | "plate_stock" | "brace_stock",
+  deps: UiBindingsDeps,
+) {
   if (measureMode === "guitar" || measureMode === "played_note") return;
   deps.state.modeTargets = {};
 }
