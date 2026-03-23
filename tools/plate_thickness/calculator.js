@@ -35,6 +35,33 @@ Panel thickness calculator core math. Shared between the UI and Vitest.
         assertPositive(thickness, "thickness");
         return (SHEAR_FACTOR * density * Math.pow(spanL, 2) * Math.pow(spanW, 2) * Math.pow(frequency, 2)) / Math.pow(thickness, 2);
     }
+    function computePlateMaterialPropertiesFromMeasurements(params) {
+        const density = calculateDensity(params.panelMass, params.panelHeight, params.panelLength, params.panelWidth);
+        const EL = calculateYoungsModulus(density, params.panelLength, params.longFreq, params.panelHeight);
+        const EC = calculateYoungsModulus(density, params.panelWidth, params.crossFreq, params.panelHeight);
+        const GLC = calculateShearModulus(density, params.panelLength, params.panelWidth, params.twistFreq, params.panelHeight);
+        return {
+            density,
+            EL,
+            EC,
+            GLC,
+            ELoverEC: EL / EC,
+        };
+    }
+    function calculateTargetFrequency(params) {
+        assertPositive(params.bodyLength, "bodyLength");
+        assertPositive(params.lowerBout, "lowerBout");
+        assertPositive(params.thickness, "thickness");
+        assertPositive(params.density, "density");
+        assertPositive(params.EL, "EL");
+        assertPositive(params.EC, "EC");
+        assertPositive(params.GLC, "GLC");
+        const ratio = params.bodyLength / params.lowerBout;
+        const stiffness = Math.sqrt(params.EL +
+            Math.pow(ratio, 4) * params.EC +
+            Math.pow(ratio, 2) * (0.02857 * params.EL + 1.12 * params.GLC));
+        return (params.thickness * stiffness) / (THICKNESS_FACTOR * Math.pow(params.bodyLength, 2) * Math.sqrt(params.density));
+    }
     function computePlateSolution(params) {
         const required = [
             "bodyLength",
@@ -49,36 +76,43 @@ Panel thickness calculator core math. Shared between the UI and Vitest.
             "targetFreq",
         ];
         required.forEach((key) => assertPositive(params[key], key));
-        const density = calculateDensity(params.panelMass, params.panelHeight, params.panelLength, params.panelWidth);
-        const EL = calculateYoungsModulus(density, params.panelLength, params.longFreq, params.panelHeight);
-        const EC = calculateYoungsModulus(density, params.panelWidth, params.crossFreq, params.panelHeight);
-        const GLC = calculateShearModulus(density, params.panelLength, params.panelWidth, params.twistFreq, params.panelHeight);
+        const material = computePlateMaterialPropertiesFromMeasurements({
+            panelMass: params.panelMass,
+            panelHeight: params.panelHeight,
+            panelLength: params.panelLength,
+            panelWidth: params.panelWidth,
+            longFreq: params.longFreq,
+            crossFreq: params.crossFreq,
+            twistFreq: params.twistFreq,
+        });
         const ratio = params.bodyLength / params.lowerBout;
         const omega = params.targetFreq;
-        const numerator = THICKNESS_FACTOR * omega * Math.pow(params.bodyLength, 2) * Math.sqrt(density);
-        const coupling = Math.pow(ratio, 4) * EC + Math.pow(ratio, 2) * (0.02857 * EL + 1.12 * GLC);
-        const denominator = Math.sqrt(EL + coupling);
+        const numerator = THICKNESS_FACTOR * omega * Math.pow(params.bodyLength, 2) * Math.sqrt(material.density);
+        const coupling = Math.pow(ratio, 4) * material.EC + Math.pow(ratio, 2) * (0.02857 * material.EL + 1.12 * material.GLC);
+        const denominator = Math.sqrt(material.EL + coupling);
         const thickness = numerator / denominator;
         if (!Number.isFinite(thickness)) {
             throw new Error("Unable to compute thickness with the provided inputs.");
         }
-        const projectedMass = density * thickness * params.panelLength * params.panelWidth;
+        const projectedMass = material.density * thickness * params.panelLength * params.panelWidth;
         return {
-            density,
+            density: material.density,
             thickness, // meters
             thicknessMm: thickness * 1000,
             projectedMassKg: projectedMass,
             projectedMassG: projectedMass * 1000,
-            EL,
-            EC,
-            GLC,
-            ELoverEC: EL / EC,
+            EL: material.EL,
+            EC: material.EC,
+            GLC: material.GLC,
+            ELoverEC: material.ELoverEC,
         };
     }
     const PlateThickness = {
         calculateDensity,
         calculateYoungsModulus,
         calculateShearModulus,
+        computePlateMaterialPropertiesFromMeasurements,
+        calculateTargetFrequency,
         computePlateSolution,
     };
     (typeof window !== "undefined" ? window : globalThis).PlateThickness = PlateThickness;

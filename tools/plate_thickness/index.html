@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Panel Thickness Target — ToneLab</title>
+  <title>Plate Thickness | The Lab at Rick Molloy Guitars</title>
   <link rel="stylesheet" href="../common/tool_footer.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="../common/layout.css">
@@ -27,116 +27,133 @@
         </div>
       </section>
 
-      <main class="tl-layout tl-layout-stacked">
-        <section class="tl-content tl-content-primary">
-    <section class="card pad tl-card tl-card-output">
-      <h2>Results</h2>
-      <p class="small muted">Results update automatically as you enter measurements.</p>
-      <div class="results-grid">
-        <div class="result-card">
-          <div class="label">Target thickness</div>
-          <div id="result_thickness" class="value tl-primary-result">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">Projected panel mass</div>
-          <div id="result_mass" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">Density ρ</div>
-          <div id="result_density" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">E<sub>L</sub></div>
-          <div id="result_el" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">E<sub>C</sub></div>
-          <div id="result_ec" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">E<sub>L</sub> / E<sub>C</sub></div>
-          <div id="result_ratio" class="value">—</div>
-        </div>
-        <div class="result-card">
-          <div class="label">G<sub>LC</sub></div>
-          <div id="result_shear" class="value">—</div>
-        </div>
-      </div>
-      <p id="result_status" class="status">Live: computed from current inputs</p>
-    </section>
-        </section>
+      <section class="card-surface plate-tool-surface">
+        <main class="tl-content plate-thickness-page">
+          <section class="card pad tl-card tl-card-output plate-results-section">
+            <div class="plate-surface-header">
+              <div class="plate-surface-heading">
+                <h2>Results</h2>
+                <p class="small muted">Results update automatically as you enter measurements.</p>
+              </div>
+            </div>
+            <div class="results-grid plate-results-grid">
+              <div class="result-card result-card-primary">
+                <div class="label">Solved thickness</div>
+                <div id="result_thickness" class="value tl-primary-result">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">Projected panel mass</div>
+                <div id="result_mass" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">Density ρ</div>
+                <div id="result_density" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>L</sub></div>
+                <div id="result_el" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>C</sub></div>
+                <div id="result_ec" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>L</sub> / E<sub>C</sub></div>
+                <div id="result_ratio" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">G<sub>LC</sub></div>
+                <div id="result_shear" class="value">—</div>
+              </div>
+            </div>
+            <p id="result_status" class="status">Live: computed from current inputs</p>
+          </section>
 
-        <aside class="tl-controls">
-    <section class="card pad tl-card tl-card-controls tl-control-column">
-      <h2>Panel measurements</h2>
-      <div class="plate-target-row">
-        <label class="field field-target">
-          <span class="field-label">Target main tap frequency (Hz)</span>
-          <input type="number" step="0.1" min="20" data-field="target_freq" value="75">
-        </label>
-        <div class="tl-action-row">
-          <button id="reset_inputs">Reset defaults</button>
-        </div>
-      </div>
+          <section class="card pad tl-card tl-card-controls plate-inputs-section">
+            <div class="plate-surface-header">
+              <div class="plate-surface-heading">
+                <h2>Inputs</h2>
+                <p class="small muted">Enter the target spec, current panel, and measured modes.</p>
+              </div>
+              <div class="tl-action-row plate-action-row">
+                <button id="reset_inputs" class="ghost-btn btn-small" type="button">Reset defaults</button>
+              </div>
+            </div>
 
-      <div class="plate-input-grid">
-        <div class="input-block">
-          <h3 class="input-block__title">Geometry</h3>
-          <form id="plate_form_geometry" class="tl-control-stack">
-            <label class="field">
-              <span class="field-label">Guitar box length (mm)</span>
-              <input type="number" step="1" min="200" data-field="body_length" value="490">
-            </label>
-            <label class="field">
-              <span class="field-label">Lower bout width (mm)</span>
-              <input type="number" step="1" min="200" data-field="lower_bout" value="390">
-            </label>
-            <label class="field">
-              <span class="field-label">Panel length (mm)</span>
-              <input type="number" step="1" min="200" data-field="panel_length" value="555">
-            </label>
-            <label class="field">
-              <span class="field-label">Panel width (mm)</span>
-              <input type="number" step="1" min="200" data-field="panel_width" value="227">
-            </label>
-          </form>
-        </div>
-        <div class="input-block">
-          <h3 class="input-block__title">Mass &amp; thickness</h3>
-          <form class="tl-control-stack">
-            <label class="field">
-              <span class="field-label">Mass of panel (g)</span>
-              <input type="number" step="0.1" min="10" data-field="panel_mass" value="211.4">
-            </label>
-            <label class="field">
-              <span class="field-label">Panel thickness (mm)</span>
-              <input type="number" step="0.1" min="1" data-field="panel_height" value="4.1">
-            </label>
-          </form>
-        </div>
-        <div class="input-block">
-          <h3 class="input-block__title">Modal taps</h3>
-          <form class="tl-control-stack">
-            <label class="field">
-              <span class="field-label">Long-grain mode f<sub>L</sub> (Hz)</span>
-              <input type="number" step="0.1" min="10" data-field="long_freq" value="74">
-            </label>
-            <label class="field">
-              <span class="field-label">Cross-grain mode f<sub>C</sub> (Hz)</span>
-              <input type="number" step="0.1" min="10" data-field="cross_freq" value="109">
-            </label>
-            <label class="field">
-              <span class="field-label">Twist mode f<sub>T</sub> (Hz)</span>
-              <input type="number" step="0.1" min="10" data-field="twist_freq" value="42">
-            </label>
-          </form>
-        </div>
-      </div>
-    </section>
+            <div class="plate-preset-row">
+              <label class="plate-fit-field plate-fit-field-preset">
+                <span class="field-label">Preset</span>
+                <select disabled>
+                  <option selected>Martin style OM</option>
+                </select>
+              </label>
+            </div>
 
-        </aside>
+            <div class="plate-input-grid plate-input-grid-regrouped">
+              <div class="input-block plate-input-block plate-input-block-target">
+                <h3 class="input-block__title">Target Spec</h3>
+                <p class="small muted input-block__copy">Design targets for the body and finished plate response.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Target main tap frequency (Hz)</span>
+                    <input type="number" step="0.1" min="20" data-field="target_freq" value="75">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Lower bout width (mm)</span>
+                    <input type="number" step="1" min="200" data-field="lower_bout" value="390">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Guitar box length (mm)</span>
+                    <input type="number" step="1" min="200" data-field="body_length" value="490">
+                  </label>
+                </form>
+              </div>
 
-        <section class="tl-content tl-content-secondary">
+              <div class="input-block plate-input-block plate-input-block-panel">
+                <h3 class="input-block__title">Current Panel</h3>
+                <p class="small muted input-block__copy">Measurements from the panel you are evaluating right now.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Panel length (mm)</span>
+                    <input type="number" step="1" min="200" data-field="panel_length" value="555">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Panel width (mm)</span>
+                    <input type="number" step="1" min="200" data-field="panel_width" value="227">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Panel thickness (mm)</span>
+                    <input type="number" step="0.1" min="1" data-field="panel_height" value="4.1">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Mass of panel (g)</span>
+                    <input type="number" step="0.1" min="10" data-field="panel_mass" value="211.4">
+                  </label>
+                </form>
+              </div>
+
+              <div class="input-block plate-input-block plate-input-block-modes">
+                <h3 class="input-block__title">Measured Modes</h3>
+                <p class="small muted input-block__copy">Latest modal readings for the panel, or manual entry.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Long-grain mode f<sub>L</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="long_freq" value="74">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Cross-grain mode f<sub>C</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="cross_freq" value="109">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Twist mode f<sub>T</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="twist_freq" value="42">
+                  </label>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <section class="tl-content tl-content-secondary">
     <header class="card pad tl-card tl-card-info">
       <h1>Target Panel Thickness Calculator</h1>
       <p class="tl-card-desc">
@@ -263,8 +280,9 @@
         </form>
       </details>
     </section>
-        </section>
-      </main>
+          </section>
+        </main>
+      </section>
 
       <footer class="tl-footer" data-tool-footer></footer>
     </div>
@@ -273,6 +291,7 @@
   <script src="../common/site_menu_loader.js"></script>
   <script src="../common/tool_footer_loader.js"></script>
   <script src="calculator.js"></script>
+  <script src="query_params.js"></script>
   <script src="main.js"></script>
 </body>
 

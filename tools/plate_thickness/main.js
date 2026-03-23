@@ -6,8 +6,14 @@ Panel thickness calculator UI logic.
 */
 (function initPlateThicknessTool() {
     const calculator = (typeof window !== "undefined" && window.PlateThickness) ? window.PlateThickness : null;
+    const queryParams = (typeof window !== "undefined" && window.PlateThicknessQueryParams)
+        ? window.PlateThicknessQueryParams
+        : null;
     if (!calculator) {
         throw new Error("PlateThickness calculator unavailable. Ensure calculator.js is loaded before main.js.");
+    }
+    if (!queryParams) {
+        throw new Error("PlateThickness query params unavailable. Ensure query_params.js is loaded before main.js.");
     }
     const calc = calculator;
     const defaults = {
@@ -140,25 +146,7 @@ Panel thickness calculator UI logic.
     function applyQueryParams() {
         if (typeof window === "undefined" || !window.location)
             return;
-        const params = new URLSearchParams(window.location.search);
-        const overrides = {
-            long_freq: params.get("long"),
-            cross_freq: params.get("cross"),
-            twist_freq: params.get("twisting")
-        };
-        let changed = false;
-        Object.entries(overrides).forEach(([field, raw]) => {
-            if (!raw)
-                return;
-            const numeric = parseFloat(raw);
-            if (!Number.isFinite(numeric))
-                return;
-            if (fields[field]) {
-                const scaled = field.includes("_freq") ? numeric : numeric;
-                fields[field].value = formatNumber(scaled);
-                changed = true;
-            }
-        });
+        const changed = queryParams.applyToFields(fields, window.location.search, formatNumber);
         if (changed)
             run();
     }
