@@ -3,7 +3,7 @@
     return [
       "<div>© 2025 Rick Molloy. All rights reserved.</div>",
       "<div>Licensed for educational use only. No redistribution without written consent.</div>",
-      "<div>Tools provided by Rick Molloy • <a href=\"/\">ToneLab</a></div>",
+      "<div>Tools provided by Rick Molloy • <a href=\"/\">The Lab at Rick Molloy Guitars</a></div>",
     ].join("");
   }
 
