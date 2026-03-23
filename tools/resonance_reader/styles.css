@@ -419,6 +419,51 @@ body { padding: 28px; }
   justify-content: start;
   gap: 12px;
 }
+.plate-material-card {
+  padding: 18px 20px 20px;
+  border-radius: 18px;
+}
+
+.plate-material-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.plate-material-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 10px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.plate-material-label {
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line);
+  color: rgba(230, 233, 239, 0.8);
+}
+
+.plate-material-input {
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(9, 12, 18, 0.72);
+  color: var(--ink);
+  font: inherit;
+}
+
+.plate-material-unit {
+  font-size: var(--type-meta-size);
+  line-height: var(--type-meta-line);
+  color: var(--muted);
+}
+
 .mode-card {
   position: relative;
   padding: 14px 16px;
