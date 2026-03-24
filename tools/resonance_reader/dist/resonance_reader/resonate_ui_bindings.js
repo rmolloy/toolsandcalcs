@@ -385,40 +385,68 @@ function measureModeChangeHandle(deps) {
     if (!select)
         return;
     const nextMode = measureModeNormalize(select.value);
-    if (deps.state.measureMode === nextMode)
-        return;
+    measureModeChangeApply(nextMode, deps);
+}
+export function measureModeChangeApply(nextMode, deps) {
     deps.state.measureMode = nextMode;
     deps.state.lastOverlay = undefined;
+    if (measureModeChangeShouldReseedDemoWave()) {
+        measureModeStateResetForDemoWave(deps.state);
+    }
     measureModeStatePreserveCustomCardsOnly(deps.state);
     renderTryModePanelForMeasureMode(nextMode, deps);
     energyTransferPanelSyncFromState(deps.state);
     deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
+    if (measureModeChangeShouldRunPipelineForDemoWave()) {
+        runMeasureModePipelineRefresh(deps);
+        return;
+    }
     if (measureModeChangeShouldRenderMock(deps.state)) {
         deps.renderMock();
         deps.setStatus("Load or record to view the waveform.");
         return;
     }
     rerenderFromLastSpectrumIfPossible(deps.state);
-    deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
+    runMeasureModePipelineRefresh(deps);
 }
 export function measureModeChangeShouldRenderMock(state) {
     return !state?.currentWave;
+}
+export function measureModeChangeShouldReseedDemoWave() {
+    return recordingSelectValueRead() === "";
+}
+export function measureModeChangeShouldRunPipelineForDemoWave() {
+    return measureModeChangeShouldReseedDemoWave();
 }
 export function measureModeStatePreserveCustomCardsOnly(state) {
     const cards = Array.isArray(state?.lastModeCards) ? state.lastModeCards : [];
     state.lastModeCards = cards.filter((card) => customMeasurementKeyIsCustom(String(card?.key || "")));
     state.lastModesDetected = [];
 }
+export function measureModeStateResetForDemoWave(state) {
+    state.currentWave = null;
+    state.lastSpectrum = null;
+    state.lastSpectrumNoteSelection = null;
+}
 function renderTryModePanelForMeasureMode(measureMode, deps) {
     if (measureMode === "guitar" || measureMode === "played_note")
         return;
     deps.state.modeTargets = {};
+}
+function recordingSelectValueRead() {
+    return recordingSelectElementGet()?.value || "";
+}
+function recordingSelectElementGet() {
+    return document.getElementById("recording_select");
 }
 function rerenderFromLastSpectrumIfPossible(state) {
     if (typeof state?.rerenderFromLastSpectrum !== "function")
         return;
     state.preserveSpectrumRangesOnNextRender = true;
     state.rerenderFromLastSpectrum({ skipDof: true });
+}
+function runMeasureModePipelineRefresh(deps) {
+    deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
 }
 function bindMeasureMode(deps) {
     measureModeStateSeedFromSelect(deps.state);

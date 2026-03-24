@@ -28,18 +28,11 @@ const GUITAR_META = {
     },
 };
 const PLATE_STOCK_BANDS = {
-    transverse: { low: 24, high: 55 },
     long: { low: 65, high: 100 },
     cross: { low: 110, high: 140 },
+    transverse: { low: 24, high: 55 },
 };
 const PLATE_STOCK_META = {
-    transverse: {
-        label: "Transverse",
-        aliasHtml: "T",
-        aliasText: "T",
-        tooltip: "Transverse\nTransverse/twisting plate mode.",
-        color: resolveColorHexFromRole("plateTransverseMode"),
-    },
     long: {
         label: "Long",
         aliasHtml: "L",
@@ -54,20 +47,20 @@ const PLATE_STOCK_META = {
         tooltip: "Cross\nCross-grain plate mode.",
         color: resolveColorHexFromRole("plateCrossMode"),
     },
-};
-const BRACE_STOCK_BANDS = {
-    transverse: { low: 24, high: 55 },
-    long: { low: 65, high: 100 },
-    cross: { low: 110, high: 140 },
-};
-const BRACE_STOCK_META = {
     transverse: {
         label: "Transverse",
         aliasHtml: "T",
         aliasText: "T",
-        tooltip: "Transverse\nTransverse/twisting brace-stock mode.",
+        tooltip: "Transverse\nTransverse/twisting plate mode.",
         color: resolveColorHexFromRole("plateTransverseMode"),
     },
+};
+const BRACE_STOCK_BANDS = {
+    long: { low: 65, high: 100 },
+    cross: { low: 110, high: 140 },
+    transverse: { low: 24, high: 55 },
+};
+const BRACE_STOCK_META = {
     long: {
         label: "Long",
         aliasHtml: "L",
@@ -81,6 +74,13 @@ const BRACE_STOCK_META = {
         aliasText: "C",
         tooltip: "Cross\nCross-grain brace-stock mode.",
         color: resolveColorHexFromRole("plateCrossMode"),
+    },
+    transverse: {
+        label: "Transverse",
+        aliasHtml: "T",
+        aliasText: "T",
+        tooltip: "Transverse\nTransverse/twisting brace-stock mode.",
+        color: resolveColorHexFromRole("plateTransverseMode"),
     },
 };
 const MODE_PROFILES = {

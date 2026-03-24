@@ -55,8 +55,8 @@ function mockModesBuildFromMeasureMode(measureMode: "guitar" | "played_note" | "
 }
 
 function mockModeFrequenciesForMeasureMode(measureMode: "guitar" | "played_note" | "plate_stock" | "brace_stock") {
-  if (measureMode === "plate_stock") return [182.0, 278.0, 372.0];
-  if (measureMode === "brace_stock") return [196.0, 294.0, 386.0];
+  if (measureMode === "plate_stock") return [82.0, 126.0, 42.0];
+  if (measureMode === "brace_stock") return [88.0, 134.0, 38.0];
   return [83.4, 196.5, 231.5];
 }
 

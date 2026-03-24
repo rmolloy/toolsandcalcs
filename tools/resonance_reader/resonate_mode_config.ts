@@ -38,19 +38,12 @@ const GUITAR_META: Record<string, ModeMeta> = {
 };
 
 const PLATE_STOCK_BANDS: ModeBandMap = {
-  transverse: { low: 24, high: 55 },
   long: { low: 65, high: 100 },
   cross: { low: 110, high: 140 },
+  transverse: { low: 24, high: 55 },
 };
 
 const PLATE_STOCK_META: Record<string, ModeMeta> = {
-  transverse: {
-    label: "Transverse",
-    aliasHtml: "T",
-    aliasText: "T",
-    tooltip: "Transverse\nTransverse/twisting plate mode.",
-    color: resolveColorHexFromRole("plateTransverseMode"),
-  },
   long: {
     label: "Long",
     aliasHtml: "L",
@@ -65,22 +58,22 @@ const PLATE_STOCK_META: Record<string, ModeMeta> = {
     tooltip: "Cross\nCross-grain plate mode.",
     color: resolveColorHexFromRole("plateCrossMode"),
   },
-};
-
-const BRACE_STOCK_BANDS: ModeBandMap = {
-  transverse: { low: 24, high: 55 },
-  long: { low: 65, high: 100 },
-  cross: { low: 110, high: 140 },
-};
-
-const BRACE_STOCK_META: Record<string, ModeMeta> = {
   transverse: {
     label: "Transverse",
     aliasHtml: "T",
     aliasText: "T",
-    tooltip: "Transverse\nTransverse/twisting brace-stock mode.",
+    tooltip: "Transverse\nTransverse/twisting plate mode.",
     color: resolveColorHexFromRole("plateTransverseMode"),
   },
+};
+
+const BRACE_STOCK_BANDS: ModeBandMap = {
+  long: { low: 65, high: 100 },
+  cross: { low: 110, high: 140 },
+  transverse: { low: 24, high: 55 },
+};
+
+const BRACE_STOCK_META: Record<string, ModeMeta> = {
   long: {
     label: "Long",
     aliasHtml: "L",
@@ -94,6 +87,13 @@ const BRACE_STOCK_META: Record<string, ModeMeta> = {
     aliasText: "C",
     tooltip: "Cross\nCross-grain brace-stock mode.",
     color: resolveColorHexFromRole("plateCrossMode"),
+  },
+  transverse: {
+    label: "Transverse",
+    aliasHtml: "T",
+    aliasText: "T",
+    tooltip: "Transverse\nTransverse/twisting brace-stock mode.",
+    color: resolveColorHexFromRole("plateTransverseMode"),
   },
 };
 

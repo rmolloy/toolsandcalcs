@@ -408,30 +408,57 @@ function measureModeChangeHandle(deps: UiBindingsDeps) {
   const select = measureModeSelectElementGet();
   if (!select) return;
   const nextMode = measureModeNormalize(select.value);
-  if (deps.state.measureMode === nextMode) return;
+  measureModeChangeApply(nextMode, deps);
+}
+
+export function measureModeChangeApply(
+  nextMode: "guitar" | "played_note" | "plate_stock" | "brace_stock",
+  deps: Pick<UiBindingsDeps, "state" | "renderMock" | "renderModes" | "runResonatePipeline" | "setStatus">,
+) {
   deps.state.measureMode = nextMode;
   deps.state.lastOverlay = undefined;
+  if (measureModeChangeShouldReseedDemoWave()) {
+    measureModeStateResetForDemoWave(deps.state);
+  }
   measureModeStatePreserveCustomCardsOnly(deps.state);
-  renderTryModePanelForMeasureMode(nextMode, deps);
+  renderTryModePanelForMeasureMode(nextMode, deps as UiBindingsDeps);
   energyTransferPanelSyncFromState(deps.state);
   deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
+  if (measureModeChangeShouldRunPipelineForDemoWave()) {
+    runMeasureModePipelineRefresh(deps);
+    return;
+  }
   if (measureModeChangeShouldRenderMock(deps.state)) {
     deps.renderMock();
     deps.setStatus("Load or record to view the waveform.");
     return;
   }
   rerenderFromLastSpectrumIfPossible(deps.state);
-  deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
+  runMeasureModePipelineRefresh(deps);
 }
 
 export function measureModeChangeShouldRenderMock(state: Record<string, any>) {
   return !state?.currentWave;
 }
 
+export function measureModeChangeShouldReseedDemoWave() {
+  return recordingSelectValueRead() === "";
+}
+
+export function measureModeChangeShouldRunPipelineForDemoWave() {
+  return measureModeChangeShouldReseedDemoWave();
+}
+
 export function measureModeStatePreserveCustomCardsOnly(state: Record<string, any>) {
   const cards = Array.isArray(state?.lastModeCards) ? state.lastModeCards : [];
   state.lastModeCards = cards.filter((card) => customMeasurementKeyIsCustom(String(card?.key || "")));
   state.lastModesDetected = [];
+}
+
+export function measureModeStateResetForDemoWave(state: Record<string, any>) {
+  state.currentWave = null;
+  state.lastSpectrum = null;
+  state.lastSpectrumNoteSelection = null;
 }
 
 function renderTryModePanelForMeasureMode(
@@ -442,10 +469,24 @@ function renderTryModePanelForMeasureMode(
   deps.state.modeTargets = {};
 }
 
+function recordingSelectValueRead() {
+  return recordingSelectElementGet()?.value || "";
+}
+
+function recordingSelectElementGet() {
+  return document.getElementById("recording_select") as HTMLSelectElement | null;
+}
+
 function rerenderFromLastSpectrumIfPossible(state: Record<string, any>) {
   if (typeof state?.rerenderFromLastSpectrum !== "function") return;
   state.preserveSpectrumRangesOnNextRender = true;
   state.rerenderFromLastSpectrum({ skipDof: true });
+}
+
+function runMeasureModePipelineRefresh(
+  deps: Pick<UiBindingsDeps, "state" | "runResonatePipeline">,
+) {
+  deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
 }
 
 function bindMeasureMode(deps: UiBindingsDeps) {
