@@ -75,10 +75,10 @@ const BRACE_STOCK_BANDS: ModeBandMap = {
 
 const BRACE_STOCK_META: Record<string, ModeMeta> = {
   transverse: {
-    label: "Flex",
-    aliasHtml: "F",
-    aliasText: "F",
-    tooltip: "Flex\nBrace-stock flex/twisting mode.",
+    label: "Transverse",
+    aliasHtml: "T",
+    aliasText: "T",
+    tooltip: "Transverse\nTransverse/twisting brace-stock mode.",
     color: resolveColorHexFromRole("plateTransverseMode"),
   },
   long: {
@@ -109,7 +109,8 @@ export const MODE_META = GUITAR_META;
 
 export function measureModeNormalize(input: unknown): MeasureMode {
   if (input === "played_note") return "played_note";
-  if (input === "plate_stock" || input === "top" || input === "back") return "plate_stock";
+  if (input === "plate_stock" || input === "top") return "plate_stock";
+  if (input === "back") return "brace_stock";
   if (input === "brace_stock") return "brace_stock";
   return "guitar";
 }

@@ -1,5 +1,6 @@
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
+import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js";
 
 type UiBindingsDeps = {
   state: Record<string, any>;
@@ -410,9 +411,27 @@ function measureModeChangeHandle(deps: UiBindingsDeps) {
   if (deps.state.measureMode === nextMode) return;
   deps.state.measureMode = nextMode;
   deps.state.lastOverlay = undefined;
+  measureModeStatePreserveCustomCardsOnly(deps.state);
   renderTryModePanelForMeasureMode(nextMode, deps);
   energyTransferPanelSyncFromState(deps.state);
+  deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
+  if (measureModeChangeShouldRenderMock(deps.state)) {
+    deps.renderMock();
+    deps.setStatus("Load or record to view the waveform.");
+    return;
+  }
+  rerenderFromLastSpectrumIfPossible(deps.state);
   deps.runResonatePipeline("measure-mode-change").catch(() => rerenderFromLastSpectrumIfPossible(deps.state));
+}
+
+export function measureModeChangeShouldRenderMock(state: Record<string, any>) {
+  return !state?.currentWave;
+}
+
+export function measureModeStatePreserveCustomCardsOnly(state: Record<string, any>) {
+  const cards = Array.isArray(state?.lastModeCards) ? state.lastModeCards : [];
+  state.lastModeCards = cards.filter((card) => customMeasurementKeyIsCustom(String(card?.key || "")));
+  state.lastModesDetected = [];
 }
 
 function renderTryModePanelForMeasureMode(

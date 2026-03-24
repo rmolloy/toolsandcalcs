@@ -32,7 +32,7 @@ const BRACE_STOCK_DESTINATION: ExternalModelDestination = {
   kind: "plate-thickness",
 };
 
-const PLATE_DESTINATION: ExternalModelDestination = {
+const PLATE_STOCK_DESTINATION: ExternalModelDestination = {
   href: "../plate_thickness/",
   label: "Open in Plate Thickness calculator",
   showOverlayToggle: false,
@@ -45,5 +45,5 @@ export function externalModelDestinationResolveFromMeasureMode(measureMode: unkn
   if (normalized === "guitar") return GUITAR_DESTINATION;
   if (normalized === "played_note") return PLAYED_NOTE_DESTINATION;
   if (normalized === "brace_stock") return BRACE_STOCK_DESTINATION;
-  return PLATE_DESTINATION;
+  return PLATE_STOCK_DESTINATION;
 }

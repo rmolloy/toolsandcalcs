@@ -3,7 +3,7 @@ const DEMO_PEAKS_BY_MODE = {
     guitar: [98, 178, 220],
     played_note: [98, 178, 220],
     plate_stock: [42, 82, 126],
-    brace_stock: [36, 78, 122],
+    brace_stock: [38, 88, 134],
 };
 export function demoPeakFrequenciesResolveFromMeasureMode(measureMode) {
     return DEMO_PEAKS_BY_MODE[measureModeNormalize(measureMode)];

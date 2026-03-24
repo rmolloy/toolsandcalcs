@@ -20,7 +20,7 @@ const BRACE_STOCK_DESTINATION = {
     showModelRow: false,
     kind: "plate-thickness",
 };
-const PLATE_DESTINATION = {
+const PLATE_STOCK_DESTINATION = {
     href: "../plate_thickness/",
     label: "Open in Plate Thickness calculator",
     showOverlayToggle: false,
@@ -35,5 +35,5 @@ export function externalModelDestinationResolveFromMeasureMode(measureMode) {
         return PLAYED_NOTE_DESTINATION;
     if (normalized === "brace_stock")
         return BRACE_STOCK_DESTINATION;
-    return PLATE_DESTINATION;
+    return PLATE_STOCK_DESTINATION;
 }

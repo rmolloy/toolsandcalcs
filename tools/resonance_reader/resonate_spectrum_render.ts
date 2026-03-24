@@ -3,6 +3,7 @@ import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js";
 import { emitModeOverrideRequested } from "./resonate_override_commands.js";
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
+import { overlayShouldRenderForMeasureMode } from "./resonate_overlay_gate.js";
 import { overlaySegmentsBuildFromArrays, type OverlaySegment } from "../common/overlay_segments.js";
 
 type SpectrumPayload = {
@@ -159,7 +160,8 @@ function overlayToggleChecked(toggle: HTMLInputElement | null) {
 }
 
 function overlayVisibleResolveAndSyncClass(toggle: HTMLInputElement | null) {
-  const overlayVisible = overlayToggleChecked(toggle);
+  const measureMode = (document.getElementById("measure_mode") as HTMLSelectElement | null)?.value;
+  const overlayVisible = overlayShouldRenderForMeasureMode(measureMode, toggle);
   pipelineOverlayClassSync(overlayVisible);
   return overlayVisible;
 }

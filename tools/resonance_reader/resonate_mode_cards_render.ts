@@ -159,13 +159,14 @@ function escapeHtmlAttr(text: string) {
 
 function modeTitleHtmlBuildFromMode(m: ModeCard, deps: ModeCardDeps) {
   if (m.kind === "custom") return modeTitleHtmlBuildFromCustomMode(m);
-  const tooltip = escapeHtmlAttr(deps.modeMeta[m.key]?.tooltip || m.label);
+  const currentLabel = deps.modeMeta[m.key]?.label || m.label;
+  const tooltip = escapeHtmlAttr(deps.modeMeta[m.key]?.tooltip || currentLabel);
   const aliasHtml = deps.modeMeta[m.key]?.aliasHtml || "";
   return `
     <h3>
       <span class="mode-title" tabindex="0" data-tooltip="${tooltip}">
         <span class="mode-dot"></span>
-        <span>${m.label}</span>
+        <span>${currentLabel}</span>
         <span class="mode-alias">${aliasHtml}</span>
       </span>
     </h3>
