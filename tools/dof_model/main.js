@@ -362,6 +362,7 @@ let plotlyRef = null;
 let pendingRender = null;
 let lastResponse = null;
 let plotListenersBound = false;
+let plotResizeObserver = null;
 const thumbEls = {};
 const modeCardEls = {};
 const paramInputs = {};
@@ -385,6 +386,7 @@ let pendingDragFreq = null;
 let dragLockedTargets = null;
 let dragUseWhatIf = false;
 const traceVisibilityState = { ...TRACE_DEFAULT_VISIBLE };
+const PLOT_RESIZE_SYNC_TOLERANCE_PX = 1;
 function dofParamsFromLocation() {
     const raw = new URLSearchParams(window.location.search).get("params");
     if (!raw)
@@ -426,6 +428,41 @@ function getPlotly() {
     const ref = window.Plotly;
     plotlyRef = ref || null;
     return plotlyRef;
+}
+function plotResizeSyncReadContainerWidth(plotEl) {
+    var _a, _b, _c;
+    const width = (_c = (_b = (_a = plotEl === null || plotEl === void 0 ? void 0 : plotEl.getBoundingClientRect) === null || _a === void 0 ? void 0 : _a.call(plotEl).width) !== null && _b !== void 0 ? _b : plotEl === null || plotEl === void 0 ? void 0 : plotEl.clientWidth) !== null && _c !== void 0 ? _c : null;
+    return plotResizeSyncNormalizeWidth(width);
+}
+function plotResizeSyncReadGraphWidth(plotEl) {
+    var _a, _b;
+    return plotResizeSyncNormalizeWidth((_b = (_a = plotEl === null || plotEl === void 0 ? void 0 : plotEl._fullLayout) === null || _a === void 0 ? void 0 : _a.width) !== null && _b !== void 0 ? _b : null);
+}
+function plotResizeSyncNeedsResize(plotEl) {
+    const containerWidth = plotResizeSyncReadContainerWidth(plotEl);
+    const graphWidth = plotResizeSyncReadGraphWidth(plotEl);
+    if (containerWidth === null || graphWidth === null)
+        return false;
+    return Math.abs(containerWidth - graphWidth) > PLOT_RESIZE_SYNC_TOLERANCE_PX;
+}
+function plotResizeSyncApply(plotEl) {
+    var _a;
+    if (!plotResizeSyncNeedsResize(plotEl))
+        return Promise.resolve(false);
+    const plotly = getPlotly();
+    if (!plotly)
+        return Promise.resolve(false);
+    const resize = (_a = plotly === null || plotly === void 0 ? void 0 : plotly.Plots) === null || _a === void 0 ? void 0 : _a.resize;
+    if (typeof resize === "function") {
+        return Promise.resolve(resize(plotEl)).then(() => true);
+    }
+    const width = plotResizeSyncReadContainerWidth(plotEl);
+    if (width === null || typeof (plotly === null || plotly === void 0 ? void 0 : plotly.relayout) !== "function")
+        return Promise.resolve(false);
+    return Promise.resolve(plotly.relayout(plotEl, { width })).then(() => true);
+}
+function plotResizeSyncNormalizeWidth(width) {
+    return typeof width === "number" && Number.isFinite(width) && width > 0 ? width : null;
 }
 function updateParam(param, value) {
     if (Number.isFinite(value)) {
@@ -2015,10 +2052,22 @@ function bindPlotInteractions(plotEl) {
     plotEl.on("plotly_legendclick", () => {
         requestAnimationFrame(() => syncTraceVisibilityStateFromPlot(plotEl));
     });
-    window.addEventListener("resize", () => updateThumbs());
+    bindPlotResizeSync(plotEl);
     window.addEventListener("pointermove", handleThumbPointerMove);
     window.addEventListener("pointerup", handleThumbPointerUp);
     window.addEventListener("pointercancel", handleThumbPointerUp);
+}
+function bindPlotResizeSync(plotEl) {
+    const sync = () => syncPlotWidthToContainer(plotEl);
+    window.addEventListener("resize", sync);
+    const plotShell = plotEl.closest(".plot-shell");
+    if (typeof ResizeObserver !== "function" || plotResizeObserver)
+        return;
+    plotResizeObserver = new ResizeObserver(() => sync());
+    plotResizeObserver.observe(plotShell || plotEl);
+}
+function syncPlotWidthToContainer(plotEl) {
+    Promise.resolve(plotResizeSyncApply(plotEl)).finally(() => updateThumbs());
 }
 function renderPlot() {
     var _a;

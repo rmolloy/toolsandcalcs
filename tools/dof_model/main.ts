@@ -430,6 +430,7 @@ let plotlyRef: typeof Plotly | null = null;
 let pendingRender: number | null = null;
 let lastResponse: any = null;
 let plotListenersBound = false;
+let plotResizeObserver: ResizeObserver | null = null;
 const thumbEls: Partial<Record<ModeKey, ThumbElements>> = {};
 const modeCardEls: Partial<Record<ModeKey, ModeCardElements>> = {};
 const paramInputs: Partial<Record<keyof typeof DEFAULT_PARAMS, HTMLInputElement>> = {};
@@ -453,6 +454,7 @@ let pendingDragFreq: number | null = null;
 let dragLockedTargets: Record<ModeKey, number | null> | null = null;
 let dragUseWhatIf = false;
 const traceVisibilityState: Partial<Record<TraceName, boolean>> = { ...TRACE_DEFAULT_VISIBLE };
+const PLOT_RESIZE_SYNC_TOLERANCE_PX = 1;
 
 function dofParamsFromLocation(): Partial<DofParams> | null {
   const raw = new URLSearchParams(window.location.search).get("params");
@@ -489,6 +491,39 @@ function getPlotly(): typeof Plotly | null {
   const ref = (window as any).Plotly;
   plotlyRef = ref || null;
   return plotlyRef;
+}
+
+function plotResizeSyncReadContainerWidth(plotEl: HTMLElement | null | undefined): number | null {
+  const width = plotEl?.getBoundingClientRect?.().width ?? plotEl?.clientWidth ?? null;
+  return plotResizeSyncNormalizeWidth(width);
+}
+
+function plotResizeSyncReadGraphWidth(plotEl: any): number | null {
+  return plotResizeSyncNormalizeWidth(plotEl?._fullLayout?.width ?? null);
+}
+
+function plotResizeSyncNeedsResize(plotEl: HTMLElement | null | undefined): boolean {
+  const containerWidth = plotResizeSyncReadContainerWidth(plotEl);
+  const graphWidth = plotResizeSyncReadGraphWidth(plotEl);
+  if (containerWidth === null || graphWidth === null) return false;
+  return Math.abs(containerWidth - graphWidth) > PLOT_RESIZE_SYNC_TOLERANCE_PX;
+}
+
+function plotResizeSyncApply(plotEl: HTMLElement): Promise<boolean> {
+  if (!plotResizeSyncNeedsResize(plotEl)) return Promise.resolve(false);
+  const plotly = getPlotly() as any;
+  if (!plotly) return Promise.resolve(false);
+  const resize = plotly?.Plots?.resize;
+  if (typeof resize === "function") {
+    return Promise.resolve(resize(plotEl)).then(() => true);
+  }
+  const width = plotResizeSyncReadContainerWidth(plotEl);
+  if (width === null || typeof plotly?.relayout !== "function") return Promise.resolve(false);
+  return Promise.resolve(plotly.relayout(plotEl, { width })).then(() => true);
+}
+
+function plotResizeSyncNormalizeWidth(width: unknown): number | null {
+  return typeof width === "number" && Number.isFinite(width) && width > 0 ? width : null;
 }
 
 function updateParam(param: keyof typeof DEFAULT_PARAMS, value: number) {
@@ -2106,10 +2141,23 @@ function bindPlotInteractions(plotEl: HTMLElement) {
   (plotEl as any).on("plotly_legendclick", () => {
     requestAnimationFrame(() => syncTraceVisibilityStateFromPlot(plotEl));
   });
-  window.addEventListener("resize", () => updateThumbs());
+  bindPlotResizeSync(plotEl);
   window.addEventListener("pointermove", handleThumbPointerMove);
   window.addEventListener("pointerup", handleThumbPointerUp);
   window.addEventListener("pointercancel", handleThumbPointerUp);
+}
+
+function bindPlotResizeSync(plotEl: HTMLElement) {
+  const sync = () => syncPlotWidthToContainer(plotEl);
+  window.addEventListener("resize", sync);
+  const plotShell = plotEl.closest(".plot-shell") as Element | null;
+  if (typeof ResizeObserver !== "function" || plotResizeObserver) return;
+  plotResizeObserver = new ResizeObserver(() => sync());
+  plotResizeObserver.observe(plotShell || plotEl);
+}
+
+function syncPlotWidthToContainer(plotEl: HTMLElement) {
+  Promise.resolve(plotResizeSyncApply(plotEl)).finally(() => updateThumbs());
 }
 
 function renderPlot() {
