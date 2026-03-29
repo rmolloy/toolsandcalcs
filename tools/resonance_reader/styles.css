@@ -419,9 +419,94 @@ body { padding: 28px; }
   justify-content: start;
   gap: 12px;
 }
+
+.analysis-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.analysis-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.analysis-tab {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(230, 233, 239, 0.76);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line);
+  font-weight: var(--type-label-weight);
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.analysis-tab:hover,
+.analysis-tab:focus-visible {
+  border-color: rgba(245, 196, 111, 0.28);
+  color: rgba(255, 255, 255, 0.92);
+  outline: none;
+}
+
+.analysis-tab.is-active {
+  border-color: rgba(245, 196, 111, 0.34);
+  background: linear-gradient(135deg, rgba(245, 196, 111, 0.18), rgba(93, 128, 226, 0.12));
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.peak-analysis-card,
 .plate-material-card {
   padding: 18px 20px 20px;
   border-radius: 18px;
+}
+
+.peak-analysis-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.peak-analysis-stat {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.peak-analysis-stat-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line);
+  font-weight: var(--type-label-weight);
+  color: rgba(230, 233, 239, 0.78);
+}
+
+.peak-analysis-stat-value {
+  display: block;
+  font-size: var(--type-value-size);
+  line-height: var(--type-value-line);
+  font-weight: var(--type-value-weight);
+  letter-spacing: 0.2px;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.peak-analysis-empty {
+  grid-column: 1 / -1;
+  padding: 10px 2px 4px;
+}
+
+.peak-analysis-empty p {
+  margin: 0;
+}
+
+.peak-analysis-plot {
+  height: clamp(200px, 28vh, 320px);
 }
 
 .plate-material-grid {
@@ -477,6 +562,12 @@ body { padding: 28px; }
   grid-auto-rows: min-content;
   row-gap: 6px;
   align-content: start;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+.mode-card.is-analysis-selected {
+  border-color: rgba(245, 196, 111, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px rgba(245, 196, 111, 0.16), 0 16px 38px rgba(0, 0, 0, 0.26);
+  transform: translateY(-1px);
 }
 .mode-card.mode-air { background: linear-gradient(135deg, rgba(213,94,0,0.40), rgba(36,22,15,0.9)); }
 .mode-card.mode-top { background: linear-gradient(135deg, rgba(0,158,115,0.42), rgba(17,30,24,0.9)); }
@@ -503,6 +594,9 @@ body { padding: 28px; }
   background: linear-gradient(150deg, rgba(8, 11, 17, 0.96), rgba(4, 6, 10, 0.96));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
   cursor: pointer;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
   align-content: start;
   justify-items: start;
   padding: 14px 16px;
