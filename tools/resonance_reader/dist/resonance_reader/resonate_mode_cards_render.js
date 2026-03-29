@@ -57,7 +57,7 @@ function modeCardHtmlBuildFromMode(m, deps, editingKey, formatters) {
     const { formatCents, formatProximity, formatQ } = formatters;
     const proximity = modeCardProximityFromMode(m, formatProximity);
     return `
-    <div class="${modeCardClassBuildFromMode(m)}" data-mode="${m.key}">
+    <div class="${modeCardClassBuildFromMode(m, deps.state)}" data-mode="${m.key}">
       ${modeCardHeaderHtmlBuildFromMode(m, deps)}
       ${modeCardBodyHtmlBuildFromMode(m, editingKey, proximity, formatCents, formatQ)}
     </div>
@@ -66,10 +66,9 @@ function modeCardHtmlBuildFromMode(m, deps, editingKey, formatters) {
 function modeCardProximityFromMode(m, formatProximity) {
     return formatProximity(m.cents);
 }
-function modeCardClassBuildFromMode(m) {
-    if (m.kind === "custom")
-        return "mode-card mode-custom";
-    return `mode-card mode-${m.key}`;
+function modeCardClassBuildFromMode(m, state) {
+    const base = m.kind === "custom" ? "mode-card mode-custom" : `mode-card mode-${m.key}`;
+    return state.peakAnalysisSelectedKey === m.key ? `${base} is-analysis-selected` : base;
 }
 function modeCardHeaderHtmlBuildFromMode(m, deps) {
     return `${modeCardActionHtmlBuildFromMode(m)}${modeTitleHtmlBuildFromMode(m, deps)}`;

@@ -74,35 +74,57 @@
         <!-- Mode cards populated by script -->
       </div>
 
-      <section class="card plate-material-card" id="plate_material_card" hidden>
-        <div class="plot-header">
-          <div class="plot-header-copy">
-            <h2 id="plate_material_title">Material Properties</h2>
-            <p class="muted small" id="plate_material_description">These measurements travel with the detected plate modes into the Plate Thickness calculator.</p>
+      <section class="analysis-surface" id="analysis_surface">
+        <div class="analysis-tabs" role="tablist" aria-label="Analysis views">
+          <button class="analysis-tab" id="analysis_tab_peak" data-analysis-tab="peak_analysis" type="button" role="tab" aria-controls="peak_analysis_panel" aria-selected="true">
+            Peak Analysis
+          </button>
+          <button class="analysis-tab" id="analysis_tab_material" data-analysis-tab="material_properties" type="button" role="tab" aria-controls="plate_material_card" aria-selected="false">
+            Material Properties
+          </button>
+        </div>
+
+        <section class="card peak-analysis-card" id="peak_analysis_panel" role="tabpanel" aria-labelledby="analysis_tab_peak">
+          <div class="plot-header">
+            <div class="plot-header-copy">
+              <h2>Peak Analysis</h2>
+              <p class="muted small" id="peak_analysis_description">Select a built-in or custom mode card to inspect the local peak window and spectral peak metrics.</p>
+            </div>
           </div>
-        </div>
-        <div class="plate-material-grid">
-          <label class="plate-material-field">
-            <span class="plate-material-label">Length</span>
-            <input id="plate_material_length" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="555">
-            <span class="plate-material-unit">mm</span>
-          </label>
-          <label class="plate-material-field">
-            <span class="plate-material-label">Width</span>
-            <input id="plate_material_width" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="227">
-            <span class="plate-material-unit">mm</span>
-          </label>
-          <label class="plate-material-field">
-            <span class="plate-material-label">Height</span>
-            <input id="plate_material_height" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="4.1">
-            <span class="plate-material-unit">mm</span>
-          </label>
-          <label class="plate-material-field">
-            <span class="plate-material-label">Mass</span>
-            <input id="plate_material_mass" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="211.4">
-            <span class="plate-material-unit">g</span>
-          </label>
-        </div>
+          <div class="peak-analysis-summary" id="peak_analysis_summary"></div>
+          <div class="plot peak-analysis-plot" id="plot_peak_analysis" hidden></div>
+        </section>
+
+        <section class="card plate-material-card" id="plate_material_card" role="tabpanel" aria-labelledby="analysis_tab_material" hidden>
+          <div class="plot-header">
+            <div class="plot-header-copy">
+              <h2 id="plate_material_title">Material Properties</h2>
+              <p class="muted small" id="plate_material_description">These measurements travel with the detected plate modes into the Plate Thickness calculator.</p>
+            </div>
+          </div>
+          <div class="plate-material-grid">
+            <label class="plate-material-field">
+              <span class="plate-material-label">Length</span>
+              <input id="plate_material_length" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="555">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Width</span>
+              <input id="plate_material_width" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="227">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Height</span>
+              <input id="plate_material_height" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="4.1">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Mass</span>
+              <input id="plate_material_mass" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="211.4">
+              <span class="plate-material-unit">g</span>
+            </label>
+          </div>
+        </section>
       </section>
 
       <section class="dof-model-row">

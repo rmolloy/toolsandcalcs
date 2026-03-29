@@ -8,6 +8,17 @@ import { measureModeNormalize } from "./resonate_mode_config.js";
 import { resonancePolymaxValidationEnabled, resonanceSpectrumSmoothingEnabled, resonanceSpectrumSmoothingHzResolve, } from "./resonate_debug_flags.js";
 import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js";
 const FFT_SMOOTH_HZ = 0.05;
+export function tapAveragingAllowedForState(state) {
+    void state;
+    return true;
+}
+export function refreshSpectrumVariantsBuild(args) {
+    const displayMags = spectrumMaybeSmooth(args.analysis, args.displaySpectrum.freqs, args.displaySpectrum.mags);
+    return {
+        rawSpectrum: args.applyDb(args.rawSpectrum),
+        displaySpectrum: args.applyDb({ freqs: args.displaySpectrum.freqs, mags: displayMags }),
+    };
+}
 function spectrumMaybeSmooth(analysis, freqsRaw, magsRaw) {
     if (!resonanceSpectrumSmoothingEnabled())
         return magsRaw;
@@ -24,18 +35,28 @@ export async function refreshFftFromState(deps) {
     const fftFactory = window.createFftEngine;
     if (typeof fftFactory !== "function")
         return;
-    const { spectrum } = await stageRefreshPreRun({
+    const { directSpectrum, spectrum } = await stageRefreshPreRun({
         wave: slice.wave,
         sampleRate: slice.sampleRate,
         fftMaxHz: deps.fftMaxHz,
+        allowTapAveraging: tapAveragingAllowedForState(deps.state),
         signal,
         fftFactory,
     });
-    const freqsRaw = Array.from(spectrum.freqs || [], (v) => Number(v));
-    const magsRaw = Array.from(spectrum.mags || [], (v) => Number(v));
-    const magsSmoothed = spectrumMaybeSmooth(analysis, freqsRaw, magsRaw);
-    const withDb = window.FFTPlot.applyDb({ freqs: freqsRaw, mags: magsSmoothed });
-    deps.state.lastSpectrum = withDb;
+    const spectra = refreshSpectrumVariantsBuild({
+        analysis,
+        rawSpectrum: {
+            freqs: Array.from(directSpectrum.freqs || [], (v) => Number(v)),
+            mags: Array.from(directSpectrum.mags || [], (v) => Number(v)),
+        },
+        displaySpectrum: {
+            freqs: Array.from(spectrum.freqs || [], (v) => Number(v)),
+            mags: Array.from(spectrum.mags || [], (v) => Number(v)),
+        },
+        applyDb: window.FFTPlot.applyDb,
+    });
+    deps.state.lastSpectrumRaw = spectra.rawSpectrum;
+    deps.state.lastSpectrum = spectra.displaySpectrum;
     deps.state.lastSpectrumNoteSelection = await secondarySpectrumBuildFromNoteSelectionRange({
         state: deps.state,
         fftMaxHz: deps.fftMaxHz,
@@ -43,8 +64,8 @@ export async function refreshFftFromState(deps) {
         fftFactory,
         analysis,
     });
-    const freqs = Array.from(withDb.freqs || [], (v) => Number(v));
-    const dbs = Array.from(withDb.dbs || withDb.mags || [], (v) => Number(v));
+    const freqs = Array.from(spectra.displaySpectrum.freqs || [], (v) => Number(v));
+    const dbs = Array.from(spectra.displaySpectrum.dbs || spectra.displaySpectrum.mags || [], (v) => Number(v));
     const modesDetectedRaw = stageDetectModesFromSpectrum(deps.state, analysis, { freqs, dbs });
     const polymaxCandidates = polymaxCandidatesResolveFromSlice(slice.wave, slice.sampleRate, deps.fftMaxHz);
     deps.state.lastPolymaxCandidates = polymaxCandidates;

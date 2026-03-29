@@ -1,5 +1,7 @@
 import { overlayToggleShouldRender } from "./resonate_overlay_gate.js";
 import { emitModeOverrideResetRequested } from "./resonate_override_commands.js";
+import { analysisTabActivatePeakAnalysis } from "./resonate_analysis_tabs.js";
+import { peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js";
 import { customMeasurementCreateAndAppendFromState, customMeasurementDeleteFromState, customMeasurementFrequencySetFromState, customMeasurementRenameFromState, } from "./resonate_custom_measurements.js";
 let modeTargetHandlersBound = false;
 let modeTargetRender = null;
@@ -31,6 +33,8 @@ function modeTargetClickHandle(e, grid, modes, deps) {
         return;
     if (modeOverrideResetHandle(e))
         return;
+    if (peakAnalysisModeSelectHandle(e, modes, deps))
+        return;
     const el = modeTargetLinkFromEvent(e);
     if (!el)
         return;
@@ -38,6 +42,30 @@ function modeTargetClickHandle(e, grid, modes, deps) {
         return;
     modeTargetClickApplyFromLink(e, el, modes, deps);
     modeTargetClickFocusFromEvent(el, grid, modes, deps);
+}
+function peakAnalysisModeSelectHandle(e, modes, deps) {
+    const card = peakAnalysisCardResolveFromEvent(e);
+    if (!card)
+        return false;
+    const key = card.getAttribute("data-mode");
+    if (!key)
+        return false;
+    peakAnalysisSelectionApplyFromModeKey(deps.state, key);
+    analysisTabActivatePeakAnalysis(deps.state);
+    modeTargetRerenderFromDepsWithoutDof(modes, deps);
+    return true;
+}
+function peakAnalysisCardResolveFromEvent(e) {
+    const target = e.target;
+    if (!target)
+        return null;
+    if (target.closest(".mode-card-add, .mode-card-delete, .mode-target-link, .mode-target-input, .mode-override-reset, .mode-title-custom")) {
+        return null;
+    }
+    const card = target.closest(".mode-card");
+    if (!card || card.classList.contains("mode-card-add"))
+        return null;
+    return card;
 }
 function customMeasurementValueSetHandle(e, modes, deps) {
     const customValueLink = e.target?.closest?.(".mode-custom-value-link");

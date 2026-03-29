@@ -7,6 +7,15 @@ export async function averageTapSpectra(
   taps: { start: number; end: number }[],
   fft: any,
 ) {
+  return aggregateTapSpectra(wave, sampleRate, taps, fft);
+}
+
+export async function aggregateTapSpectra(
+  wave: Float32Array | number[],
+  sampleRate: number,
+  taps: { start: number; end: number }[],
+  fft: any,
+) {
   if (!taps.length) return null;
   const windowMs = resonanceTapSliceWindowMsResolve(600);
   const windowSamples = Math.round((windowMs / 1000) * sampleRate);
@@ -19,10 +28,34 @@ export async function averageTapSpectra(
   if (!spectra.length) return null;
   const specs = await Promise.all(spectra);
   const base = specs[0];
-  const sum = new Array(base.mags.length).fill(0);
+  const avgMags = tapSpectraAggregateMags(specs);
+  return { freqs: base.freqs, mags: avgMags, dbs: (window as any).FFTPlot.applyDb({ freqs: base.freqs, mags: avgMags }).dbs, tapsUsed: specs.length };
+}
+
+export function tapSpectraAggregateMags(specs: Array<{ mags: number[] }>) {
+  return tapSpectraAggregateMagsByMean(specs);
+}
+
+export function tapSpectraAggregateMagsByMean(specs: Array<{ mags: number[] }>) {
+  const sum = new Array(specs[0]?.mags?.length || 0).fill(0);
   specs.forEach((s) => {
     s.mags.forEach((m: number, idx: number) => { sum[idx] += m; });
   });
-  const avgMags = sum.map((s) => s / specs.length);
-  return { freqs: base.freqs, mags: avgMags, dbs: (window as any).FFTPlot.applyDb({ freqs: base.freqs, mags: avgMags }).dbs, tapsUsed: specs.length };
+  return sum.map((total) => total / specs.length);
+}
+
+export function tapSpectraAggregateMagsByMedian(specs: Array<{ mags: number[] }>) {
+  const width = specs[0]?.mags?.length || 0;
+  return Array.from({ length: width }, (_, index) => tapSpectrumBinMedianResolve(specs, index));
+}
+
+function tapSpectrumBinMedianResolve(specs: Array<{ mags: number[] }>, index: number) {
+  const sorted = specs
+    .map((spec) => Number(spec.mags[index]))
+    .filter((value) => Number.isFinite(value))
+    .sort((left, right) => left - right);
+  if (!sorted.length) return 0;
+  const middleIndex = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[middleIndex];
+  return (sorted[middleIndex - 1] + sorted[middleIndex]) / 2;
 }

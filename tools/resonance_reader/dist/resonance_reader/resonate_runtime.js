@@ -16,6 +16,8 @@ import { resonanceReaderBootstrap } from "./resonate_bootstrap_entry.js";
 import { customMeasurementModeMetaBuildFromState } from "./resonate_custom_measurements.js";
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
 import { plateMaterialMeasurementsResolveFromState, plateMaterialPanelInitialize, plateMaterialPanelRenderFromState, } from "./resonate_plate_material_panel.js";
+import { analysisTabsInitialize, analysisTabsRenderFromState } from "./resonate_analysis_tabs.js";
+import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState } from "./resonate_peak_analysis_panel.js";
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
 import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js";
 const state = window.FFTState;
@@ -44,6 +46,7 @@ function fullWave() {
 }
 function renderModes(modes) {
     renderModesFromState(modes, renderModesConfigBuild());
+    analysisSurfaceRenderFromState();
 }
 function renderModesConfigBuild() {
     return { state, modeMeta: modeMetaBuildFromState() };
@@ -184,7 +187,7 @@ function viewModelDestinationApplyToUi(link) {
     if (copy)
         copy.style.display = destination.kind === "dof" ? "" : "none";
     state.measureMode = measureMode;
-    plateMaterialPanelRenderFromState(state);
+    analysisSurfaceRenderFromState();
 }
 function viewModelLinkAttach() {
     const link = document.querySelector('a[data-view-model]');
@@ -240,8 +243,15 @@ export function resonanceReaderRuntimeStart() {
     resonanceStatusExpose(setStatus);
     resonanceUiExpose();
     plateMaterialPanelInitialize(state);
+    peakAnalysisPanelInitialize(state);
+    analysisTabsInitialize(state);
     viewModelLinkAttach();
     resonanceReaderBootstrap(runtimeBootstrapArgsBuild(boundaries));
+}
+function analysisSurfaceRenderFromState() {
+    peakAnalysisPanelRenderFromState(state);
+    plateMaterialPanelRenderFromState(state);
+    analysisTabsRenderFromState(state);
 }
 function renderWaveformBoundBuild() {
     return (wave) => renderWaveform(wave, renderWaveformConfigBuild());

@@ -458,6 +458,7 @@ export function measureModeStatePreserveCustomCardsOnly(state: Record<string, an
 export function measureModeStateResetForDemoWave(state: Record<string, any>) {
   state.currentWave = null;
   state.lastSpectrum = null;
+  state.lastSpectrumRaw = null;
   state.lastSpectrumNoteSelection = null;
 }
 

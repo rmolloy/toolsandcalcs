@@ -426,6 +426,7 @@ export function measureModeStatePreserveCustomCardsOnly(state) {
 export function measureModeStateResetForDemoWave(state) {
     state.currentWave = null;
     state.lastSpectrum = null;
+    state.lastSpectrumRaw = null;
     state.lastSpectrumNoteSelection = null;
 }
 function renderTryModePanelForMeasureMode(measureMode, deps) {

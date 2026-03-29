@@ -649,16 +649,17 @@ function waveSemitoneNameResolve(semitone) {
     return names[((semitone % 12) + 12) % 12];
 }
 export function renderWaveform(slice, deps) {
+    waveformAutoRangesApplyToState(slice, deps.state);
     const handlers = waveformRangeHandlersBuild(deps);
-    const autoPrimaryRange = primaryRangeAutoSelectFromState(slice, deps.state);
-    if (autoPrimaryRange) {
-        handlers.onPrimaryRangeChange(autoPrimaryRange);
-    }
-    const autoNoteSelectionRange = noteSelectionRangeAutoSelectFromState(slice, deps.state);
-    if (autoNoteSelectionRange) {
-        handlers.onNoteSelectionRangeChange(autoNoteSelectionRange);
-    }
     makeWaveNavigatorPlot(slice, deps, handlers.onPrimaryRangeChange, handlers.onNoteSelectionRangeChange);
+}
+export function waveformAutoRangesApplyToState(slice, state) {
+    const autoPrimaryRange = primaryRangeAutoSelectFromState(slice, state);
+    if (autoPrimaryRange)
+        state.viewRangeMs = autoPrimaryRange;
+    const autoNoteSelectionRange = noteSelectionRangeAutoSelectFromState(slice, state);
+    if (autoNoteSelectionRange)
+        state.noteSelectionRangeMs = autoNoteSelectionRange;
 }
 export function noteSelectionRangeAutoSelectFromState(slice, state) {
     if (noteSelectionRangeShouldPreserveExistingFromState(slice, state))

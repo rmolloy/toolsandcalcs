@@ -2,6 +2,8 @@ import { overlayToggleShouldRender } from "./resonate_overlay_gate.js";
 import { type ModeCardDeps } from "./resonate_mode_cards_render.js";
 import { emitModeOverrideResetRequested } from "./resonate_override_commands.js";
 import type { ModeCard } from "./resonate_types.js";
+import { analysisTabActivatePeakAnalysis } from "./resonate_analysis_tabs.js";
+import { peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js";
 import {
   customMeasurementCreateAndAppendFromState,
   customMeasurementDeleteFromState,
@@ -41,11 +43,34 @@ function modeTargetClickHandle(e: Event, grid: HTMLElement, modes: ModeCard[], d
   if (customMeasurementRenameHandle(e, modes, deps)) return;
   if (customMeasurementValueSetHandle(e, modes, deps)) return;
   if (modeOverrideResetHandle(e)) return;
+  if (peakAnalysisModeSelectHandle(e, modes, deps)) return;
   const el = modeTargetLinkFromEvent(e);
   if (!el) return;
   if (!modeTargetActionsAllowed()) return;
   modeTargetClickApplyFromLink(e, el, modes, deps);
   modeTargetClickFocusFromEvent(el, grid, modes, deps);
+}
+
+function peakAnalysisModeSelectHandle(e: Event, modes: ModeCard[], deps: ModeCardDeps) {
+  const card = peakAnalysisCardResolveFromEvent(e);
+  if (!card) return false;
+  const key = card.getAttribute("data-mode");
+  if (!key) return false;
+  peakAnalysisSelectionApplyFromModeKey(deps.state, key);
+  analysisTabActivatePeakAnalysis(deps.state);
+  modeTargetRerenderFromDepsWithoutDof(modes, deps);
+  return true;
+}
+
+function peakAnalysisCardResolveFromEvent(e: Event) {
+  const target = e.target as HTMLElement | null;
+  if (!target) return null;
+  if (target.closest(".mode-card-add, .mode-card-delete, .mode-target-link, .mode-target-input, .mode-override-reset, .mode-title-custom")) {
+    return null;
+  }
+  const card = target.closest(".mode-card") as HTMLElement | null;
+  if (!card || card.classList.contains("mode-card-add")) return null;
+  return card;
 }
 
 function customMeasurementValueSetHandle(e: Event, modes: ModeCard[], deps: ModeCardDeps) {

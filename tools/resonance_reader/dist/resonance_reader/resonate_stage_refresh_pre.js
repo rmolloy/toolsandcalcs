@@ -2,12 +2,16 @@ import { resonanceFftWindowResolve, resonanceTapAveragingEnabled } from "./reson
 export async function stageRefreshPreRun(args) {
     const engine = args.fftFactory({});
     const taps = args.signal.detectTaps(args.wave, args.sampleRate);
-    let spectrum = await engine.magnitude(args.wave, args.sampleRate, { maxFreq: args.fftMaxHz, window: resonanceFftWindowResolve() });
-    if (taps.length && resonanceTapAveragingEnabled()) {
+    const directSpectrum = await engine.magnitude(args.wave, args.sampleRate, { maxFreq: args.fftMaxHz, window: resonanceFftWindowResolve() });
+    let spectrum = directSpectrum;
+    if (tapAveragingAllowedForRefresh(args.allowTapAveraging) && taps.length && resonanceTapAveragingEnabled()) {
         const averaged = await args.signal.averageTapSpectra(args.wave, args.sampleRate, taps, engine);
         if (averaged?.freqs?.length) {
             spectrum = { freqs: averaged.freqs, mags: averaged.mags, dbs: averaged.dbs };
         }
     }
-    return { spectrum, taps };
+    return { directSpectrum, spectrum, taps };
+}
+function tapAveragingAllowedForRefresh(allowTapAveraging) {
+    return allowTapAveraging !== false;
 }
