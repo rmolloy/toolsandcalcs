@@ -23,6 +23,10 @@
       "href": "../plate_thickness/"
     },
     {
+      "label": "Fret Calculator",
+      "href": "../fret_calculator/"
+    },
+    {
       "label": "Monopole Mobility",
       "href": "../monopole_mobility/"
     },
