@@ -118,6 +118,30 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 10px;
+}
+
+.hero-help-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hero-control-height);
+  height: var(--hero-control-height);
+  border-radius: 999px;
+  border: var(--hero-control-border);
+  background: var(--hero-control-bg);
+  color: var(--hero-control-text);
+  text-decoration: none;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.hero-help-link:hover,
+.hero-help-link:focus-visible,
+.hero-menu-trigger:hover,
+.hero-menu-trigger:focus-visible {
+  filter: brightness(1.08);
 }
 
 .hero-menu {
