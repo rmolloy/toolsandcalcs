@@ -448,7 +448,7 @@
   (function loadBraceCalculatorAndUi() {
     const candidateCalculatorSources = [
       "../flexural_rigidity/calculator.js",
-      "../calculator.js"
+      "../flexural_rigidity/calculator.js"
     ];
 
     function appendScript(src, onLoad, onError) {
@@ -479,9 +479,9 @@
       appendScript(
         current,
         () => loadSequentialScripts([
-          "../../common/tool_document.js",
-          "../../common/tool_document_file.js",
-          "../../common/offline_save_surface.js",
+          "../common/tool_document.js",
+          "../common/tool_document_file.js",
+          "../common/offline_save_surface.js",
           ...readBraceNotebookSources(),
           "brace_save_surface.js",
           ...readBraceNotebookModalSources(),

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <title>Brace Geometry Calculator | The Lab at Rick Molloy Guitars</title>
-  <link rel="stylesheet" href="../../common/tool_footer.css">
-  <link rel="stylesheet" href="../../common/styles.css">
-  <link rel="stylesheet" href="../../common/theme_resonance_shared.css">
-  <link rel="stylesheet" href="../../common/layout.css">
+  <link rel="stylesheet" href="../common/tool_footer.css">
+  <link rel="stylesheet" href="../common/styles.css">
+  <link rel="stylesheet" href="../common/theme_resonance_shared.css">
+  <link rel="stylesheet" href="../common/layout.css">
   <style>
     :root {
       --card-bg: #0d1116;
@@ -441,8 +441,8 @@
   </div>
 </div>
 
-<script src="../../common/site_menu_loader.js"></script>
-<script src="../../common/tool_footer_loader.js"></script>
+<script src="../common/site_menu_loader.js"></script>
+<script src="../common/tool_footer_loader.js"></script>
 <script>
   if (typeof window !== "undefined") {
     window.exports = window.exports || {};
@@ -464,7 +464,7 @@
 <script>
   (function loadBraceCalculatorAndUi() {
     const candidateCalculatorSources = [
-      "../calculator.js"
+      "../flexural_rigidity/calculator.js"
     ];
 
     function appendScript(src, onLoad, onError) {
@@ -495,9 +495,9 @@
       appendScript(
         current,
         () => loadSequentialScripts([
-          "../../common/tool_document.js",
-          "../../common/tool_document_file.js",
-          "../../common/offline_save_surface.js",
+          "../common/tool_document.js",
+          "../common/tool_document_file.js",
+          "../common/offline_save_surface.js",
           ...readBraceNotebookSources(),
           "brace_save_surface.js",
           ...readBraceNotebookModalSources(),
