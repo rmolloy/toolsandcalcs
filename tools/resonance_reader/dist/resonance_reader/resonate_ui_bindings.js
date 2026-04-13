@@ -1,14 +1,30 @@
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
+import { consumeResonanceNotebookConnectDraft, restoreResonanceNotebookConnectDraftState, } from "./resonate_notebook_connect_draft.js";
+import { restoreResonanceNotebookEventIntoState } from "./resonate_notebook_restore.js";
+import { resonanceSaveRunnerCreate } from "./resonate_save_target.js";
 import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js";
+const resonanceSaveRunner = resonanceSaveRunnerCreate();
 function saveButtonElementGet() {
     return document.getElementById("btn_save_audio");
 }
 function saveStateRead(state) {
     return state.saveState === "dirty" ? "dirty" : "clean";
 }
+function saveSurfaceModeRead(state) {
+    return state.saveSurfaceMode || "lab-disconnected";
+}
 function saveStateWrite(state, next) {
     state.saveState = next;
+}
+function saveSurfaceModeWrite(state, next) {
+    state.saveSurfaceMode = next;
+}
+function saveSurfaceHintRead(state) {
+    return String(state.saveSurfaceHint || "").trim();
+}
+function saveSurfaceHintWrite(state, next) {
+    state.saveSurfaceHint = String(next || "").trim();
 }
 function saveButtonRenderFromState(state) {
     const button = saveButtonElementGet();
@@ -16,10 +32,25 @@ function saveButtonRenderFromState(state) {
         return;
     const next = saveStateRead(state);
     const isDirty = next === "dirty";
-    button.textContent = isDirty ? "Save" : "✓ Saved";
+    button.textContent = isDirty ? saveButtonLabelBuild(saveSurfaceModeRead(state)) : "✓ Saved";
     button.disabled = !isDirty;
     button.classList.toggle("save-state-dirty", isDirty);
     button.classList.toggle("save-state-clean", !isDirty);
+}
+function saveButtonLabelBuild(saveSurfaceMode) {
+    if (saveSurfaceMode === "offline")
+        return "Download";
+    if (saveSurfaceMode === "lab-disconnected")
+        return "Save ▾";
+    return "Save";
+}
+export function readResonanceIdleStatus(state) {
+    const base = "Load or record to view the waveform.";
+    const hint = saveSurfaceHintRead(state);
+    if (!hint) {
+        return base;
+    }
+    return `${base} ${hint}`;
 }
 function saveStateMarkDirtyAndRender(state) {
     saveStateWrite(state, "dirty");
@@ -220,25 +251,44 @@ function bindSaveAudio(deps) {
     const btnSave = document.getElementById("btn_save_audio");
     if (!btnSave)
         return;
-    btnSave.addEventListener("click", () => {
+    bindSaveAudioClick(btnSave, deps, resonanceSaveRunner);
+}
+function bindSaveAudioClick(button, deps, saveRunner) {
+    button.addEventListener("click", () => {
         if (saveStateRead(deps.state) !== "dirty")
             return;
-        const FFTAudio = window.FFTAudio;
-        const hasWave = Boolean(window.FFTState?.currentWave);
-        if (!hasWave) {
-            saveStateMarkCleanAndRender(deps.state);
-            deps.setStatus("Load or record before saving.");
-            return;
-        }
-        if (typeof FFTAudio?.saveCurrentAudio === "function") {
-            FFTAudio.saveCurrentAudio();
-            saveStateMarkCleanAndRender(deps.state);
-            deps.setStatus("Saved.");
-        }
-        else {
-            deps.setStatus("Save unavailable.");
-        }
+        void runResonanceSaveActionAndRenderCleanState(deps, saveRunner);
     });
+}
+async function runResonanceSaveActionAndRenderCleanState(deps, saveRunner) {
+    const button = saveButtonElementGet();
+    const saved = await saveRunner.runResonanceSaveAction({
+        state: deps.state,
+        button,
+        setStatus: deps.setStatus,
+    });
+    if (saved) {
+        saveStateMarkCleanAndRender(deps.state);
+    }
+}
+async function refreshResonanceSaveSurfaceAndRender(state, saveRunner, setStatus) {
+    const saveSurface = await saveRunner.readResonanceSaveSurface();
+    saveSurfaceModeWrite(state, saveSurface.mode);
+    saveSurfaceHintWrite(state, readResonanceSaveSurfaceHint(saveSurface));
+    saveButtonRenderFromState(state);
+    renderResonanceIdleStatusWhenAppropriate(state, setStatus);
+}
+function readResonanceSaveSurfaceHint(saveSurface) {
+    return String(saveSurface && "hint" in saveSurface ? saveSurface.hint || "" : "").trim();
+}
+function renderResonanceIdleStatusWhenAppropriate(state, setStatus) {
+    if (!setStatus || !shouldRenderResonanceIdleStatus(state)) {
+        return;
+    }
+    setStatus(readResonanceIdleStatus(state));
+}
+function shouldRenderResonanceIdleStatus(state) {
+    return saveStateRead(state) === "clean" && !state.currentWave;
 }
 function bindRecord(deps) {
     const btn = document.getElementById("btn_record");
@@ -323,8 +373,15 @@ function toneButtonRenderFromState(button, enabled) {
     button.classList.toggle("is-active", enabled);
 }
 export function uiBindingsAttach(deps) {
-    const attach = () => {
-        saveStateMarkCleanAndRender(deps.state);
+    const attach = async () => {
+        const restoredNotebookDraft = restoreNotebookConnectDraftIntoUi(deps);
+        if (restoredNotebookDraft) {
+            saveStateMarkDirtyAndRender(deps.state);
+        }
+        else {
+            saveStateMarkCleanAndRender(deps.state);
+        }
+        await refreshResonanceSaveSurfaceAndRender(deps.state, resonanceSaveRunner, deps.setStatus);
         saveStatePipelineDirtySubscriptionAttach(deps.pipelineBus, deps.state);
         recordingSelectInitialWidthSync();
         bindImport(deps);
@@ -332,6 +389,15 @@ export function uiBindingsAttach(deps) {
         bindRecord(deps);
         bindWaveTransport(deps);
         bindMeasureMode(deps);
+        if (restoredNotebookDraft) {
+            deps.setStatus("Notebook connected. Review the draft and save again.");
+            return;
+        }
+        if (await restoreNotebookEventIntoUi(deps)) {
+            saveStateMarkCleanAndRender(deps.state);
+            deps.setStatus("Notebook event restored.");
+            return;
+        }
         let hasStartup = false;
         const startup = window.ResonateStartup;
         if (startup?.startupPlanBuildFromMode && startup?.startupModeSelectFromFlag && startup?.startupExecuteFromPlan) {
@@ -345,7 +411,7 @@ export function uiBindingsAttach(deps) {
         }
         if (!hasStartup) {
             deps.renderMock();
-            deps.setStatus("Load or record to view the waveform.");
+            deps.setStatus(readResonanceIdleStatus(deps.state));
         }
         const uiEvents = window.ResonateUiEvents;
         if (uiEvents?.RESONATE_UI_EVENT_FLAG?.defaultValue) {
@@ -353,11 +419,72 @@ export function uiBindingsAttach(deps) {
         }
     };
     if (document.readyState === "loading") {
-        window.addEventListener("DOMContentLoaded", attach);
+        window.addEventListener("DOMContentLoaded", () => {
+            void attach();
+        });
     }
     else {
-        attach();
+        void attach();
     }
+}
+export function restoreNotebookConnectDraftIntoUi(deps) {
+    const draft = consumeResonanceNotebookConnectDraft(window);
+    if (!restoreResonanceNotebookConnectDraftState(deps.state, draft)) {
+        return false;
+    }
+    restoreNotebookConnectDraftControls(deps.state);
+    renderNotebookConnectDraftIntoUi(deps);
+    return true;
+}
+async function restoreNotebookEventIntoUi(deps) {
+    const restored = await restoreResonanceNotebookEventIntoState({
+        runtime: window,
+        state: deps.state,
+    });
+    if (!restored) {
+        return false;
+    }
+    restoreNotebookConnectDraftControls(deps.state);
+    renderNotebookConnectDraftIntoUi(deps);
+    return true;
+}
+function restoreNotebookConnectDraftControls(state) {
+    writeMeasureModeSelectValue(state.measureMode);
+    recordingSelectLabelSet(String(state.recordingLabel || "Notebook draft"));
+}
+function writeMeasureModeSelectValue(measureMode) {
+    const select = measureModeSelectElementGet();
+    const normalized = measureModeNormalize(measureMode);
+    if (!select || !normalized) {
+        return;
+    }
+    select.value = normalized;
+}
+function renderNotebookConnectDraftIntoUi(deps) {
+    renderNotebookConnectDraftSpectrum(deps);
+    renderNotebookConnectDraftModes(deps);
+    renderNotebookConnectDraftWaveform(deps);
+}
+function renderNotebookConnectDraftSpectrum(deps) {
+    const spectrum = deps.state.lastSpectrum;
+    if (!spectrum?.freqs?.length || !spectrum?.dbs?.length) {
+        return;
+    }
+    deps.renderSpectrum({
+        freqs: spectrum.freqs,
+        mags: spectrum.dbs,
+        overlay: Array.isArray(deps.state.lastOverlay) ? deps.state.lastOverlay : undefined,
+        modes: Array.isArray(deps.state.lastModesDetected) ? deps.state.lastModesDetected : [],
+    });
+}
+function renderNotebookConnectDraftModes(deps) {
+    deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
+}
+function renderNotebookConnectDraftWaveform(deps) {
+    if (!deps.state.currentWave) {
+        return;
+    }
+    deps.renderWaveform(deps.state.currentWave);
 }
 function recordingSelectInitialWidthSync() {
     const select = document.getElementById("recording_select");
