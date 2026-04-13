@@ -491,8 +491,39 @@
             showAdvanced = !showAdvanced;
             run(true);
         }
-        function saveBraceLayout() {
-            const payload = braces.map(brace => ({
+        async function saveBraceLayout() {
+            await readBraceSaveRunner().runBraceSaveAction({
+                readSnapshot: readBraceSaveSnapshot,
+                setStatus: writeBraceSaveStatus,
+            });
+        }
+        async function handleBraceFileSelect() {
+            var _a;
+            const file = (_a = loadInput.files) === null || _a === void 0 ? void 0 : _a[0];
+            if (!file)
+                return;
+            try {
+                const data = await readBraceSaveSurfaceApi().readBraceSavePackageFile(file);
+                const loaded = sanitizeBraceLayout(data);
+                if (!loaded.length) {
+                    alert("No valid braces found in file.");
+                }
+                else {
+                    braces = loaded;
+                    run(true);
+                    emitBraceLayoutLoaded(data, loaded);
+                }
+            }
+            catch (error) {
+                console.error("[BraceGeometry] Failed to load layout", error);
+                alert("Unable to load brace layout.");
+            }
+            finally {
+                loadInput.value = "";
+            }
+        }
+        function readBraceSaveSnapshot() {
+            return braces.map(brace => ({
                 name: brace.name,
                 segments: brace.segments.map(segment => ({
                     label: segment.label,
@@ -503,45 +534,63 @@
                     modulus: segment.modulus
                 }))
             }));
-            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
-            link.href = url;
-            link.download = `brace-layout-${timestamp}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
         }
-        function handleBraceFileSelect() {
+        function readBraceSaveSurfaceApi() {
+            if (window.BraceSaveSurface) {
+                return window.BraceSaveSurface;
+            }
+            throw new Error("Brace save surface is unavailable.");
+        }
+        function readBraceSaveRunner() {
             var _a;
-            const file = (_a = loadInput.files) === null || _a === void 0 ? void 0 : _a[0];
-            if (!file)
-                return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                try {
-                    const data = JSON.parse(String(reader.result));
-                    const loaded = sanitizeBraceLayout(data);
-                    if (!loaded.length) {
-                        alert("No valid braces found in file.");
-                    }
-                    else {
-                        braces = loaded;
-                        run(true);
-                        emitBraceLayoutLoaded(data, loaded);
-                    }
-                }
-                catch (error) {
-                    console.error("[BraceGeometry] Failed to load layout", error);
-                    alert("Unable to load brace layout.");
-                }
-                finally {
-                    loadInput.value = "";
-                }
+            if ((_a = window.BraceSaveTarget) === null || _a === void 0 ? void 0 : _a.braceSaveRunnerCreate) {
+                return window.BraceSaveTarget.braceSaveRunnerCreate();
+            }
+            return {
+                readBraceSaveSurface() {
+                    return Promise.resolve({
+                        mode: "offline",
+                        label: "Download JSON",
+                        hint: "",
+                    });
+                },
+                runBraceSaveAction(request) {
+                    const savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(request.readSnapshot());
+                    readBraceSaveSurfaceApi().downloadBraceSavePackage({ document, URL }, savePackage);
+                    request.setStatus("JSON package downloaded.");
+                    return Promise.resolve(true);
+                },
             };
-            reader.readAsText(file);
+        }
+        function writeBraceSaveStatus(message) {
+            console.info("[BraceGeometry] " + message);
+        }
+        function readBraceNotebookRestoreApi() {
+            var _a;
+            return ((_a = window.BraceNotebookRestore) === null || _a === void 0 ? void 0 : _a.restoreBraceNotebookEventIntoUi)
+                ? window.BraceNotebookRestore
+                : null;
+        }
+        async function restoreNotebookEventIntoUi() {
+            const restoreApi = readBraceNotebookRestoreApi();
+            if (!restoreApi) {
+                return false;
+            }
+            const restored = await restoreApi.restoreBraceNotebookEventIntoUi({
+                runtime: window,
+                applyBraces(rawBraces) {
+                    const loaded = sanitizeBraceLayout(rawBraces);
+                    if (!loaded.length)
+                        return;
+                    braces = loaded;
+                    run(true);
+                    emitBraceLayoutLoaded(rawBraces, loaded);
+                },
+            });
+            if (restored) {
+                writeBraceSaveStatus("Notebook event restored.");
+            }
+            return restored;
         }
         function sanitizeBraceLayout(data) {
             const braceArray = Array.isArray(data)
@@ -627,7 +676,8 @@
             }
             return element;
         }
-        saveBtn.addEventListener("click", () => saveBraceLayout());
+        void initializeBraceSaveSurface();
+        saveBtn.addEventListener("click", () => void saveBraceLayout());
         loadBtn.addEventListener("click", () => loadInput.click());
         loadInput.addEventListener("change", handleBraceFileSelect);
         addBraceBtn.addEventListener("click", () => addBrace());
@@ -648,6 +698,14 @@
             catch (err) {
                 console.warn("[BraceGeometry] emit layout failed", err);
             }
+        }
+        async function initializeBraceSaveSurface() {
+            if (await restoreNotebookEventIntoUi()) {
+                return;
+            }
+            const saveSurface = await readBraceSaveRunner().readBraceSaveSurface();
+            saveBtn.textContent = saveSurface.label;
+            saveBtn.title = saveSurface.hint;
         }
         run(true);
     })();

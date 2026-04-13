@@ -70,6 +70,13 @@
       flex-wrap: wrap;
     }
 
+    .tool-save-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
     .gallery-grid {
       display: grid;
       gap: 20px;
@@ -529,6 +536,11 @@
           <li>Optional: applied bridge moment (N·m) and rotation limit (deg)</li>
         </ul>
       </details>
+      <div class="tool-save-actions">
+        <button id="load_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Load JSON</button>
+        <button id="save_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Download JSON</button>
+        <input id="load_flexural_state_file" type="file" accept="application/json,.json" hidden>
+      </div>
     </section>
 
     <main class="tl-layout tl-single">
@@ -647,6 +659,20 @@
 </script>
 <script src="./calculator.js"></script>
 <script src="./brace_calc/brace-geometry.js"></script>
+<script src="../common/tool_document.js"></script>
+<script src="../common/tool_document_file.js"></script>
+<script src="../common/offline_save_surface.js"></script>
+
+
+
+<script src="./brace_calc/brace_save_surface.js"></script>
+<script src="./brace_calc/brace_save_target.js"></script>
+
+
+
+<script src="./flexural_save_surface.js"></script>
+<script src="./flexural_save_target.js"></script>
+<script src="./flexural_save_boot.js"></script>
 <script src="./brace_calc/brace-geometry-ui.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
