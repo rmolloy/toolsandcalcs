@@ -478,12 +478,34 @@
 
       appendScript(
         current,
-        () => loadSequentialScripts(["brace-geometry.js", "brace-geometry-ui.js"], () => {}),
+        () => loadSequentialScripts([
+          "../../common/tool_document.js",
+          "../../common/tool_document_file.js",
+          "../../common/offline_save_surface.js",
+          ...readBraceNotebookSources(),
+          "brace_save_surface.js",
+          ...readBraceNotebookModalSources(),
+          "brace_save_target.js",
+          "brace-geometry.js",
+          "brace-geometry-ui.js"
+        ], () => {}),
         () => loadCalculatorWithFallback(rest)
       );
     }
 
     loadCalculatorWithFallback(candidateCalculatorSources);
+
+    function readBraceNotebookSources() {
+      return Array.isArray(window.BraceNotebookAssetSources)
+        ? window.BraceNotebookAssetSources
+        : [];
+    }
+
+    function readBraceNotebookModalSources() {
+      return Array.isArray(window.BraceNotebookModalSources)
+        ? window.BraceNotebookModalSources
+        : [];
+    }
   })();
 </script>
 </body>

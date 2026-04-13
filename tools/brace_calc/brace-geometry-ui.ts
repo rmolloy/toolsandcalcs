@@ -7,6 +7,12 @@ export {};
 declare global {
   interface Window {
     BraceGeometry?: BraceGeometryAPI;
+    BraceSaveSurface?: {
+      buildBraceSavePackage(braces: unknown[], now?: Date): { filename: string; text: string };
+      downloadBraceSavePackage(runtime: unknown, savePackage: { filename: string; text: string }): void;
+      readBraceSavePackageFile(file: { text(): Promise<string> }): Promise<unknown[]>;
+      readBraceSaveSurface(): { label: string; hint: string };
+    };
   }
 }
 
@@ -580,8 +586,36 @@ interface BraceRenderInfo {
     run(true);
   }
 
-  function saveBraceLayout(): void {
-    const payload = braces.map(brace => ({
+  async function saveBraceLayout(): Promise<void> {
+    await readBraceSaveRunner().runBraceSaveAction({
+      readSnapshot: readBraceSaveSnapshot,
+      setStatus: writeBraceSaveStatus,
+    });
+  }
+
+  async function handleBraceFileSelect(): Promise<void> {
+    const file = loadInput.files?.[0];
+    if (!file) return;
+    try {
+      const data = await readBraceSaveSurfaceApi().readBraceSavePackageFile(file);
+      const loaded = sanitizeBraceLayout(data);
+      if (!loaded.length) {
+        alert("No valid braces found in file.");
+      } else {
+        braces = loaded;
+        run(true);
+        emitBraceLayoutLoaded(data, loaded);
+      }
+    } catch (error) {
+      console.error("[BraceGeometry] Failed to load layout", error);
+      alert("Unable to load brace layout.");
+    } finally {
+      loadInput.value = "";
+    }
+  }
+
+  function readBraceSaveSnapshot(): unknown[] {
+    return braces.map(brace => ({
       name: brace.name,
       segments: brace.segments.map(segment => ({
         label: segment.label,
@@ -592,41 +626,74 @@ interface BraceRenderInfo {
         modulus: segment.modulus
       }))
     }));
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[T:]/g, "-");
-    link.href = url;
-    link.download = `brace-layout-${timestamp}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
   }
 
-  function handleBraceFileSelect(): void {
-    const file = loadInput.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const data = JSON.parse(String(reader.result));
-        const loaded = sanitizeBraceLayout(data);
-        if (!loaded.length) {
-          alert("No valid braces found in file.");
-        } else {
-          braces = loaded;
-          run(true);
-          emitBraceLayoutLoaded(data, loaded);
-        }
-      } catch (error) {
-        console.error("[BraceGeometry] Failed to load layout", error);
-        alert("Unable to load brace layout.");
-      } finally {
-        loadInput.value = "";
-      }
+  function readBraceSaveSurfaceApi() {
+    if (window.BraceSaveSurface) {
+      return window.BraceSaveSurface;
+    }
+
+    throw new Error("Brace save surface is unavailable.");
+  }
+
+  function readBraceSaveRunner() {
+    if ((window as any).BraceSaveTarget?.braceSaveRunnerCreate) {
+      return (window as any).BraceSaveTarget.braceSaveRunnerCreate();
+    }
+
+    return {
+      readBraceSaveSurface() {
+        return Promise.resolve({
+          mode: "offline",
+          label: "Download JSON",
+          hint: "",
+        });
+      },
+      runBraceSaveAction(request: {
+        readSnapshot: () => ReturnType<typeof readBraceSaveSnapshot>;
+        setStatus: (message: string) => void;
+      }) {
+        const savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(request.readSnapshot());
+        readBraceSaveSurfaceApi().downloadBraceSavePackage({ document, URL }, savePackage);
+        request.setStatus("JSON package downloaded.");
+        return Promise.resolve(true);
+      },
     };
-    reader.readAsText(file);
+  }
+
+  function writeBraceSaveStatus(message: string): void {
+    console.info("[BraceGeometry] " + message);
+  }
+
+  function readBraceNotebookRestoreApi() {
+    return (window as any).BraceNotebookRestore?.restoreBraceNotebookEventIntoUi
+      ? (window as any).BraceNotebookRestore
+      : null;
+  }
+
+  async function restoreNotebookEventIntoUi(): Promise<boolean> {
+    const restoreApi = readBraceNotebookRestoreApi();
+
+    if (!restoreApi) {
+      return false;
+    }
+
+    const restored = await restoreApi.restoreBraceNotebookEventIntoUi({
+      runtime: window,
+      applyBraces(rawBraces: unknown) {
+        const loaded = sanitizeBraceLayout(rawBraces);
+        if (!loaded.length) return;
+        braces = loaded;
+        run(true);
+        emitBraceLayoutLoaded(rawBraces, loaded);
+      },
+    });
+
+    if (restored) {
+      writeBraceSaveStatus("Notebook event restored.");
+    }
+
+    return restored;
   }
 
   function sanitizeBraceLayout(data: unknown): BraceConfig[] {
@@ -711,7 +778,9 @@ interface BraceRenderInfo {
     return element as unknown as T;
   }
 
-  saveBtn.addEventListener("click", () => saveBraceLayout());
+  void initializeBraceSaveSurface();
+
+  saveBtn.addEventListener("click", () => void saveBraceLayout());
   loadBtn.addEventListener("click", () => loadInput.click());
   loadInput.addEventListener("change", handleBraceFileSelect);
   addBraceBtn.addEventListener("click", () => addBrace());
@@ -732,6 +801,16 @@ interface BraceRenderInfo {
     } catch (err) {
       console.warn("[BraceGeometry] emit layout failed", err);
     }
+  }
+
+  async function initializeBraceSaveSurface(): Promise<void> {
+    if (await restoreNotebookEventIntoUi()) {
+      return;
+    }
+
+    const saveSurface = await readBraceSaveRunner().readBraceSaveSurface();
+    saveBtn.textContent = saveSurface.label;
+    saveBtn.title = saveSurface.hint;
   }
 
   run(true);
