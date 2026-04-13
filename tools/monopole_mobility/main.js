@@ -92,7 +92,12 @@ const outputs = {
 const buttons = {
   reset: document.getElementById("reset"),
   copy: document.getElementById("copy"),
+  load: document.getElementById("load"),
+  loadFile: document.getElementById("load_file"),
+  save: document.getElementById("save"),
 };
+
+const saveRunner = readMonopoleSaveRunner();
 
 const formatter = (options = {}) =>
   new Intl.NumberFormat("en-US", {
@@ -271,6 +276,7 @@ function compute() {
   }
 
   buttons.copy.disabled = false;
+  buttons.save.disabled = false;
 }
 
 function matchesStaticDefaults({ freq, deflection, mass }) {
@@ -295,6 +301,7 @@ function setOutputs(value) {
   outputs.mobilityScore.textContent = value;
   outputs.warnings.textContent = "";
   buttons.copy.disabled = true;
+  buttons.save.disabled = true;
 }
 
 function applyStaticDefaults() {
@@ -325,31 +332,7 @@ function resetInputs() {
 }
 
 function copyResults() {
-  const isStatic = currentMode === modes.STATIC;
-  const payload = [
-    `Sample: ${nameInput.value.trim() || "Untitled sample"} (${getTypeLabel(typeSelect.value)})`,
-    `Mode: ${isStatic ? "Static (Gore jig)" : "Dynamic (mass-loading)"}`,
-  ];
-
-  if (isStatic) {
-    payload.push(
-      `f_u (Hz): ${fields.freq.value}`,
-      `Deflection (mm): ${fields.deflection.value}`,
-      `Mass (kg): ${fields.mass.value}`
-    );
-  } else {
-    payload.push(
-      `f0 (Hz): ${dynamicFields.f0.value}`,
-      `f1 (Hz): ${dynamicFields.f1.value}`,
-      `Added mass (g): ${dynamicFields.mass.value}`
-    );
-  }
-
-  payload.push(
-    `K (N/m): ${outputs.stiffness.textContent}`,
-    `M_eff (g): ${outputs.effMass.textContent}`,
-    `Mobility score: ${outputs.mobilityScore.textContent}`
-  );
+  const payload = buildCopyResultLines();
 
   navigator.clipboard
     .writeText(payload.join("\n"))
@@ -360,6 +343,183 @@ function copyResults() {
     .catch(() => {
       outputs.status.textContent = "Clipboard copy failed";
     });
+}
+
+async function saveResults() {
+  const saved = await saveRunner.runMonopoleSaveAction({
+    readSnapshot: readCurrentMonopoleSaveSnapshot,
+    setStatus(text) {
+      outputs.status.textContent = text;
+    },
+  });
+  if (saved) {
+    setTimeout(compute, 1500);
+  }
+}
+
+async function loadResults() {
+  const file = buttons.loadFile?.files?.[0];
+
+  if (!file) {
+    return;
+  }
+
+  try {
+    const saveApi = window.MonopoleSaveSurface;
+    const snapshot = await saveApi.readMonopoleSavePackageFile(file);
+    applyLoadedMonopoleSnapshot(snapshot);
+    outputs.status.textContent = `Loaded ${snapshot.name}`;
+  } catch (_error) {
+    outputs.status.textContent = "Unable to load JSON package";
+  } finally {
+    buttons.loadFile.value = "";
+  }
+}
+
+function buildCopyResultLines() {
+  const snapshot = readCurrentMonopoleSaveSnapshot();
+  const payload = [
+    `Sample: ${snapshot.name || "Untitled sample"} (${getTypeLabel(snapshot.type)})`,
+    `Mode: ${snapshot.mode === modes.STATIC ? "Static (Gore jig)" : "Dynamic (mass-loading)"}`,
+  ];
+
+  if (snapshot.mode === modes.STATIC) {
+    payload.push(
+      `f_u (Hz): ${snapshot.inputs.freqHz}`,
+      `Deflection (mm): ${snapshot.inputs.deflectionMm}`,
+      `Mass (kg): ${snapshot.inputs.testMassKg}`
+    );
+  } else {
+    payload.push(
+      `f0 (Hz): ${snapshot.inputs.unloadedFrequencyHz}`,
+      `f1 (Hz): ${snapshot.inputs.loadedFrequencyHz}`,
+      `Added mass (g): ${snapshot.inputs.addedMassG}`
+    );
+  }
+
+  payload.push(
+    `K (N/m): ${snapshot.outputs.stiffnessNPerM}`,
+    `M_eff (g): ${snapshot.outputs.effectiveMassG}`,
+    `Mobility score: ${snapshot.outputs.mobilityScore}`
+  );
+
+  return payload;
+}
+
+function readCurrentMonopoleSaveSnapshot() {
+  return {
+    name: nameInput.value.trim() || "Untitled sample",
+    type: typeSelect.value,
+    mode: currentMode,
+    inputs: readCurrentMonopoleSaveInputs(),
+    outputs: readCurrentMonopoleSaveOutputs(),
+  };
+}
+
+function readCurrentMonopoleSaveInputs() {
+  if (currentMode === modes.STATIC) {
+    return {
+      freqHz: fields.freq.value,
+      deflectionMm: fields.deflection.value,
+      testMassKg: fields.mass.value,
+    };
+  }
+
+  return {
+    unloadedFrequencyHz: dynamicFields.f0.value,
+    loadedFrequencyHz: dynamicFields.f1.value,
+    addedMassG: dynamicFields.mass.value,
+  };
+}
+
+function readCurrentMonopoleSaveOutputs() {
+  return {
+    stiffnessNPerM: outputs.stiffness.textContent,
+    effectiveMassG: outputs.effMass.textContent,
+    mobilityScore: outputs.mobilityScore.textContent,
+    status: outputs.status.textContent,
+    warnings: outputs.warnings.textContent,
+  };
+}
+
+function readMonopoleSaveRunner() {
+  if (window.MonopoleSaveTarget?.monopoleSaveRunnerCreate) {
+    return window.MonopoleSaveTarget.monopoleSaveRunnerCreate();
+  }
+
+  throw new Error("Monopole save target is unavailable.");
+}
+
+function readMonopoleNotebookRestoreApi() {
+  return window.MonopoleNotebookRestore?.restoreMonopoleNotebookEventIntoUi
+    ? window.MonopoleNotebookRestore
+    : null;
+}
+
+function applyMonopoleSaveSurface(button, surface) {
+  if (!button) {
+    return;
+  }
+
+  button.textContent = surface.label || "Download JSON";
+  button.title = surface.hint || "";
+}
+
+function applyLoadedMonopoleSnapshot(snapshot) {
+  const plan = window.MonopoleSaveSnapshot.buildMonopoleSnapshotApplyPlan(snapshot, defaults);
+  nameInput.value = plan.name;
+  typeSelect.value = plan.type;
+  applyMonopoleStaticSnapshotInputs(plan.staticInputs);
+  applyMonopoleDynamicSnapshotInputs(plan.dynamicInputs);
+  setMode(plan.mode);
+}
+
+function applyMonopoleStaticSnapshotInputs(inputs) {
+  writeMonopoleInputPair(sliders.freq, fields.freq, inputs.freqHz);
+  writeMonopoleInputPair(sliders.deflection, fields.deflection, inputs.deflectionMm);
+  writeMonopoleInputPair(sliders.mass, fields.mass, inputs.testMassKg);
+}
+
+function applyMonopoleDynamicSnapshotInputs(inputs) {
+  writeMonopoleInputPair(dynamicSliders.f0, dynamicFields.f0, inputs.unloadedFrequencyHz);
+  writeMonopoleInputPair(dynamicSliders.f1, dynamicFields.f1, inputs.loadedFrequencyHz);
+  writeMonopoleInputPair(dynamicSliders.mass, dynamicFields.mass, inputs.addedMassG);
+}
+
+function writeMonopoleInputPair(slider, field, value) {
+  const nextValue = String(value || "").trim();
+  slider.value = nextValue;
+  field.value = nextValue;
+}
+
+async function initializeMonopoleSaveSurface() {
+  if (await restoreNotebookEventIntoUi()) {
+    return;
+  }
+
+  const surface = await saveRunner.readMonopoleSaveSurface();
+  applyMonopoleSaveSurface(buttons.save, surface);
+}
+
+async function restoreNotebookEventIntoUi() {
+  const restoreApi = readMonopoleNotebookRestoreApi();
+
+  if (!restoreApi) {
+    return false;
+  }
+
+  const restored = await restoreApi.restoreMonopoleNotebookEventIntoUi({
+    runtime: window,
+    applySnapshot(snapshot) {
+      applyLoadedMonopoleSnapshot(snapshot);
+    },
+  });
+
+  if (restored) {
+    outputs.status.textContent = "Notebook event restored.";
+  }
+
+  return restored;
 }
 
 function setMode(nextMode) {
@@ -421,6 +581,11 @@ function attachInputPair(slider, field) {
 
 buttons.reset.addEventListener("click", resetInputs);
 buttons.copy.addEventListener("click", copyResults);
+buttons.load.addEventListener("click", () => buttons.loadFile.click());
+buttons.loadFile.addEventListener("change", loadResults);
+buttons.save.addEventListener("click", () => {
+  void saveResults();
+});
 
 Object.entries(sliders).forEach(([key, slider]) => {
   attachInputPair(slider, fields[key]);
@@ -438,5 +603,6 @@ typeSelect.addEventListener("change", compute);
 
 applyStaticDefaults();
 applyDynamicDefaults();
+void initializeMonopoleSaveSurface();
 updateInstrumentLabel();
 setMode(currentMode);

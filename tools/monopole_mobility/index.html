@@ -159,6 +159,9 @@ No redistribution, modification, or commercial use without written consent from 
             <div class="actions">
               <button id="reset">Reset</button>
               <button id="copy" class="ghost">Copy results</button>
+              <button id="load" class="ghost tl-save-action">Load JSON</button>
+              <button id="save" class="ghost tl-save-action">Download JSON</button>
+              <input id="load_file" type="file" accept="application/json,.json" hidden />
             </div>
           </section>
         </aside>
@@ -295,6 +298,16 @@ No redistribution, modification, or commercial use without written consent from 
 
   <script src="../common/site_menu_loader.js" defer></script>
   <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../common/tool_document.js" defer></script>
+  <script src="../common/tool_document_file.js" defer></script>
+  <script src="../common/offline_save_surface.js" defer></script>
+  <script src="monopole_save_surface.js" defer></script>
+
+
+
+
+<script src="monopole_save_target.js" defer></script>
+  <script src="monopole_save_snapshot.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 
