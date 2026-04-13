@@ -387,6 +387,17 @@ let dragLockedTargets = null;
 let dragUseWhatIf = false;
 const traceVisibilityState = { ...TRACE_DEFAULT_VISIBLE };
 const PLOT_RESIZE_SYNC_TOLERANCE_PX = 1;
+const DOF_FIT_FIELD_IDS = [
+    "fit_target_air",
+    "fit_target_top",
+    "fit_target_back",
+    "fit_target_mass_top",
+    "fit_target_stiffness_top",
+    "fit_target_mass_back",
+    "fit_target_stiffness_back",
+    "fit_target_volume_air",
+    "fit_target_area_hole_diam",
+];
 function dofParamsFromLocation() {
     const raw = new URLSearchParams(window.location.search).get("params");
     if (!raw)
@@ -2057,6 +2068,138 @@ function bindPlotInteractions(plotEl) {
     window.addEventListener("pointerup", handleThumbPointerUp);
     window.addEventListener("pointercancel", handleThumbPointerUp);
 }
+function readCurrentDofSaveSnapshot() {
+    return {
+        params: { ...currentParams },
+        modelOrder: currentOrder,
+        taskMode: currentTaskMode,
+        overlayEnabled: isWhatIfEnabled(),
+        fitInputs: readCurrentDofFitInputs(),
+        solveOptions: readCurrentDofSolveOptions(),
+    };
+}
+function readCurrentDofFitInputs() {
+    return Object.fromEntries(DOF_FIT_FIELD_IDS.map((id) => [id, readDofInputValue(id)]));
+}
+function readCurrentDofSolveOptions() {
+    var _a;
+    return {
+        fit_restrict_simple: Boolean((_a = document.getElementById("fit_restrict_simple")) === null || _a === void 0 ? void 0 : _a.checked),
+    };
+}
+function readDofInputValue(id) {
+    var _a;
+    return String(((_a = document.getElementById(id)) === null || _a === void 0 ? void 0 : _a.value) || "");
+}
+function writeDofInputValue(id, value) {
+    const input = document.getElementById(id);
+    if (!input)
+        return;
+    input.value = String(value || "");
+}
+function applyLoadedDofSnapshot(snapshot) {
+    var _a;
+    const plan = window.DofSaveSnapshot.buildDofSnapshotApplyPlan(snapshot, {
+        params: DEFAULT_PARAMS,
+        modelOrder: 4,
+    });
+    currentParams = { ...plan.params };
+    DOF_FIT_FIELD_IDS.forEach((id) => { var _a; return writeDofInputValue(id, (_a = plan.fitInputs) === null || _a === void 0 ? void 0 : _a[id]); });
+    const solveToggle = document.getElementById("fit_restrict_simple");
+    if (solveToggle)
+        solveToggle.checked = Boolean((_a = plan.solveOptions) === null || _a === void 0 ? void 0 : _a.fit_restrict_simple);
+    const overlayToggle = document.getElementById("toggle_overlay");
+    if (overlayToggle) {
+        overlayToggle.checked = Boolean(plan.overlayEnabled);
+        overlayToggle.dispatchEvent(new Event("change"));
+    }
+    syncCardInputs();
+    setTaskMode(plan.taskMode);
+    setOrder(plan.modelOrder);
+    fitStatusSet("");
+    whatIfSummarySet(null);
+    scheduleRender();
+}
+async function loadResults() {
+    var _a;
+    const loadFileInput = document.getElementById("load_model_file");
+    const file = (_a = loadFileInput === null || loadFileInput === void 0 ? void 0 : loadFileInput.files) === null || _a === void 0 ? void 0 : _a[0];
+    if (!file)
+        return;
+    try {
+        const snapshot = await window.DofSaveSurface.readDofSavePackageFile(file);
+        applyLoadedDofSnapshot(snapshot);
+        fitStatusSet("Loaded JSON package.");
+    }
+    catch (_error) {
+        fitStatusSet("Unable to load JSON package.");
+    }
+    finally {
+        if (loadFileInput)
+            loadFileInput.value = "";
+    }
+}
+async function saveResults() {
+    await readDofSaveRunner().runDofSaveAction({
+        readSnapshot: readCurrentDofSaveSnapshot,
+        setStatus: fitStatusSet,
+    });
+}
+function readDofSaveRunner() {
+    var _a;
+    if ((_a = window.DofSaveTarget) === null || _a === void 0 ? void 0 : _a.dofSaveRunnerCreate) {
+        return window.DofSaveTarget.dofSaveRunnerCreate();
+    }
+    return {
+        readDofSaveSurface() {
+            return Promise.resolve({
+                mode: "offline",
+                label: "Download JSON",
+                hint: "",
+            });
+        },
+        runDofSaveAction(request) {
+            const savePackage = window.DofSaveSurface.buildDofSavePackage(request.readSnapshot());
+            window.DofSaveSurface.downloadDofSavePackage(window, savePackage);
+            request.setStatus("JSON package downloaded.");
+            return Promise.resolve(true);
+        },
+    };
+}
+function readDofNotebookRestoreApi() {
+    var _a;
+    return ((_a = window.DofNotebookRestore) === null || _a === void 0 ? void 0 : _a.restoreDofNotebookEventIntoUi)
+        ? window.DofNotebookRestore
+        : null;
+}
+async function applyDofSaveSurface() {
+    const saveButton = document.getElementById("save_model");
+    const saveSurface = await readDofSaveRunner().readDofSaveSurface();
+    if (!saveButton)
+        return;
+    saveButton.textContent = saveSurface.label || "Download JSON";
+    saveButton.title = saveSurface.hint || "";
+}
+async function initializeDofSaveSurface() {
+    if (await restoreNotebookEventIntoUi())
+        return;
+    await applyDofSaveSurface();
+}
+async function restoreNotebookEventIntoUi() {
+    const restoreApi = readDofNotebookRestoreApi();
+    if (!restoreApi)
+        return false;
+    const restored = await restoreApi.restoreDofNotebookEventIntoUi({
+        runtime: window,
+        applySnapshot(snapshot) {
+            applyLoadedDofSnapshot(snapshot);
+        },
+    });
+    if (restored) {
+        fitStatusSet("Notebook event restored.");
+    }
+    return restored;
+}
 function bindPlotResizeSync(plotEl) {
     const sync = () => syncPlotWidthToContainer(plotEl);
     window.addEventListener("resize", sync);
@@ -2219,6 +2362,9 @@ function dofPipelineFallbackCompletedEmit(emit, runId, trigger) {
     });
 }
 function init() {
+    const saveButton = document.getElementById("save_model");
+    const loadButton = document.getElementById("load_model");
+    const loadFileInput = document.getElementById("load_model_file");
     const fromUrl = dofParamsFromLocation();
     if (fromUrl) {
         currentParams = { ...currentParams, ...fromUrl };
@@ -2229,8 +2375,15 @@ function init() {
     bindTaskModeTabs();
     bindFitMyGuitarActions();
     bindSolveRecipeActions();
+    if (saveButton)
+        saveButton.addEventListener("click", () => void saveResults());
+    if (loadButton && loadFileInput)
+        loadButton.addEventListener("click", () => loadFileInput.click());
+    if (loadFileInput)
+        loadFileInput.addEventListener("change", loadResults);
     setTaskMode(currentTaskMode);
     setOrder(currentOrder);
+    void initializeDofSaveSurface();
     dofPipelineRunnerExpose();
     if (fromUrl)
         syncCardInputs();

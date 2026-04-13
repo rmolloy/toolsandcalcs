@@ -18,6 +18,9 @@
           <h1>Four Degrees of Freedom Model</h1>
         </div>
         <div class="hero-actions">
+          <button id="load_model" class="ghost-btn btn-small tl-save-action" type="button">Load JSON</button>
+          <button id="save_model" class="ghost-btn btn-small tl-save-action" type="button">Download JSON</button>
+          <input id="load_model_file" type="file" accept="application/json,.json" hidden>
 <label class="toggle">
             <input type="checkbox" id="toggle_overlay">
             <span class="toggle-label">Compare</span>
@@ -143,11 +146,21 @@
   <script src="../common/atmosphere.js" defer></script>
   <script src="../common/site_menu_loader.js" defer></script>
   <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../common/tool_document.js" defer></script>
+  <script src="../common/tool_document_file.js" defer></script>
+  <script src="../common/offline_save_surface.js" defer></script>
   <script src="../common/dof_solver_adapter.js" defer></script>
   <script src="../common/overlay_segments.js" defer></script>
   <script src="../common/solver_core.js" defer></script>
   <script src="../common/4dof/model_core.js" defer></script>
   <script src="../common/4dof/whatif_recipe_summary.js" defer></script>
+  <script src="dof_save_surface.js" defer></script>
+
+
+
+
+<script src="dof_save_target.js" defer></script>
+  <script src="dof_save_snapshot.js" defer></script>
   <script src="main.js" defer></script>
 </body>
 
