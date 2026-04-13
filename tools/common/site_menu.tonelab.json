@@ -3,24 +3,24 @@
   "items": [
     {
       "label": "Rick Molloy Guitars",
-      "href": "https://rickmolloyguitars.com/",
+      "href": "/",
       "className": "hero-menu-home"
     },
     {
       "label": "Lab Home",
-      "href": "../../"
+      "href": "/"
     },
     {
       "label": "Resonance Reader",
-      "href": "../resonance_reader/"
+      "href": "/tools/resonance_reader/"
     },
     {
       "label": "DOF Model",
-      "href": "../dof_model/"
+      "href": "/tools/dof_model/"
     },
     {
       "label": "Plate Thickness",
-      "href": "../plate_thickness/"
+      "href": "/tools/plate_thickness/"
     },
     {
       "label": "Fret Calculator",
@@ -28,15 +28,15 @@
     },
     {
       "label": "Monopole Mobility",
-      "href": "../monopole_mobility/"
+      "href": "/tools/monopole_mobility/"
     },
     {
       "label": "Flexural Rigidity (Alpha)",
-      "href": "../flexural_rigidity/"
+      "href": "/tools/flexural_rigidity/"
     },
     {
       "label": "Brace Designer (Alpha)",
-      "href": "../brace_calc/"
+      "href": "/tools/brace_calc/"
     }
   ]
 }

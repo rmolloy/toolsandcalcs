@@ -3,7 +3,7 @@
   "items": [
     {
       "label": "Lutherie Academy",
-      "href": "https://lutherieacademy.com/",
+      "href": "/",
       "className": "hero-menu-home"
     },
     {
@@ -12,19 +12,19 @@
     },
     {
       "label": "Resonance Reader",
-      "href": "../resonance_reader/"
+      "href": "/tools/resonance_reader/"
     },
     {
       "label": "Four Degrees of Freedom Model",
-      "href": "../dof_model/"
+      "href": "/tools/dof_model/"
     },
     {
       "label": "Plate Thickness",
-      "href": "../plate_thickness/"
+      "href": "/tools/plate_thickness/"
     },
     {
       "label": "Monopole Mobility",
-      "href": "../monopole_mobility/"
+      "href": "/tools/monopole_mobility/"
     }
   ]
 }
