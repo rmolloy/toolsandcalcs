@@ -76,7 +76,10 @@
                 <p class="small muted">Enter the target spec, current panel, and measured modes.</p>
               </div>
               <div class="tl-action-row plate-action-row">
+                <button id="load_results" class="ghost-btn btn-small tl-save-action" type="button">Load JSON</button>
+                <button id="save_results" class="ghost-btn btn-small tl-save-action" type="button">Download JSON</button>
                 <button id="reset_inputs" class="ghost-btn btn-small" type="button">Reset defaults</button>
+                <input id="load_results_file" type="file" accept="application/json,.json" hidden>
               </div>
             </div>
 
@@ -290,7 +293,17 @@
 
   <script src="../common/site_menu_loader.js"></script>
   <script src="../common/tool_footer_loader.js"></script>
+  <script src="../common/tool_document.js"></script>
+  <script src="../common/tool_document_file.js"></script>
+  <script src="../common/offline_save_surface.js"></script>
   <script src="calculator.js"></script>
+  <script src="plate_thickness_save_surface.js"></script>
+
+
+
+
+<script src="plate_thickness_save_target.js"></script>
+  <script src="plate_thickness_save_snapshot.js"></script>
   <script src="query_params.js"></script>
   <script src="main.js"></script>
 </body>

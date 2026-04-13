@@ -59,6 +59,11 @@ type PlateSolution = {
     status: document.getElementById("result_status") as HTMLElement | null
   };
 
+  const saveButton = document.getElementById("save_results") as HTMLButtonElement | null;
+  const loadButton = document.getElementById("load_results") as HTMLButtonElement | null;
+  const loadFileInput = document.getElementById("load_results_file") as HTMLInputElement | null;
+  const saveRunner = readPlateThicknessSaveRunner();
+
   function format(value: number, { digits = 2, notation = "standard" as Intl.NumberFormatOptions["notation"] } = {}) {
     if (!Number.isFinite(value)) return "—";
     return new Intl.NumberFormat("en-US", {
@@ -75,6 +80,13 @@ type PlateSolution = {
       values[key] = value;
     }
     return values;
+  }
+
+  function readCurrentPlateThicknessSaveSnapshot() {
+    return {
+      inputs: readCurrentPlateThicknessSaveInputs(),
+      results: readCurrentPlateThicknessSaveResults(),
+    };
   }
 
   function setResults(result: PlateSolution) {
@@ -97,6 +109,24 @@ type PlateSolution = {
     if (resultEls.ratio) resultEls.ratio.textContent = "—";
     if (resultEls.shear) resultEls.shear.textContent = "—";
     if (resultEls.status) resultEls.status.textContent = message;
+  }
+
+  async function loadResults() {
+    const file = loadFileInput?.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const snapshot = await (window as any).PlateThicknessSaveSurface.readPlateThicknessSavePackageFile(file);
+      applyLoadedPlateThicknessSnapshot(snapshot);
+      if (resultEls.status) resultEls.status.textContent = "Loaded JSON package";
+    } catch (_error) {
+      if (resultEls.status) resultEls.status.textContent = "Unable to load JSON package";
+    } finally {
+      if (loadFileInput) loadFileInput.value = "";
+    }
   }
 
   function run() {
@@ -134,6 +164,13 @@ type PlateSolution = {
     run();
   }
 
+  async function saveResults() {
+    await saveRunner.runPlateThicknessSaveAction({
+      readSnapshot: readCurrentPlateThicknessSaveSnapshot,
+      setStatus: writeStatusText,
+    });
+  }
+
   function scaleForField(key: string, baseValue: number) {
     if (key.includes("mass")) return baseValue * 1000;
     if (key.includes("height") || key.includes("length") || key.includes("width") || key.includes("body") || key.includes("bout")) {
@@ -152,6 +189,110 @@ type PlateSolution = {
     if (changed) run();
   }
 
+  function applyLoadedPlateThicknessSnapshot(snapshot: { inputs?: Record<string, string> }) {
+    const plan = (window as any).PlateThicknessSaveSnapshot.buildPlateThicknessSnapshotApplyPlan(snapshot, defaults);
+    Object.entries(plan.fields).forEach(([key, value]) => {
+      if (fields[key]) {
+        fields[key].value = String(value || "");
+      }
+    });
+    run();
+  }
+
+  async function applyPlateThicknessSaveSurface() {
+    const saveSurface = await saveRunner.readPlateThicknessSaveSurface();
+    if (saveButton) {
+      saveButton.textContent = saveSurface.label || "Download JSON";
+      saveButton.title = saveSurface.hint || "";
+    }
+  }
+
+  function readPlateThicknessNotebookRestoreApi() {
+    return (window as any).PlateThicknessNotebookRestore?.restorePlateThicknessNotebookEventIntoUi
+      ? (window as any).PlateThicknessNotebookRestore
+      : null;
+  }
+
+  function readCurrentPlateThicknessSaveInputs() {
+    return Object.fromEntries(
+      Object.entries(fields).map(([key, input]) => [key, input.value]),
+    );
+  }
+
+  function readCurrentPlateThicknessSaveResults() {
+    return {
+      result_thickness: resultEls.thickness?.textContent || "",
+      result_mass: resultEls.mass?.textContent || "",
+      result_density: resultEls.density?.textContent || "",
+      result_el: resultEls.EL?.textContent || "",
+      result_ec: resultEls.EC?.textContent || "",
+      result_ratio: resultEls.ratio?.textContent || "",
+      result_shear: resultEls.shear?.textContent || "",
+    };
+  }
+
+  function readPlateThicknessSaveRunner() {
+    if ((window as any).PlateThicknessSaveTarget?.plateThicknessSaveRunnerCreate) {
+      return (window as any).PlateThicknessSaveTarget.plateThicknessSaveRunnerCreate();
+    }
+
+    return {
+      readPlateThicknessSaveSurface() {
+        return Promise.resolve({
+          mode: "offline",
+          label: "Download JSON",
+          hint: "",
+        });
+      },
+      runPlateThicknessSaveAction(request: {
+        readSnapshot: () => ReturnType<typeof readCurrentPlateThicknessSaveSnapshot>;
+        setStatus: (message: string) => void;
+      }) {
+        const savePackage = (window as any).PlateThicknessSaveSurface.buildPlateThicknessSavePackage(
+          request.readSnapshot(),
+        );
+        (window as any).PlateThicknessSaveSurface.downloadPlateThicknessSavePackage(window, savePackage);
+        request.setStatus("JSON package downloaded");
+        return Promise.resolve(true);
+      },
+    };
+  }
+
+  function writeStatusText(message: string) {
+    if (resultEls.status) {
+      resultEls.status.textContent = message;
+    }
+  }
+
+  async function initializePlateThicknessToolSurface() {
+    if (await restoreNotebookEventIntoUi()) {
+      return;
+    }
+
+    await applyPlateThicknessSaveSurface();
+  }
+
+  async function restoreNotebookEventIntoUi() {
+    const restoreApi = readPlateThicknessNotebookRestoreApi();
+
+    if (!restoreApi) {
+      return false;
+    }
+
+    const restored = await restoreApi.restorePlateThicknessNotebookEventIntoUi({
+      runtime: window,
+      applySnapshot(snapshot: { inputs?: Record<string, string> }) {
+        applyLoadedPlateThicknessSnapshot(snapshot);
+      },
+    });
+
+    if (restored && resultEls.status) {
+      resultEls.status.textContent = "Notebook event restored.";
+    }
+
+    return restored;
+  }
+
   document.querySelectorAll<HTMLInputElement>("input[data-field]").forEach((input) => {
     input.addEventListener("input", (event) => {
       const target = event.target as HTMLInputElement;
@@ -168,8 +309,12 @@ type PlateSolution = {
     event.preventDefault();
     reset();
   });
+  if (saveButton) saveButton.addEventListener("click", () => void saveResults());
+  if (loadButton && loadFileInput) loadButton.addEventListener("click", () => loadFileInput.click());
+  if (loadFileInput) loadFileInput.addEventListener("change", loadResults);
 
   reset();
+  void initializePlateThicknessToolSurface();
 
   function formatNumber(value: number) {
     if (!Number.isFinite(value)) return "";

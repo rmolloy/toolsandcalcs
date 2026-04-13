@@ -44,6 +44,10 @@ Panel thickness calculator UI logic.
         shear: document.getElementById("result_shear"),
         status: document.getElementById("result_status")
     };
+    const saveButton = document.getElementById("save_results");
+    const loadButton = document.getElementById("load_results");
+    const loadFileInput = document.getElementById("load_results_file");
+    const saveRunner = readPlateThicknessSaveRunner();
     function format(value, { digits = 2, notation = "standard" } = {}) {
         if (!Number.isFinite(value))
             return "—";
@@ -60,6 +64,12 @@ Panel thickness calculator UI logic.
             values[key] = value;
         }
         return values;
+    }
+    function readCurrentPlateThicknessSaveSnapshot() {
+        return {
+            inputs: readCurrentPlateThicknessSaveInputs(),
+            results: readCurrentPlateThicknessSaveResults(),
+        };
     }
     function setResults(result) {
         if (resultEls.thickness)
@@ -97,6 +107,27 @@ Panel thickness calculator UI logic.
         if (resultEls.status)
             resultEls.status.textContent = message;
     }
+    async function loadResults() {
+        var _a;
+        const file = (_a = loadFileInput === null || loadFileInput === void 0 ? void 0 : loadFileInput.files) === null || _a === void 0 ? void 0 : _a[0];
+        if (!file) {
+            return;
+        }
+        try {
+            const snapshot = await window.PlateThicknessSaveSurface.readPlateThicknessSavePackageFile(file);
+            applyLoadedPlateThicknessSnapshot(snapshot);
+            if (resultEls.status)
+                resultEls.status.textContent = "Loaded JSON package";
+        }
+        catch (_error) {
+            if (resultEls.status)
+                resultEls.status.textContent = "Unable to load JSON package";
+        }
+        finally {
+            if (loadFileInput)
+                loadFileInput.value = "";
+        }
+    }
     function run() {
         var _a, _b, _c, _d, _e, _f;
         try {
@@ -132,6 +163,12 @@ Panel thickness calculator UI logic.
         applyQueryParams();
         run();
     }
+    async function saveResults() {
+        await saveRunner.runPlateThicknessSaveAction({
+            readSnapshot: readCurrentPlateThicknessSaveSnapshot,
+            setStatus: writeStatusText,
+        });
+    }
     function scaleForField(key, baseValue) {
         if (key.includes("mass"))
             return baseValue * 1000;
@@ -150,6 +187,91 @@ Panel thickness calculator UI logic.
         if (changed)
             run();
     }
+    function applyLoadedPlateThicknessSnapshot(snapshot) {
+        const plan = window.PlateThicknessSaveSnapshot.buildPlateThicknessSnapshotApplyPlan(snapshot, defaults);
+        Object.entries(plan.fields).forEach(([key, value]) => {
+            if (fields[key]) {
+                fields[key].value = String(value || "");
+            }
+        });
+        run();
+    }
+    async function applyPlateThicknessSaveSurface() {
+        const saveSurface = await saveRunner.readPlateThicknessSaveSurface();
+        if (saveButton) {
+            saveButton.textContent = saveSurface.label || "Download JSON";
+            saveButton.title = saveSurface.hint || "";
+        }
+    }
+    function readPlateThicknessNotebookRestoreApi() {
+        var _a;
+        return ((_a = window.PlateThicknessNotebookRestore) === null || _a === void 0 ? void 0 : _a.restorePlateThicknessNotebookEventIntoUi)
+            ? window.PlateThicknessNotebookRestore
+            : null;
+    }
+    function readCurrentPlateThicknessSaveInputs() {
+        return Object.fromEntries(Object.entries(fields).map(([key, input]) => [key, input.value]));
+    }
+    function readCurrentPlateThicknessSaveResults() {
+        var _a, _b, _c, _d, _e, _f, _g;
+        return {
+            result_thickness: ((_a = resultEls.thickness) === null || _a === void 0 ? void 0 : _a.textContent) || "",
+            result_mass: ((_b = resultEls.mass) === null || _b === void 0 ? void 0 : _b.textContent) || "",
+            result_density: ((_c = resultEls.density) === null || _c === void 0 ? void 0 : _c.textContent) || "",
+            result_el: ((_d = resultEls.EL) === null || _d === void 0 ? void 0 : _d.textContent) || "",
+            result_ec: ((_e = resultEls.EC) === null || _e === void 0 ? void 0 : _e.textContent) || "",
+            result_ratio: ((_f = resultEls.ratio) === null || _f === void 0 ? void 0 : _f.textContent) || "",
+            result_shear: ((_g = resultEls.shear) === null || _g === void 0 ? void 0 : _g.textContent) || "",
+        };
+    }
+    function readPlateThicknessSaveRunner() {
+        var _a;
+        if ((_a = window.PlateThicknessSaveTarget) === null || _a === void 0 ? void 0 : _a.plateThicknessSaveRunnerCreate) {
+            return window.PlateThicknessSaveTarget.plateThicknessSaveRunnerCreate();
+        }
+        return {
+            readPlateThicknessSaveSurface() {
+                return Promise.resolve({
+                    mode: "offline",
+                    label: "Download JSON",
+                    hint: "",
+                });
+            },
+            runPlateThicknessSaveAction(request) {
+                const savePackage = window.PlateThicknessSaveSurface.buildPlateThicknessSavePackage(request.readSnapshot());
+                window.PlateThicknessSaveSurface.downloadPlateThicknessSavePackage(window, savePackage);
+                request.setStatus("JSON package downloaded");
+                return Promise.resolve(true);
+            },
+        };
+    }
+    function writeStatusText(message) {
+        if (resultEls.status) {
+            resultEls.status.textContent = message;
+        }
+    }
+    async function initializePlateThicknessToolSurface() {
+        if (await restoreNotebookEventIntoUi()) {
+            return;
+        }
+        await applyPlateThicknessSaveSurface();
+    }
+    async function restoreNotebookEventIntoUi() {
+        const restoreApi = readPlateThicknessNotebookRestoreApi();
+        if (!restoreApi) {
+            return false;
+        }
+        const restored = await restoreApi.restorePlateThicknessNotebookEventIntoUi({
+            runtime: window,
+            applySnapshot(snapshot) {
+                applyLoadedPlateThicknessSnapshot(snapshot);
+            },
+        });
+        if (restored && resultEls.status) {
+            resultEls.status.textContent = "Notebook event restored.";
+        }
+        return restored;
+    }
     document.querySelectorAll("input[data-field]").forEach((input) => {
         input.addEventListener("input", (event) => {
             const target = event.target;
@@ -166,7 +288,14 @@ Panel thickness calculator UI logic.
             event.preventDefault();
             reset();
         });
+    if (saveButton)
+        saveButton.addEventListener("click", () => void saveResults());
+    if (loadButton && loadFileInput)
+        loadButton.addEventListener("click", () => loadFileInput.click());
+    if (loadFileInput)
+        loadFileInput.addEventListener("change", loadResults);
     reset();
+    void initializePlateThicknessToolSurface();
     function formatNumber(value) {
         if (!Number.isFinite(value))
             return "";
