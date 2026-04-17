@@ -1,14 +1,19 @@
 type NotebookConnectionPayload = {
+  accessState?: string;
   ok?: boolean;
   workbookId?: string;
   notebookName?: string;
 };
 
+type NotebookConnectionState =
+  | { accessState: "lab-connected"; workbookId: string; notebookName: string }
+  | { accessState: "anonymous" | "signed_in_not_enabled" | "signed_in_no_workbook" | "unknown" };
+
 export async function readNotebookConnectionForResonanceSave(
   fetchImpl: typeof fetch = fetch,
-): Promise<{ workbookId: string; notebookName: string } | null> {
+): Promise<NotebookConnectionState> {
   if (typeof fetchImpl !== "function") {
-    return null;
+    return { accessState: "unknown" };
   }
 
   const response = await fetchImpl("/notebook-api/rpc.php", {
@@ -19,23 +24,33 @@ export async function readNotebookConnectionForResonanceSave(
   });
 
   if (!response.ok) {
-    return null;
+    return { accessState: "unknown" };
   }
 
   return notebookConnectionFromPayload(await response.json());
 }
 
-function notebookConnectionFromPayload(payload: NotebookConnectionPayload): {
-  workbookId: string;
-  notebookName: string;
-} | null {
+function notebookConnectionFromPayload(payload: NotebookConnectionPayload): NotebookConnectionState {
   const workbookId = String(payload?.workbookId ?? "").trim();
   if (workbookId === "") {
-    return null;
+    return {
+      accessState: notebookConnectionAccessStateFromPayload(payload),
+    };
   }
 
   return {
+    accessState: "lab-connected",
     workbookId,
     notebookName: String(payload?.notebookName ?? "").trim(),
   };
+}
+
+function notebookConnectionAccessStateFromPayload(payload: NotebookConnectionPayload): "anonymous" | "signed_in_not_enabled" | "signed_in_no_workbook" | "unknown" {
+  const accessState = String(payload?.accessState ?? "").trim();
+
+  if (accessState === "anonymous" || accessState === "signed_in_not_enabled" || accessState === "signed_in_no_workbook") {
+    return accessState;
+  }
+
+  return "unknown";
 }

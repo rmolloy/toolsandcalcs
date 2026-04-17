@@ -24,8 +24,12 @@ export function resonanceSaveRunnerCreate(): ResonanceSaveActionRunner {
 
 async function readResonanceSaveSurface(): Promise<ResonanceSaveSurface> {
   const connection = await readNotebookConnectionForResonanceSave();
-  if (!connection) {
-    return { mode: "lab-disconnected", label: "Save" };
+  if (connection.accessState !== "lab-connected") {
+    return {
+      mode: "lab-disconnected",
+      label: "Save",
+      accessState: connection.accessState,
+    };
   }
 
   return {
@@ -54,7 +58,11 @@ async function resonanceSaveActionForSurface(
     return await resonanceConnectedSaveActionRun(saveSurface, request);
   }
 
-  return await resonanceDisconnectedSaveActionRun(request);
+  if (saveSurface.mode !== "lab-disconnected") {
+    return false;
+  }
+
+  return await resonanceDisconnectedSaveActionRun(saveSurface, request);
 }
 
 async function resonanceConnectedSaveActionRun(
@@ -95,9 +103,15 @@ async function resonanceConnectedSaveActionRun(
   return true;
 }
 
-async function resonanceDisconnectedSaveActionRun(request: ResonanceSaveActionRequest): Promise<boolean> {
-  const action = request.action || await resonanceDisconnectedSaveActionRead(request.button);
+async function resonanceDisconnectedSaveActionRun(
+  saveSurface: Extract<ResonanceSaveSurface, { mode: "lab-disconnected" }>,
+  request: ResonanceSaveActionRequest,
+): Promise<boolean> {
+  const action = request.action || await openResonanceDisconnectedSaveMenu(request.button, saveSurface);
   if (action === "connect-notebook") {
+    if (!canRunNotebookConnectAction(saveSurface)) {
+      return false;
+    }
     persistResonanceNotebookConnectDraft(
       window,
       request.state,
@@ -140,22 +154,40 @@ function readResonanceNotebookReturnTo(runtime: Window): string {
   return value;
 }
 
-async function resonanceDisconnectedSaveActionRead(button: HTMLElement | null | undefined): Promise<string | null> {
+async function openResonanceDisconnectedSaveMenu(
+  button: HTMLElement | null | undefined,
+  saveSurface: Extract<ResonanceSaveSurface, { mode: "lab-disconnected" }>,
+): Promise<string | null> {
   return await openResonanceSaveMenu({
     anchor: button,
-    items: [
-      {
-        key: "download-package",
-        label: "Download Package",
-        description: "Save state.json, source.wav, and plot.png locally.",
-      },
-      {
-        key: "connect-notebook",
-        label: "Connect Google Drive + Notebook",
-        description: "Connect first, then save the package into your notebook.",
-      },
-    ],
+    items: buildResonanceDisconnectedSaveMenuItems(saveSurface),
   });
+}
+
+function buildResonanceDisconnectedSaveMenuItems(
+  saveSurface: Extract<ResonanceSaveSurface, { mode: "lab-disconnected" }>,
+) {
+  const items = [
+    {
+      key: "download-package",
+      label: "Download Package",
+      description: "Save state.json, source.wav, and plot.png locally.",
+    },
+  ];
+
+  if (canRunNotebookConnectAction(saveSurface)) {
+    items.push({
+      key: "connect-notebook",
+      label: "Connect Google Drive + Notebook",
+      description: "Connect first, then save the package into your notebook.",
+    });
+  }
+
+  return items;
+}
+
+function canRunNotebookConnectAction(saveSurface: ResonanceSaveSurface): boolean {
+  return saveSurface.mode === "lab-disconnected" && saveSurface.accessState === "signed_in_no_workbook";
 }
 
 function hasWaveformCapture(): boolean {

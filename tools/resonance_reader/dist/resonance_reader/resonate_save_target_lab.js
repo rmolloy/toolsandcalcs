@@ -13,8 +13,12 @@ export function resonanceSaveRunnerCreate() {
 }
 async function readResonanceSaveSurface() {
     const connection = await readNotebookConnectionForResonanceSave();
-    if (!connection) {
-        return { mode: "lab-disconnected", label: "Save" };
+    if (connection.accessState !== "lab-connected") {
+        return {
+            mode: "lab-disconnected",
+            label: "Save",
+            accessState: connection.accessState,
+        };
     }
     return {
         mode: "lab-connected",
@@ -35,7 +39,10 @@ async function resonanceSaveActionForSurface(saveSurfacePromise, request) {
     if (saveSurface.mode === "lab-connected") {
         return await resonanceConnectedSaveActionRun(saveSurface, request);
     }
-    return await resonanceDisconnectedSaveActionRun(request);
+    if (saveSurface.mode !== "lab-disconnected") {
+        return false;
+    }
+    return await resonanceDisconnectedSaveActionRun(saveSurface, request);
 }
 async function resonanceConnectedSaveActionRun(saveSurface, request) {
     const subjects = await listNotebookSubjectsForResonanceSave(saveSurface.workbookId);
@@ -69,9 +76,12 @@ async function resonanceConnectedSaveActionRun(saveSurface, request) {
     request.state.lastNotebookSave = result;
     return true;
 }
-async function resonanceDisconnectedSaveActionRun(request) {
-    const action = request.action || await resonanceDisconnectedSaveActionRead(request.button);
+async function resonanceDisconnectedSaveActionRun(saveSurface, request) {
+    const action = request.action || await openResonanceDisconnectedSaveMenu(request.button, saveSurface);
     if (action === "connect-notebook") {
+        if (!canRunNotebookConnectAction(saveSurface)) {
+            return false;
+        }
         persistResonanceNotebookConnectDraft(window, request.state, resonanceCaptureRecordingLabelRead(request.state));
         window.location.assign(buildResonanceNotebookConnectUrl(window));
         return false;
@@ -103,22 +113,31 @@ function readResonanceNotebookReturnTo(runtime) {
     }
     return value;
 }
-async function resonanceDisconnectedSaveActionRead(button) {
+async function openResonanceDisconnectedSaveMenu(button, saveSurface) {
     return await openResonanceSaveMenu({
         anchor: button,
-        items: [
-            {
-                key: "download-package",
-                label: "Download Package",
-                description: "Save state.json, source.wav, and plot.png locally.",
-            },
-            {
-                key: "connect-notebook",
-                label: "Connect Google Drive + Notebook",
-                description: "Connect first, then save the package into your notebook.",
-            },
-        ],
+        items: buildResonanceDisconnectedSaveMenuItems(saveSurface),
     });
+}
+function buildResonanceDisconnectedSaveMenuItems(saveSurface) {
+    const items = [
+        {
+            key: "download-package",
+            label: "Download Package",
+            description: "Save state.json, source.wav, and plot.png locally.",
+        },
+    ];
+    if (canRunNotebookConnectAction(saveSurface)) {
+        items.push({
+            key: "connect-notebook",
+            label: "Connect Google Drive + Notebook",
+            description: "Connect first, then save the package into your notebook.",
+        });
+    }
+    return items;
+}
+function canRunNotebookConnectAction(saveSurface) {
+    return saveSurface.mode === "lab-disconnected" && saveSurface.accessState === "signed_in_no_workbook";
 }
 function hasWaveformCapture() {
     return Boolean(window.FFTState?.currentWave);

@@ -45,7 +45,8 @@ function resonanceSaveModalElementBuild(args, defaults) {
         </section>
         <section class="save-modal__section">
           <h3>Event</h3>
-          <label>Note<textarea name="event_note" rows="4" placeholder="What changed or what did you test?"></textarea></label>
+          <label>What saved<input type="text" name="event_summary" placeholder="Short title for this saved state"></label>
+          <label>Why this matters<textarea name="event_note" rows="4" placeholder="What changed, what you learned, or what to do next?"></textarea></label>
         </section>
         <section class="save-modal__section">
           <h3>Package</h3>
@@ -98,6 +99,7 @@ function resonanceSaveModalBindingsAttach(modal, args, defaults, closeWith) {
         closeWith({
             subject,
             event: {
+                summary: (modal.querySelector('input[name="event_summary"]')?.value || "").trim(),
                 note,
                 capturedAt: new Date().toISOString(),
                 measureMode: args.measureMode,
