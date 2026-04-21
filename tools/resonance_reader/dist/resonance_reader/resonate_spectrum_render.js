@@ -235,10 +235,9 @@ function buildModeTracesAndAnnotations(freqs, mags, modes, modeMetaByKey) {
             tooltip: m.mode,
             color: resolveColorRgbaFromRole("fftLine", 0.75),
         };
-        const noteLabel = typeof m.note === "string" ? m.note : "—";
-        const centsLabel = Number.isFinite(m.cents)
-            ? `${m.cents >= 0 ? "+" : ""}${Math.round(m.cents)}¢`
-            : "—";
+        const noteData = modeAnnotationNoteDataResolve(m, f0);
+        const noteLabel = noteData.note;
+        const centsLabel = spectrumHoverCentsLabelBuild(noteData.cents);
         const aliasLabel = meta.aliasText ? ` ${meta.aliasText}` : "";
         const polyTag = m.polymaxStable ? " · PM✓" : "";
         if (Number.isFinite(y0)) {
@@ -484,6 +483,17 @@ function spectrumHoverCentsLabelBuild(cents) {
         return "—";
     const sign = cents >= 0 ? "+" : "";
     return `${sign}${Math.round(cents)}¢`;
+}
+function modeAnnotationNoteDataResolve(mode, freqHz) {
+    const calculated = noteAndCentsFromFreq(freqHz);
+    return {
+        note: modeAnnotationNoteLabelResolve(mode, calculated.note),
+        cents: Number.isFinite(mode?.cents) ? mode.cents : calculated.cents,
+    };
+}
+function modeAnnotationNoteLabelResolve(mode, calculatedNote) {
+    const modeNote = typeof mode?.note === "string" ? mode.note.trim() : "";
+    return modeNote || calculatedNote || "—";
 }
 function modeAnnotationTextBuild(meta, aliasLabel, freqHz, noteLabel, centsLabel) {
     return `${meta.label}${aliasLabel}<br><span style="color:${meta.color}; font-weight:600;">${freqHz.toFixed(1)} Hz</span> · ${noteLabel} ${centsLabel}`;

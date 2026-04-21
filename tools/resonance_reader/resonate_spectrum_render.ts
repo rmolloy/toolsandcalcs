@@ -297,10 +297,9 @@ function buildModeTracesAndAnnotations(
         tooltip: m.mode,
         color: resolveColorRgbaFromRole("fftLine", 0.75),
       };
-      const noteLabel = typeof m.note === "string" ? m.note : "—";
-      const centsLabel = Number.isFinite(m.cents)
-        ? `${(m.cents as number) >= 0 ? "+" : ""}${Math.round(m.cents as number)}¢`
-        : "—";
+      const noteData = modeAnnotationNoteDataResolve(m, f0);
+      const noteLabel = noteData.note;
+      const centsLabel = spectrumHoverCentsLabelBuild(noteData.cents);
       const aliasLabel = meta.aliasText ? ` ${meta.aliasText}` : "";
       const polyTag = m.polymaxStable ? " · PM✓" : "";
 
@@ -576,6 +575,19 @@ function spectrumHoverCentsLabelBuild(cents: number | null) {
   if (!Number.isFinite(cents)) return "—";
   const sign = (cents as number) >= 0 ? "+" : "";
   return `${sign}${Math.round(cents as number)}¢`;
+}
+
+function modeAnnotationNoteDataResolve(mode: any, freqHz: number) {
+  const calculated = noteAndCentsFromFreq(freqHz);
+  return {
+    note: modeAnnotationNoteLabelResolve(mode, calculated.note),
+    cents: Number.isFinite(mode?.cents) ? mode.cents as number : calculated.cents,
+  };
+}
+
+function modeAnnotationNoteLabelResolve(mode: any, calculatedNote: string | null) {
+  const modeNote = typeof mode?.note === "string" ? mode.note.trim() : "";
+  return modeNote || calculatedNote || "—";
 }
 
 function modeAnnotationTextBuild(

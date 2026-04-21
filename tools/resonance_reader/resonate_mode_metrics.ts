@@ -19,10 +19,26 @@ export function noteAndCentsFromFreq(freq: number | null | undefined): { note: s
       const centsNum = Number.isFinite(out?.centsNum) ? (out.centsNum as number) : null;
       return { note, cents: centsNum !== null ? Math.round(centsNum) : null };
     } catch {
-      return { note: null, cents: null };
+      return noteAndCentsCalculateFromFreq(f);
     }
   }
-  return { note: null, cents: null };
+  return noteAndCentsCalculateFromFreq(f);
+}
+
+function noteAndCentsCalculateFromFreq(freq: number) {
+  if (!Number.isFinite(freq) || freq <= 0) return { note: null, cents: null };
+  const midi = 69 + 12 * Math.log2(freq / 440);
+  const nearest = Math.round(midi);
+  const cents = Math.round((midi - nearest) * 100);
+  return {
+    note: noteNameFromMidi(nearest),
+    cents,
+  };
+}
+
+function noteNameFromMidi(midi: number) {
+  const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  return `${names[((midi % 12) + 12) % 12]}${Math.floor(midi / 12) - 1}`;
 }
 
 function severityFromProminence(prom: number): Severity {
