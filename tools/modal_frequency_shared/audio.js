@@ -85,11 +85,88 @@
         a.click();
         URL.revokeObjectURL(url);
     }
-    async function startRecording(onDone) {
+    function recordingCallbacksNormalize(input) {
+        if (typeof input === "function")
+            return { onDone: input };
+        return input || {};
+    }
+    function livePreviewEmitterCreate(opts) {
+        if (typeof opts.onPreview !== "function")
+            return null;
+        const audioCtx = createAudioCtx();
+        const source = audioCtx.createMediaStreamSource(opts.stream);
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+        analyser.smoothingTimeConstant = 0.7;
+        source.connect(analyser);
+        const sampleRate = audioCtx.sampleRate || 44100;
+        const updateMs = 75;
+        const maxSeconds = 4;
+        const ringSize = Math.max(2048, Math.round(sampleRate * maxSeconds));
+        const ring = new Float32Array(ringSize);
+        let ringWrite = 0;
+        let ringFilled = 0;
+        const tmp = new Float32Array(analyser.fftSize);
+        const timer = window.setInterval(() => {
+            var _a;
+            analyser.getFloatTimeDomainData(tmp);
+            for (let i = 0; i < tmp.length; i += 1) {
+                ring[ringWrite] = tmp[i];
+                ringWrite = (ringWrite + 1) % ringSize;
+            }
+            ringFilled = Math.min(ringSize, ringFilled + tmp.length);
+            if (ringFilled < 1024)
+                return;
+            const out = new Float64Array(ringFilled);
+            const start = (ringWrite - ringFilled + ringSize) % ringSize;
+            for (let i = 0; i < ringFilled; i += 1)
+                out[i] = ring[(start + i) % ringSize];
+            (_a = opts.onPreview) === null || _a === void 0 ? void 0 : _a.call(opts, out, sampleRate);
+        }, updateMs);
+        return {
+            stop: () => {
+                window.clearInterval(timer);
+                try {
+                    source.disconnect();
+                }
+                catch { /* noop */ }
+                try {
+                    analyser.disconnect();
+                }
+                catch { /* noop */ }
+                try {
+                    audioCtx.close();
+                }
+                catch { /* noop */ }
+            },
+        };
+    }
+    async function listAudioInputDevices() {
         var _a;
+        if (!((_a = navigator.mediaDevices) === null || _a === void 0 ? void 0 : _a.enumerateDevices))
+            return [];
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        return devices.filter((device) => device.kind === "audioinput");
+    }
+    function setAudioInputDeviceId(deviceId) {
+        state.selectedAudioInputDeviceId = deviceId || null;
+    }
+    function getAudioInputDeviceId() {
+        return state.selectedAudioInputDeviceId || null;
+    }
+    function audioInputConstraintsBuild() {
+        const deviceId = getAudioInputDeviceId();
+        if (!deviceId)
+            return { audio: true };
+        return { audio: { deviceId: { exact: deviceId } } };
+    }
+    async function startRecording(callbacksInput) {
+        var _a;
+        const callbacks = recordingCallbacksNormalize(callbacksInput);
         if (!((_a = navigator.mediaDevices) === null || _a === void 0 ? void 0 : _a.getUserMedia))
             return;
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia(audioInputConstraintsBuild());
+        const livePreview = livePreviewEmitterCreate({ stream, onPreview: callbacks.onPreview });
         state.recordedChunks = [];
         state.mediaRecorder = new MediaRecorder(stream);
         state.recordingActive = true;
@@ -98,6 +175,7 @@
                 state.recordedChunks.push(e.data);
         };
         state.mediaRecorder.onstop = async () => {
+            livePreview === null || livePreview === void 0 ? void 0 : livePreview.stop();
             const blob = new Blob(state.recordedChunks, { type: "audio/webm" });
             const arrayBuffer = await blob.arrayBuffer();
             const audioCtx = createAudioCtx();
@@ -113,8 +191,8 @@
                 fullLengthMs,
             };
             state.recordingActive = false;
-            if (onDone)
-                onDone();
+            if (callbacks.onDone)
+                callbacks.onDone();
         };
         state.mediaRecorder.start();
     }
@@ -169,6 +247,7 @@
     let toneOsc = null;
     let toneGain = null;
     let toneEnabled = false;
+    const TONE_GLIDE_SECONDS = 0.015;
     function setToneEnabled(flag) {
         toneEnabled = !!flag;
         if (!toneEnabled)
@@ -194,7 +273,10 @@
         if (!toneEnabled || !Number.isFinite(freq))
             return;
         ensureTone();
-        toneOsc.frequency.setValueAtTime(freq, toneCtx.currentTime);
+        const now = toneCtx.currentTime;
+        const target = freq;
+        toneOsc.frequency.cancelScheduledValues(now);
+        toneOsc.frequency.setTargetAtTime(target, now, TONE_GLIDE_SECONDS);
     }
     function stopTone() {
         if (toneOsc) {
@@ -221,6 +303,9 @@
         generateDemoWave,
         handleFile,
         saveCurrentAudio,
+        listAudioInputDevices,
+        setAudioInputDeviceId,
+        getAudioInputDeviceId,
         startRecording,
         stopRecording,
         playCurrent,

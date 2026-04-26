@@ -11,6 +11,7 @@
         mediaRecorder: null,
         recordedChunks: [],
         lastSpectrum: null,
+        lastSpectrumRaw: null,
         playbackCtx: null,
         playbackSource: null,
         playbackActive: false,

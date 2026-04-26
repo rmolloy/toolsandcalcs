@@ -25,6 +25,7 @@
     mediaRecorder: MediaRecorder | null;
     recordedChunks: Blob[];
     lastSpectrum: unknown;
+    lastSpectrumRaw: unknown;
     playbackCtx: AudioContext | null;
     playbackSource: AudioBufferSourceNode | null;
     playbackActive: boolean;
@@ -49,6 +50,7 @@
     mediaRecorder: null,
     recordedChunks: [],
     lastSpectrum: null,
+    lastSpectrumRaw: null,
     playbackCtx: null,
     playbackSource: null,
     playbackActive: false,

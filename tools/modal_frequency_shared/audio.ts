@@ -13,6 +13,7 @@
     recordedChunks: Blob[];
     mediaRecorder: MediaRecorder | null;
     recordingActive: boolean;
+    selectedAudioInputDeviceId?: string | null;
     playbackCtx: AudioContext | null;
     playbackSource: AudioBufferSourceNode | null;
     playbackActive: boolean;
@@ -111,9 +112,86 @@
     URL.revokeObjectURL(url);
   }
 
-  async function startRecording(onDone?: () => void): Promise<void> {
+  type RecordingCallbacks = {
+    onDone?: () => void;
+    onPreview?: (wave: Float64Array, sampleRate: number) => void;
+  };
+
+  function recordingCallbacksNormalize(input?: (() => void) | RecordingCallbacks): RecordingCallbacks {
+    if (typeof input === "function") return { onDone: input };
+    return input || {};
+  }
+
+  function livePreviewEmitterCreate(opts: {
+    stream: MediaStream;
+    onPreview?: (wave: Float64Array, sampleRate: number) => void;
+  }) {
+    if (typeof opts.onPreview !== "function") return null;
+    const audioCtx = createAudioCtx();
+    const source = audioCtx.createMediaStreamSource(opts.stream);
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    analyser.smoothingTimeConstant = 0.7;
+    source.connect(analyser);
+
+    const sampleRate = audioCtx.sampleRate || 44100;
+    const updateMs = 75;
+    const maxSeconds = 4;
+    const ringSize = Math.max(2048, Math.round(sampleRate * maxSeconds));
+    const ring = new Float32Array(ringSize);
+    let ringWrite = 0;
+    let ringFilled = 0;
+    const tmp = new Float32Array(analyser.fftSize);
+
+    const timer = window.setInterval(() => {
+      analyser.getFloatTimeDomainData(tmp);
+      for (let i = 0; i < tmp.length; i += 1) {
+        ring[ringWrite] = tmp[i];
+        ringWrite = (ringWrite + 1) % ringSize;
+      }
+      ringFilled = Math.min(ringSize, ringFilled + tmp.length);
+      if (ringFilled < 1024) return;
+      const out = new Float64Array(ringFilled);
+      const start = (ringWrite - ringFilled + ringSize) % ringSize;
+      for (let i = 0; i < ringFilled; i += 1) out[i] = ring[(start + i) % ringSize];
+      opts.onPreview?.(out, sampleRate);
+    }, updateMs);
+
+    return {
+      stop: () => {
+        window.clearInterval(timer);
+        try { source.disconnect(); } catch { /* noop */ }
+        try { analyser.disconnect(); } catch { /* noop */ }
+        try { audioCtx.close(); } catch { /* noop */ }
+      },
+    };
+  }
+
+  async function listAudioInputDevices(): Promise<MediaDeviceInfo[]> {
+    if (!navigator.mediaDevices?.enumerateDevices) return [];
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter((device) => device.kind === "audioinput");
+  }
+
+  function setAudioInputDeviceId(deviceId: string | null | undefined): void {
+    state.selectedAudioInputDeviceId = deviceId || null;
+  }
+
+  function getAudioInputDeviceId(): string | null {
+    return state.selectedAudioInputDeviceId || null;
+  }
+
+  function audioInputConstraintsBuild(): MediaStreamConstraints {
+    const deviceId = getAudioInputDeviceId();
+    if (!deviceId) return { audio: true };
+    return { audio: { deviceId: { exact: deviceId } } };
+  }
+
+  async function startRecording(callbacksInput?: (() => void) | RecordingCallbacks): Promise<void> {
+    const callbacks = recordingCallbacksNormalize(callbacksInput);
     if (!navigator.mediaDevices?.getUserMedia) return;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia(audioInputConstraintsBuild());
+    const livePreview = livePreviewEmitterCreate({ stream, onPreview: callbacks.onPreview });
     state.recordedChunks = [];
     state.mediaRecorder = new MediaRecorder(stream);
     state.recordingActive = true;
@@ -121,6 +199,7 @@
       if (e.data.size > 0) state.recordedChunks.push(e.data);
     };
     state.mediaRecorder.onstop = async () => {
+      livePreview?.stop();
       const blob = new Blob(state.recordedChunks, { type: "audio/webm" });
       const arrayBuffer = await blob.arrayBuffer();
       const audioCtx = createAudioCtx();
@@ -136,7 +215,7 @@
         fullLengthMs,
       };
       state.recordingActive = false;
-      if (onDone) onDone();
+      if (callbacks.onDone) callbacks.onDone();
     };
     state.mediaRecorder.start();
   }
@@ -187,6 +266,7 @@
   let toneOsc: OscillatorNode | null = null;
   let toneGain: GainNode | null = null;
   let toneEnabled = false;
+  const TONE_GLIDE_SECONDS = 0.015;
 
   function setToneEnabled(flag: boolean) {
     toneEnabled = !!flag;
@@ -213,7 +293,10 @@
   function updateToneFreq(freq: number | null | undefined) {
     if (!toneEnabled || !Number.isFinite(freq)) return;
     ensureTone();
-    toneOsc!.frequency.setValueAtTime(freq as number, toneCtx!.currentTime);
+    const now = toneCtx!.currentTime;
+    const target = freq as number;
+    toneOsc!.frequency.cancelScheduledValues(now);
+    toneOsc!.frequency.setTargetAtTime(target, now, TONE_GLIDE_SECONDS);
   }
 
   function stopTone() {
@@ -236,6 +319,9 @@
     generateDemoWave,
     handleFile,
     saveCurrentAudio,
+    listAudioInputDevices,
+    setAudioInputDeviceId,
+    getAudioInputDeviceId,
     startRecording,
     stopRecording,
     playCurrent,

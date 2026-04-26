@@ -1,6 +1,11 @@
 "use strict";
 (() => {
+    const MIN_SHORT_WINDOW_FFT_SAMPLES = 32768;
     class JsFftFallback {
+        static paddedLengthResolveFromInputLength(inputLength, minFftSamples = MIN_SHORT_WINDOW_FFT_SAMPLES) {
+            const target = Math.max(1, inputLength, minFftSamples);
+            return 1 << Math.ceil(Math.log2(target));
+        }
         static applyWindow(buffer, windowType) {
             const n = buffer.length;
             if (windowType === "rect")
@@ -60,8 +65,8 @@
             }
         }
         static magnitudeSpectrum(wave, sampleRate, opts = {}) {
-            const { window = "hann", maxFreq = 1200 } = opts;
-            const padded = 1 << Math.ceil(Math.log2(wave.length * 2));
+            const { window = "hann", maxFreq = 1200, minFftSamples = MIN_SHORT_WINDOW_FFT_SAMPLES } = opts;
+            const padded = JsFftFallback.paddedLengthResolveFromInputLength(wave.length, minFftSamples);
             const real = new Float64Array(padded);
             const imag = new Float64Array(padded);
             const windowed = JsFftFallback.applyWindow(wave, window);

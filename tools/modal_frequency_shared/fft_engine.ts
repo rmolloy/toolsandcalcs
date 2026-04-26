@@ -1,9 +1,11 @@
 (() => {
   type WindowType = "hann" | "hamming" | "rect";
+  const MIN_SHORT_WINDOW_FFT_SAMPLES = 32768;
 
   interface FftOptions {
     window?: WindowType;
     maxFreq?: number;
+    minFftSamples?: number;
   }
 
   interface FftResult {
@@ -16,6 +18,11 @@
   }
 
   class JsFftFallback {
+    static paddedLengthResolveFromInputLength(inputLength: number, minFftSamples = MIN_SHORT_WINDOW_FFT_SAMPLES): number {
+      const target = Math.max(1, inputLength, minFftSamples);
+      return 1 << Math.ceil(Math.log2(target));
+    }
+
     static applyWindow(buffer: ArrayLike<number>, windowType: WindowType): Float64Array {
       const n = buffer.length;
       if (windowType === "rect") return buffer instanceof Float64Array ? buffer : Float64Array.from(buffer);
@@ -78,8 +85,8 @@
     }
 
     static magnitudeSpectrum(wave: ArrayLike<number>, sampleRate: number, opts: FftOptions = {}): FftResult {
-      const { window = "hann", maxFreq = 1200 } = opts;
-      const padded = 1 << Math.ceil(Math.log2(wave.length * 2));
+      const { window = "hann", maxFreq = 1200, minFftSamples = MIN_SHORT_WINDOW_FFT_SAMPLES } = opts;
+      const padded = JsFftFallback.paddedLengthResolveFromInputLength(wave.length, minFftSamples);
       const real = new Float64Array(padded);
       const imag = new Float64Array(padded);
       const windowed = JsFftFallback.applyWindow(wave, window);
