@@ -52,6 +52,9 @@
       </section>
 
       <div id="plot_fft" class="plot tl-resonance-primary-plot"></div>
+      <button class="modebar-settings-trigger" id="btn_settings" type="button" aria-haspopup="dialog" aria-controls="settings_dialog" aria-label="Open FFT and microphone settings" title="FFT and microphone settings">
+        Settings
+      </button>
 
       <section class="wave-surface" id="wave_nav">
         <div id="plot_waveform" class="plot waveform"></div>
@@ -60,19 +63,35 @@
             <h2>Frequency Response</h2>
             <p class="muted small">Drag yellow range for FFT analysis. Drag green range for note selection. Click a note label (or Option/Command-click a note slice) to override its note.</p>
           </div>
-          <div class="wave-transport-inline">
-            <button class="ghost-btn btn-small" id="btn_wave_tone"><span class="transport-icon" aria-hidden="true">∿</span>Tone</button>
-            <button class="ghost-btn btn-small" id="btn_wave_record"><span class="transport-icon" aria-hidden="true">⏺</span>Record</button>
-            <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Play</button>
-            <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Stop</button>
-            <button class="ghost-btn btn-small" id="btn_import"><span class="transport-icon" aria-hidden="true">⬆</span>Import</button>
-          </div>
         </div>
       </section>
 
       <div class="mode-grid" id="mode_grid">
         <!-- Mode cards populated by script -->
       </div>
+
+      <section class="measure-action-row" aria-label="Measurement actions">
+        <div class="wave-transport-inline">
+          <button class="ghost-btn btn-small" id="btn_wave_tone"><span class="transport-icon" aria-hidden="true">∿</span>Tone</button>
+          <button class="ghost-btn btn-small" id="btn_wave_record"><span class="transport-icon" aria-hidden="true">⏺</span>Record</button>
+          <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Play</button>
+          <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Stop</button>
+          <button class="ghost-btn btn-small" id="btn_import"><span class="transport-icon" aria-hidden="true">⬆</span>Import</button>
+        </div>
+        <section class="dof-model-row">
+          <div class="dof-model-copy">
+            <h2>4DOF Model</h2>
+          </div>
+          <div class="dof-model-actions">
+            <label class="toggle dof-toggle">
+              <input type="checkbox" id="toggle_overlay" checked>
+              <span class="toggle-label sr-only">Toggle 4DOF model overlay</span>
+              <span class="toggle-knob"></span>
+            </label>
+          </div>
+          <a href="../dof_model/" class="link dof-model-link" data-view-model>Open in 4-DOF model</a>
+        </section>
+      </section>
 
       <section class="analysis-surface" id="analysis_surface">
         <div class="analysis-tabs" role="tablist" aria-label="Analysis views">
@@ -127,20 +146,6 @@
         </section>
       </section>
 
-      <section class="dof-model-row">
-        <div class="dof-model-copy">
-          <h2>4DOF Model</h2>
-        </div>
-        <div class="dof-model-actions">
-          <label class="toggle dof-toggle">
-            <input type="checkbox" id="toggle_overlay" checked>
-            <span class="toggle-label sr-only">Toggle 4DOF model overlay</span>
-            <span class="toggle-knob"></span>
-          </label>
-        </div>
-        <a href="../dof_model/" class="link dof-model-link" data-view-model>Open in 4-DOF model</a>
-      </section>
-
       <div class="try-panel" id="try_panel" hidden>
         <div class="try-cards">
           <div class="try-card" id="try_card_structural" hidden>
@@ -161,6 +166,196 @@
     <footer class="tl-footer" data-tool-footer></footer>
   </div>
 
+  <dialog class="settings-dialog" id="settings_dialog" aria-labelledby="settings_title">
+    <form class="settings-dialog__panel" method="dialog">
+      <header class="settings-dialog__header">
+        <h2 id="settings_title">Settings</h2>
+        <button class="ghost-btn btn-small icon-btn" type="submit" value="close" aria-label="Close settings" title="Close">
+          <span aria-hidden="true">×</span>
+        </button>
+      </header>
+
+      <div class="settings-dialog__content">
+        <section class="settings-dialog__section" aria-labelledby="settings_audio_title">
+          <div class="settings-dialog__section-title">
+            <h3 id="settings_audio_title">Audio Input</h3>
+            <button class="ghost-btn btn-small" id="settings_audio_refresh" type="button">Refresh</button>
+          </div>
+          <label class="settings-field">
+            <span class="settings-label-row">Input<span class="settings-help" tabindex="0" data-tooltip="Choose which microphone input to use for recording. Use Refresh after plugging in a new device.">?</span></span>
+            <select id="settings_audio_input"></select>
+          </label>
+        </section>
+
+        <section class="settings-dialog__section" aria-labelledby="settings_fft_title">
+          <h3 id="settings_fft_title">FFT</h3>
+          <div class="settings-grid">
+            <label class="settings-field">
+              <span class="settings-label-row">Profile<span class="settings-help" tabindex="0" data-tooltip="Default uses ToneLab's current baseline behavior. Classic FFT uses the Celestial-style comparison defaults. Custom appears automatically when you change individual FFT controls.">?</span></span>
+              <select id="settings_fft_profile">
+                <option value="tonelab">Default</option>
+                <option value="celestial">Classic FFT</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Input Scope<span class="settings-help" tabindex="0" data-tooltip="Selection analyzes the highlighted FFT slice. Full file analyzes the entire loaded waveform.">?</span></span>
+              <select id="settings_fft_scope">
+                <option value="">Profile default</option>
+                <option value="selection">Selection</option>
+                <option value="full-file">Full file</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Window<span class="settings-help" tabindex="0" data-tooltip="Applies a weighting window before the FFT. Hann is the current ToneLab default. Hamming matches the older Celestial comparison path more closely.">?</span></span>
+              <select id="settings_fft_window">
+                <option value="">Profile default</option>
+                <option value="hann">Hann</option>
+                <option value="hamming">Hamming</option>
+                <option value="rect">Rectangular</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Resolution<span class="settings-help" tabindex="0" data-tooltip="Sets the minimum FFT length. Higher resolution narrows bin spacing but updates more slowly.">?</span></span>
+              <select id="settings_fft_resolution">
+                <option value="">Profile default</option>
+                <option value="fast">Fast (8k)</option>
+                <option value="balanced">Balanced (32k)</option>
+                <option value="fine">Fine (64k)</option>
+                <option value="very-fine">Very fine (128k)</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Smoothing<span class="settings-help" tabindex="0" data-tooltip="Controls post-FFT smoothing of the displayed spectrum. Gaussian bins smooth by FFT bins. Triangular Hz smooths by frequency width. Off shows the raw display spectrum.">?</span></span>
+              <select id="settings_fft_smoothing">
+                <option value="gaussian-bins">Gaussian bins</option>
+                <option value="triangular-hz">Triangular Hz</option>
+                <option value="off">Off</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Averaging<span class="settings-help" tabindex="0" data-tooltip="Averages repeated FFT refreshes. Counted averaging smooths the last few spectra; exponential keeps more recent input weighted higher; forever keeps all spectra since reset.">?</span></span>
+              <select id="settings_fft_averaging">
+                <option value="off">Off</option>
+                <option value="avg-4">4 averages</option>
+                <option value="avg-8">8 averages</option>
+                <option value="exp-80">Exponential 80%</option>
+                <option value="forever">Forever</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Display Range<span class="settings-help" tabindex="0" data-tooltip="Sets the horizontal frequency span shown on the main spectrum. Classic FFT uses a tighter 20-1000 Hz view.">?</span></span>
+              <select id="settings_fft_display_range">
+                <option value="">Profile default</option>
+                <option value="mode-default">Mode default</option>
+                <option value="celestial">20-1000 Hz</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">dB Scale<span class="settings-help" tabindex="0" data-tooltip="Controls how spectrum magnitudes are converted to dB. Relative floor follows the current ToneLab scaling. Celestial fixed uses a fixed floor for comparison with the older display.">?</span></span>
+              <select id="settings_fft_db_scale">
+                <option value="">Profile default</option>
+                <option value="relative-floor">Relative floor</option>
+                <option value="celestial-fixed">Celestial fixed</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Y Axis<span class="settings-help" tabindex="0" data-tooltip="Auto scales the vertical dB range to the current spectrum. The fixed setting locks the axis to -100 to -40 dB for comparison.">?</span></span>
+              <select id="settings_fft_y_axis">
+                <option value="">Profile default</option>
+                <option value="auto">Auto</option>
+                <option value="celestial-fixed">-100 to -40 dB</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">X Scale<span class="settings-help" tabindex="0" data-tooltip="Linear keeps frequency spacing proportional in Hz. Log gives lower frequencies more visual room.">?</span></span>
+              <select id="settings_fft_x_scale">
+                <option value="">Profile default</option>
+                <option value="linear">Linear</option>
+                <option value="log">Log</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">X Min<span class="settings-help" tabindex="0" data-tooltip="Overrides the minimum frequency shown on the FFT plot. Leave blank for the current mode default.">?</span></span>
+              <input id="settings_fft_x_min" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">X Max<span class="settings-help" tabindex="0" data-tooltip="Overrides the maximum frequency shown on the FFT plot. Leave blank for the current mode default.">?</span></span>
+              <input id="settings_fft_x_max" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Y Min<span class="settings-help" tabindex="0" data-tooltip="Overrides the lower dB bound shown on the FFT plot. Negative values are allowed. Leave blank for auto.">?</span></span>
+              <input id="settings_fft_y_min" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Y Max<span class="settings-help" tabindex="0" data-tooltip="Overrides the upper dB bound shown on the FFT plot. Negative values are allowed. Leave blank for auto.">?</span></span>
+              <input id="settings_fft_y_max" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Gaussian Bins<span class="settings-help" tabindex="0" data-tooltip="Sets the Gaussian smoothing width in FFT bins when Gaussian smoothing is active. Larger values produce a rounder, less peaky spectrum.">?</span></span>
+              <input id="settings_fft_smoothing_bins" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="8">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Triangular Hz<span class="settings-help" tabindex="0" data-tooltip="Sets the smoothing width in Hz when triangular smoothing is active. Larger values blend nearby peaks more aggressively.">?</span></span>
+              <input id="settings_fft_smoothing_hz" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="1">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Line Width<span class="settings-help" tabindex="0" data-tooltip="Controls the stroke width of the measured FFT trace. Lower values look sharper. Higher values make the spectrum appear fuller or more rounded.">?</span></span>
+              <input id="settings_fft_line_width" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="3">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Tap Slice (ms)<span class="settings-help" tabindex="0" data-tooltip="Overrides the tap analysis window length in milliseconds. Leave blank to use the default tap slice behavior.">?</span></span>
+              <input id="settings_fft_tap_slice_window_ms" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Energy Band (Hz)<span class="settings-help" tabindex="0" data-tooltip="Overrides the bandwidth used for energy transfer measurements around the selected peak. Leave blank to use the automatic band width.">?</span></span>
+              <input id="settings_fft_energy_band_width_hz" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+          </div>
+          <div class="settings-toggle-list" role="group" aria-label="FFT analysis toggles">
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Tap Averaging<span class="settings-help" tabindex="0" data-tooltip="Averages multiple detected tap spectra before rendering and mode detection. This can stabilize noisy taps but can also broaden peaks.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_tap_averaging" type="checkbox">
+                <span class="toggle-label sr-only">Tap Averaging</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Peak Hold<span class="settings-help" tabindex="0" data-tooltip="Shows the highest live-preview spectrum level reached at each frequency bin while recording. It resets when recording starts.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_peak_hold" type="checkbox">
+                <span class="toggle-label sr-only">Peak Hold</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Parabolic Peak Refine<span class="settings-help" tabindex="0" data-tooltip="Refines detected peak frequency between FFT bins using a parabolic fit. Turn it off to inspect raw bin-centered peak picks.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_peak_refine" type="checkbox">
+                <span class="toggle-label sr-only">Parabolic Peak Refine</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">PolyMAX Validation<span class="settings-help" tabindex="0" data-tooltip="Shows whether detected peaks align with stable PolyMAX candidates. Useful for cross-checking suspicious modes, but not required for ordinary FFT inspection.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_polymax_validation" type="checkbox">
+                <span class="toggle-label sr-only">PolyMAX Validation</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="settings-dialog__footer">
+        <button class="ghost-btn btn-small" id="settings_fft_reset" type="button">Reset</button>
+        <button class="primary-btn btn-small" id="settings_done" type="submit" value="close">Done</button>
+      </footer>
+    </form>
+  </dialog>
+
   <script src="../vendor/plotly/plotly.min.js?rev=20260324a" defer></script>
   <script src="../common/atmosphere.js?rev=20260324a" defer></script>
   <script src="../common/solver_core.js?rev=20260324a" defer></script>
@@ -174,7 +369,7 @@
   <script src="../common/4dof/model_core.js?rev=20260324a" defer></script>
   <script src="../common/site_menu_loader.js?rev=20260324a" defer></script>
   <script src="../common/tool_footer_loader.js?rev=20260324a" defer></script>
-  <script type="module" src="../wolf_note_analyzer/dist/core.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=20260324a"></script>
   <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=20260324a"></script>
   <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=20260324a"></script>
   <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=20260324a"></script>

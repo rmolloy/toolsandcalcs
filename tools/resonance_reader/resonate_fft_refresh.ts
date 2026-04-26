@@ -8,13 +8,21 @@ import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js";
 import { emitArtifactEventFromState } from "./resonate_artifact_emit.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
 import {
+  resonancePeakHoldEnabled,
   resonancePolymaxValidationEnabled,
-  resonanceSpectrumSmoothingEnabled,
+  resonanceSpectrumAveragingModeResolve,
+  resonanceSpectrumSmoothingBinsResolve,
   resonanceSpectrumSmoothingHzResolve,
+  resonanceSpectrumSmoothingModeResolve,
 } from "./resonate_debug_flags.js";
 import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js";
+import { spectrumDbApply } from "./resonate_spectrum_db_scale.js";
 
-const FFT_SMOOTH_HZ = 0.05;
+const FFT_SMOOTH_GAUSSIAN_BINS = 8;
+const SPECTRUM_AVERAGING_LIMITS: Record<string, number> = {
+  "avg-4": 4,
+  "avg-8": 8,
+};
 
 export function tapAveragingAllowedForState(state: Record<string, any>) {
   void state;
@@ -29,9 +37,44 @@ export function refreshSpectrumVariantsBuild(args: {
 }) {
   const displayMags = spectrumMaybeSmooth(args.analysis, args.displaySpectrum.freqs, args.displaySpectrum.mags);
   return {
-    rawSpectrum: args.applyDb(args.rawSpectrum),
-    displaySpectrum: args.applyDb({ freqs: args.displaySpectrum.freqs, mags: displayMags }),
+    rawSpectrum: spectrumDbApply(args.rawSpectrum, args.applyDb),
+    displaySpectrum: spectrumDbApply({ freqs: args.displaySpectrum.freqs, mags: displayMags }, args.applyDb),
   };
+}
+
+export function spectrumAveragedMagsResolveForState(
+  state: Record<string, any>,
+  freqs: number[],
+  mags: number[],
+) {
+  const mode = resonanceSpectrumAveragingModeResolve();
+  if (mode === "off") {
+    delete state.spectrumAveragingState;
+    return mags;
+  }
+
+  const nextState = spectrumAveragingStateResolve(state, freqs, mode);
+  nextState.frames.push(mags.slice());
+  nextState.frames = spectrumAveragingFramesTrim(nextState.frames, mode);
+  state.spectrumAveragingState = nextState;
+  if (mode === "exp-80") return spectrumExponentialAverageResolve(nextState.frames, 0.8);
+  return spectrumMeanAverageResolve(nextState.frames);
+}
+
+export function peakHoldSpectrumResolveForState(
+  state: Record<string, any>,
+  freqs: number[],
+  dbs: number[],
+) {
+  if (!state.__livePreviewActive || !resonancePeakHoldEnabled()) {
+    delete state.peakHoldSpectrumState;
+    return null;
+  }
+
+  const peakDbs = peakHoldDbsResolve(state.peakHoldSpectrumState, freqs, dbs);
+  const nextState = { freqs: freqs.slice(), dbs: peakDbs };
+  state.peakHoldSpectrumState = nextState;
+  return nextState;
 }
 
 function spectrumMaybeSmooth(
@@ -39,8 +82,58 @@ function spectrumMaybeSmooth(
   freqsRaw: number[],
   magsRaw: number[],
 ) {
-  if (!resonanceSpectrumSmoothingEnabled()) return magsRaw;
-  return analysis.smoothSpectrumFast(freqsRaw, magsRaw, resonanceSpectrumSmoothingHzResolve(FFT_SMOOTH_HZ));
+  const smoothingMode = resonanceSpectrumSmoothingModeResolve();
+  if (smoothingMode === "off") return magsRaw;
+  if (smoothingMode === "triangular-hz") {
+    return analysis.smoothSpectrumFast(freqsRaw, magsRaw, resonanceSpectrumSmoothingHzResolve(1));
+  }
+  return analysis.smoothSpectrumGaussianBins(magsRaw, resonanceSpectrumSmoothingBinsResolve(FFT_SMOOTH_GAUSSIAN_BINS));
+}
+
+function spectrumAveragingStateResolve(state: Record<string, any>, freqs: number[], mode: string) {
+  const current = state.spectrumAveragingState;
+  if (spectrumAveragingStateMatches(current, freqs, mode)) return current;
+  return { freqs: freqs.slice(), frames: [], mode };
+}
+
+function spectrumAveragingStateMatches(current: any, freqs: number[], mode: string) {
+  if (!current || current.mode !== mode || !Array.isArray(current.freqs)) return false;
+  if (current.freqs.length !== freqs.length) return false;
+  return current.freqs.every((freq: number, index: number) => freq === freqs[index]);
+}
+
+function spectrumAveragingFramesTrim(frames: number[][], mode: string) {
+  const limit = SPECTRUM_AVERAGING_LIMITS[mode];
+  if (!limit) return frames;
+  return frames.slice(Math.max(0, frames.length - limit));
+}
+
+function spectrumMeanAverageResolve(frames: number[][]) {
+  if (!frames.length) return [];
+  return frames[0].map((_value, index) => {
+    const total = frames.reduce((sum, frame) => sum + Number(frame[index] || 0), 0);
+    return total / frames.length;
+  });
+}
+
+function spectrumExponentialAverageResolve(frames: number[][], retainedWeight: number) {
+  if (!frames.length) return [];
+  let averaged = frames[0].slice();
+  frames.slice(1).forEach((frame) => {
+    averaged = averaged.map((value, index) => (value * retainedWeight) + (Number(frame[index] || 0) * (1 - retainedWeight)));
+  });
+  return averaged;
+}
+
+function peakHoldDbsResolve(current: any, freqs: number[], dbs: number[]) {
+  if (!peakHoldStateMatches(current, freqs)) return dbs.slice();
+  return dbs.map((db, index) => Math.max(Number(db), Number(current.dbs[index])));
+}
+
+function peakHoldStateMatches(current: any, freqs: number[]) {
+  if (!current || !Array.isArray(current.freqs) || !Array.isArray(current.dbs)) return false;
+  if (current.freqs.length !== freqs.length || current.dbs.length !== freqs.length) return false;
+  return current.freqs.every((freq: number, index: number) => freq === freqs[index]);
 }
 
 export async function refreshFftFromState(deps: {
@@ -70,6 +163,11 @@ export async function refreshFftFromState(deps: {
     signal,
     fftFactory,
   });
+  const averagedDisplayMags = spectrumAveragedMagsResolveForState(
+    deps.state,
+    Array.from(spectrum.freqs || [], (v) => Number(v)),
+    Array.from(spectrum.mags || [], (v) => Number(v)),
+  );
   const spectra = refreshSpectrumVariantsBuild({
     analysis,
     rawSpectrum: {
@@ -78,12 +176,17 @@ export async function refreshFftFromState(deps: {
     },
     displaySpectrum: {
       freqs: Array.from(spectrum.freqs || [], (v) => Number(v)),
-      mags: Array.from(spectrum.mags || [], (v) => Number(v)),
+      mags: averagedDisplayMags,
     },
     applyDb: (window as any).FFTPlot.applyDb,
   });
   deps.state.lastSpectrumRaw = spectra.rawSpectrum;
   deps.state.lastSpectrum = spectra.displaySpectrum;
+  deps.state.lastPeakHoldSpectrum = peakHoldSpectrumResolveForState(
+    deps.state,
+    Array.from(spectra.displaySpectrum.freqs || [], (v: number) => Number(v)),
+    Array.from(spectra.displaySpectrum.dbs || spectra.displaySpectrum.mags || [], (v: number) => Number(v)),
+  );
   deps.state.lastSpectrumNoteSelection = await secondarySpectrumBuildFromNoteSelectionRange({
     state: deps.state,
     fftMaxHz: deps.fftMaxHz,
@@ -174,7 +277,7 @@ async function secondarySpectrumBuildFromNoteSelectionRange(args: {
   const freqsRaw = Array.from(spectrum.freqs || [], (v) => Number(v));
   const magsRaw = Array.from(spectrum.mags || [], (v) => Number(v));
   const magsSmoothed = spectrumMaybeSmooth(args.analysis, freqsRaw, magsRaw);
-  const withDb = (window as any).FFTPlot.applyDb({ freqs: freqsRaw, mags: magsSmoothed });
+  const withDb = spectrumDbApply({ freqs: freqsRaw, mags: magsSmoothed }, (window as any).FFTPlot.applyDb);
   return {
     freqs: Array.from(withDb.freqs || [], (v: number) => Number(v)),
     mags: Array.from(withDb.dbs || withDb.mags || [], (v: number) => Number(v)),

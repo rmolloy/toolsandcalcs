@@ -50,8 +50,7 @@ function plateMaterialCardVisibilitySyncFromState(state) {
     card.hidden = !plateMaterialPanelVisibleForMeasureMode(state.measureMode);
 }
 export function plateMaterialPanelVisibleForMeasureMode(measureMode) {
-    const normalized = measureModeNormalize(measureMode);
-    return normalized === "plate_stock" || normalized === "brace_stock";
+    return false;
 }
 export function plateMaterialCardCopyResolveFromMeasureMode(measureMode) {
     const normalized = measureModeNormalize(measureMode);

@@ -1,7 +1,7 @@
 // Orchestrate resonance reader runtime wiring.
 import { renderWaveform } from "./resonate_waveform_view.js";
 import { modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js";
-import { FFT_MAX_HZ, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js";
+import { spectrumFftMaxHzResolve, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js";
 import { renderEnergyTransferFromState, renderModesFromState, renderSpectrumFromConfig, setStatusText } from "./resonate_ui_render.js";
 import { fullWaveFromState, sliceCurrentWaveFromState } from "./resonate_wave_slices.js";
 import { computeOverlayCurveFromState } from "./resonate_overlay_controller.js";
@@ -15,10 +15,13 @@ import { resonatePipelineRefreshAllFromState } from "./resonate_pipeline_refresh
 import { resonanceReaderBootstrap } from "./resonate_bootstrap_entry.js";
 import { customMeasurementModeMetaBuildFromState } from "./resonate_custom_measurements.js";
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
+import { braceCalculatorHrefBuildFromModes } from "./resonate_brace_calculator_link.js";
+import { braceTransferPromptOpen } from "./resonate_brace_transfer_prompt.js";
 import { plateMaterialMeasurementsResolveFromState, plateMaterialPanelInitialize, plateMaterialPanelRenderFromState, } from "./resonate_plate_material_panel.js";
 import { analysisTabsInitialize, analysisTabsRenderFromState } from "./resonate_analysis_tabs.js";
 import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState } from "./resonate_peak_analysis_panel.js";
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
+import { plateTransferPromptOpen } from "./resonate_plate_transfer_prompt.js";
 import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js";
 const state = window.FFTState;
 const resonatePipelineTriggerRun = pipelineRunCoalescedTriggerBuild(async (trigger) => {
@@ -96,7 +99,7 @@ function refreshFftStaticArgsBuild() {
         state,
         setStatus,
         modeMeta: modeMetaBuildFromState(),
-        fftMaxHz: FFT_MAX_HZ,
+        fftMaxHz: spectrumFftMaxHzResolve(),
         sliceCurrentWave,
         solveDofFromState: () => stageSolveDofRun({ state }),
     };
@@ -195,14 +198,16 @@ function viewModelLinkAttach() {
         return;
     viewModelDestinationApplyToUi(link);
     viewModelMeasureModeElementGet()?.addEventListener("change", () => viewModelDestinationApplyToUi(link));
-    link.addEventListener("click", (e) => {
+    link.addEventListener("click", async (e) => {
         const destination = externalModelDestinationResolveFromMeasureMode(viewModelMeasureModeResolve());
         if (destination.kind === "plate-thickness") {
-            const modesDetected = Array.isArray(state.lastModesDetected) ? state.lastModesDetected : [];
-            const materialMeasurements = plateMaterialMeasurementsResolveFromState(state);
-            const href = plateThicknessHrefBuildFromModes(link.href, modesDetected, materialMeasurements);
             e.preventDefault();
-            window.location.href = href;
+            await plateThicknessTransferPromptOpen(link.href);
+            return;
+        }
+        if (destination.kind === "brace-calculator") {
+            e.preventDefault();
+            await braceCalculatorTransferPromptOpen(link.href);
             return;
         }
         const href = viewModelHrefBuildFromState(link.href);
@@ -211,6 +216,45 @@ function viewModelLinkAttach() {
         e.preventDefault();
         window.location.href = href;
     });
+}
+async function braceCalculatorTransferPromptOpen(baseHref) {
+    const modesDetected = transferModesDetectedFromState();
+    const result = await braceTransferPromptOpen(transferModeSummariesBuild(modesDetected));
+    if (result === null)
+        return;
+    const measurements = result.action === "continue" ? result.measurements : undefined;
+    window.location.href = braceCalculatorHrefBuildFromModes(baseHref, modesDetected, measurements);
+}
+async function plateThicknessTransferPromptOpen(baseHref) {
+    const defaults = plateMaterialMeasurementsResolveFromState(state);
+    const modesDetected = transferModesDetectedFromState();
+    const result = await plateTransferPromptOpen(defaults, transferModeSummariesBuild(modesDetected));
+    if (result === null)
+        return;
+    if (result.action === "continue" && result.measurements) {
+        state.plateMaterialMeasurements = result.measurements;
+    }
+    const measurements = result.action === "continue" ? result.measurements : undefined;
+    window.location.href = plateThicknessHrefBuildFromModes(baseHref, modesDetected, measurements);
+}
+function transferModesDetectedFromState() {
+    return Array.isArray(state.lastModesDetected) ? state.lastModesDetected : [];
+}
+function transferModeSummariesBuild(modesDetected) {
+    return [
+        transferModeSummaryBuild(modesDetected, "long", "Long Mode"),
+        transferModeSummaryBuild(modesDetected, "cross", "Cross Mode"),
+        transferModeSummaryBuild(modesDetected, "transverse", "Twisting Mode"),
+    ];
+}
+function transferModeSummaryBuild(modesDetected, modeKey, label) {
+    const mode = modesDetected.find((entry) => entry.mode === modeKey);
+    const frequencyHz = mode?.peakFreq;
+    return {
+        key: modeKey,
+        label,
+        frequencyHz: Number.isFinite(frequencyHz) && frequencyHz > 0 ? frequencyHz : null,
+    };
 }
 function viewModelHrefBuildFromState(baseHref) {
     const params = viewModelParamsBuildFromState();

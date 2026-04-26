@@ -49,6 +49,7 @@ function pipelineSpectrumReadyEventHandle(payload, ctx) {
     const ui = pipelineUiRenderGet();
     const spectrum = payload?.spectrum;
     const secondarySpectrum = payload?.secondarySpectrum;
+    const peakHoldSpectrum = payload?.peakHoldSpectrum;
     if (!ui || !spectrum?.freqs || !spectrum?.mags)
         return;
     const state = window.FFTState;
@@ -64,12 +65,16 @@ function pipelineSpectrumReadyEventHandle(payload, ctx) {
     const secondary = secondarySpectrum?.freqs && secondarySpectrum?.mags
         ? { freqs: secondarySpectrum.freqs, mags: secondarySpectrum.mags }
         : null;
+    const peakHold = peakHoldSpectrum?.freqs && peakHoldSpectrum?.mags
+        ? { freqs: peakHoldSpectrum.freqs, mags: peakHoldSpectrum.mags }
+        : null;
     ui.renderSpectrum({
         freqs: spectrum.freqs,
         mags: spectrum.dbs || spectrum.mags,
         overlay,
         modes,
         secondarySpectrum: secondary,
+        peakHoldSpectrum: peakHold,
         polymaxCandidates: Array.isArray(state?.lastPolymaxCandidates) ? state.lastPolymaxCandidates : [],
     });
 }

@@ -8,6 +8,7 @@ import { restoreResonanceNotebookEventIntoState } from "./resonate_notebook_rest
 import { resonanceSaveRunnerCreate } from "./resonate_save_target.js";
 import type { ResonanceSaveActionRunner } from "./resonate_save_contract.js";
 import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js";
+import { settingsModalBind } from "./resonate_settings_modal.js";
 
 type UiBindingsDeps = {
   state: Record<string, any>;
@@ -177,6 +178,7 @@ function recordToggleFromMic(deps: UiBindingsDeps) {
   const previewDispatch = state.__livePreviewDispatch || (state.__livePreviewDispatch = livePreviewDispatchBuild());
   if (FFTAudio.isRecordingActive()) {
     previewDispatch.stop?.();
+    state.__livePreviewActive = false;
     FFTAudio.stopRecording();
     updateWaveTransportLabels();
     deps.setStatus("Recording stopped.");
@@ -184,6 +186,8 @@ function recordToggleFromMic(deps: UiBindingsDeps) {
   }
   updateWaveTransportLabels();
   deps.setStatus("Recording...");
+  state.__livePreviewActive = true;
+  delete state.peakHoldSpectrumState;
   previewDispatch.start?.();
   FFTAudio.startRecording({
     onPreview: (wave: Float64Array, sampleRate: number) => {
@@ -191,12 +195,14 @@ function recordToggleFromMic(deps: UiBindingsDeps) {
     },
     onDone: () => {
       previewDispatch.stop?.();
+      state.__livePreviewActive = false;
       recordCaptureRunFromMic(deps);
     },
   }).then(() => {
     updateWaveTransportLabels();
   }).catch((err: any) => {
     previewDispatch.stop?.();
+    state.__livePreviewActive = false;
     console.error("[Resonance Reader] record failed", err);
     deps.setStatus("Recording failed or denied.");
     updateWaveTransportLabels();
@@ -258,7 +264,10 @@ function bindImport(deps: UiBindingsDeps) {
   const btnImport = document.getElementById("btn_import");
   const fileInput = document.getElementById("file_input") as HTMLInputElement | null;
   if (!btnImport || !fileInput) return;
-  btnImport.addEventListener("click", () => fileInput.click());
+  btnImport.addEventListener("click", () => {
+    importFileInputPrepare(fileInput);
+    fileInput.click();
+  });
   fileInput.addEventListener("change", async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
@@ -280,6 +289,10 @@ function bindImport(deps: UiBindingsDeps) {
       deps.setStatus("Import failed. Try a short WAV/AIFF file.");
     }
   });
+}
+
+export function importFileInputPrepare(fileInput: HTMLInputElement) {
+  fileInput.value = "";
 }
 
 function bindSaveAudio(deps: UiBindingsDeps) {
@@ -443,6 +456,7 @@ export function uiBindingsAttach(deps: UiBindingsDeps) {
     bindSaveAudio(deps);
     bindRecord(deps);
     bindWaveTransport(deps);
+    settingsModalBind(deps);
     bindMeasureMode(deps);
     if (restoredNotebookDraft) {
       deps.setStatus("Notebook connected. Review the draft and save again.");

@@ -14,11 +14,11 @@ const PLAYED_NOTE_DESTINATION = {
     kind: "dof",
 };
 const BRACE_STOCK_DESTINATION = {
-    href: "",
-    label: "",
+    href: "../flexural_rigidity/brace_calc/",
+    label: "Open in Brace Calculator",
     showOverlayToggle: false,
-    showModelRow: false,
-    kind: "plate-thickness",
+    showModelRow: true,
+    kind: "brace-calculator",
 };
 const PLATE_STOCK_DESTINATION = {
     href: "../plate_thickness/",

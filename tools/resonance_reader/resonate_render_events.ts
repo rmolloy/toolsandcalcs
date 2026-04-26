@@ -14,6 +14,7 @@ type RenderPayload = {
   overlay: number[] | null;
   modes: any[];
   cards: any[];
+  peakHoldSpectrum?: { freqs: number[]; mags: number[] } | null;
 };
 
 export const RESONATE_RENDER_EVENT_FLAG: RenderEventFlag = {
@@ -30,6 +31,7 @@ export function renderPayloadBuildFromState(state: {
   lastOverlay?: number[] | null;
   lastModesDetected?: any[];
   lastModeCards?: any[];
+  lastPeakHoldSpectrum?: any;
 } | null | undefined): RenderPayload | null {
   if (!state?.lastSpectrum) return null;
   const freqs = Array.isArray(state.lastSpectrum.freqs) ? state.lastSpectrum.freqs : [];
@@ -41,8 +43,17 @@ export function renderPayloadBuildFromState(state: {
   const overlay = Array.isArray(state.lastOverlay) ? state.lastOverlay : null;
   const modes = Array.isArray(state.lastModesDetected) ? state.lastModesDetected : [];
   const cards = Array.isArray(state.lastModeCards) ? state.lastModeCards : [];
+  const peakHoldSpectrum = renderPeakHoldSpectrumBuild(state.lastPeakHoldSpectrum);
   if (!freqs.length || !mags.length) return null;
-  return { freqs, mags, overlay, modes, cards };
+  const payload: RenderPayload = { freqs, mags, overlay, modes, cards };
+  if (peakHoldSpectrum) payload.peakHoldSpectrum = peakHoldSpectrum;
+  return payload;
+}
+
+function renderPeakHoldSpectrumBuild(peakHold: any) {
+  if (!Array.isArray(peakHold?.freqs) || !Array.isArray(peakHold?.dbs)) return null;
+  if (!peakHold.freqs.length || !peakHold.dbs.length) return null;
+  return { freqs: peakHold.freqs, mags: peakHold.dbs };
 }
 
 export function renderPayloadBuildFromEvent(event: any): RenderPayload | null {

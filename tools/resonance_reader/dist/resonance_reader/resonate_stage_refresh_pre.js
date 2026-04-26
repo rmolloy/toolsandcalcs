@@ -1,8 +1,13 @@
-import { resonanceFftWindowResolve, resonanceTapAveragingEnabled } from "./resonate_debug_flags.js";
+import { resonanceFftMinSamplesResolve, resonanceFftWindowResolve, resonanceTapAveragingEnabled } from "./resonate_debug_flags.js";
 export async function stageRefreshPreRun(args) {
     const engine = args.fftFactory({});
     const taps = args.signal.detectTaps(args.wave, args.sampleRate);
-    const directSpectrum = await engine.magnitude(args.wave, args.sampleRate, { maxFreq: args.fftMaxHz, window: resonanceFftWindowResolve() });
+    const fftOptions = {
+        maxFreq: args.fftMaxHz,
+        minFftSamples: resonanceFftMinSamplesResolve(),
+        window: resonanceFftWindowResolve(),
+    };
+    const directSpectrum = await engine.magnitude(args.wave, args.sampleRate, fftOptions);
     let spectrum = directSpectrum;
     if (tapAveragingAllowedForRefresh(args.allowTapAveraging) && taps.length && resonanceTapAveragingEnabled()) {
         const averaged = await args.signal.averageTapSpectra(args.wave, args.sampleRate, taps, engine);

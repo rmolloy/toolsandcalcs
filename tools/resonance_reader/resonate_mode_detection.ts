@@ -61,6 +61,36 @@ export function smoothSpectrumFast(freqs: number[], mags: number[], smoothHz: nu
   return out;
 }
 
+export function smoothSpectrumGaussianBins(mags: number[], sigmaBins: number): number[] {
+  if (!sigmaBins || sigmaBins <= 0) return mags;
+  if (mags.length < 3) return mags;
+  const kernel = gaussianKernelBuild(sigmaBins);
+  const halfSize = Math.floor(kernel.length / 2);
+  const out = new Array<number>(mags.length);
+  for (let i = 0; i < mags.length; i += 1) {
+    let value = 0;
+    for (let j = -halfSize; j <= halfSize; j += 1) {
+      const index = i + j;
+      if (index >= 0 && index < mags.length) value += mags[index] * kernel[j + halfSize];
+    }
+    out[i] = value;
+  }
+  return out;
+}
+
+function gaussianKernelBuild(sigmaBins: number) {
+  const kernelSize = (Math.ceil(sigmaBins * 3) * 2) + 1;
+  const kernel = new Array<number>(kernelSize);
+  const halfSize = Math.floor(kernelSize / 2);
+  let sum = 0;
+  for (let i = -halfSize; i <= halfSize; i += 1) {
+    const value = Math.exp(-(i * i) / (2 * sigmaBins * sigmaBins));
+    kernel[i + halfSize] = value;
+    sum += value;
+  }
+  return kernel.map((value) => value / sum);
+}
+
 function refineParabolicPeak(freqs: number[], ys: number[], idx: number): { freq: number; y: number; delta: number } | null {
   if (idx <= 0 || idx >= ys.length - 1) return null;
   const a = ys[idx - 1];

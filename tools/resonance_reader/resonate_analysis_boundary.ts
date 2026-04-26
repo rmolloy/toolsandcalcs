@@ -1,4 +1,4 @@
-import { analyzeModes, analyzeModesWithBands, smoothSpectrumFast, type ModeDetection } from "./resonate_mode_detection.js";
+import { analyzeModes, analyzeModesWithBands, smoothSpectrumFast, smoothSpectrumGaussianBins, type ModeDetection } from "./resonate_mode_detection.js";
 import {
   computeSeverity,
   estimateQFromDb,
@@ -8,6 +8,7 @@ import {
 
 export type AnalysisBoundary = {
   smoothSpectrumFast: (freqs: number[], mags: number[], smoothHz: number) => number[];
+  smoothSpectrumGaussianBins: (mags: number[], sigmaBins: number) => number[];
   analyzeModes: (spectrum: { freqs: number[]; dbs: number[] }) => ModeDetection[];
   analyzeModesWithBands: (
     spectrum: { freqs: number[]; dbs: number[] },
@@ -21,6 +22,7 @@ export type AnalysisBoundary = {
 
 export const analysisBoundaryDefault: AnalysisBoundary = {
   smoothSpectrumFast,
+  smoothSpectrumGaussianBins,
   analyzeModes,
   analyzeModesWithBands,
   noteAndCentsFromFreq,

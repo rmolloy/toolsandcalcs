@@ -16,6 +16,7 @@ type PipelineUiRender = {
     overlay?: number[];
     modes?: any[];
     secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+    peakHoldSpectrum?: { freqs: number[]; mags: number[] } | null;
     polymaxCandidates?: Array<{ freqHz: number; zeta: number; stability: number; orderCount: number }> ;
   }) => void;
   renderModes: (modes: any[]) => void;
@@ -73,6 +74,7 @@ function pipelineSpectrumReadyEventHandle(payload: unknown, ctx: { log: (message
   const ui = pipelineUiRenderGet();
   const spectrum = (payload as { spectrum?: { freqs?: number[]; mags?: number[]; dbs?: number[] } } | null)?.spectrum;
   const secondarySpectrum = (payload as { secondarySpectrum?: { freqs?: number[]; mags?: number[] } | null } | null)?.secondarySpectrum;
+  const peakHoldSpectrum = (payload as { peakHoldSpectrum?: { freqs?: number[]; mags?: number[] } | null } | null)?.peakHoldSpectrum;
   if (!ui || !spectrum?.freqs || !spectrum?.mags) return;
   const state = (window as any).FFTState;
   const overlay = Array.isArray(state?.lastOverlay) ? state.lastOverlay : undefined;
@@ -87,12 +89,16 @@ function pipelineSpectrumReadyEventHandle(payload: unknown, ctx: { log: (message
   const secondary = secondarySpectrum?.freqs && secondarySpectrum?.mags
     ? { freqs: secondarySpectrum.freqs, mags: secondarySpectrum.mags }
     : null;
+  const peakHold = peakHoldSpectrum?.freqs && peakHoldSpectrum?.mags
+    ? { freqs: peakHoldSpectrum.freqs, mags: peakHoldSpectrum.mags }
+    : null;
   ui.renderSpectrum({
     freqs: spectrum.freqs,
     mags: spectrum.dbs || spectrum.mags,
     overlay,
     modes,
     secondarySpectrum: secondary,
+    peakHoldSpectrum: peakHold,
     polymaxCandidates: Array.isArray(state?.lastPolymaxCandidates) ? state.lastPolymaxCandidates : [],
   });
 }

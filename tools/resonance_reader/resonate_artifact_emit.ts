@@ -17,6 +17,7 @@ export function emitArtifactEventFromState(state: Record<string, any>) {
   if (!renderPayload) return false;
   const spectrum = state.lastSpectrum || null;
   const secondarySpectrum = state.lastSpectrumNoteSelection || null;
+  const peakHoldSpectrum = state.lastPeakHoldSpectrum || null;
   if (spectrum?.freqs && spectrum?.mags) {
     const freqs = Array.from(spectrum.freqs as ArrayLike<number>);
     const mags = Array.from(spectrum.mags as ArrayLike<number>);
@@ -27,7 +28,13 @@ export function emitArtifactEventFromState(state: Record<string, any>) {
           mags: Array.from(secondarySpectrum.mags as ArrayLike<number>),
         }
       : null;
-    pipelineBusEventEmit("spectrum.ready", { spectrum: { freqs, mags, dbs }, secondarySpectrum: secondary }, "spectrum");
+    const peakHold = peakHoldSpectrum?.freqs && peakHoldSpectrum?.dbs
+      ? {
+          freqs: Array.from(peakHoldSpectrum.freqs as ArrayLike<number>),
+          mags: Array.from(peakHoldSpectrum.dbs as ArrayLike<number>),
+        }
+      : null;
+    pipelineBusEventEmit("spectrum.ready", { spectrum: { freqs, mags, dbs }, secondarySpectrum: secondary, peakHoldSpectrum: peakHold }, "spectrum");
   }
   const modes = Array.isArray(state.lastModesDetected) ? state.lastModesDetected : null;
   const cards = Array.isArray(state.lastModeCards) ? state.lastModeCards : null;

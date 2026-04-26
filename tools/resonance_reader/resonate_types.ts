@@ -26,5 +26,6 @@ export type SpectrumPayload = {
   overlay?: number[];
   modes?: any[];
   secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
+  peakHoldSpectrum?: { freqs: number[]; mags: number[] } | null;
   polymaxCandidates?: PolymaxCandidate[];
 };

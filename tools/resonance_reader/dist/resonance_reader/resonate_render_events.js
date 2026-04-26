@@ -18,9 +18,20 @@ export function renderPayloadBuildFromState(state) {
     const overlay = Array.isArray(state.lastOverlay) ? state.lastOverlay : null;
     const modes = Array.isArray(state.lastModesDetected) ? state.lastModesDetected : [];
     const cards = Array.isArray(state.lastModeCards) ? state.lastModeCards : [];
+    const peakHoldSpectrum = renderPeakHoldSpectrumBuild(state.lastPeakHoldSpectrum);
     if (!freqs.length || !mags.length)
         return null;
-    return { freqs, mags, overlay, modes, cards };
+    const payload = { freqs, mags, overlay, modes, cards };
+    if (peakHoldSpectrum)
+        payload.peakHoldSpectrum = peakHoldSpectrum;
+    return payload;
+}
+function renderPeakHoldSpectrumBuild(peakHold) {
+    if (!Array.isArray(peakHold?.freqs) || !Array.isArray(peakHold?.dbs))
+        return null;
+    if (!peakHold.freqs.length || !peakHold.dbs.length)
+        return null;
+    return { freqs: peakHold.freqs, mags: peakHold.dbs };
 }
 export function renderPayloadBuildFromEvent(event) {
     if (!event || event.eventType !== "artifact.emitted")
