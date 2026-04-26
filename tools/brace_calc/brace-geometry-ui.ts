@@ -64,7 +64,7 @@ interface BraceRenderInfo {
     info: HTMLElement;
     summary: HTMLElement;
   }>();
-  let braces: BraceConfig[] = [createBrace("Brace 1")];
+  let braces: BraceConfig[] = [createBraceFromQuery()];
 
   function nextBraceId(): string {
     braceCounter += 1;
@@ -105,6 +105,46 @@ interface BraceRenderInfo {
       name,
       segments: createDefaultStack()
     };
+  }
+
+  function createBraceFromQuery(): BraceConfig {
+    const transferred = readBraceStockMeasurementsFromQuery();
+    if (!transferred) return createBrace("Brace 1");
+    return {
+      id: nextBraceId(),
+      name: "Transferred brace stock",
+      segments: [
+        {
+          id: nextSegmentId(),
+          label: "Measured stock",
+          shape: api.Shapes.RECTANGLE,
+          height: transferred.height,
+          breadth: transferred.breadth,
+          density: transferred.density,
+          modulus: transferred.modulus
+        }
+      ]
+    };
+  }
+
+  function readBraceStockMeasurementsFromQuery(): { height: number; breadth: number; density: number; modulus: number } | null {
+    const params = new URLSearchParams(window.location.search || "");
+    const height = positiveQueryNumberRead(params, "brace_height");
+    const breadth = positiveQueryNumberRead(params, "brace_width");
+    const density = positiveQueryNumberRead(params, "brace_density");
+    const modulus = positiveQueryNumberRead(params, "brace_modulus");
+    if (height === null && breadth === null && density === null && modulus === null) return null;
+    return {
+      height: height ?? 12,
+      breadth: breadth ?? 10,
+      density: density ?? DEFAULT_DENSITY,
+      modulus: modulus ?? DEFAULT_MODULUS
+    };
+  }
+
+  function positiveQueryNumberRead(params: URLSearchParams, key: string): number | null {
+    const value = Number.parseFloat(params.get(key) || "");
+    return Number.isFinite(value) && value > 0 ? value : null;
   }
 
   function format(value: number, digits = 2): string {
