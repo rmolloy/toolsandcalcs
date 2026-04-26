@@ -28,7 +28,7 @@
         let segmentCounter = 0;
         let showAdvanced = false;
         const braceDom = new Map();
-        let braces = [createBrace("Brace 1")];
+        let braces = [createBraceFromQuery()];
         function nextBraceId() {
             braceCounter += 1;
             return `brace-${braceCounter}`;
@@ -65,6 +65,45 @@
                 name,
                 segments: createDefaultStack()
             };
+        }
+        function createBraceFromQuery() {
+            const transferred = readBraceStockMeasurementsFromQuery();
+            if (!transferred)
+                return createBrace("Brace 1");
+            return {
+                id: nextBraceId(),
+                name: "Transferred brace stock",
+                segments: [
+                    {
+                        id: nextSegmentId(),
+                        label: "Measured stock",
+                        shape: api.Shapes.RECTANGLE,
+                        height: transferred.height,
+                        breadth: transferred.breadth,
+                        density: transferred.density,
+                        modulus: transferred.modulus
+                    }
+                ]
+            };
+        }
+        function readBraceStockMeasurementsFromQuery() {
+            const params = new URLSearchParams(window.location.search || "");
+            const height = positiveQueryNumberRead(params, "brace_height");
+            const breadth = positiveQueryNumberRead(params, "brace_width");
+            const density = positiveQueryNumberRead(params, "brace_density");
+            const modulus = positiveQueryNumberRead(params, "brace_modulus");
+            if (height === null && breadth === null && density === null && modulus === null)
+                return null;
+            return {
+                height: height !== null && height !== void 0 ? height : 12,
+                breadth: breadth !== null && breadth !== void 0 ? breadth : 10,
+                density: density !== null && density !== void 0 ? density : DEFAULT_DENSITY,
+                modulus: modulus !== null && modulus !== void 0 ? modulus : DEFAULT_MODULUS
+            };
+        }
+        function positiveQueryNumberRead(params, key) {
+            const value = Number.parseFloat(params.get(key) || "");
+            return Number.isFinite(value) && value > 0 ? value : null;
         }
         function format(value, digits = 2) {
             if (!Number.isFinite(value))
