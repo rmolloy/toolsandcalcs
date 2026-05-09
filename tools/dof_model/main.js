@@ -481,6 +481,25 @@ function updateParam(param, value) {
         scheduleRender();
     }
 }
+function updateParamFromCommittedInput(param, input, slider) {
+    if (isUncommittedDecimalInput(input.value))
+        return;
+    const value = parseFloat(input.value);
+    if (Number.isFinite(value))
+        slider.value = String(value);
+    updateParam(param, value);
+}
+function commitParamInput(param, input, slider) {
+    const value = parseFloat(input.value);
+    if (Number.isFinite(value)) {
+        input.value = String(value);
+        slider.value = String(value);
+    }
+    updateParam(param, value);
+}
+function isUncommittedDecimalInput(value) {
+    return /^-?\d+\.$/.test(value.trim());
+}
 function isTraceName(value) {
     return typeof value === "string" && value in TRACE_DEFAULT_VISIBLE;
 }
@@ -723,11 +742,13 @@ function buildCards() {
             slider.step = field.step != null ? String(field.step) : "any";
             slider.value = input.value;
             slider.dataset.param = field.param;
-            input.addEventListener("input", (event) => {
-                const val = parseFloat(event.target.value);
-                if (Number.isFinite(val))
-                    slider.value = String(val);
-                updateParam(field.param, val);
+            input.addEventListener("input", () => {
+                updateParamFromCommittedInput(field.param, input, slider);
+                syncOverlayToBase(field.param);
+                updateOverlayLatch(field.param);
+            });
+            input.addEventListener("change", () => {
+                commitParamInput(field.param, input, slider);
                 syncOverlayToBase(field.param);
                 updateOverlayLatch(field.param);
             });
