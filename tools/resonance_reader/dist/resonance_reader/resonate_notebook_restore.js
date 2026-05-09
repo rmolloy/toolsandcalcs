@@ -26,6 +26,9 @@ export function readResonanceNotebookRestoreRequest(runtime) {
 }
 function clearResonanceNotebookRestoreRequest(runtime) {
     const url = new URL(String(runtime.location.href || `${runtime.location.pathname}${runtime.location.search}`), "http://localhost");
+    if (url.protocol === "file:") {
+        return;
+    }
     url.searchParams.delete("restoreWorkbookId");
     url.searchParams.delete("restoreEventId");
     if (runtime.history && typeof runtime.history.replaceState === "function") {

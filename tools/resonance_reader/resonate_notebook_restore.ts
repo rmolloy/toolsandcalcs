@@ -48,6 +48,10 @@ export function readResonanceNotebookRestoreRequest(
 function clearResonanceNotebookRestoreRequest(runtime: ResonanceNotebookRestoreRuntime) {
   const url = new URL(String(runtime.location.href || `${runtime.location.pathname}${runtime.location.search}`), "http://localhost");
 
+  if (url.protocol === "file:") {
+    return;
+  }
+
   url.searchParams.delete("restoreWorkbookId");
   url.searchParams.delete("restoreEventId");
 
