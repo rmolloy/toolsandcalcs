@@ -13,10 +13,6 @@
     mags: Float64Array;
   }
 
-  interface FftEngineOpts {
-    wasmUrl?: string | null;
-  }
-
   class JsFftFallback {
     static paddedLengthResolveFromInputLength(inputLength: number, minFftSamples = MIN_SHORT_WINDOW_FFT_SAMPLES): number {
       const target = Math.max(1, inputLength, minFftSamples);
@@ -106,81 +102,18 @@
     }
   }
 
-  class KissFftWasm {
-    wasmUrl: string | null;
-    ready: boolean;
-    instance: WebAssembly.Instance | null;
-
-    constructor({ wasmUrl }: { wasmUrl?: string | null }) {
-      this.wasmUrl = wasmUrl ?? null;
-      this.ready = false;
-      this.instance = null;
-    }
-
-    async load(): Promise<this> {
-      if (!this.wasmUrl) throw new Error("No wasmUrl provided for KissFFT");
-      const response = await fetch(this.wasmUrl);
-      const bytes = await response.arrayBuffer();
-      const { instance } = await WebAssembly.instantiate(bytes, {});
-      this.instance = instance;
-      this.ready = true;
-      // NOTE: Glue for actual KissFFT calls will be wired once the WASM binary is added.
-      return this;
-    }
-
-    // Placeholder: real WASM bridge to be implemented when the binary is available.
-    transform(): never {
-      throw new Error("KissFFT WASM bridge not wired yet");
-    }
-  }
-
   class FftEngine {
-    wasmUrl: string | null;
-    wasm: KissFftWasm | null;
-    useWasm: boolean;
-    loadPromise: Promise<unknown> | null;
-
-    constructor(opts: FftEngineOpts = {}) {
-      this.wasmUrl = opts.wasmUrl ?? null;
-      this.wasm = null;
-      this.useWasm = Boolean(opts.wasmUrl);
-      this.loadPromise = null;
-    }
-
-    async ensureLoaded(): Promise<boolean> {
-      if (!this.useWasm) return false;
-      if (!this.loadPromise) {
-        this.wasm = new KissFftWasm({ wasmUrl: this.wasmUrl });
-        this.loadPromise = this.wasm.load().catch((err) => {
-          console.warn("[FFT] KissFFT WASM load failed; falling back to JS FFT.", err);
-          this.useWasm = false;
-          return false;
-        });
-      }
-      await this.loadPromise;
-      return this.useWasm && Boolean(this.wasm?.ready);
-    }
-
     async magnitude(wave: ArrayLike<number>, sampleRate: number, opts: FftOptions = {}): Promise<FftResult> {
-      const useWasm = await this.ensureLoaded();
-      if (useWasm && this.wasm) {
-        try {
-          // When wired, will return the WASM FFT result.
-          return await (this.wasm as any).transform(wave, sampleRate, opts);
-        } catch (err) {
-          console.warn("[FFT] KissFFT transform failed; using JS fallback.", err);
-        }
-      }
       return JsFftFallback.magnitudeSpectrum(wave, sampleRate, opts);
     }
   }
 
-  type FftEngineApi = (opts?: FftEngineOpts) => FftEngine;
+  type FftEngineApi = () => FftEngine;
   const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
     createFftEngine?: FftEngineApi;
   };
 
-  scope.createFftEngine = function createFftEngine(opts?: FftEngineOpts) {
-    return new FftEngine(opts);
+  scope.createFftEngine = function createFftEngine() {
+    return new FftEngine();
   };
 })();
