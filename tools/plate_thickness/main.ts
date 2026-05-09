@@ -294,11 +294,13 @@ type PlateSolution = {
   }
 
   document.querySelectorAll<HTMLInputElement>("input[data-field]").forEach((input) => {
-    input.addEventListener("input", (event) => {
-      const target = event.target as HTMLInputElement;
-      const value = parseFloat(target.value);
+    input.addEventListener("input", () => {
+      run();
+    });
+    input.addEventListener("change", () => {
+      const value = parseFloat(input.value);
       if (Number.isFinite(value)) {
-        target.value = formatNumber(value);
+        input.value = formatNumber(value);
       }
       run();
     });
