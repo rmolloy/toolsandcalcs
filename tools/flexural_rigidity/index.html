@@ -35,8 +35,16 @@
       margin: 0 auto 60px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 16px;
     }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+
     .wide-card {
       grid-column: 1 / -1;
     }
@@ -74,30 +82,27 @@
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      margin-top: 16px;
+      margin: 0;
     }
 
     .gallery-grid {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: minmax(220px, 320px) 1fr;
-      align-items: start;
+      display: block;
     }
     .brace-gallery {
       display: grid;
-      gap: 20px;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     }
 
     .brace-card {
       border: 1px solid var(--card-border);
-      border-radius: 18px;
-      padding: 24px 20px;
+      border-radius: 8px;
+      padding: 14px;
       background: var(--card-bg);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.35);
+      box-shadow: none;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: 12px;
       transition: box-shadow 200ms ease, border 200ms ease;
     }
     .brace-card:hover {
@@ -118,7 +123,7 @@
       border: none;
       border-bottom: 1px solid transparent;
       background: transparent;
-      font-size: 20px;
+      font-size: 17px;
       font-weight: 600;
       color: var(--text-strong);
       padding: 4px 0;
@@ -132,10 +137,10 @@
     }
 
     .brace-preview-svg {
-      width: 140px;
-      height: 160px;
+      width: 112px;
+      height: 128px;
       border: 1px solid var(--card-border);
-      border-radius: 12px;
+      border-radius: 8px;
       background: rgba(255, 255, 255, 0.02);
       flex-shrink: 0;
     }
@@ -164,7 +169,7 @@
     }
 
     .brace-preview-meta {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text-strong);
       letter-spacing: 0.01em;
@@ -177,7 +182,7 @@
       border-top: 1px solid var(--card-border);
       padding-top: 12px;
       gap: 12px;
-      font-size: 15px;
+      font-size: 13px;
     }
     .brace-info-row span {
       color: var(--text-body);
@@ -194,9 +199,9 @@
 
     .brace-meta-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 8px 20px;
-      font-size: 15px;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 14px;
+      font-size: 13px;
     }
     .metric-row {
       display: flex;
@@ -234,8 +239,8 @@
       background: rgba(255, 255, 255, 0.02);
     }
     .top-inputs {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
     }
     .top-inputs .field {
@@ -457,6 +462,13 @@
       flex-direction: column;
       gap: 16px;
     }
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
     .results-card h2 {
       margin: 0;
       color: var(--text-strong);
@@ -465,6 +477,12 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 14px;
+    }
+    .results-figure-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
+      gap: 14px;
+      align-items: stretch;
     }
     .result-card {
       border: 1px solid var(--card-border);
@@ -496,6 +514,20 @@
       color: var(--text-muted);
       font-size: 14px;
     }
+
+    @media (max-width: 760px) {
+      .overview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .results-figure-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .top-inputs {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 
@@ -516,57 +548,64 @@
       </div>
     </section>
 
-    <section class="card pad tl-card">
-      <div class="pill">Lab Utility</div>
-      <p class="small">
-        Use this tool to calculate flexural rigidity for a guitar top along the AA line, so you can compare stiffness across
-        wood species, brace patterns, and thicknesses without waiting for a full build.
-      </p>
-      <p class="small">
-        Why this matters: EI links a panel’s thickness, modulus, and span to how much it will bend under load. Knowing EI helps
-        you balance strength and responsiveness before committing to a top, back, or brace set.
-      </p>
-      <details class="muted">
-        <summary><strong>Measurements required</strong></summary>
-        <ul class="tl-list">
-          <li>AA span and thickness at AA (mm)</li>
-          <li>Panel modulus E for the top (GPa)</li>
-          <li>Brace intercept breadth b and stack heights (mm)</li>
-          <li>Brace modulus E (GPa)</li>
-          <li>Optional: applied bridge moment (N·m) and rotation limit (deg)</li>
-        </ul>
-      </details>
+    <main class="tl-layout tl-single">
+      <section class="tl-content">
+<div class="brace-app">
+  <section class="card pad tl-card results-card">
+    <div class="results-header">
+      <div>
+        <h2>Results</h2>
+        <p class="small muted">Book example default: 280 mm span, 2.8 mm top, four-brace layout.</p>
+      </div>
       <div class="tool-save-actions">
         <button id="load_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Load JSON</button>
         <button id="save_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Download JSON</button>
         <input id="load_flexural_state_file" type="file" accept="application/json,.json" hidden>
       </div>
-    </section>
-
-    <main class="tl-layout tl-single">
-      <section class="tl-content">
-<div class="brace-app">
-  <section class="card pad tl-card viz-card wide-card">
-    <h2>AA-line visualization</h2>
-    <p class="small muted">Full span visualization. This is a placeholder until the flexural rigidity calculator wiring is hooked up.</p>
-    <div class="viz-frame">
-      <svg id="aa_view" viewBox="0 0 700 320">
-        <rect id="viz_bg" x="0" y="0" width="700" height="320" fill="transparent" />
-        <line id="viz_axis_y" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
-        <line id="viz_axis_x" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
-        <line id="viz_span_line" x1="0" y1="0" x2="0" y2="0" stroke="transparent" stroke-width="0" />
-        <rect id="viz_top" x="0" y="0" width="0" height="0" fill="var(--panel)" stroke="var(--border-soft)" />
-        <g id="viz_braces"></g>
-        <line id="viz_centroid" x1="0" y1="0" x2="0" y2="0" stroke="var(--orange)" stroke-width="2" stroke-dasharray="4 3" />
-      </svg>
     </div>
-    <div class="small muted" id="viz_status">Coming soon: linked visualization from the EI calculator.</div>
+    <div class="results-figure-grid">
+      <div>
+        <div class="results-grid">
+          <div class="result-card">
+            <div class="label">Composite EI (N·m²)</div>
+            <div id="result_ei" class="value primary">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Transformed I (mm⁴)</div>
+            <div id="result_I" class="value">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Centroid from plate (mm)</div>
+            <div id="result_centroid" class="value">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Height (mm)</div>
+            <div id="result_height" class="value">—</div>
+          </div>
+        </div>
+        <p id="result_status" class="small muted">Live: ready for inputs.</p>
+      </div>
+      <div class="viz-card">
+        <h3>AA-line section</h3>
+        <div class="viz-frame">
+          <svg id="aa_view" viewBox="0 0 700 320">
+            <rect id="viz_bg" x="0" y="0" width="700" height="320" fill="transparent" />
+            <line id="viz_axis_y" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+            <line id="viz_axis_x" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+            <line id="viz_span_line" x1="0" y1="0" x2="0" y2="0" stroke="transparent" stroke-width="0" />
+            <rect id="viz_top" x="0" y="0" width="0" height="0" fill="var(--panel)" stroke="var(--border-soft)" />
+            <g id="viz_braces"></g>
+            <line id="viz_centroid" x1="0" y1="0" x2="0" y2="0" stroke="var(--orange)" stroke-width="2" stroke-dasharray="4 3" />
+          </svg>
+        </div>
+        <div class="small muted" id="viz_status">Span and brace layout are live.</div>
+      </div>
+    </div>
   </section>
 
-  <div class="gallery-grid">
+  <div class="overview-grid">
     <section class="card pad tl-card profile-card">
       <h2>Top profile</h2>
-      <p class="small muted">Span and thickness for the AA slice. Treat this like the base brace the rest of the stack rides on.</p>
       <div class="profile-preview">
         <div class="profile-preview-canvas" id="top_profile_preview"></div>
         <div class="brace-preview-meta" id="top_profile_meta">—</div>
@@ -587,11 +626,19 @@
       </div>
     </section>
 
+  </div>
+
+  <section class="card pad tl-card comparison-panel">
+    <h2>Brace comparison</h2>
+    <p class="small muted">Relative mass uses total area as a proxy. Relative stiffness is based on I.</p>
+    <div id="brace_summary" class="brace-summary-grid"></div>
+  </section>
+
+  <div class="gallery-grid">
     <section class="card pad tl-card">
       <div class="brace-toolbar">
         <div>
           <h2>Brace gallery</h2>
-          <p class="small muted">Add braces, stack geometric components, and explore their centroid & stiffness.</p>
         </div>
         <div class="brace-toolbar-actions">
           <button type="button" id="add_brace">+ Add brace</button>
@@ -603,36 +650,6 @@
       <div id="brace_gallery" class="brace-gallery"></div>
     </section>
   </div>
-
-  <section class="card pad tl-card comparison-panel">
-    <h2>Brace comparison</h2>
-    <p class="small muted">Relative mass uses total area as a proxy. Relative stiffness is based on I.</p>
-    <div id="brace_summary" class="brace-summary-grid"></div>
-  </section>
-
-  <section class="card pad tl-card results-card wide-card">
-    <h2>Results</h2>
-    <p class="small muted">Composite EI/I for the assembled top at this AA slice (using current top inputs and brace set).</p>
-    <div class="results-grid">
-      <div class="result-card">
-        <div class="label">Composite EI (N·m²)</div>
-        <div id="result_ei" class="value primary">—</div>
-      </div>
-      <div class="result-card">
-        <div class="label">Transformed I (mm⁴)</div>
-        <div id="result_I" class="value">—</div>
-      </div>
-      <div class="result-card">
-        <div class="label">Centroid from plate (mm)</div>
-        <div id="result_centroid" class="value">—</div>
-      </div>
-      <div class="result-card">
-        <div class="label">Height (mm)</div>
-        <div id="result_height" class="value">—</div>
-      </div>
-    </div>
-    <p id="result_status" class="small muted">Live: ready for inputs.</p>
-  </section>
   </div>
       </section>
     </main>
@@ -673,6 +690,7 @@
 <script src="./flexural_save_surface.js"></script>
 <script src="./flexural_save_target.js"></script>
 <script src="./flexural_save_boot.js"></script>
+<script src="./flexural_default_layout.js"></script>
 <script src="./brace_calc/brace-geometry-ui.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
@@ -728,9 +746,7 @@
     const status = document.getElementById("viz_status");
     if (!spanInput || !thicknessInput || !svg || !centroidLine || !bracesGroup || !status) return;
 
-    let bracesFromLayout = Array.isArray(window.braceLayoutCache?.braces)
-      ? window.braceLayoutCache.braces
-      : [];
+    let bracesFromLayout = readInitialVizBraces();
     const placeholderBraces = [
       {
         offset: 0,
@@ -742,6 +758,16 @@
         ]
       }
     ];
+
+    function readInitialVizBraces() {
+      if (Array.isArray(window.FlexuralDefaultLayout?.braces)) {
+        return window.FlexuralDefaultLayout.braces;
+      }
+      if (Array.isArray(window.braceLayoutCache?.braces)) {
+        return window.braceLayoutCache.braces;
+      }
+      return [];
+    }
 
     function normalizeShape(value) {
       const str = (value ?? "").toString().toLowerCase();
@@ -872,7 +898,7 @@
       centroidLine.setAttribute("x2", (offsetX + spanDraw).toString());
       centroidLine.setAttribute("y1", centroidY.toString());
       centroidLine.setAttribute("y2", centroidY.toString());
-      status.textContent = `Span: ${span.toFixed(0)} mm · Top thickness: ${topHeight.toFixed(1)} mm · Sample braces: ${braces.length}`;
+      status.textContent = `Span: ${span.toFixed(0)} mm · Top thickness: ${topHeight.toFixed(1)} mm · Braces: ${braces.length}`;
     }
 
     spanInput.addEventListener("input", renderAaPreview);

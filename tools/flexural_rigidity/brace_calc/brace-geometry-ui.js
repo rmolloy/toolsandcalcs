@@ -28,7 +28,9 @@
         let segmentCounter = 0;
         let showAdvanced = false;
         const braceDom = new Map();
-        let braces = [createBraceFromQuery()];
+        const defaultLayout = readDefaultLayout();
+        let activeTop = readTopFromLayout(defaultLayout);
+        let braces = createInitialBraces();
         function nextBraceId() {
             braceCounter += 1;
             return `brace-${braceCounter}`;
@@ -69,7 +71,7 @@
         function createBraceFromQuery() {
             const transferred = readBraceStockMeasurementsFromQuery();
             if (!transferred)
-                return createBrace("Brace 1");
+                return null;
             return {
                 id: nextBraceId(),
                 name: "Transferred brace stock",
@@ -84,6 +86,29 @@
                         modulus: transferred.modulus
                     }
                 ]
+            };
+        }
+        function createInitialBraces() {
+            const queryBrace = createBraceFromQuery();
+            if (queryBrace)
+                return [queryBrace];
+            const defaultBraces = sanitizeBraceLayout(defaultLayout);
+            return defaultBraces.length ? defaultBraces : [createBrace("Brace 1")];
+        }
+        function readDefaultLayout() {
+            return window.FlexuralDefaultLayout || null;
+        }
+        function readTopFromLayout(layout) {
+            const top = layout && typeof layout === "object" ? layout.top : null;
+            const span = Number(top === null || top === void 0 ? void 0 : top.span);
+            const thickness = Number(top === null || top === void 0 ? void 0 : top.thickness);
+            const modulus = Number(top === null || top === void 0 ? void 0 : top.modulus);
+            if (!Number.isFinite(span) || !Number.isFinite(thickness))
+                return null;
+            return {
+                span,
+                thickness,
+                modulus: Number.isFinite(modulus) ? modulus : undefined
             };
         }
         function readBraceStockMeasurementsFromQuery() {
@@ -662,6 +687,9 @@
                 const span = Number(topRaw.span);
                 const thickness = Number(topRaw.thickness);
                 const modulus = Number(topRaw.modulus);
+                const loadedTop = readTopFromLayout(raw);
+                if (loadedTop)
+                    activeTop = loadedTop;
                 const detail = {
                     braces: bracesLoaded.map((brace) => ({
                         name: brace.name,
@@ -723,15 +751,9 @@
         window.addEventListener("requestBraceLayout", () => emitBraceLayout());
         function emitBraceLayout() {
             try {
-                const detail = braces.map((brace) => ({
-                    name: brace.name,
-                    segments: brace.segments.map((segment) => ({
-                        label: segment.label,
-                        shape: segment.shape,
-                        height: segment.height,
-                        breadth: segment.breadth,
-                    })),
-                }));
+                const detail = { braces: readBraceSaveSnapshot() };
+                if (activeTop)
+                    detail.top = activeTop;
                 window.dispatchEvent(new CustomEvent("braceLayoutChanged", { detail }));
             }
             catch (err) {
