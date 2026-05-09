@@ -7,6 +7,10 @@ export {};
 declare global {
   interface Window {
     BraceGeometry?: BraceGeometryAPI;
+    FlexuralDefaultLayout?: {
+      top?: { span?: number; thickness?: number; modulus?: number };
+      braces?: unknown[];
+    };
     BraceSaveSurface?: {
       buildBraceSavePackage(braces: unknown[], now?: Date): { filename: string; text: string };
       downloadBraceSavePackage(runtime: unknown, savePackage: { filename: string; text: string }): void;
@@ -64,7 +68,9 @@ interface BraceRenderInfo {
     info: HTMLElement;
     summary: HTMLElement;
   }>();
-  let braces: BraceConfig[] = [createBraceFromQuery()];
+  const defaultLayout = readDefaultLayout();
+  let activeTop = readTopFromLayout(defaultLayout);
+  let braces: BraceConfig[] = createInitialBraces();
 
   function nextBraceId(): string {
     braceCounter += 1;
@@ -107,9 +113,9 @@ interface BraceRenderInfo {
     };
   }
 
-  function createBraceFromQuery(): BraceConfig {
+  function createBraceFromQuery(): BraceConfig | null {
     const transferred = readBraceStockMeasurementsFromQuery();
-    if (!transferred) return createBrace("Brace 1");
+    if (!transferred) return null;
     return {
       id: nextBraceId(),
       name: "Transferred brace stock",
@@ -124,6 +130,30 @@ interface BraceRenderInfo {
           modulus: transferred.modulus
         }
       ]
+    };
+  }
+
+  function createInitialBraces(): BraceConfig[] {
+    const queryBrace = createBraceFromQuery();
+    if (queryBrace) return [queryBrace];
+    const defaultBraces = sanitizeBraceLayout(defaultLayout);
+    return defaultBraces.length ? defaultBraces : [createBrace("Brace 1")];
+  }
+
+  function readDefaultLayout(): unknown {
+    return window.FlexuralDefaultLayout || null;
+  }
+
+  function readTopFromLayout(layout: unknown): { span: number; thickness: number; modulus?: number } | null {
+    const top = layout && typeof layout === "object" ? (layout as any).top : null;
+    const span = Number(top?.span);
+    const thickness = Number(top?.thickness);
+    const modulus = Number(top?.modulus);
+    if (!Number.isFinite(span) || !Number.isFinite(thickness)) return null;
+    return {
+      span,
+      thickness,
+      modulus: Number.isFinite(modulus) ? modulus : undefined
     };
   }
 
@@ -765,6 +795,8 @@ interface BraceRenderInfo {
       const span = Number(topRaw.span);
       const thickness = Number(topRaw.thickness);
       const modulus = Number(topRaw.modulus);
+      const loadedTop = readTopFromLayout(raw);
+      if (loadedTop) activeTop = loadedTop;
       const detail: any = {
         braces: bracesLoaded.map((brace) => ({
           name: brace.name,
@@ -828,15 +860,8 @@ interface BraceRenderInfo {
 
   function emitBraceLayout(): void {
     try {
-      const detail = braces.map((brace) => ({
-        name: brace.name,
-        segments: brace.segments.map((segment) => ({
-          label: segment.label,
-          shape: segment.shape,
-          height: segment.height,
-          breadth: segment.breadth,
-        })),
-      }));
+      const detail: any = { braces: readBraceSaveSnapshot() };
+      if (activeTop) detail.top = activeTop;
       window.dispatchEvent(new CustomEvent("braceLayoutChanged", { detail }));
     } catch (err) {
       console.warn("[BraceGeometry] emit layout failed", err);
