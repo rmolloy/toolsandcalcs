@@ -6,6 +6,10 @@
       return null;
     }
 
+    if (!fetchImpl && shouldSkipNotebookConnectionProbe()) {
+      return null;
+    }
+
     try {
       var response = await fetchApi("/notebook-api/rpc.php", {
         method: "POST",
@@ -22,6 +26,26 @@
     } catch (_error) {
       return null;
     }
+  }
+
+  function shouldSkipNotebookConnectionProbe() {
+    var location = globalScope.location;
+
+    if (!location) {
+      return false;
+    }
+
+    if (location.protocol === "file:") {
+      return true;
+    }
+
+    return isRawStaticPreviewServer(location);
+  }
+
+  function isRawStaticPreviewServer(location) {
+    var isLoopbackHost = location.hostname === "127.0.0.1" || location.hostname === "localhost";
+
+    return isLoopbackHost && location.port === "8090";
   }
 
   function readNotebookConnectionPayload(payload) {

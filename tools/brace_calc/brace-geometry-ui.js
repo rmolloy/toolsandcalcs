@@ -16,6 +16,7 @@
         }
         const api = braceGeometry;
         const galleryEl = requireElement("brace_gallery");
+        const viewGalleryEl = requireElement("brace_gallery_view");
         const summaryEl = requireElement("brace_summary");
         const addBraceBtn = requireElement("add_brace");
         const saveBtn = requireElement("save_braces");
@@ -185,6 +186,7 @@
                 renderBraces(renderInfo, { referenceBreadth, maxHeight });
             }
             renderSummary(renderInfo);
+            renderViewGallery(renderInfo, { referenceBreadth, maxHeight });
             emitBraceLayout();
         }
         function renderBraces(renderInfo, scales) {
@@ -197,6 +199,7 @@
                 const info = renderInfo[brace.id];
                 const card = document.createElement("div");
                 card.className = "brace-card";
+                card.dataset.braceId = brace.id;
                 const header = document.createElement("header");
                 const nameInput = document.createElement("input");
                 nameInput.value = brace.name;
@@ -252,6 +255,40 @@
                 updateDesignSummary(dom.summary, brace);
             }
             return true;
+        }
+        function renderViewGallery(renderInfo, scales) {
+            viewGalleryEl.replaceChildren();
+            braces.forEach((brace, index) => {
+                const info = renderInfo[brace.id];
+                const card = document.createElement("div");
+                card.className = "brace-card readonly";
+                card.dataset.braceId = brace.id;
+                const header = document.createElement("header");
+                const title = document.createElement("h4");
+                title.textContent = brace.name || `Brace ${index + 1}`;
+                const editButton = document.createElement("button");
+                editButton.className = "brace-card-edit";
+                editButton.type = "button";
+                editButton.textContent = "Edit";
+                editButton.addEventListener("click", () => focusEditableBrace(brace.id));
+                header.append(title, editButton);
+                const previewContainer = document.createElement("div");
+                previewContainer.className = "brace-preview";
+                renderPreviewContent(previewContainer, brace, info === null || info === void 0 ? void 0 : info.result, scales);
+                const metrics = document.createElement("div");
+                metrics.className = "brace-meta-grid";
+                renderMetricsContent(metrics, info);
+                card.append(header, previewContainer, metrics);
+                viewGalleryEl.append(card);
+            });
+        }
+        function focusEditableBrace(braceId) {
+            var _a, _b;
+            (_a = document.querySelector('[data-flexural-mode-button="edit"]')) === null || _a === void 0 ? void 0 : _a.click();
+            const editableCard = Array.from(galleryEl.querySelectorAll(".brace-card"))
+                .find(card => card.dataset.braceId === braceId);
+            (_b = editableCard === null || editableCard === void 0 ? void 0 : editableCard.querySelector(".brace-design")) === null || _b === void 0 ? void 0 : _b.setAttribute("open", "");
+            editableCard === null || editableCard === void 0 ? void 0 : editableCard.scrollIntoView({ block: "center", behavior: "smooth" });
         }
         function updateBraceInfoRow(row, brace) {
             var _a, _b;
