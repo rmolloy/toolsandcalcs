@@ -15,13 +15,14 @@
       --text-strong: #f7f8fa;
       --text-body: #c7cfdb;
       --text-muted: #7c869b;
+      --flexural-workbench-max: 1180px;
     }
 
     body {
       background: var(--bg);
       color: var(--text-body);
       font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
-      letter-spacing: -0.01em;
+      letter-spacing: 0;
     }
 
     header {
@@ -30,8 +31,20 @@
       color: var(--text-body);
     }
 
+    .hero-controls-left {
+      min-width: 0;
+    }
+
+    .hero h1 {
+      min-width: 0;
+      height: auto;
+      min-height: var(--hero-control-height);
+      white-space: normal;
+    }
+
     .brace-app {
-      max-width: 1200px;
+      width: min(100%, var(--flexural-workbench-max));
+      max-width: none;
       margin: 0 auto 60px;
       display: flex;
       flex-direction: column;
@@ -40,7 +53,7 @@
 
     .overview-grid {
       display: grid;
-      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      grid-template-columns: 1fr;
       gap: 16px;
       align-items: stretch;
     }
@@ -94,6 +107,12 @@
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     }
 
+    .brace-view-gallery {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    }
+
     .brace-card {
       border: 1px solid var(--card-border);
       border-radius: 8px;
@@ -108,6 +127,11 @@
     .brace-card:hover {
       box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
       border-color: var(--card-border-strong);
+    }
+
+    .brace-card.readonly:hover {
+      box-shadow: none;
+      border-color: var(--card-border);
     }
 
     .brace-card header {
@@ -127,6 +151,30 @@
       font-weight: 600;
       color: var(--text-strong);
       padding: 4px 0;
+    }
+
+    .brace-card header h4 {
+      margin: 0;
+      color: var(--text-strong);
+      font-size: 17px;
+    }
+
+    .brace-card-edit {
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 5px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-body);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .brace-card-edit:hover,
+    .brace-card-edit:focus-visible {
+      border-color: var(--card-border-strong);
+      background: rgba(255, 255, 255, 0.08);
+      outline: none;
     }
 
     .brace-preview {
@@ -221,24 +269,41 @@
     }
 
     .profile-card {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-areas:
+        "title title"
+        "preview preview"
+        "inputs inputs";
+      align-items: stretch;
       gap: 12px;
     }
+
+    .profile-card h2 {
+      grid-area: title;
+    }
+
     .profile-preview {
+      grid-area: preview;
       display: flex;
       flex-direction: column;
-      align-items: center;
       gap: 10px;
     }
     .profile-preview-canvas {
-      width: 140px;
-      height: 70px;
+      width: 100%;
       border: 1px solid var(--card-border);
-      border-radius: 12px;
+      border-radius: 18px;
       background: rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+      padding: 12px;
+    }
+    .profile-preview-canvas svg {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      display: block;
     }
     .top-inputs {
+      grid-area: inputs;
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
@@ -262,10 +327,12 @@
       border: 1px solid var(--card-border);
       border-radius: 18px;
       background: rgba(255,255,255,0.02);
+      overflow: hidden;
       padding: 12px;
     }
     .viz-card .viz-frame svg {
       width: 100%;
+      max-width: 100%;
       height: auto;
       display: block;
     }
@@ -469,20 +536,27 @@
       gap: 16px;
       flex-wrap: wrap;
     }
+    .results-header > div:first-child {
+      min-width: 0;
+    }
     .results-card h2 {
       margin: 0;
       color: var(--text-strong);
     }
     .results-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(2, minmax(150px, 1fr));
       gap: 14px;
     }
     .results-figure-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(260px, 420px);
-      gap: 14px;
+      grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
+      gap: 18px;
       align-items: stretch;
+    }
+    .results-figure-grid > div,
+    .viz-card {
+      min-width: 0;
     }
     .result-card {
       border: 1px solid var(--card-border);
@@ -510,21 +584,162 @@
       font-size: 24px;
     }
 
+    .flexural-mode-row {
+      width: min(100%, var(--flexural-workbench-max));
+      margin: 0 auto;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .flexural-mode-switch {
+      display: inline-flex;
+      align-self: flex-start;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .flexural-mode-button {
+      border: 0;
+      border-radius: 999px;
+      padding: 7px 14px;
+      background: transparent;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .flexural-mode-button[aria-pressed="true"] {
+      background: var(--blue);
+      color: #061016;
+    }
+
+    .flexural-mode-region {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .flexural-mode-region[hidden] {
+      display: none;
+    }
+
+    .edit-result-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .edit-result-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .edit-result-label {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .edit-result-value {
+      color: var(--text-strong);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .result-interpretation {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
     .empty-state {
       color: var(--text-muted);
       font-size: 14px;
     }
 
-    @media (max-width: 760px) {
-      .overview-grid {
-        grid-template-columns: 1fr;
+    @media (min-width: 1800px) {
+      :root {
+        --flexural-workbench-max: 1320px;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .results-figure-grid {
+        grid-template-columns: minmax(210px, 0.9fr) minmax(240px, 1.1fr);
       }
 
+      .results-grid {
+        grid-template-columns: repeat(2, minmax(95px, 1fr));
+        gap: 10px;
+      }
+
+      .results-header {
+        flex-wrap: nowrap;
+      }
+
+      .tool-save-actions {
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+      }
+
+      .edit-result-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 10px 12px;
+      }
+
+      .edit-result-value {
+        font-size: 17px;
+      }
+
+      .brace-gallery {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
+
+      .result-card {
+        padding: 12px;
+      }
+
+      .result-card .value {
+        font-size: 20px;
+      }
+
+      .result-card .value.primary {
+        font-size: 22px;
+      }
+
+    }
+
+    @media (max-width: 600px) {
       .results-figure-grid {
         grid-template-columns: 1fr;
       }
+    }
 
+    @media (max-width: 520px) {
+      .results-grid,
+      .edit-result-strip,
       .top-inputs {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-card {
+        display: flex;
+      }
+
+      .brace-gallery {
         grid-template-columns: 1fr;
       }
     }
@@ -533,24 +748,32 @@
 
 <body>
 <div class="tl-app">
-  <div class="tl-page">
+  <div class="tl-page" data-flexural-mode="view">
     <section class="hero">
       <div class="hero-row">
         <div class="hero-controls-left">
-          <h1>Flexural Rigidity (EI) Calculator</h1>
-        </div>
-        <div class="hero-actions">
           <details class="hero-menu">
             <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
             <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
           </details>
+          <h1>Flexural Rigidity (EI) Calculator</h1>
+        </div>
+        <div class="hero-actions">
         </div>
       </div>
     </section>
 
+    <div class="flexural-mode-row">
+      <div class="flexural-mode-switch" role="group" aria-label="Flexural workflow mode">
+        <button class="flexural-mode-button" type="button" data-flexural-mode-button="view" aria-pressed="true">View</button>
+        <button class="flexural-mode-button" type="button" data-flexural-mode-button="edit" aria-pressed="false">Edit</button>
+      </div>
+    </div>
+
     <main class="tl-layout tl-single">
       <section class="tl-content">
 <div class="brace-app">
+  <section id="flexural_view_mode" class="flexural-mode-region" data-flexural-region="view" aria-label="Flexural results view">
   <section class="card pad tl-card results-card">
     <div class="results-header">
       <div>
@@ -584,6 +807,10 @@
           </div>
         </div>
         <p id="result_status" class="small muted">Live: ready for inputs.</p>
+        <div class="result-interpretation">
+          <p class="small muted">Computed from the current top profile and brace layout.</p>
+          <button class="ghost-btn btn-small" type="button" data-flexural-mode-target="edit">Edit geometry</button>
+        </div>
       </div>
       <div class="viz-card">
         <h3>AA-line section</h3>
@@ -603,11 +830,50 @@
     </div>
   </section>
 
+  <section class="card pad tl-card comparison-panel">
+    <h2>Brace comparison</h2>
+    <p class="small muted">Relative mass uses total area as a proxy. Relative stiffness is based on I.</p>
+    <div id="brace_summary" class="brace-summary-grid"></div>
+  </section>
+
+  <section class="card pad tl-card">
+    <h2>Brace gallery</h2>
+    <p class="small muted">Current brace shapes used in the AA-line result.</p>
+    <div id="brace_gallery_view" class="brace-view-gallery"></div>
+  </section>
+  </section>
+
+  <section id="flexural_edit_mode" class="flexural-mode-region" data-flexural-region="edit" aria-label="Flexural geometry editor" hidden>
+  <section class="edit-result-strip" aria-label="Live flexural result summary">
+    <div class="edit-result-item">
+      <span class="edit-result-label">Composite EI</span>
+      <span id="edit_result_ei" class="edit-result-value">—</span>
+    </div>
+    <div class="edit-result-item">
+      <span class="edit-result-label">Transformed I</span>
+      <span id="edit_result_I" class="edit-result-value">—</span>
+    </div>
+    <div class="edit-result-item">
+      <span class="edit-result-label">Centroid</span>
+      <span id="edit_result_centroid" class="edit-result-value">—</span>
+    </div>
+  </section>
+
   <div class="overview-grid">
     <section class="card pad tl-card profile-card">
       <h2>Top profile</h2>
       <div class="profile-preview">
-        <div class="profile-preview-canvas" id="top_profile_preview"></div>
+        <div class="profile-preview-canvas">
+          <svg id="edit_aa_view" viewBox="0 0 700 320">
+            <rect x="0" y="0" width="700" height="320" fill="transparent" />
+            <line id="edit_viz_axis_y" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+            <line id="edit_viz_axis_x" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+            <line id="edit_viz_span_line" x1="0" y1="0" x2="0" y2="0" stroke="transparent" stroke-width="0" />
+            <rect id="edit_viz_top" x="0" y="0" width="0" height="0" fill="var(--panel)" stroke="var(--border-soft)" />
+            <g id="edit_viz_braces"></g>
+            <line id="edit_viz_centroid" x1="0" y1="0" x2="0" y2="0" stroke="var(--orange)" stroke-width="2" stroke-dasharray="4 3" />
+          </svg>
+        </div>
         <div class="brace-preview-meta" id="top_profile_meta">—</div>
       </div>
       <div class="top-inputs">
@@ -628,12 +894,6 @@
 
   </div>
 
-  <section class="card pad tl-card comparison-panel">
-    <h2>Brace comparison</h2>
-    <p class="small muted">Relative mass uses total area as a proxy. Relative stiffness is based on I.</p>
-    <div id="brace_summary" class="brace-summary-grid"></div>
-  </section>
-
   <div class="gallery-grid">
     <section class="card pad tl-card">
       <div class="brace-toolbar">
@@ -650,6 +910,7 @@
       <div id="brace_gallery" class="brace-gallery"></div>
     </section>
   </div>
+  </section>
   </div>
       </section>
     </main>
@@ -660,6 +921,7 @@
 
 <script src="../common/site_menu_loader.js"></script>
 <script src="../common/tool_footer_loader.js"></script>
+<script src="./flexural_render_mode.js"></script>
 <script>
   if (typeof window !== "undefined") {
     window.exports = window.exports || {};
@@ -694,57 +956,13 @@
 <script src="./brace_calc/brace-geometry-ui.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", () => {
-    const canvas = document.getElementById("top_profile_preview");
-    const meta = document.getElementById("top_profile_meta");
     const spanInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_span_input"));
     const thicknessInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_thickness_input"));
-    if (!canvas || !meta || !spanInput || !thicknessInput) return;
-
-    function renderTopPreview() {
-      const span = Number(spanInput.value) || 0;
-      const thickness = Number(thicknessInput.value) || 0;
-      const width = 140;
-      const height = 70;
-      const svgNS = "http://www.w3.org/2000/svg";
-      const svg = document.createElementNS(svgNS, "svg");
-      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-      svg.setAttribute("width", `${width}`);
-      svg.setAttribute("height", `${height}`);
-      const rectHeight = Math.max(6, Math.min(height - 10, (thickness / 6) * height));
-      const rectY = (height - rectHeight) / 2;
-      const rect = document.createElementNS(svgNS, "rect");
-      rect.setAttribute("x", "0");
-      rect.setAttribute("y", rectY.toString());
-      rect.setAttribute("width", width.toString());
-      rect.setAttribute("height", rectHeight.toString());
-      rect.setAttribute("fill", "var(--blue)");
-      const outline = document.createElementNS(svgNS, "rect");
-      outline.setAttribute("x", "0");
-      outline.setAttribute("y", rectY.toString());
-      outline.setAttribute("width", width.toString());
-      outline.setAttribute("height", rectHeight.toString());
-      outline.setAttribute("fill", "none");
-      outline.setAttribute("stroke", "rgba(255,255,255,0.7)");
-      outline.setAttribute("stroke-width", "1.4");
-      svg.append(rect, outline);
-      canvas.replaceChildren(svg);
-      meta.textContent = `${span.toFixed(0)} × ${thickness.toFixed(1)} mm`;
-    }
-
-    spanInput.addEventListener("input", renderTopPreview);
-    thicknessInput.addEventListener("input", renderTopPreview);
-    renderTopPreview();
-  });
-</script>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const spanInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_span_input"));
-    const thicknessInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_thickness_input"));
-    const svg = document.getElementById("aa_view");
-    const centroidLine = document.getElementById("viz_centroid");
-    const bracesGroup = document.getElementById("viz_braces");
-    const status = document.getElementById("viz_status");
-    if (!spanInput || !thicknessInput || !svg || !centroidLine || !bracesGroup || !status) return;
+    const previewTargets = [
+      readPreviewTarget("aa_view", "viz_axis_x", "viz_axis_y", "viz_span_line", "viz_top", "viz_braces", "viz_centroid", "viz_status"),
+      readPreviewTarget("edit_aa_view", "edit_viz_axis_x", "edit_viz_axis_y", "edit_viz_span_line", "edit_viz_top", "edit_viz_braces", "edit_viz_centroid", "top_profile_meta"),
+    ].filter(Boolean);
+    if (!spanInput || !thicknessInput || !previewTargets.length) return;
 
     let bracesFromLayout = readInitialVizBraces();
     const placeholderBraces = [
@@ -774,6 +992,19 @@
       if (str.includes("tri")) return "tri";
       if (str.includes("para")) return "para";
       return "rect";
+    }
+
+    function readPreviewTarget(svgId, axisXId, axisYId, spanLineId, topId, bracesId, centroidId, statusId) {
+      const svg = document.getElementById(svgId);
+      const axisX = document.getElementById(axisXId);
+      const axisY = document.getElementById(axisYId);
+      const spanLine = document.getElementById(spanLineId);
+      const topRect = document.getElementById(topId);
+      const bracesGroup = document.getElementById(bracesId);
+      const centroidLine = document.getElementById(centroidId);
+      const status = document.getElementById(statusId);
+      if (!svg || !axisX || !axisY || !spanLine || !topRect || !bracesGroup || !centroidLine || !status) return null;
+      return { svg, axisX, axisY, spanLine, topRect, bracesGroup, centroidLine, status };
     }
 
     function getVizBraces(spanValue) {
@@ -808,47 +1039,44 @@
       const maxBraceH = braces.reduce((max, brace) => Math.max(max, brace.segments.reduce((sum, seg) => sum + seg.height, 0)), 0);
       const totalH = Math.max(topHeight + maxBraceH, 1);
 
-      const svgWidth = svg.clientWidth || width;
+      previewTargets.forEach((target) => renderAaPreviewTarget(target, { width, padding, span, topHeight, braces, totalH }));
+    }
+
+    function renderAaPreviewTarget(target, state) {
+      const { width, padding, span, topHeight, braces, totalH } = state;
+      const svgWidth = target.svg.clientWidth || width;
       const spanDraw = Math.max(svgWidth - 2 * padding, 1);
       const scaleX = spanDraw / span;
       const scaleY = scaleX; // lock Y to X so proportions stay true
       const offsetX = padding;
       const viewHeight = padding * 2 + Math.max(totalH * scaleY, padding);
-      svg.setAttribute("viewBox", `0 0 ${svgWidth} ${viewHeight}`);
-      svg.style.height = `${viewHeight}px`;
+      target.svg.setAttribute("viewBox", `0 0 ${svgWidth} ${viewHeight}`);
+      target.svg.style.height = `${viewHeight}px`;
       const baseY = viewHeight - padding;
 
-      const topRect = document.getElementById("viz_top");
-      const axisX = document.getElementById("viz_axis_x");
-      const axisY = document.getElementById("viz_axis_y");
-      const spanLine = document.getElementById("viz_span_line");
-      if (axisX && axisY && spanLine && topRect) {
-        spanLine.setAttribute("x1", "0");
-        spanLine.setAttribute("x2", "0");
-        spanLine.setAttribute("y1", "0");
-        spanLine.setAttribute("y2", "0");
+      target.spanLine.setAttribute("x1", "0");
+      target.spanLine.setAttribute("x2", "0");
+      target.spanLine.setAttribute("y1", "0");
+      target.spanLine.setAttribute("y2", "0");
+      target.axisX.setAttribute("x1", offsetX.toString());
+      target.axisX.setAttribute("x2", (offsetX + spanDraw).toString());
+      target.axisX.setAttribute("y1", baseY.toString());
+      target.axisX.setAttribute("y2", baseY.toString());
+      target.axisY.setAttribute("x1", offsetX.toString());
+      target.axisY.setAttribute("x2", offsetX.toString());
+      target.axisY.setAttribute("y1", baseY.toString());
+      target.axisY.setAttribute("y2", (baseY - totalH * scaleY).toString());
 
-        axisX.setAttribute("x1", offsetX.toString());
-        axisX.setAttribute("x2", (offsetX + spanDraw).toString());
-        axisX.setAttribute("y1", baseY.toString());
-        axisX.setAttribute("y2", baseY.toString());
+      const topY = baseY - topHeight * scaleY;
+      target.topRect.setAttribute("x", offsetX.toString());
+      target.topRect.setAttribute("y", topY.toString());
+      target.topRect.setAttribute("width", spanDraw.toString());
+      target.topRect.setAttribute("height", Math.max(topHeight * scaleY, 1).toString());
+      target.topRect.setAttribute("fill", "var(--border-soft)");
+      target.topRect.setAttribute("stroke", "rgba(255,255,255,0.7)");
+      target.topRect.setAttribute("stroke-width", "1.4");
 
-        axisY.setAttribute("x1", offsetX.toString());
-        axisY.setAttribute("x2", offsetX.toString());
-        axisY.setAttribute("y1", baseY.toString());
-        axisY.setAttribute("y2", (baseY - totalH * scaleY).toString());
-
-        const topY = baseY - topHeight * scaleY;
-        topRect.setAttribute("x", offsetX.toString());
-        topRect.setAttribute("y", topY.toString());
-        topRect.setAttribute("width", spanDraw.toString());
-        topRect.setAttribute("height", Math.max(topHeight * scaleY, 1).toString());
-        topRect.setAttribute("fill", "var(--border-soft)");
-        topRect.setAttribute("stroke", "rgba(255,255,255,0.7)");
-        topRect.setAttribute("stroke-width", "1.4");
-      }
-
-      bracesGroup.replaceChildren();
+      target.bracesGroup.replaceChildren();
       const centerX = offsetX + spanDraw / 2;
       const svgNS = "http://www.w3.org/2000/svg";
       braces.forEach((brace) => {
@@ -880,12 +1108,12 @@
             element.setAttribute("height", Math.max(segHeightPx, 1).toString());
           }
           element.setAttribute("fill", segment.shape === "tri" ? "var(--orange)" : "var(--blue)");
-          bracesGroup.appendChild(element);
+          target.bracesGroup.appendChild(element);
           const outline = element.cloneNode(false);
           outline.setAttribute("fill", "none");
           outline.setAttribute("stroke", "rgba(255,255,255,0.7)");
           outline.setAttribute("stroke-width", "1.2");
-          bracesGroup.appendChild(outline);
+          target.bracesGroup.appendChild(outline);
           currentY = segY;
         });
       });
@@ -894,11 +1122,11 @@
         ? window.vizCentroidMm
         : topHeight / 2;
       const centroidY = baseY - centroidVal * scaleY;
-      centroidLine.setAttribute("x1", offsetX.toString());
-      centroidLine.setAttribute("x2", (offsetX + spanDraw).toString());
-      centroidLine.setAttribute("y1", centroidY.toString());
-      centroidLine.setAttribute("y2", centroidY.toString());
-      status.textContent = `Span: ${span.toFixed(0)} mm · Top thickness: ${topHeight.toFixed(1)} mm · Braces: ${braces.length}`;
+      target.centroidLine.setAttribute("x1", offsetX.toString());
+      target.centroidLine.setAttribute("x2", (offsetX + spanDraw).toString());
+      target.centroidLine.setAttribute("y1", centroidY.toString());
+      target.centroidLine.setAttribute("y2", centroidY.toString());
+      target.status.textContent = `Span: ${span.toFixed(0)} mm · Top thickness: ${topHeight.toFixed(1)} mm · Braces: ${braces.length}`;
     }
 
     spanInput.addEventListener("input", renderAaPreview);
@@ -938,8 +1166,11 @@
     const resultI = document.getElementById("result_I");
     const resultCentroid = document.getElementById("result_centroid");
     const resultHeight = document.getElementById("result_height");
+    const editResultEI = document.getElementById("edit_result_ei");
+    const editResultI = document.getElementById("edit_result_I");
+    const editResultCentroid = document.getElementById("edit_result_centroid");
     const statusEl = document.getElementById("result_status");
-    if (!spanInput || !thicknessInput || !modulusInput || !resultEI || !resultI || !resultCentroid || !resultHeight || !statusEl) return;
+    if (!spanInput || !thicknessInput || !modulusInput || !resultEI || !resultI || !resultCentroid || !resultHeight || !editResultEI || !editResultI || !editResultCentroid || !statusEl) return;
 
     const DEFAULT_MODULUS = 12; // GPa
     let braceLayouts = [];
@@ -990,6 +1221,16 @@
         .filter(Boolean);
     }
 
+    function writeResultValues(ei, transformedI, centroid, height) {
+      resultEI.textContent = ei;
+      resultI.textContent = transformedI;
+      resultCentroid.textContent = centroid;
+      resultHeight.textContent = height;
+      editResultEI.textContent = ei;
+      editResultI.textContent = transformedI;
+      editResultCentroid.textContent = centroid;
+    }
+
     function run() {
       try {
         const span = Number(spanInput.value) || 500;
@@ -998,7 +1239,7 @@
         const braces = buildBraceSpecs();
         if (!braces.length) {
           statusEl.textContent = "Awaiting brace layout.";
-          resultEI.textContent = resultI.textContent = resultCentroid.textContent = resultHeight.textContent = "—";
+          writeResultValues("—", "—", "—", "—");
           return;
         }
         const slice = calc.computeSlice({
@@ -1007,14 +1248,16 @@
           topModulus: modulusTop,
           braces
         });
-        resultEI.textContent = `${format(slice.EI / 1e6, 3)}`; // N·m²
-        resultI.textContent = format(slice.transformedI, 1);
-        resultCentroid.textContent = `${format(slice.centroid, 2)} mm`;
         const firstBrace = slice.braces[0];
-        resultHeight.textContent = firstBrace ? `${format(firstBrace.height, 1)} mm` : "—";
+        writeResultValues(
+          `${format(slice.EI / 1e6, 3)}`,
+          format(slice.transformedI, 1),
+          `${format(slice.centroid, 2)} mm`,
+          firstBrace ? `${format(firstBrace.height, 1)} mm` : "—"
+        );
         statusEl.textContent = "Live: computed from current inputs.";
       } catch (error) {
-        resultEI.textContent = resultI.textContent = resultCentroid.textContent = resultHeight.textContent = "—";
+        writeResultValues("—", "—", "—", "—");
         const message = error instanceof Error ? error.message : String(error);
         statusEl.textContent = `Error: ${message}`;
       }
