@@ -176,6 +176,7 @@ body::after {
 .hero-menu-panel {
   position: absolute;
   left: 0;
+  right: auto;
   top: calc(100% + 10px);
   min-width: 220px;
   display: grid;
