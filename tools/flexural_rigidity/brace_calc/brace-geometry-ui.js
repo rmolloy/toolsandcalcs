@@ -16,7 +16,7 @@
         }
         const api = braceGeometry;
         const galleryEl = requireElement("brace_gallery");
-        const viewGalleryEl = requireElement("brace_gallery_view");
+        const viewGalleryEl = document.getElementById("brace_gallery_view");
         const summaryEl = requireElement("brace_summary");
         const addBraceBtn = requireElement("add_brace");
         const saveBtn = requireElement("save_braces");
@@ -257,6 +257,8 @@
             return true;
         }
         function renderViewGallery(renderInfo, scales) {
+            if (!viewGalleryEl)
+                return;
             viewGalleryEl.replaceChildren();
             braces.forEach((brace, index) => {
                 const info = renderInfo[brace.id];
