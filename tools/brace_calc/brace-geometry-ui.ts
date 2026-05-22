@@ -49,7 +49,7 @@ interface BraceRenderInfo {
   const api = braceGeometry;
 
   const galleryEl = requireElement<HTMLDivElement>("brace_gallery");
-  const viewGalleryEl = requireElement<HTMLDivElement>("brace_gallery_view");
+  const viewGalleryEl = document.getElementById("brace_gallery_view") as HTMLDivElement | null;
   const summaryEl = requireElement<HTMLDivElement>("brace_summary");
   const addBraceBtn = requireElement<HTMLButtonElement>("add_brace");
   const saveBtn = requireElement<HTMLButtonElement>("save_braces");
@@ -322,6 +322,8 @@ interface BraceRenderInfo {
     renderInfo: Record<string, BraceRenderInfo>,
     scales: { referenceBreadth: number; maxHeight: number }
   ): void {
+    if (!viewGalleryEl) return;
+
     viewGalleryEl.replaceChildren();
     braces.forEach((brace, index) => {
       const info = renderInfo[brace.id];
