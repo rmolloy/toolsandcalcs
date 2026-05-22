@@ -157,7 +157,13 @@ function peakAnalysisPlotApply(plot, data) {
     const Plotly = peakAnalysisPlotlyResolve();
     if (!Plotly?.react)
         return;
-    Plotly.react(plot, peakAnalysisTracesBuild(data), peakAnalysisLayoutBuild(data), { displayModeBar: false, responsive: true });
+    const plotAny = plot;
+    plotAny.__peakAnalysisPlotReady = peakAnalysisPlotReadyChain(plotAny.__peakAnalysisPlotReady, () => Plotly.react(plot, peakAnalysisTracesBuild(data), peakAnalysisLayoutBuild(data), { displayModeBar: false, responsive: true }));
+}
+function peakAnalysisPlotReadyChain(previousReady, drawPlot) {
+    if (!previousReady || typeof previousReady.then !== "function")
+        return drawPlot();
+    return Promise.resolve(previousReady).catch(() => undefined).then(() => drawPlot());
 }
 function peakAnalysisTracesBuild(data) {
     return [

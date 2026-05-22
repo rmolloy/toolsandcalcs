@@ -530,6 +530,7 @@ function measureModeChangeHandle(deps) {
 export function measureModeChangeApply(nextMode, deps) {
     deps.state.measureMode = nextMode;
     deps.state.lastOverlay = undefined;
+    measureModeViewRangesReset(deps.state);
     if (measureModeChangeShouldReseedDemoWave()) {
         measureModeStateResetForDemoWave(deps.state);
     }
@@ -568,6 +569,12 @@ export function measureModeStateResetForDemoWave(state) {
     state.lastSpectrum = null;
     state.lastSpectrumRaw = null;
     state.lastSpectrumNoteSelection = null;
+}
+export function measureModeViewRangesReset(state) {
+    state.viewRangeMs = null;
+    state.noteSelectionRangeMs = null;
+    state.lastPrimaryRangePipelineFingerprint = null;
+    state.lastNoteRangePipelineFingerprint = null;
 }
 function renderTryModePanelForMeasureMode(measureMode, deps) {
     if (measureMode === "guitar" || measureMode === "played_note")

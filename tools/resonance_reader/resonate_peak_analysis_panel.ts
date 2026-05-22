@@ -178,12 +178,18 @@ function peakAnalysisPlotApply(
 ) {
   const Plotly = peakAnalysisPlotlyResolve();
   if (!Plotly?.react) return;
-  Plotly.react(
+  const plotAny = plot as any;
+  plotAny.__peakAnalysisPlotReady = peakAnalysisPlotReadyChain(plotAny.__peakAnalysisPlotReady, () => Plotly.react(
     plot,
     peakAnalysisTracesBuild(data),
     peakAnalysisLayoutBuild(data),
     { displayModeBar: false, responsive: true },
-  );
+  ));
+}
+
+function peakAnalysisPlotReadyChain(previousReady: Promise<unknown> | undefined, drawPlot: () => unknown) {
+  if (!previousReady || typeof previousReady.then !== "function") return drawPlot();
+  return Promise.resolve(previousReady).catch(() => undefined).then(() => drawPlot());
 }
 
 function peakAnalysisTracesBuild(data: { x: number[]; y: number[]; selectedX: number; selectedY: number }) {

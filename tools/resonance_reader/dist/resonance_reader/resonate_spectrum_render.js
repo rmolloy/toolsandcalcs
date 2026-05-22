@@ -491,7 +491,8 @@ function buildModeAnnotationIndexByKey(modeAnnotationKeys) {
     return modeAnnotationIndexByKey;
 }
 function renderSpectrumPlot(plot, plotData, layout) {
-    window.Plotly.newPlot(plot, plotData, layout, {
+    const plotAny = plot;
+    plotAny.__spectrumPlotReady = spectrumPlotReadyChain(plotAny.__spectrumPlotReady, () => window.Plotly.newPlot(plot, plotData, layout, {
         displayModeBar: true,
         displaylogo: false,
         modeBarButtonsToAdd: [settingsModebarButtonBuild()],
@@ -508,7 +509,12 @@ function renderSpectrumPlot(plot, plotData, layout) {
             shapePosition: false,
             titleText: false,
         },
-    });
+    }));
+}
+function spectrumPlotReadyChain(previousReady, drawPlot) {
+    if (!previousReady || typeof previousReady.then !== "function")
+        return drawPlot();
+    return Promise.resolve(previousReady).catch(() => undefined).then(() => drawPlot());
 }
 function settingsModebarButtonBuild() {
     return {

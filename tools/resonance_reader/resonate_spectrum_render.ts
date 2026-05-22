@@ -606,7 +606,8 @@ function buildModeAnnotationIndexByKey(modeAnnotationKeys: string[]) {
 }
 
 function renderSpectrumPlot(plot: HTMLElement, plotData: any[], layout: any) {
-  (window as any).Plotly.newPlot(plot, plotData, layout, {
+  const plotAny = plot as any;
+  plotAny.__spectrumPlotReady = spectrumPlotReadyChain(plotAny.__spectrumPlotReady, () => (window as any).Plotly.newPlot(plot, plotData, layout, {
     displayModeBar: true,
     displaylogo: false,
     modeBarButtonsToAdd: [settingsModebarButtonBuild()],
@@ -623,7 +624,12 @@ function renderSpectrumPlot(plot: HTMLElement, plotData: any[], layout: any) {
       shapePosition: false,
       titleText: false,
     },
-  });
+  }));
+}
+
+function spectrumPlotReadyChain(previousReady: Promise<unknown> | undefined, drawPlot: () => unknown) {
+  if (!previousReady || typeof previousReady.then !== "function") return drawPlot();
+  return Promise.resolve(previousReady).catch(() => undefined).then(() => drawPlot());
 }
 
 function settingsModebarButtonBuild() {
