@@ -469,10 +469,24 @@
 
     function appendScript(src, onLoad, onError) {
       const script = document.createElement("script");
-      script.src = src;
+      script.src = sourceWithPublishRevision(src);
       script.onload = onLoad;
       script.onerror = onError;
       document.body.appendChild(script);
+    }
+
+    function sourceWithPublishRevision(src) {
+      const revision = readPublishRevision();
+      if (!revision || src.includes("?rev=") || /^[a-z][a-z0-9+.-]*:/i.test(src) || src.startsWith("//")) {
+        return src;
+      }
+      return `${src}${src.includes("?") ? "&" : "?"}rev=${encodeURIComponent(revision)}`;
+    }
+
+    function readPublishRevision() {
+      const asset = document.querySelector('script[src*="?rev="],link[href*="?rev="]');
+      const specifier = asset?.getAttribute("src") || asset?.getAttribute("href") || "";
+      return specifier.match(/[?&]rev=([^&#]+)/)?.[1] || "";
     }
 
     function loadSequentialScripts(sources, done) {
