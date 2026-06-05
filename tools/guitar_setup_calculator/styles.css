@@ -1,0 +1,481 @@
+@import url("../common/styles.css");
+@import url("../common/theme_resonance_shared.css");
+
+:root {
+  --tl-topbar-h: 0px;
+  --tl-page-max: min(1700px, 94vw);
+  --tl-page-pad: 18px;
+  --setup-border: color-mix(in srgb, var(--ink) 10%, transparent);
+  --setup-soft: color-mix(in srgb, var(--panel) 82%, var(--bg));
+  --setup-blue: color-mix(in srgb, var(--blue) 92%, white);
+  --setup-gold: color-mix(in srgb, var(--orange) 88%, white);
+}
+
+.hero {
+  margin-bottom: 12px;
+}
+
+.tool-kicker,
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero h1,
+.panel h2 {
+  margin: 0;
+}
+
+.panel h2 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+button {
+  min-height: 38px;
+}
+
+.ghost-button,
+.secondary-button {
+  background: transparent;
+}
+
+.setup-hero-select {
+  display: inline-grid;
+  grid-template-columns: auto minmax(190px, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 42px;
+  margin-left: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--setup-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 82%, var(--bg));
+}
+
+.setup-hero-select span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.setup-hero-select select {
+  appearance: none;
+  min-height: 28px;
+  min-width: 0;
+  padding: 2px 22px 2px 0;
+  border: 0;
+  border-radius: 6px;
+  background:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%) right 9px center / 6px 6px no-repeat,
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%) right 4px center / 6px 6px no-repeat,
+    transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+}
+
+.setup-hero-select option {
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.setup-hero-select select:focus-visible {
+  outline: 2px solid var(--setup-blue);
+  outline-offset: 2px;
+}
+
+.setup-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 0;
+}
+
+.workflow-strip,
+.panel {
+  border: 1px solid var(--setup-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 18%);
+}
+
+.workflow-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  color: var(--muted);
+}
+
+.workflow-strip span {
+  padding: 8px 10px;
+  border-radius: 999px;
+  text-align: center;
+  background: color-mix(in srgb, var(--panel) 68%, transparent);
+}
+
+.workflow-strip .active {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--blue) 24%, var(--panel));
+}
+
+.setup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  gap: 14px;
+  align-items: start;
+}
+
+.setup-main,
+.setup-status {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.panel {
+  padding: 16px;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.panel-note,
+.measurement-note,
+.season-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.snapshot-switch {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(72px, 1fr));
+  gap: 6px;
+}
+
+.snapshot-switch button {
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 8px;
+}
+
+.snapshot-switch .selected {
+  border-color: color-mix(in srgb, var(--blue) 70%, white);
+  background: color-mix(in srgb, var(--blue) 22%, var(--panel));
+}
+
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid var(--setup-border);
+  border-radius: 10px;
+}
+
+.fact-grid article {
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid var(--setup-border);
+}
+
+.fact-grid article:last-child {
+  border-right: 0;
+}
+
+.fact-grid span,
+.paired-values span,
+.spec-list dt,
+.season-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.fact-grid strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+}
+
+.measure-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.measurement-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.measurement-card {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--setup-border);
+  border-radius: 10px;
+  background: var(--setup-soft);
+}
+
+.metric-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.card-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid var(--setup-border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.paired-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.paired-values div + div {
+  border-left: 1px solid var(--setup-border);
+  padding-left: 12px;
+}
+
+.paired-values strong,
+.single-value strong {
+  color: var(--setup-blue);
+  display: inline-block;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.paired-values em,
+.single-value em {
+  color: var(--muted);
+  display: block;
+  font-style: normal;
+}
+
+.single-value {
+  text-align: center;
+}
+
+.string-measurements {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.string-measurements div {
+  padding: 8px;
+  border: 1px solid var(--setup-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 75%, transparent);
+}
+
+.string-measurements dt,
+.string-measurements dd {
+  margin: 0;
+}
+
+.string-measurements dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.string-measurements dd {
+  color: var(--setup-blue);
+  font-weight: 700;
+}
+
+.target-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(360px, 1.1fr);
+  gap: 14px;
+}
+
+.choice-card {
+  display: grid;
+  gap: 12px;
+}
+
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.segmented-control button {
+  min-width: 0;
+  margin: 0;
+  padding: 8px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.segmented-control .selected {
+  border-color: color-mix(in srgb, var(--blue) 70%, white);
+  background: color-mix(in srgb, var(--blue) 22%, var(--panel));
+}
+
+.method-options {
+  display: grid;
+  gap: 8px;
+}
+
+.method-options label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px;
+  border: 1px solid var(--setup-border);
+  border-radius: 10px;
+  background: var(--setup-soft);
+}
+
+.method-options strong {
+  display: block;
+  color: var(--ink);
+}
+
+.method-options span {
+  color: var(--muted);
+}
+
+.string-table {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--setup-border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+th:first-child {
+  text-align: left;
+  color: var(--muted);
+}
+
+.spec-panel,
+.adjustment-panel,
+.journal-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.spec-panel h2,
+.journal-panel h2 {
+  color: var(--setup-gold);
+}
+
+.spec-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.spec-list div {
+  padding: 10px;
+  border: 1px solid var(--setup-border);
+  border-radius: 8px;
+  background: var(--setup-soft);
+}
+
+.spec-list dd {
+  margin: 2px 0 0;
+  color: var(--setup-blue);
+  font-weight: 700;
+}
+
+.adjustment-panel ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.adjustment-panel li::marker {
+  color: var(--setup-blue);
+}
+
+.journal-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.journal-actions button {
+  margin: 0;
+}
+
+.season-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--setup-border);
+  border-radius: 10px;
+  background: var(--setup-soft);
+}
+
+.season-card strong {
+  color: var(--ink);
+}
+
+@media (max-width: 1100px) {
+  .setup-grid,
+  .measurement-grid,
+  .target-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-status {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --tl-page-pad: 12px;
+  }
+
+  .workflow-strip,
+  .fact-grid,
+  .setup-status {
+    grid-template-columns: 1fr;
+  }
+
+  .fact-grid article {
+    border-right: 0;
+    border-bottom: 1px solid var(--setup-border);
+  }
+
+  .segmented-control {
+    grid-template-columns: 1fr;
+  }
+}

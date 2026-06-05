@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guitar Setup Journal | The Lab at Rick Molloy Guitars</title>
+  <link rel="stylesheet" href="styles.css?v=setup-hero-select">
+  <link rel="stylesheet" href="../common/layout.css">
+</head>
+
+<body>
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
+            </details>
+            <div>
+              <p class="tool-kicker">Setup Journal</p>
+              <h1>Guitar Setup Calculator</h1>
+            </div>
+            <label class="setup-hero-select hero-control">
+              <span>Instrument</span>
+              <select aria-label="Select instrument">
+                <option selected>2021 Tele-style electric</option>
+                <option>OM acoustic</option>
+                <option>Classical nylon</option>
+                <option>New instrument...</option>
+              </select>
+            </label>
+            <label class="setup-hero-select hero-control">
+              <span>Snapshot</span>
+              <select aria-label="Select setup snapshot">
+                <option selected>Before setup</option>
+                <option>After setup</option>
+                <option>Season check</option>
+              </select>
+            </label>
+          </div>
+          <div class="hero-actions">
+            <button type="button" class="ghost-button">Save before snapshot</button>
+          </div>
+        </div>
+      </section>
+
+      <main class="setup-shell" aria-labelledby="setup-title">
+        <section class="workflow-strip" aria-label="Setup workflow">
+          <span class="active">1 Pick instrument</span>
+          <span>2 Set facts</span>
+          <span>3 Measure</span>
+          <span>4 Pick targets</span>
+          <span>5 Adjust and save</span>
+        </section>
+
+        <section class="setup-grid">
+          <section class="setup-main">
+            <section class="panel instrument-panel" aria-labelledby="setup-title">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Instrument facts</p>
+                  <h2 id="setup-title">Facts used for this setup</h2>
+                </div>
+                <div class="snapshot-switch" aria-label="Snapshot state">
+                  <button type="button" class="selected">Before</button>
+                  <button type="button">After</button>
+                </div>
+              </div>
+              <div class="fact-grid" aria-label="Instrument facts">
+                <article>
+                  <span>Fretboard radius</span>
+                  <strong>12 in</strong>
+                </article>
+                <article>
+                  <span>String length</span>
+                  <strong>25.5 in</strong>
+                </article>
+                <article>
+                  <span>Tuning</span>
+                  <strong>E Standard</strong>
+                </article>
+                <article>
+                  <span>String set</span>
+                  <strong>10-46 plain/wound</strong>
+                </article>
+              </div>
+            </section>
+
+            <section class="panel measure-panel" aria-label="Setup measurements">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Three measurements</p>
+                  <h2>Bench intake</h2>
+                </div>
+                <p class="panel-note">Same three reads before and after setup. Same guitar over seasons.</p>
+              </div>
+              <div class="measurement-grid">
+                <article class="measurement-card">
+                  <div class="metric-title">
+                    <span>1. Relief</span>
+                    <span class="card-icon">R</span>
+                  </div>
+                  <div class="single-value">
+                    <strong>0.010</strong>
+                    <em>in</em>
+                  </div>
+                  <p class="measurement-note">Measured after tuning to pitch.</p>
+                </article>
+
+                <article class="measurement-card">
+                  <div class="metric-title">
+                    <span>2. Capo Action</span>
+                    <span class="card-icon">A</span>
+                  </div>
+                  <p class="measurement-note">Capo at first fret. Read 15th fret for electric.</p>
+                  <div class="paired-values">
+                    <div>
+                      <span>Last string</span>
+                      <strong>2.0</strong>
+                      <em>mm</em>
+                    </div>
+                    <div>
+                      <span>First string</span>
+                      <strong>1.3</strong>
+                      <em>mm</em>
+                    </div>
+                  </div>
+                </article>
+
+                <article class="measurement-card">
+                  <div class="metric-title">
+                    <span>3. Nut Action</span>
+                    <span class="card-icon">N</span>
+                  </div>
+                  <p class="measurement-note">Read every string over the first fret.</p>
+                  <dl class="string-measurements" aria-label="Nut action by string">
+                    <div><dt>1</dt><dd>0.20 mm</dd></div>
+                    <div><dt>2</dt><dd>0.21 mm</dd></div>
+                    <div><dt>3</dt><dd>0.23 mm</dd></div>
+                    <div><dt>4</dt><dd>0.25 mm</dd></div>
+                    <div><dt>5</dt><dd>0.27 mm</dd></div>
+                    <div><dt>6</dt><dd>0.28 mm</dd></div>
+                  </dl>
+                </article>
+              </div>
+            </section>
+
+            <section class="target-grid">
+              <article class="panel choice-card">
+                <p class="eyebrow">Target choice</p>
+                <h2>Playing style / action</h2>
+                <div class="segmented-control" aria-label="Playing style mockup options">
+                  <button type="button">Soft / low</button>
+                  <button type="button" class="selected">Medium</button>
+                  <button type="button">Med hard</button>
+                  <button type="button">Med-high</button>
+                  <button type="button">Electric slide</button>
+                </div>
+              </article>
+
+              <article class="panel choice-card">
+                <p class="eyebrow">Target choice</p>
+                <h2>Nut feel</h2>
+                <div class="method-options">
+                  <label>
+                    <input type="radio" name="nut-method" checked>
+                    <span>
+                      <strong>Equal clearance</strong>
+                      Same first-fret clearance across the set.
+                    </span>
+                  </label>
+                  <label>
+                    <input type="radio" name="nut-method">
+                    <span>
+                      <strong>Match string tops to radius</strong>
+                      Compensates slot depth by string diameter.
+                    </span>
+                  </label>
+                </div>
+              </article>
+            </section>
+
+            <section class="panel string-table">
+              <p class="eyebrow">String set</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>String</th>
+                    <th>1</th>
+                    <th>2</th>
+                    <th>3</th>
+                    <th>4</th>
+                    <th>5</th>
+                    <th>6</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th>Gauge</th>
+                    <td>.010</td>
+                    <td>.013</td>
+                    <td>.017</td>
+                    <td>.026</td>
+                    <td>.036</td>
+                    <td>.046</td>
+                  </tr>
+                  <tr>
+                    <th>Type</th>
+                    <td>Plain</td>
+                    <td>Plain</td>
+                    <td>Plain</td>
+                    <td>Wound</td>
+                    <td>Wound</td>
+                    <td>Wound</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+          </section>
+
+          <aside class="setup-status" aria-label="Setup journal status">
+            <section class="panel spec-panel">
+              <p class="eyebrow">Spec target</p>
+              <h2>Medium action, equal nut clearance</h2>
+              <dl class="spec-list">
+                <div>
+                  <dt>Relief target</dt>
+                  <dd>0.008-0.012 in</dd>
+                </div>
+                <div>
+                  <dt>Capo action target</dt>
+                  <dd>1.2-2.0 mm</dd>
+                </div>
+                <div>
+                  <dt>Nut target</dt>
+                  <dd>equal clearance</dd>
+                </div>
+              </dl>
+            </section>
+
+            <section class="panel adjustment-panel">
+              <p class="eyebrow">Adjust to spec</p>
+              <h2>Capo action is the main move</h2>
+              <ol>
+                <li>Relief is inside target.</li>
+                <li>Nut reads are consistent enough to preserve.</li>
+                <li>Bring capo action down after confirming saddle travel.</li>
+              </ol>
+            </section>
+
+            <section class="panel journal-panel">
+              <p class="eyebrow">Luthier's Notebook</p>
+              <h2>Save before / after</h2>
+              <div class="journal-actions">
+                <button type="button">Save before snapshot</button>
+                <button type="button" class="secondary-button">Save after snapshot</button>
+              </div>
+              <div class="season-card">
+                <span>Season watch</span>
+                <strong>June setup vs January setup</strong>
+                <p>Relief opened +0.003 in. Capo action rose +0.2 mm on the last string.</p>
+              </div>
+            </section>
+          </aside>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../common/site_menu_loader.js" defer></script>
+</body>
+
+</html>
