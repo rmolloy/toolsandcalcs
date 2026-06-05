@@ -25,6 +25,10 @@
     {
       "label": "Monopole Mobility",
       "href": "../monopole_mobility/"
+    },
+    {
+      "label": "Guitar Setup Calculator",
+      "href": "../guitar_setup_calculator/"
     }
   ]
 }

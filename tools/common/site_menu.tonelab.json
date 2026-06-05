@@ -27,6 +27,10 @@
       "href": "/lab/tools/fret_calculator/"
     },
     {
+      "label": "Guitar Setup Calculator",
+      "href": "/lab/tools/guitar_setup_calculator/"
+    },
+    {
       "label": "Monopole Mobility",
       "href": "/lab/tools/monopole_mobility/"
     },
