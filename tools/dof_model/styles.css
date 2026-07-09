@@ -726,6 +726,38 @@ body.whatif-mode .param-whatif-row {
   }
 }
 
+@media (max-width: 600px) {
+  .page-shell {
+    padding: 10px;
+  }
+
+  .hero-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hero-controls-left,
+  .hero-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .hero h1 {
+    height: auto;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .mode-tabs {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .mode-tabs .tab-btn {
+    flex: 1 1 6rem;
+  }
+}
+
 .dof-task-parking {
   display: none;
 }
