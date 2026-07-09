@@ -464,6 +464,32 @@ th:first-child {
     --tl-page-pad: 12px;
   }
 
+  .hero-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .hero-controls-left {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .hero-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .setup-hero-select {
+    width: 100%;
+    margin-left: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .setup-hero-select select {
+    width: 100%;
+  }
+
   .workflow-strip,
   .fact-grid,
   .setup-status {
@@ -477,5 +503,17 @@ th:first-child {
 
   .segmented-control {
     grid-template-columns: 1fr;
+  }
+
+  .string-table table {
+    min-width: 100%;
+    table-layout: fixed;
+  }
+
+  .string-table th,
+  .string-table td {
+    padding-inline: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
