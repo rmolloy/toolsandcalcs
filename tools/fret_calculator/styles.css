@@ -37,11 +37,16 @@
 }
 
 .table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overflow-y: hidden;
 }
 
 table {
   width: 100%;
+  min-width: max-content;
   border-collapse: collapse;
 }
 
@@ -63,5 +68,30 @@ td:first-child {
     --tl-controls-min: 100%;
     --tl-controls-max: 100%;
     --tl-page-pad: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-row,
+  .hero-controls-left {
+    min-width: 0;
+  }
+
+  .hero h1 {
+    height: auto;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  table {
+    min-width: 100%;
+    table-layout: fixed;
+  }
+
+  th,
+  td {
+    padding-inline: 6px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
