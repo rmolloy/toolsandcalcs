@@ -759,6 +759,11 @@
           <h1>Flexural Rigidity (EI) Calculator</h1>
         </div>
         <div class="hero-actions">
+          <div class="tool-save-actions">
+            <button id="load_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Load JSON</button>
+            <button id="save_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Download JSON</button>
+            <input id="load_flexural_state_file" type="file" accept="application/json,.json" hidden>
+          </div>
         </div>
       </div>
     </section>
@@ -779,11 +784,6 @@
       <div>
         <h2>Results</h2>
         <p class="small muted">Book example default: 280 mm span, 2.8 mm top, four-brace layout.</p>
-      </div>
-      <div class="tool-save-actions">
-        <button id="load_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Load JSON</button>
-        <button id="save_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Download JSON</button>
-        <input id="load_flexural_state_file" type="file" accept="application/json,.json" hidden>
       </div>
     </div>
     <div class="results-figure-grid">
