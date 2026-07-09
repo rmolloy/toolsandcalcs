@@ -1,8 +1,17 @@
 import { plateMaterialPanelVisibleForMeasureMode } from "./resonate_plate_material_panel.js";
+import { measureModeNormalize, type MeasureMode } from "./resonate_mode_config.js";
 
 export type AnalysisTab = "peak_analysis" | "material_properties";
 
 const DEFAULT_ANALYSIS_TAB: AnalysisTab = "peak_analysis";
+const WAVEFORM_NAVIGATOR_COPY = {
+  title: "Frequency Response",
+  description: "Drag yellow range for FFT analysis. Drag green range for note selection. Click a note label (or Option/Command-click a note slice) to override its note.",
+};
+const PEAK_ANALYSIS_TAP_NAVIGATOR_COPY = {
+  title: "Tap Navigator",
+  description: "Select a tap to inspect its Peak/Q ring-down. Solid taps are accepted, dotted taps are weak, dashed taps sit outside the active analysis range.",
+};
 
 export function analysisTabsInitialize(state: Record<string, any>) {
   analysisTabSeedIntoState(state);
@@ -13,6 +22,7 @@ export function analysisTabsInitialize(state: Record<string, any>) {
 export function analysisTabsRenderFromState(state: Record<string, any>) {
   analysisTabSeedIntoState(state);
   analysisTabNormalizeForState(state);
+  analysisSurfaceRenderFromState(state);
   analysisTabsRenderButtonsFromState(state);
   analysisTabsRenderPanelsFromState(state);
 }
@@ -24,6 +34,16 @@ export function analysisTabActivatePeakAnalysis(state: Record<string, any>) {
 
 export function analysisTabMaterialVisibleForMeasureMode(measureMode: unknown) {
   return plateMaterialPanelVisibleForMeasureMode(measureMode);
+}
+
+export function analysisSurfaceVisibleForMeasureMode(measureMode: unknown) {
+  return measureModeNormalize(measureMode) === "peak_analysis";
+}
+
+export function waveformNavigatorCopyResolveForMeasureMode(measureMode: unknown) {
+  return measureModeNormalize(measureMode) === "peak_analysis"
+    ? PEAK_ANALYSIS_TAP_NAVIGATOR_COPY
+    : WAVEFORM_NAVIGATOR_COPY;
 }
 
 function analysisTabSeedIntoState(state: Record<string, any>) {
@@ -74,6 +94,29 @@ function analysisTabsRenderPanelsFromState(state: Record<string, any>) {
   if (peakPanel) peakPanel.hidden = activeTab !== "peak_analysis";
   const materialPanel = document.getElementById("plate_material_card") as HTMLElement | null;
   if (materialPanel) materialPanel.hidden = !materialVisible || activeTab !== "material_properties";
+}
+
+function analysisSurfaceRenderFromState(state: Record<string, any>) {
+  const surface = analysisSurfaceElementGet();
+  if (!surface) return;
+  const measureMode = measureModeNormalize(state.measureMode);
+  analysisSurfaceParentModeWrite(surface, measureMode);
+  waveformNavigatorCopyRenderForMeasureMode(measureMode);
+  surface.hidden = !analysisSurfaceVisibleForMeasureMode(measureMode);
+}
+
+function waveformNavigatorCopyRenderForMeasureMode(measureMode: MeasureMode) {
+  const copy = waveformNavigatorCopyResolveForMeasureMode(measureMode);
+  const title = document.getElementById("wave_nav_title");
+  const description = document.getElementById("wave_nav_description");
+  if (title) title.textContent = copy.title;
+  if (description) description.textContent = copy.description;
+}
+
+function analysisSurfaceParentModeWrite(surface: HTMLElement, measureMode: MeasureMode) {
+  const parent = surface.closest(".card-surface") as HTMLElement | null;
+  if (!parent) return;
+  parent.dataset.measureMode = measureMode;
 }
 
 function analysisTabReadFromState(state: Record<string, any>): AnalysisTab {

@@ -24,6 +24,8 @@ const COLOR_ROLE_TO_PALETTE = {
     wavePrimarySelection: "orange",
     waveNoteSelection: "bluishGreen",
     waveTapMarker: "reddishPurple",
+    peakAnalysisWaveform: "skyBlue",
+    peakAnalysisProjection: "yellow",
 };
 function resolvePaletteRgbFromName(colorName) {
     return COLOR_PALETTE_OKABE_ITO[colorName];

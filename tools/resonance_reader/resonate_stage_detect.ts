@@ -1,6 +1,6 @@
 import type { ModeDetection } from "./resonate_mode_detection.js";
 import { modeOverrideStateApplyToModes, modeOverrideStateGetOrInit } from "./resonate_mode_override_state.js";
-import { modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js";
+import { modeProfileResolveFromState } from "./resonate_mode_config.js";
 
 export function stageDetectModesFromSpectrum(
   state: Record<string, any>,
@@ -13,7 +13,7 @@ export function stageDetectModesFromSpectrum(
   },
   spectrum: { freqs: number[]; dbs: number[] },
 ) {
-  const profile = modeProfileResolveFromMeasureMode(state.measureMode);
+  const profile = modeProfileResolveFromState(state);
   const detected = analysisBoundary.analyzeModesWithBands
     ? analysisBoundary.analyzeModesWithBands(spectrum, profile.bands)
     : analysisBoundary.analyzeModes(spectrum);

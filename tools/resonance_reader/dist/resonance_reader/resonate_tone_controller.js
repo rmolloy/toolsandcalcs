@@ -1,9 +1,8 @@
 export function toneControllerCreateFromWindow(scope) {
-    const audio = toneAudioResolveFromScope(scope);
     return {
-        toneEnableSet: (enabled) => toneEnableSetOnAudio(audio, enabled),
-        toneFrequencySetHz: (freqHz) => toneFrequencySetOnAudio(audio, freqHz),
-        toneStop: () => toneStopOnAudio(audio),
+        toneEnableSet: (enabled) => toneEnableSetOnAudio(toneAudioResolveFromScope(scope), enabled),
+        toneFrequencySetHz: (freqHz) => toneFrequencySetOnAudio(toneAudioResolveFromScope(scope), freqHz),
+        toneStop: () => toneStopOnAudio(toneAudioResolveFromScope(scope)),
     };
 }
 function toneAudioResolveFromScope(scope) {

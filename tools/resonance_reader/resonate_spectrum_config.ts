@@ -6,15 +6,21 @@ export const FFT_MAX_HZ = 2000;
 export const CELESTIAL_FREQ_MIN = 20;
 export const CELESTIAL_FREQ_AXIS_MAX = 1000;
 export const CELESTIAL_FFT_MAX_HZ = 1000;
+export const STOCK_FREQ_MIN = 25;
+export const STOCK_FREQ_AXIS_MAX = 200;
 
 export function spectrumViewRangeResolveFromMeasureMode(measureMode: unknown): { freqMin: number; freqAxisMax: number } {
   if (resonanceSpectrumDisplayRangeResolve() === "celestial") {
     return { freqMin: CELESTIAL_FREQ_MIN, freqAxisMax: CELESTIAL_FREQ_AXIS_MAX };
   }
-  if (measureMode === "plate_stock" || measureMode === "top" || measureMode === "back" || measureMode === "brace_stock") {
-    return { freqMin: 25, freqAxisMax: 200 };
+  if (measureModeUsesStockFrequencyRange(measureMode)) {
+    return { freqMin: STOCK_FREQ_MIN, freqAxisMax: STOCK_FREQ_AXIS_MAX };
   }
   return { freqMin: FREQ_MIN, freqAxisMax: FREQ_AXIS_MAX };
+}
+
+function measureModeUsesStockFrequencyRange(measureMode: unknown) {
+  return measureMode === "plate_stock" || measureMode === "top" || measureMode === "back" || measureMode === "brace_stock";
 }
 
 export function spectrumFftMaxHzResolve() {

@@ -1,5 +1,5 @@
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
-import { measureModeNormalize } from "./resonate_mode_config.js";
+import { measureModeNormalize, type MeasureMode } from "./resonate_mode_config.js";
 import {
   consumeResonanceNotebookConnectDraft,
   restoreResonanceNotebookConnectDraftState,
@@ -9,13 +9,20 @@ import { resonanceSaveRunnerCreate } from "./resonate_save_target.js";
 import type { ResonanceSaveActionRunner } from "./resonate_save_contract.js";
 import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js";
 import { settingsModalBind } from "./resonate_settings_modal.js";
+import {
+  takeOverlayCaptureCurrentFromState,
+  takeOverlayClearAll,
+  takeOverlayCurrentPayloadBuild,
+  takeOverlayListRead,
+  takeOverlaySelectAsCurrent,
+} from "./resonate_take_overlays.js";
 
 type UiBindingsDeps = {
   state: Record<string, any>;
   runResonatePipeline: (trigger: string) => Promise<void>;
   renderMock: () => void;
   setStatus: (text: string) => void;
-  renderSpectrum: (payload: { freqs: number[]; mags: number[]; overlay?: number[]; modes?: any[] }) => void;
+  renderSpectrum: (payload: { freqs: number[]; mags: number[]; overlay?: number[]; modes?: any[]; takeOverlays?: ReturnType<typeof takeOverlayCurrentPayloadBuild> }) => void;
   renderModes: (modes: any[]) => void;
   renderWaveform: (wave: any) => void;
   pipelineBus?: PipelineBusLike;
@@ -108,7 +115,8 @@ function saveStatePipelineDirtySubscriptionAttach(
   });
 }
 
-function recordingSelectLabelSet(label: string) {
+function recordingSelectLabelSet(label: string, state?: Record<string, any>) {
+  if (state) state.recordingLabel = label;
   const select = document.getElementById("recording_select") as HTMLSelectElement | null;
   if (!select) return;
   select.innerHTML = "";
@@ -162,7 +170,8 @@ function recordCaptureRunFromMic(deps: UiBindingsDeps) {
   const input = { trigger: "record", source: { wave, sampleRate, sourceKind: "mic" } };
   const config = { version: "v1", stages: ["ingest", "refresh"] };
   const runner = (window as any).ResonatePipelineRunner;
-  recordingSelectLabelSet("Recording (mic)");
+  recordingSelectLabelSet("Recording (mic)", deps.state);
+  takeOverlayControlsRender(deps);
   if (!runner?.run) {
     console.warn("[Resonance Reader] Pipeline runner missing while event rendering is enabled.");
   } else {
@@ -186,6 +195,7 @@ function recordToggleFromMic(deps: UiBindingsDeps) {
   }
   updateWaveTransportLabels();
   deps.setStatus("Recording...");
+  takeOverlayCaptureCurrentAndRender(deps);
   state.__livePreviewActive = true;
   delete state.peakHoldSpectrumState;
   previewDispatch.start?.();
@@ -261,18 +271,29 @@ function livePreviewDispatchBuild() {
 }
 
 function bindImport(deps: UiBindingsDeps) {
-  const btnImport = document.getElementById("btn_import");
+  const btnImport = document.getElementById("btn_import") as HTMLElement | null;
   const fileInput = document.getElementById("file_input") as HTMLInputElement | null;
   if (!btnImport || !fileInput) return;
   btnImport.addEventListener("click", () => {
+    importFileInputPrepare(fileInput);
+    if (importControlRequiresProgrammaticClick(btnImport, fileInput)) {
+      fileInput.click();
+    }
+  });
+  btnImport.addEventListener("keydown", (event) => {
+    if (!importControlUsesNativeLabel(btnImport, fileInput)) return;
+    if (!importKeyShouldOpenChooser(event)) return;
+    event.preventDefault();
     importFileInputPrepare(fileInput);
     fileInput.click();
   });
   fileInput.addEventListener("change", async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
+    takeOverlayCaptureCurrentAndRender(deps);
     deps.setStatus(`Loading ${file.name}...`);
-    recordingSelectLabelSet(file.name);
+    recordingSelectLabelSet(file.name, deps.state);
+    takeOverlayControlsRender(deps);
     try {
       deps.state.viewRangeMs = null;
       deps.state.noteSelectionRangeMs = null;
@@ -291,8 +312,178 @@ function bindImport(deps: UiBindingsDeps) {
   });
 }
 
+function takeOverlayCaptureCurrentAndRender(deps: UiBindingsDeps) {
+  if (!takeOverlayCaptureCurrentFromState(deps.state)) return;
+  takeOverlayControlsRender(deps);
+}
+
+function bindTakeOverlayControls(deps: UiBindingsDeps) {
+  const menu = takeOverlayMenuElementGet();
+  const panel = takeOverlayPanelElementGet();
+  const clear = takeOverlayClearElementGet();
+  if (menu && panel) {
+    menu.addEventListener("click", () => takeOverlayPanelToggle(menu, panel));
+  }
+  if (panel) {
+    panel.addEventListener("click", (event) => takeOverlayPanelClickHandle(event, deps));
+  }
+  if (clear) {
+    clear.addEventListener("click", () => takeOverlayClearAndRender(deps));
+  }
+}
+
+function takeOverlayClearAndRender(deps: UiBindingsDeps) {
+  takeOverlayClearAll(deps.state);
+  takeOverlayControlsRender(deps);
+  rerenderFromLastSpectrumIfPossible(deps.state);
+}
+
+function takeOverlayPanelToggle(menu: HTMLButtonElement, panel: HTMLElement) {
+  const expanded = menu.getAttribute("aria-expanded") === "true";
+  menu.setAttribute("aria-expanded", expanded ? "false" : "true");
+  panel.hidden = expanded;
+}
+
+function takeOverlayPanelClickHandle(event: Event, deps: UiBindingsDeps) {
+  const clearButton = (event.target as HTMLElement | null)?.closest?.("[data-take-overlay-clear]") as HTMLButtonElement | null;
+  if (clearButton) {
+    takeOverlayClearAndRender(deps);
+    return;
+  }
+  const row = takeOverlaySelectRowResolveFromEvent(event);
+  if (!row) return;
+  takeOverlaySelectAsCurrent(deps.state, row.dataset.takeOverlayId || "");
+  takeOverlayControlsRender(deps);
+  takeOverlayPanelClose();
+  takeOverlayCurrentTakeRender(deps);
+}
+
+function takeOverlaySelectRowResolveFromEvent(event: Event) {
+  return (event.target as HTMLElement | null)?.closest?.(".take-overlay-row[data-take-overlay-id]") as HTMLElement | null;
+}
+
+function takeOverlayCurrentTakeRender(deps: UiBindingsDeps) {
+  recordingSelectLabelSet(takeOverlayCurrentLabelRead(deps.state), deps.state);
+  deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
+  if (deps.state.lastWaveSlice) deps.renderWaveform(deps.state.lastWaveSlice);
+  rerenderFromLastSpectrumIfPossible(deps.state);
+}
+
+function takeOverlayPanelClose() {
+  const menu = takeOverlayMenuElementGet();
+  const panel = takeOverlayPanelElementGet();
+  if (menu) menu.setAttribute("aria-expanded", "false");
+  if (panel) panel.hidden = true;
+}
+
+function takeOverlayControlsRender(deps: UiBindingsDeps) {
+  const controls = takeOverlayControlsElementGet();
+  const panel = takeOverlayPanelElementGet();
+  const menu = takeOverlayMenuElementGet();
+  const dots = takeOverlayDotsElementGet();
+  const overlays = takeOverlayListRead(deps.state);
+  if (!controls || !panel || !menu || !dots) return;
+  controls.hidden = overlays.length === 0;
+  menu.textContent = `Takes ${overlays.length + 1} ▾`;
+  dots.innerHTML = takeOverlayDotsHtmlBuild(overlays);
+  panel.innerHTML = takeOverlayPanelHtmlBuild(deps.state, overlays);
+  if (!overlays.length) {
+    panel.hidden = true;
+    menu.setAttribute("aria-expanded", "false");
+  }
+}
+
+function takeOverlayPanelHtmlBuild(
+  state: Record<string, any>,
+  overlays: ReturnType<typeof takeOverlayListRead>,
+) {
+  return [
+    takeOverlayCurrentRowHtmlBuild(takeOverlayCurrentLabelRead(state)),
+    ...overlays.map(takeOverlayRowHtmlBuild),
+    `<button class="take-overlay-row take-overlay-row--clear" type="button" data-take-overlay-clear="true">Clear overlays</button>`,
+  ].join("");
+}
+
+function takeOverlayCurrentRowHtmlBuild(label: string) {
+  return [
+    `<div class="take-overlay-row is-current" aria-current="true">`,
+    `<span class="take-overlay-row__label">${takeOverlayHtmlEscape(label)}</span>`,
+    `<span class="take-overlay-row__state">Current</span>`,
+    `</div>`,
+  ].join("");
+}
+
+function takeOverlayRowHtmlBuild(take: ReturnType<typeof takeOverlayListRead>[number]) {
+  return [
+    `<button class="take-overlay-row" type="button" data-take-overlay-id="${takeOverlayHtmlEscape(take.id)}" data-take-overlay-select="true">`,
+    `<span class="take-overlay-row__label">${takeOverlayHtmlEscape(take.label)}</span>`,
+    `<span class="take-overlay-row__state">Select</span>`,
+    `</button>`,
+  ].join("");
+}
+
+function takeOverlayDotsHtmlBuild(overlays: ReturnType<typeof takeOverlayListRead>) {
+  const visibleOverlays = overlays.filter((take) => take.visible);
+  return [
+    `<span class="take-overlay-dot is-current" aria-hidden="true"></span>`,
+    ...visibleOverlays.map(() => `<span class="take-overlay-dot" aria-hidden="true"></span>`),
+  ].join("");
+}
+
+function takeOverlayCurrentLabelRead(state: Record<string, any>) {
+  const label = String(state.recordingLabel || "").trim();
+  if (label) return label;
+  return (document.getElementById("recording_select") as HTMLSelectElement | null)?.selectedOptions?.[0]?.textContent?.trim() || "Current take";
+}
+
+function takeOverlayHtmlEscape(value: string) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;",
+  }[char] || char));
+}
+
+function takeOverlayControlsElementGet() {
+  return document.getElementById("take_overlay_controls") as HTMLElement | null;
+}
+
+function takeOverlayMenuElementGet() {
+  return document.getElementById("take_overlay_menu") as HTMLButtonElement | null;
+}
+
+function takeOverlayPanelElementGet() {
+  return document.getElementById("take_overlay_panel") as HTMLElement | null;
+}
+
+function takeOverlayDotsElementGet() {
+  return document.getElementById("take_overlay_dots") as HTMLElement | null;
+}
+
+function takeOverlayClearElementGet() {
+  return document.getElementById("take_overlay_clear") as HTMLButtonElement | null;
+}
+
 export function importFileInputPrepare(fileInput: HTMLInputElement) {
   fileInput.value = "";
+}
+
+export function importControlUsesNativeLabel(control: HTMLElement, fileInput: HTMLInputElement) {
+  return importControlTagNameRead(control) === "label" && (control as HTMLLabelElement).htmlFor === fileInput.id;
+}
+
+function importControlRequiresProgrammaticClick(control: HTMLElement, fileInput: HTMLInputElement) {
+  return !importControlUsesNativeLabel(control, fileInput);
+}
+
+function importKeyShouldOpenChooser(event: KeyboardEvent) {
+  return event.key === "Enter" || event.key === " ";
+}
+
+function importControlTagNameRead(control: HTMLElement) {
+  return control.tagName.toLowerCase();
 }
 
 function bindSaveAudio(deps: UiBindingsDeps) {
@@ -422,6 +613,7 @@ function bindToneControl(state: Record<string, any>) {
   btnTone.addEventListener("click", () => {
     const next = !toneStateRead(state);
     toneStateWrite(state, next);
+    if (next) toneFrequencyStateReset(state);
     tone.toneEnableSet(next);
     if (!next) tone.toneStop();
     toneButtonRenderFromState(btnTone, next);
@@ -434,6 +626,10 @@ function toneStateRead(state: Record<string, any>) {
 
 function toneStateWrite(state: Record<string, any>, enabled: boolean) {
   state.toneEnabled = enabled;
+}
+
+function toneFrequencyStateReset(state: Record<string, any>) {
+  state.toneFreqHz = null;
 }
 
 function toneButtonRenderFromState(button: HTMLButtonElement, enabled: boolean) {
@@ -456,6 +652,8 @@ export function uiBindingsAttach(deps: UiBindingsDeps) {
     bindSaveAudio(deps);
     bindRecord(deps);
     bindWaveTransport(deps);
+    bindTakeOverlayControls(deps);
+    takeOverlayControlsRender(deps);
     settingsModalBind(deps);
     bindMeasureMode(deps);
     if (restoredNotebookDraft) {
@@ -525,7 +723,7 @@ async function restoreNotebookEventIntoUi(deps: UiBindingsDeps): Promise<boolean
 
 function restoreNotebookConnectDraftControls(state: Record<string, any>) {
   writeMeasureModeSelectValue(state.measureMode);
-  recordingSelectLabelSet(String(state.recordingLabel || "Notebook draft"));
+  recordingSelectLabelSet(String(state.recordingLabel || "Notebook draft"), state);
 }
 
 function writeMeasureModeSelectValue(measureMode: unknown) {
@@ -587,6 +785,7 @@ function measureModeSelectElementGet() {
 function measureModeStateSeedFromSelect(state: Record<string, any>) {
   const select = measureModeSelectElementGet();
   state.measureMode = measureModeNormalize(select?.value);
+  peakAnalysisSourceMeasureModeSync(state, state.measureMode);
 }
 
 function energyTransferPanelSyncFromState(state: Record<string, any>) {
@@ -603,9 +802,10 @@ function measureModeChangeHandle(deps: UiBindingsDeps) {
 }
 
 export function measureModeChangeApply(
-  nextMode: "guitar" | "played_note" | "plate_stock" | "brace_stock",
+  nextMode: MeasureMode,
   deps: Pick<UiBindingsDeps, "state" | "renderMock" | "renderModes" | "runResonatePipeline" | "setStatus">,
 ) {
+  peakAnalysisSourceMeasureModeSync(deps.state, nextMode);
   deps.state.measureMode = nextMode;
   deps.state.lastOverlay = undefined;
   measureModeViewRangesReset(deps.state);
@@ -627,6 +827,17 @@ export function measureModeChangeApply(
   }
   rerenderFromLastSpectrumIfPossible(deps.state);
   runMeasureModePipelineRefresh(deps);
+}
+
+export function peakAnalysisSourceMeasureModeSync(state: Record<string, any>, nextMode: MeasureMode) {
+  if (nextMode !== "peak_analysis") {
+    state.peakAnalysisSourceMeasureMode = nextMode;
+    return;
+  }
+  const previousMode = measureModeNormalize(state.measureMode);
+  if (previousMode !== "peak_analysis") {
+    state.peakAnalysisSourceMeasureMode = previousMode;
+  }
 }
 
 export function measureModeChangeShouldRenderMock(state: Record<string, any>) {
@@ -662,7 +873,7 @@ export function measureModeViewRangesReset(state: Record<string, any>) {
 }
 
 function renderTryModePanelForMeasureMode(
-  measureMode: "guitar" | "played_note" | "plate_stock" | "brace_stock",
+  measureMode: MeasureMode,
   deps: UiBindingsDeps,
 ) {
   if (measureMode === "guitar" || measureMode === "played_note") return;

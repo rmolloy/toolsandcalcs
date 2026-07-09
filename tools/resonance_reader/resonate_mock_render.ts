@@ -1,4 +1,4 @@
-import { measureModeNormalize, modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js";
+import { measureModeNormalize, modeProfileResolveFromMeasureMode, type MeasureMode } from "./resonate_mode_config.js";
 
 type MockRenderDeps = {
   renderSpectrum: (payload: { freqs: number[]; mags: number[]; overlay?: number[]; modes?: any[] }) => void;
@@ -47,14 +47,14 @@ export function renderMock(deps: MockRenderDeps) {
   deps.renderSpectrum({ freqs, mags, overlay, modes: mockDetections });
 }
 
-function mockModesBuildFromMeasureMode(measureMode: "guitar" | "played_note" | "plate_stock" | "brace_stock"): ModeCard[] {
+function mockModesBuildFromMeasureMode(measureMode: MeasureMode): ModeCard[] {
   const profile = modeProfileResolveFromMeasureMode(measureMode);
   const keys = Object.keys(profile.meta);
   const freqs = mockModeFrequenciesForMeasureMode(measureMode);
   return keys.map((key, idx) => mockModeBuildFromKeyAndFreq(key, profile.meta[key]?.label || key, freqs[idx] ?? null));
 }
 
-function mockModeFrequenciesForMeasureMode(measureMode: "guitar" | "played_note" | "plate_stock" | "brace_stock") {
+function mockModeFrequenciesForMeasureMode(measureMode: MeasureMode) {
   if (measureMode === "plate_stock") return [82.0, 126.0, 42.0];
   if (measureMode === "brace_stock") return [88.0, 134.0, 38.0];
   return [83.4, 196.5, 231.5];

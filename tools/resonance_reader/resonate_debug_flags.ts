@@ -15,6 +15,8 @@ type ResonanceDebugFlags = {
   usePeakHold: boolean;
   useParabolicPeakRefine: boolean;
   usePolymaxValidation: boolean;
+  usePaddedTapWindow: boolean;
+  useTapOnsetAlignment: boolean;
   spectrumSmoothingHz: number | null;
   spectrumSmoothingBins: number | null;
   spectrumLineWidth: number | null;
@@ -32,7 +34,9 @@ type BooleanDebugFlagName =
   | "useSpectrumSmoothing"
   | "usePeakHold"
   | "useParabolicPeakRefine"
-  | "usePolymaxValidation";
+  | "usePolymaxValidation"
+  | "usePaddedTapWindow"
+  | "useTapOnsetAlignment";
 
 export const RESONANCE_TONELAB_DEFAULTS: ResonanceDebugFlags = {
   fftProfile: "tonelab",
@@ -46,19 +50,21 @@ export const RESONANCE_TONELAB_DEFAULTS: ResonanceDebugFlags = {
   spectrumYAxisMode: null,
   spectrumXAxisScale: null,
   useHannWindow: true,
-  useTapAveraging: false,
-  useSpectrumSmoothing: true,
+  useTapAveraging: true,
+  useSpectrumSmoothing: false,
   usePeakHold: true,
   useParabolicPeakRefine: true,
   usePolymaxValidation: false,
+  usePaddedTapWindow: true,
+  useTapOnsetAlignment: true,
   spectrumSmoothingHz: null,
   spectrumSmoothingBins: 8,
-  spectrumLineWidth: 2,
+  spectrumLineWidth: 1,
   spectrumXAxisMin: 30,
   spectrumXAxisMax: null,
   spectrumYAxisMin: null,
   spectrumYAxisMax: null,
-  tapSliceWindowMs: 2,
+  tapSliceWindowMs: 400,
   energyBandWidthHz: null,
 };
 
@@ -119,6 +125,8 @@ function debugFlagsCurrentResolve(): ResonanceDebugFlags {
     usePeakHold: debugFlagValueResolve("usePeakHold"),
     useParabolicPeakRefine: debugFlagValueResolve("useParabolicPeakRefine"),
     usePolymaxValidation: debugFlagValueResolve("usePolymaxValidation"),
+    usePaddedTapWindow: debugFlagValueResolve("usePaddedTapWindow"),
+    useTapOnsetAlignment: debugFlagValueResolve("useTapOnsetAlignment"),
     spectrumSmoothingHz: smoothingHz,
     spectrumSmoothingBins: smoothingBins,
     spectrumLineWidth: lineWidth,
@@ -164,6 +172,8 @@ function debugFlagsReset() {
   delete store.usePeakHold;
   delete store.useParabolicPeakRefine;
   delete store.usePolymaxValidation;
+  delete store.usePaddedTapWindow;
+  delete store.useTapOnsetAlignment;
   delete store.spectrumSmoothingHz;
   delete store.spectrumSmoothingBins;
   delete store.spectrumLineWidth;
@@ -206,6 +216,8 @@ export function debugFlagsPatchBuildFromUrlSearch(search: string): Partial<Reson
   urlBooleanParamApply(params, patch, "usePeakHold");
   urlBooleanParamApply(params, patch, "useParabolicPeakRefine");
   urlBooleanParamApply(params, patch, "usePolymaxValidation");
+  urlBooleanParamApply(params, patch, "usePaddedTapWindow");
+  urlBooleanParamApply(params, patch, "useTapOnsetAlignment");
   urlNumberParamApply(params, patch, "spectrumSmoothingHz", 0);
   urlNumberParamApply(params, patch, "spectrumSmoothingBins", 0, "gaussianBins");
   urlNumberParamApply(params, patch, "spectrumLineWidth", 0, "lineWidth");
@@ -452,6 +464,16 @@ export function resonanceParabolicPeakRefineEnabled() {
 export function resonancePolymaxValidationEnabled() {
   debugApiEnsureInstalled();
   return debugFlagValueResolve("usePolymaxValidation");
+}
+
+export function resonanceUsePaddedTapWindowResolve() {
+  debugApiEnsureInstalled();
+  return debugFlagValueResolve("usePaddedTapWindow");
+}
+
+export function resonanceUseTapOnsetAlignmentResolve() {
+  debugApiEnsureInstalled();
+  return debugFlagValueResolve("useTapOnsetAlignment");
 }
 
 export function resonanceEnergyBandWidthHzResolve(defaultHz: number) {

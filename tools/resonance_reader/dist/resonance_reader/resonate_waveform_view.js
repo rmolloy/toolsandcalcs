@@ -106,10 +106,12 @@ function buildNoteSelectionShapes(range) {
         },
     ];
 }
-function buildTapSegmentShapes(tapSegments, sampleRate) {
+function buildTapSegmentShapes(tapSegments, sampleRate, selectedTapIndex, primaryRange) {
     const shapes = [];
-    tapSegments.forEach((tap) => {
+    const tapMedianDurationMs = tapMedianDurationMsResolve(tapSegments, sampleRate);
+    tapSegments.forEach((tap, index) => {
         const midMs = ((tap.start + tap.end) / 2 / sampleRate) * 1000;
+        const markerState = tapMarkerStateResolve(tap, index, sampleRate, selectedTapIndex, primaryRange, tapMedianDurationMs);
         shapes.push({
             type: "line",
             xref: "x",
@@ -118,10 +120,56 @@ function buildTapSegmentShapes(tapSegments, sampleRate) {
             x1: midMs,
             y0: 0,
             y1: 1,
-            line: { color: resolveColorRgbaFromRole("waveTapMarker", 0.55), width: 2 },
+            line: tapMarkerLineBuild(markerState),
+            name: `Tap ${index + 1} ${markerState}`,
         });
     });
     return shapes;
+}
+function tapMarkerStateResolve(tap, index, sampleRate, selectedTapIndex, primaryRange, medianDurationMs) {
+    if (index === selectedTapIndex)
+        return "selected";
+    const range = tapRangeMsBuild(tap, sampleRate);
+    if (range && primaryRange && !tapRangeMidpointWithinRange(range, primaryRange))
+        return "rejected";
+    if (range && tapRangeWeakFromMedian(range, medianDurationMs))
+        return "weak";
+    return "accepted";
+}
+function tapRangeMidpointWithinRange(tapRange, primaryRange) {
+    const midMs = (tapRange.start + tapRange.end) / 2;
+    return midMs >= primaryRange.start && midMs <= primaryRange.end;
+}
+function tapRangeWeakFromMedian(tapRange, medianDurationMs) {
+    if (!Number.isFinite(medianDurationMs) || medianDurationMs <= 0)
+        return false;
+    const durationMs = tapRange.end - tapRange.start;
+    return durationMs < medianDurationMs * TAP_CLUSTER_OUTLIER_MIN_RATIO
+        || durationMs > medianDurationMs * TAP_CLUSTER_OUTLIER_MAX_RATIO;
+}
+function tapMarkerLineBuild(markerState) {
+    if (markerState === "selected")
+        return { color: resolveColorRgbaFromRole("wavePrimarySelection", 0.95), width: 4 };
+    if (markerState === "rejected")
+        return { color: "rgba(255, 126, 102, 0.42)", width: 1.4, dash: "dash" };
+    if (markerState === "weak")
+        return { color: resolveColorRgbaFromRole("waveTapMarker", 0.34), width: 1.4, dash: "dot" };
+    return { color: resolveColorRgbaFromRole("waveTapMarker", 0.62), width: 2 };
+}
+function tapMedianDurationMsResolve(tapSegments, sampleRate) {
+    const durations = tapSegments
+        .map((tap) => {
+        const range = tapRangeMsBuild(tap, sampleRate);
+        return range ? range.end - range.start : null;
+    })
+        .filter((duration) => Number.isFinite(duration) && duration > 0)
+        .sort((left, right) => left - right);
+    if (!durations.length)
+        return null;
+    const middleIndex = Math.floor(durations.length / 2);
+    if (durations.length % 2 === 1)
+        return durations[middleIndex];
+    return (durations[middleIndex - 1] + durations[middleIndex]) / 2;
 }
 function buildNoteSliceShapes(noteSlices, activeRange) {
     const shapes = [];
@@ -231,18 +279,55 @@ function buildWaveAnnotations(noteSlices, noteResults, deps) {
     });
     return annotations;
 }
-function buildWaveShapes(sampleRate, primaryRange, noteSelectionRange, tapSegments, noteSlices, measureMode) {
+export function buildWaveShapes(sampleRate, primaryRange, noteSelectionRange, tapSegments, noteSlices, measureMode, selectedTapIndex) {
     const shapes = [];
-    shapes.push(...buildNoteSliceShapes(noteSlices || [], primaryRange));
-    shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate));
+    const activeTapIndex = selectedTapIndexForMeasureMode(measureMode, selectedTapIndex);
+    const visiblePrimaryRange = primaryRange;
+    const peakAnalysisPrimaryRange = measureModeNormalize(measureMode) === "peak_analysis" ? primaryRange : null;
+    shapes.push(...buildNoteSliceShapes(noteSlices || [], visiblePrimaryRange));
+    shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate, activeTapIndex, peakAnalysisPrimaryRange));
     if (noteSelectionRangeVisibleForMeasureMode(measureMode)) {
         shapes.push(...buildNoteSelectionShapes(noteSelectionRange));
     }
-    shapes.push(...buildSelectionShapes(primaryRange));
+    shapes.push(...buildSelectionShapes(visiblePrimaryRange));
     return shapes;
+}
+function selectedTapIndexForMeasureMode(measureMode, selectedTapIndex) {
+    if (measureModeNormalize(measureMode) !== "peak_analysis")
+        return null;
+    const index = Number(selectedTapIndex);
+    return Number.isInteger(index) && index >= 0 ? index : 0;
 }
 export function noteSelectionRangeVisibleForMeasureMode(measureMode) {
     return measureModeNormalize(measureMode) === "played_note";
+}
+export function tapSegmentAtTimeResolve(tapSegments, sampleRate, timeMs) {
+    const taps = Array.isArray(tapSegments) ? tapSegments : [];
+    if (!Number.isFinite(sampleRate) || sampleRate <= 0 || !Number.isFinite(timeMs))
+        return null;
+    for (let index = 0; index < taps.length; index += 1) {
+        const range = tapRangeMsBuild(taps[index], sampleRate);
+        if (!range)
+            continue;
+        if (timeMs >= range.start && timeMs <= range.end)
+            return { tap: taps[index], index, range };
+    }
+    return null;
+}
+function tapRangeMsBuild(tap, sampleRate) {
+    const start = Number(tap.start);
+    const end = Number(tap.end);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start)
+        return null;
+    return {
+        start: (start / sampleRate) * 1000,
+        end: (end / sampleRate) * 1000,
+    };
+}
+function peakAnalysisSelectedTapIndexWrite(state, tapIndex) {
+    if (measureModeNormalize(state.measureMode) !== "peak_analysis")
+        return;
+    state.peakAnalysisSelectedTapIndex = tapIndex;
 }
 function renderWaveSelection(primaryRange, noteSelectionRange, deps, slice) {
     const plot = document.getElementById("plot_waveform");
@@ -251,7 +336,7 @@ function renderWaveSelection(primaryRange, noteSelectionRange, deps, slice) {
     const Plotly = window.Plotly;
     if (!Plotly)
         return;
-    const shapes = buildWaveShapes(slice.sampleRate, primaryRange, noteSelectionRange, deps.state.tapSegments, deps.state.noteSlices, deps.state.measureMode);
+    const shapes = buildWaveShapes(slice.sampleRate, primaryRange, noteSelectionRange, deps.state.tapSegments, deps.state.noteSlices, deps.state.measureMode, deps.state.peakAnalysisSelectedTapIndex);
     waveUpdatingShapes = true;
     Promise.resolve(Plotly.relayout(plot, { shapes })).finally(() => {
         waveUpdatingShapes = false;
@@ -274,6 +359,7 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
     const Plotly = window.Plotly;
     if (!Plotly)
         return;
+    markWaveformSurfaceReadyFromPlot(plot);
     const absWave = Array.from(slice.wave, (v) => Math.abs(v));
     const timeMs = Array.isArray(slice.timeMs)
         ? slice.timeMs
@@ -293,6 +379,7 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
         hovertemplate: "%{x:.0f} ms<extra></extra>",
     };
     const layout = {
+        height: 80,
         margin: { l: 40, r: 10, t: 6, b: 26 },
         paper_bgcolor: "transparent",
         plot_bgcolor: "transparent",
@@ -310,7 +397,7 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
             showticklabels: false,
             fixedrange: true,
         },
-        shapes: buildWaveShapes(slice.sampleRate, deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps.state.tapSegments, deps.state.noteSlices, deps.state.measureMode),
+        shapes: buildWaveShapes(slice.sampleRate, deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps.state.tapSegments, deps.state.noteSlices, deps.state.measureMode, deps.state.peakAnalysisSelectedTapIndex),
         annotations: buildWaveAnnotations(deps.state.noteSlices || [], deps.state.noteResults || [], deps),
     };
     Plotly.newPlot(plot, [trace], layout, {
@@ -339,6 +426,14 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
         const x = pt.x;
         if (!Number.isFinite(x))
             return;
+        if (measureModeNormalize(deps.state.measureMode) === "peak_analysis") {
+            const tapHit = tapSegmentAtTimeResolve(deps.state.tapSegments, slice.sampleRate, x);
+            if (!tapHit)
+                return;
+            peakAnalysisSelectedTapIndexWrite(deps.state, tapHit.index);
+            renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
+            return;
+        }
         const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], x);
         if (note) {
             if (waveNoteOverrideRequestedFromClickEvent(ev?.event)) {
@@ -357,17 +452,11 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
             onPrimaryRangeChange?.(range);
             return;
         }
-        const tap = (deps.state.tapSegments || []).find((seg) => {
-            const startMs = (seg.start / slice.sampleRate) * 1000;
-            const endMs = (seg.end / slice.sampleRate) * 1000;
-            return x >= startMs && x <= endMs;
-        });
-        if (!tap)
+        const tapHit = tapSegmentAtTimeResolve(deps.state.tapSegments, slice.sampleRate, x);
+        if (!tapHit)
             return;
-        const range = {
-            start: (tap.start / slice.sampleRate) * 1000,
-            end: (tap.end / slice.sampleRate) * 1000,
-        };
+        peakAnalysisSelectedTapIndexWrite(deps.state, tapHit.index);
+        const range = tapHit.range;
         deps.state.viewRangeMs = range;
         renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
         onPrimaryRangeChange?.(range);
@@ -585,6 +674,12 @@ function waveNoteQuickChoicesRender(host, detectedLabel, input) {
         };
         host.appendChild(button);
     });
+}
+function markWaveformSurfaceReadyFromPlot(plot) {
+    const surface = plot.closest("#wave_nav");
+    if (!surface)
+        return;
+    surface.setAttribute("data-waveform-ready", "true");
 }
 export function waveNoteOverrideRequestedFromClickEvent(event) {
     if (!event)

@@ -11,11 +11,10 @@ export type ToneController = {
 };
 
 export function toneControllerCreateFromWindow(scope: Window & typeof globalThis): ToneController {
-  const audio = toneAudioResolveFromScope(scope);
   return {
-    toneEnableSet: (enabled: boolean) => toneEnableSetOnAudio(audio, enabled),
-    toneFrequencySetHz: (freqHz: number) => toneFrequencySetOnAudio(audio, freqHz),
-    toneStop: () => toneStopOnAudio(audio),
+    toneEnableSet: (enabled: boolean) => toneEnableSetOnAudio(toneAudioResolveFromScope(scope), enabled),
+    toneFrequencySetHz: (freqHz: number) => toneFrequencySetOnAudio(toneAudioResolveFromScope(scope), freqHz),
+    toneStop: () => toneStopOnAudio(toneAudioResolveFromScope(scope)),
   };
 }
 

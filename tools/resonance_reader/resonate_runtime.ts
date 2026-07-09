@@ -1,7 +1,7 @@
 // Orchestrate resonance reader runtime wiring.
 
 import { renderWaveform } from "./resonate_waveform_view.js";
-import { modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js";
+import { modeProfileResolveFromState, peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
 import { spectrumFftMaxHzResolve, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js";
 import { type ModeDetection } from "./resonate_mode_detection.js";
 import { renderEnergyTransferFromState, renderModesFromState, renderSpectrumFromConfig, setStatusText } from "./resonate_ui_render.js";
@@ -31,6 +31,7 @@ import { analysisTabsInitialize, analysisTabsRenderFromState } from "./resonate_
 import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState } from "./resonate_peak_analysis_panel.js";
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
 import { plateTransferPromptOpen, type PlateTransferModeSummary } from "./resonate_plate_transfer_prompt.js";
+import { takeOverlayCurrentPayloadBuild } from "./resonate_take_overlays.js";
 import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js";
 
 const state = (window as any).FFTState as ResonanceBoundaryState & Record<string, any>;
@@ -90,16 +91,19 @@ function setStatus(text: string) {
 }
 
 function renderSpectrum(payload: SpectrumPayloadLocal) {
-  renderSpectrumFromConfig(payload, renderSpectrumConfigBuild());
+  renderSpectrumFromConfig(
+    { ...payload, takeOverlays: payload.takeOverlays || takeOverlayCurrentPayloadBuild(state) },
+    renderSpectrumConfigBuild(),
+  );
 }
 
 function renderSpectrumConfigBuild() {
-  const range = spectrumViewRangeResolveFromMeasureMode(state.measureMode);
+  const range = spectrumViewRangeResolveFromMeasureMode(peakAnalysisSourceMeasureModeResolve(state));
   return { modeMeta: modeMetaBuildFromState(), freqMin: range.freqMin, freqAxisMax: range.freqAxisMax };
 }
 
 function modeMetaBuildFromState() {
-  const profile = modeProfileResolveFromMeasureMode(state.measureMode);
+  const profile = modeProfileResolveFromState(state);
   return {
     ...profile.meta,
     ...customMeasurementModeMetaBuildFromState(state),
@@ -244,7 +248,7 @@ function viewModelMeasureModeResolve() {
 
 function viewModelDestinationApplyToUi(link: HTMLAnchorElement) {
   const measureMode = viewModelMeasureModeResolve();
-  const destination = externalModelDestinationResolveFromMeasureMode(measureMode);
+  const destination = externalModelDestinationResolveFromMeasureMode(viewModelDestinationMeasureModeResolve(measureMode));
   const overlayToggle = overlayToggleInputElementGet();
   if (overlayToggle && !destination.showModelRow) overlayToggle.checked = false;
   const row = viewModelRowElementGet();
@@ -259,13 +263,17 @@ function viewModelDestinationApplyToUi(link: HTMLAnchorElement) {
   analysisSurfaceRenderFromState();
 }
 
+function viewModelDestinationMeasureModeResolve(measureMode: unknown) {
+  return measureMode === "peak_analysis" ? peakAnalysisSourceMeasureModeResolve(state) : measureMode;
+}
+
 function viewModelLinkAttach() {
   const link = document.querySelector<HTMLAnchorElement>('a[data-view-model]');
   if (!link) return;
   viewModelDestinationApplyToUi(link);
   viewModelMeasureModeElementGet()?.addEventListener("change", () => viewModelDestinationApplyToUi(link));
   link.addEventListener("click", async (e) => {
-    const destination = externalModelDestinationResolveFromMeasureMode(viewModelMeasureModeResolve());
+    const destination = externalModelDestinationResolveFromMeasureMode(viewModelDestinationMeasureModeResolve(viewModelMeasureModeResolve()));
     if (destination.kind === "plate-thickness") {
       e.preventDefault();
       await plateThicknessTransferPromptOpen(link.href);

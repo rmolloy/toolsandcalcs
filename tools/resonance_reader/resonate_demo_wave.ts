@@ -1,4 +1,4 @@
-import { measureModeNormalize } from "./resonate_mode_config.js";
+import { measureModeNormalize, type MeasureMode } from "./resonate_mode_config.js";
 
 type DemoWave = {
   timeMs: number[];
@@ -6,9 +6,10 @@ type DemoWave = {
   sampleRate: number;
 };
 
-const DEMO_PEAKS_BY_MODE: Record<"guitar" | "played_note" | "plate_stock" | "brace_stock", readonly number[]> = {
+const DEMO_PEAKS_BY_MODE: Record<MeasureMode, readonly number[]> = {
   guitar: [98, 178, 220],
   played_note: [98, 178, 220],
+  peak_analysis: [98, 178, 220],
   plate_stock: [42, 82, 126],
   brace_stock: [38, 88, 134],
 };

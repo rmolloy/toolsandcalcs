@@ -5,6 +5,7 @@ import { restoreResonanceNotebookEventIntoState } from "./resonate_notebook_rest
 import { resonanceSaveRunnerCreate } from "./resonate_save_target.js";
 import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js";
 import { settingsModalBind } from "./resonate_settings_modal.js";
+import { takeOverlayCaptureCurrentFromState, takeOverlayClearAll, takeOverlayListRead, takeOverlaySelectAsCurrent, } from "./resonate_take_overlays.js";
 const resonanceSaveRunner = resonanceSaveRunnerCreate();
 function saveButtonElementGet() {
     return document.getElementById("btn_save_audio");
@@ -71,7 +72,9 @@ function saveStatePipelineDirtySubscriptionAttach(bus, state) {
         saveStateMarkDirtyAndRender(state);
     });
 }
-function recordingSelectLabelSet(label) {
+function recordingSelectLabelSet(label, state) {
+    if (state)
+        state.recordingLabel = label;
     const select = document.getElementById("recording_select");
     if (!select)
         return;
@@ -124,7 +127,8 @@ function recordCaptureRunFromMic(deps) {
     const input = { trigger: "record", source: { wave, sampleRate, sourceKind: "mic" } };
     const config = { version: "v1", stages: ["ingest", "refresh"] };
     const runner = window.ResonatePipelineRunner;
-    recordingSelectLabelSet("Recording (mic)");
+    recordingSelectLabelSet("Recording (mic)", deps.state);
+    takeOverlayControlsRender(deps);
     if (!runner?.run) {
         console.warn("[Resonance Reader] Pipeline runner missing while event rendering is enabled.");
     }
@@ -149,6 +153,7 @@ function recordToggleFromMic(deps) {
     }
     updateWaveTransportLabels();
     deps.setStatus("Recording...");
+    takeOverlayCaptureCurrentAndRender(deps);
     state.__livePreviewActive = true;
     delete state.peakHoldSpectrumState;
     previewDispatch.start?.();
@@ -230,14 +235,27 @@ function bindImport(deps) {
         return;
     btnImport.addEventListener("click", () => {
         importFileInputPrepare(fileInput);
+        if (importControlRequiresProgrammaticClick(btnImport, fileInput)) {
+            fileInput.click();
+        }
+    });
+    btnImport.addEventListener("keydown", (event) => {
+        if (!importControlUsesNativeLabel(btnImport, fileInput))
+            return;
+        if (!importKeyShouldOpenChooser(event))
+            return;
+        event.preventDefault();
+        importFileInputPrepare(fileInput);
         fileInput.click();
     });
     fileInput.addEventListener("change", async (e) => {
         const file = e.target.files?.[0];
         if (!file)
             return;
+        takeOverlayCaptureCurrentAndRender(deps);
         deps.setStatus(`Loading ${file.name}...`);
-        recordingSelectLabelSet(file.name);
+        recordingSelectLabelSet(file.name, deps.state);
+        takeOverlayControlsRender(deps);
         try {
             deps.state.viewRangeMs = null;
             deps.state.noteSelectionRangeMs = null;
@@ -256,8 +274,158 @@ function bindImport(deps) {
         }
     });
 }
+function takeOverlayCaptureCurrentAndRender(deps) {
+    if (!takeOverlayCaptureCurrentFromState(deps.state))
+        return;
+    takeOverlayControlsRender(deps);
+}
+function bindTakeOverlayControls(deps) {
+    const menu = takeOverlayMenuElementGet();
+    const panel = takeOverlayPanelElementGet();
+    const clear = takeOverlayClearElementGet();
+    if (menu && panel) {
+        menu.addEventListener("click", () => takeOverlayPanelToggle(menu, panel));
+    }
+    if (panel) {
+        panel.addEventListener("click", (event) => takeOverlayPanelClickHandle(event, deps));
+    }
+    if (clear) {
+        clear.addEventListener("click", () => takeOverlayClearAndRender(deps));
+    }
+}
+function takeOverlayClearAndRender(deps) {
+    takeOverlayClearAll(deps.state);
+    takeOverlayControlsRender(deps);
+    rerenderFromLastSpectrumIfPossible(deps.state);
+}
+function takeOverlayPanelToggle(menu, panel) {
+    const expanded = menu.getAttribute("aria-expanded") === "true";
+    menu.setAttribute("aria-expanded", expanded ? "false" : "true");
+    panel.hidden = expanded;
+}
+function takeOverlayPanelClickHandle(event, deps) {
+    const clearButton = event.target?.closest?.("[data-take-overlay-clear]");
+    if (clearButton) {
+        takeOverlayClearAndRender(deps);
+        return;
+    }
+    const row = takeOverlaySelectRowResolveFromEvent(event);
+    if (!row)
+        return;
+    takeOverlaySelectAsCurrent(deps.state, row.dataset.takeOverlayId || "");
+    takeOverlayControlsRender(deps);
+    takeOverlayPanelClose();
+    takeOverlayCurrentTakeRender(deps);
+}
+function takeOverlaySelectRowResolveFromEvent(event) {
+    return event.target?.closest?.(".take-overlay-row[data-take-overlay-id]");
+}
+function takeOverlayCurrentTakeRender(deps) {
+    recordingSelectLabelSet(takeOverlayCurrentLabelRead(deps.state), deps.state);
+    deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
+    if (deps.state.lastWaveSlice)
+        deps.renderWaveform(deps.state.lastWaveSlice);
+    rerenderFromLastSpectrumIfPossible(deps.state);
+}
+function takeOverlayPanelClose() {
+    const menu = takeOverlayMenuElementGet();
+    const panel = takeOverlayPanelElementGet();
+    if (menu)
+        menu.setAttribute("aria-expanded", "false");
+    if (panel)
+        panel.hidden = true;
+}
+function takeOverlayControlsRender(deps) {
+    const controls = takeOverlayControlsElementGet();
+    const panel = takeOverlayPanelElementGet();
+    const menu = takeOverlayMenuElementGet();
+    const dots = takeOverlayDotsElementGet();
+    const overlays = takeOverlayListRead(deps.state);
+    if (!controls || !panel || !menu || !dots)
+        return;
+    controls.hidden = overlays.length === 0;
+    menu.textContent = `Takes ${overlays.length + 1} ▾`;
+    dots.innerHTML = takeOverlayDotsHtmlBuild(overlays);
+    panel.innerHTML = takeOverlayPanelHtmlBuild(deps.state, overlays);
+    if (!overlays.length) {
+        panel.hidden = true;
+        menu.setAttribute("aria-expanded", "false");
+    }
+}
+function takeOverlayPanelHtmlBuild(state, overlays) {
+    return [
+        takeOverlayCurrentRowHtmlBuild(takeOverlayCurrentLabelRead(state)),
+        ...overlays.map(takeOverlayRowHtmlBuild),
+        `<button class="take-overlay-row take-overlay-row--clear" type="button" data-take-overlay-clear="true">Clear overlays</button>`,
+    ].join("");
+}
+function takeOverlayCurrentRowHtmlBuild(label) {
+    return [
+        `<div class="take-overlay-row is-current" aria-current="true">`,
+        `<span class="take-overlay-row__label">${takeOverlayHtmlEscape(label)}</span>`,
+        `<span class="take-overlay-row__state">Current</span>`,
+        `</div>`,
+    ].join("");
+}
+function takeOverlayRowHtmlBuild(take) {
+    return [
+        `<button class="take-overlay-row" type="button" data-take-overlay-id="${takeOverlayHtmlEscape(take.id)}" data-take-overlay-select="true">`,
+        `<span class="take-overlay-row__label">${takeOverlayHtmlEscape(take.label)}</span>`,
+        `<span class="take-overlay-row__state">Select</span>`,
+        `</button>`,
+    ].join("");
+}
+function takeOverlayDotsHtmlBuild(overlays) {
+    const visibleOverlays = overlays.filter((take) => take.visible);
+    return [
+        `<span class="take-overlay-dot is-current" aria-hidden="true"></span>`,
+        ...visibleOverlays.map(() => `<span class="take-overlay-dot" aria-hidden="true"></span>`),
+    ].join("");
+}
+function takeOverlayCurrentLabelRead(state) {
+    const label = String(state.recordingLabel || "").trim();
+    if (label)
+        return label;
+    return document.getElementById("recording_select")?.selectedOptions?.[0]?.textContent?.trim() || "Current take";
+}
+function takeOverlayHtmlEscape(value) {
+    return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+    }[char] || char));
+}
+function takeOverlayControlsElementGet() {
+    return document.getElementById("take_overlay_controls");
+}
+function takeOverlayMenuElementGet() {
+    return document.getElementById("take_overlay_menu");
+}
+function takeOverlayPanelElementGet() {
+    return document.getElementById("take_overlay_panel");
+}
+function takeOverlayDotsElementGet() {
+    return document.getElementById("take_overlay_dots");
+}
+function takeOverlayClearElementGet() {
+    return document.getElementById("take_overlay_clear");
+}
 export function importFileInputPrepare(fileInput) {
     fileInput.value = "";
+}
+export function importControlUsesNativeLabel(control, fileInput) {
+    return importControlTagNameRead(control) === "label" && control.htmlFor === fileInput.id;
+}
+function importControlRequiresProgrammaticClick(control, fileInput) {
+    return !importControlUsesNativeLabel(control, fileInput);
+}
+function importKeyShouldOpenChooser(event) {
+    return event.key === "Enter" || event.key === " ";
+}
+function importControlTagNameRead(control) {
+    return control.tagName.toLowerCase();
 }
 function bindSaveAudio(deps) {
     const btnSave = document.getElementById("btn_save_audio");
@@ -368,6 +536,8 @@ function bindToneControl(state) {
     btnTone.addEventListener("click", () => {
         const next = !toneStateRead(state);
         toneStateWrite(state, next);
+        if (next)
+            toneFrequencyStateReset(state);
         tone.toneEnableSet(next);
         if (!next)
             tone.toneStop();
@@ -379,6 +549,9 @@ function toneStateRead(state) {
 }
 function toneStateWrite(state, enabled) {
     state.toneEnabled = enabled;
+}
+function toneFrequencyStateReset(state) {
+    state.toneFreqHz = null;
 }
 function toneButtonRenderFromState(button, enabled) {
     button.setAttribute("aria-pressed", enabled ? "true" : "false");
@@ -400,6 +573,8 @@ export function uiBindingsAttach(deps) {
         bindSaveAudio(deps);
         bindRecord(deps);
         bindWaveTransport(deps);
+        bindTakeOverlayControls(deps);
+        takeOverlayControlsRender(deps);
         settingsModalBind(deps);
         bindMeasureMode(deps);
         if (restoredNotebookDraft) {
@@ -463,7 +638,7 @@ async function restoreNotebookEventIntoUi(deps) {
 }
 function restoreNotebookConnectDraftControls(state) {
     writeMeasureModeSelectValue(state.measureMode);
-    recordingSelectLabelSet(String(state.recordingLabel || "Notebook draft"));
+    recordingSelectLabelSet(String(state.recordingLabel || "Notebook draft"), state);
 }
 function writeMeasureModeSelectValue(measureMode) {
     const select = measureModeSelectElementGet();
@@ -513,6 +688,7 @@ function measureModeSelectElementGet() {
 function measureModeStateSeedFromSelect(state) {
     const select = measureModeSelectElementGet();
     state.measureMode = measureModeNormalize(select?.value);
+    peakAnalysisSourceMeasureModeSync(state, state.measureMode);
 }
 function energyTransferPanelSyncFromState(state) {
     const render = window.ResonateUiRender?.renderEnergyTransferFromState;
@@ -528,6 +704,7 @@ function measureModeChangeHandle(deps) {
     measureModeChangeApply(nextMode, deps);
 }
 export function measureModeChangeApply(nextMode, deps) {
+    peakAnalysisSourceMeasureModeSync(deps.state, nextMode);
     deps.state.measureMode = nextMode;
     deps.state.lastOverlay = undefined;
     measureModeViewRangesReset(deps.state);
@@ -549,6 +726,16 @@ export function measureModeChangeApply(nextMode, deps) {
     }
     rerenderFromLastSpectrumIfPossible(deps.state);
     runMeasureModePipelineRefresh(deps);
+}
+export function peakAnalysisSourceMeasureModeSync(state, nextMode) {
+    if (nextMode !== "peak_analysis") {
+        state.peakAnalysisSourceMeasureMode = nextMode;
+        return;
+    }
+    const previousMode = measureModeNormalize(state.measureMode);
+    if (previousMode !== "peak_analysis") {
+        state.peakAnalysisSourceMeasureMode = previousMode;
+    }
 }
 export function measureModeChangeShouldRenderMock(state) {
     return !state?.currentWave;

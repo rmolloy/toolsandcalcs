@@ -27,13 +27,14 @@
               <option value="played_note">Played Note</option>
               <option value="plate_stock">Plate Stock</option>
               <option value="brace_stock">Brace Stock</option>
+              <option value="peak_analysis">Peak / Q</option>
             </select>
           </div>
           <select class="recording-dropdown hero-control" id="recording_select">
             <option value="" selected>Demo (click record)</option>
           </select>
           <button class="ghost-btn hero-control tl-save-action" id="btn_save_audio">Save</button>
-          <input type="file" id="file_input" accept="audio/*" hidden>
+          <input class="sr-only" type="file" id="file_input" accept="audio/*" tabindex="-1" aria-hidden="true">
         </div>
         <div class="hero-actions">
 </div>
@@ -56,47 +57,10 @@
         Settings
       </button>
 
-      <section class="wave-surface" id="wave_nav">
-        <div id="plot_waveform" class="plot waveform"></div>
-        <div class="plot-header">
-          <div class="plot-header-copy">
-            <h2>Frequency Response</h2>
-            <p class="muted small">Drag yellow range for FFT analysis. Drag green range for note selection. Click a note label (or Option/Command-click a note slice) to override its note.</p>
-          </div>
-        </div>
-      </section>
-
-      <div class="mode-grid" id="mode_grid">
-        <!-- Mode cards populated by script -->
-      </div>
-
-      <section class="measure-action-row" aria-label="Measurement actions">
-        <div class="wave-transport-inline">
-          <button class="ghost-btn btn-small" id="btn_wave_tone"><span class="transport-icon" aria-hidden="true">∿</span>Tone</button>
-          <button class="ghost-btn btn-small" id="btn_wave_record"><span class="transport-icon" aria-hidden="true">⏺</span>Record</button>
-          <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Play</button>
-          <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Stop</button>
-          <button class="ghost-btn btn-small" id="btn_import"><span class="transport-icon" aria-hidden="true">⬆</span>Import</button>
-        </div>
-        <section class="dof-model-row">
-          <div class="dof-model-copy">
-            <h2>4DOF Model</h2>
-          </div>
-          <div class="dof-model-actions">
-            <label class="toggle dof-toggle">
-              <input type="checkbox" id="toggle_overlay" checked>
-              <span class="toggle-label sr-only">Toggle 4DOF model overlay</span>
-              <span class="toggle-knob"></span>
-            </label>
-          </div>
-          <a href="../dof_model/" class="link dof-model-link" data-view-model>Open in 4-DOF model</a>
-        </section>
-      </section>
-
       <section class="analysis-surface" id="analysis_surface">
         <div class="analysis-tabs" role="tablist" aria-label="Analysis views">
           <button class="analysis-tab" id="analysis_tab_peak" data-analysis-tab="peak_analysis" type="button" role="tab" aria-controls="peak_analysis_panel" aria-selected="true">
-            Peak Analysis
+            Peak / Q Inspector
           </button>
           <button class="analysis-tab" id="analysis_tab_material" data-analysis-tab="material_properties" type="button" role="tab" aria-controls="plate_material_card" aria-selected="false">
             Material Properties
@@ -106,12 +70,39 @@
         <section class="card peak-analysis-card" id="peak_analysis_panel" role="tabpanel" aria-labelledby="analysis_tab_peak">
           <div class="plot-header">
             <div class="plot-header-copy">
-              <h2>Peak Analysis</h2>
+              <h2>Peak / Q Inspector</h2>
               <p class="muted small" id="peak_analysis_description">Select a built-in or custom mode card to inspect the local peak window and spectral peak metrics.</p>
             </div>
           </div>
-          <div class="peak-analysis-summary" id="peak_analysis_summary"></div>
-          <div class="plot peak-analysis-plot" id="plot_peak_analysis" hidden></div>
+          <div class="peak-analysis-plot-grid">
+            <section class="peak-analysis-plot-panel" aria-labelledby="peak_analysis_spectrum_title">
+              <div class="plot-header">
+                <div class="plot-header-copy">
+                  <h3 id="peak_analysis_spectrum_title">Local Spectrum</h3>
+                  <p class="muted small">Selected peak window and -3 dB bandwidth.</p>
+                </div>
+              </div>
+              <div class="plot peak-analysis-plot" id="plot_peak_analysis" hidden></div>
+            </section>
+            <section class="peak-analysis-plot-panel" aria-labelledby="peak_analysis_ringdown_title">
+              <div class="plot-header">
+                <div class="plot-header-copy">
+                  <h3 id="peak_analysis_ringdown_title">Ring-down Response</h3>
+                  <p class="muted small">Selected tap response, envelope, and fit window.</p>
+                </div>
+              </div>
+              <div class="plot peak-analysis-ringdown-plot" id="plot_peak_ringdown" hidden></div>
+            </section>
+          </div>
+          <div class="peak-analysis-provenance" id="peak_analysis_provenance"></div>
+          <div class="peak-analysis-interpretation" id="peak_analysis_interpretation"></div>
+          <div class="peak-analysis-actions" id="peak_analysis_actions" aria-label="Peak/Q actions">
+            <button class="primary-btn btn-small" id="peak_analysis_review_next" type="button">Review next peak</button>
+            <button class="ghost-btn btn-small" id="peak_analysis_use_interpretation" type="button">Use this interpretation</button>
+            <button class="ghost-btn btn-small" id="peak_analysis_compare_peak" type="button">Compare peak</button>
+            <button class="ghost-btn btn-small" id="peak_analysis_export_data" type="button">Export data</button>
+            <a class="link peak-analysis-model-link" id="peak_analysis_open_model" href="../dof_model/">Open in 4-DOF model</a>
+          </div>
         </section>
 
         <section class="card plate-material-card" id="plate_material_card" role="tabpanel" aria-labelledby="analysis_tab_material" hidden>
@@ -143,6 +134,49 @@
               <span class="plate-material-unit">g</span>
             </label>
           </div>
+        </section>
+      </section>
+
+      <section class="wave-surface" id="wave_nav" data-waveform-ready="false">
+        <div id="plot_waveform" class="plot waveform"></div>
+        <div class="plot-header">
+          <div class="plot-header-copy">
+            <h2 id="wave_nav_title">Frequency Response</h2>
+            <p class="muted small" id="wave_nav_description">Drag yellow range for FFT analysis. Drag green range for note selection. Click a note label (or Option/Command-click a note slice) to override its note.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="mode-grid" id="mode_grid">
+        <!-- Mode cards populated by script -->
+      </div>
+
+      <section class="measure-action-row" aria-label="Measurement actions">
+        <div class="wave-transport-inline">
+          <button class="ghost-btn btn-small" id="btn_wave_tone"><span class="transport-icon" aria-hidden="true">∿</span>Tone</button>
+          <button class="ghost-btn btn-small" id="btn_wave_record"><span class="transport-icon" aria-hidden="true">⏺</span>Record</button>
+          <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Play</button>
+          <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Stop</button>
+          <label class="ghost-btn btn-small" id="btn_import" for="file_input" role="button" tabindex="0"><span class="transport-icon" aria-hidden="true">⬆</span>Import</label>
+          <div class="take-overlay-controls" id="take_overlay_controls" hidden>
+            <button class="ghost-btn btn-small take-overlay-menu" id="take_overlay_menu" type="button" aria-expanded="false" aria-controls="take_overlay_panel">Takes ▾</button>
+            <div class="take-overlay-dots" id="take_overlay_dots" aria-label="Visible take overlays"></div>
+            <button class="ghost-btn btn-small take-overlay-clear" id="take_overlay_clear" type="button" aria-label="Clear take overlays">×</button>
+            <div class="take-overlay-panel" id="take_overlay_panel" hidden></div>
+          </div>
+        </div>
+        <section class="dof-model-row">
+          <div class="dof-model-copy">
+            <h2>4DOF Model</h2>
+          </div>
+          <div class="dof-model-actions">
+            <label class="toggle dof-toggle">
+              <input type="checkbox" id="toggle_overlay">
+              <span class="toggle-label sr-only">Toggle 4DOF model overlay</span>
+              <span class="toggle-knob"></span>
+            </label>
+          </div>
+          <a href="../dof_model/" class="link dof-model-link" data-view-model>Open in 4-DOF model</a>
         </section>
       </section>
 
@@ -366,6 +400,7 @@
   <script src="../modal_frequency_shared/segmentation.js?rev=20260324a" defer></script>
   <script src="../modal_frequency_shared/fft_engine.js?rev=20260324a" defer></script>
   <script src="../modal_frequency_shared/fft_plot.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=20260324a" defer></script>
   <script src="../common/4dof/model_core.js?rev=20260324a" defer></script>
   <script src="../common/site_menu_loader.js?rev=20260324a" defer></script>
   <script src="../common/tool_footer_loader.js?rev=20260324a" defer></script>

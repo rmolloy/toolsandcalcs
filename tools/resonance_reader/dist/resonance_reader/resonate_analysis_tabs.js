@@ -1,5 +1,14 @@
 import { plateMaterialPanelVisibleForMeasureMode } from "./resonate_plate_material_panel.js";
+import { measureModeNormalize } from "./resonate_mode_config.js";
 const DEFAULT_ANALYSIS_TAB = "peak_analysis";
+const WAVEFORM_NAVIGATOR_COPY = {
+    title: "Frequency Response",
+    description: "Drag yellow range for FFT analysis. Drag green range for note selection. Click a note label (or Option/Command-click a note slice) to override its note.",
+};
+const PEAK_ANALYSIS_TAP_NAVIGATOR_COPY = {
+    title: "Tap Navigator",
+    description: "Select a tap to inspect its Peak/Q ring-down. Solid taps are accepted, dotted taps are weak, dashed taps sit outside the active analysis range.",
+};
 export function analysisTabsInitialize(state) {
     analysisTabSeedIntoState(state);
     analysisTabsBindOnce(state);
@@ -8,6 +17,7 @@ export function analysisTabsInitialize(state) {
 export function analysisTabsRenderFromState(state) {
     analysisTabSeedIntoState(state);
     analysisTabNormalizeForState(state);
+    analysisSurfaceRenderFromState(state);
     analysisTabsRenderButtonsFromState(state);
     analysisTabsRenderPanelsFromState(state);
 }
@@ -17,6 +27,14 @@ export function analysisTabActivatePeakAnalysis(state) {
 }
 export function analysisTabMaterialVisibleForMeasureMode(measureMode) {
     return plateMaterialPanelVisibleForMeasureMode(measureMode);
+}
+export function analysisSurfaceVisibleForMeasureMode(measureMode) {
+    return measureModeNormalize(measureMode) === "peak_analysis";
+}
+export function waveformNavigatorCopyResolveForMeasureMode(measureMode) {
+    return measureModeNormalize(measureMode) === "peak_analysis"
+        ? PEAK_ANALYSIS_TAP_NAVIGATOR_COPY
+        : WAVEFORM_NAVIGATOR_COPY;
 }
 function analysisTabSeedIntoState(state) {
     if (analysisTabValid(state.analysisActiveTab))
@@ -68,6 +86,30 @@ function analysisTabsRenderPanelsFromState(state) {
     const materialPanel = document.getElementById("plate_material_card");
     if (materialPanel)
         materialPanel.hidden = !materialVisible || activeTab !== "material_properties";
+}
+function analysisSurfaceRenderFromState(state) {
+    const surface = analysisSurfaceElementGet();
+    if (!surface)
+        return;
+    const measureMode = measureModeNormalize(state.measureMode);
+    analysisSurfaceParentModeWrite(surface, measureMode);
+    waveformNavigatorCopyRenderForMeasureMode(measureMode);
+    surface.hidden = !analysisSurfaceVisibleForMeasureMode(measureMode);
+}
+function waveformNavigatorCopyRenderForMeasureMode(measureMode) {
+    const copy = waveformNavigatorCopyResolveForMeasureMode(measureMode);
+    const title = document.getElementById("wave_nav_title");
+    const description = document.getElementById("wave_nav_description");
+    if (title)
+        title.textContent = copy.title;
+    if (description)
+        description.textContent = copy.description;
+}
+function analysisSurfaceParentModeWrite(surface, measureMode) {
+    const parent = surface.closest(".card-surface");
+    if (!parent)
+        return;
+    parent.dataset.measureMode = measureMode;
 }
 function analysisTabReadFromState(state) {
     return analysisTabValid(state.analysisActiveTab) ? state.analysisActiveTab : DEFAULT_ANALYSIS_TAB;

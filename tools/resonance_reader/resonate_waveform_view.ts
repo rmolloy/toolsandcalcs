@@ -26,6 +26,8 @@ const RANGE_DRAG_MIN_WIDTH_MS = 80;
 const NOTE_EDITOR_POPOVER_ID = "wave_note_override_editor";
 
 type WaveRange = { start: number; end: number };
+type TapSegment = { start: number; end: number };
+type TapMarkerState = "accepted" | "weak" | "rejected" | "selected";
 type RangeDragMode = "move" | "resize-left" | "resize-right";
 type RangeDragTarget = { rangeKind: "primary" | "note"; dragMode: RangeDragMode };
 type RangeDragSession = {
@@ -135,10 +137,17 @@ function buildNoteSelectionShapes(range: { start: number; end: number } | null) 
   ];
 }
 
-function buildTapSegmentShapes(tapSegments: Array<{ start: number; end: number }>, sampleRate: number) {
+function buildTapSegmentShapes(
+  tapSegments: TapSegment[],
+  sampleRate: number,
+  selectedTapIndex: number | null,
+  primaryRange: WaveRange | null,
+) {
   const shapes: any[] = [];
-  tapSegments.forEach((tap) => {
+  const tapMedianDurationMs = tapMedianDurationMsResolve(tapSegments, sampleRate);
+  tapSegments.forEach((tap, index) => {
     const midMs = ((tap.start + tap.end) / 2 / sampleRate) * 1000;
+    const markerState = tapMarkerStateResolve(tap, index, sampleRate, selectedTapIndex, primaryRange, tapMedianDurationMs);
     shapes.push({
       type: "line",
       xref: "x",
@@ -147,10 +156,59 @@ function buildTapSegmentShapes(tapSegments: Array<{ start: number; end: number }
       x1: midMs,
       y0: 0,
       y1: 1,
-      line: { color: resolveColorRgbaFromRole("waveTapMarker", 0.55), width: 2 },
+      line: tapMarkerLineBuild(markerState),
+      name: `Tap ${index + 1} ${markerState}`,
     });
   });
   return shapes;
+}
+
+function tapMarkerStateResolve(
+  tap: TapSegment,
+  index: number,
+  sampleRate: number,
+  selectedTapIndex: number | null,
+  primaryRange: WaveRange | null,
+  medianDurationMs: number | null,
+): TapMarkerState {
+  if (index === selectedTapIndex) return "selected";
+  const range = tapRangeMsBuild(tap, sampleRate);
+  if (range && primaryRange && !tapRangeMidpointWithinRange(range, primaryRange)) return "rejected";
+  if (range && tapRangeWeakFromMedian(range, medianDurationMs)) return "weak";
+  return "accepted";
+}
+
+function tapRangeMidpointWithinRange(tapRange: WaveRange, primaryRange: WaveRange) {
+  const midMs = (tapRange.start + tapRange.end) / 2;
+  return midMs >= primaryRange.start && midMs <= primaryRange.end;
+}
+
+function tapRangeWeakFromMedian(tapRange: WaveRange, medianDurationMs: number | null) {
+  if (!Number.isFinite(medianDurationMs) || (medianDurationMs as number) <= 0) return false;
+  const durationMs = tapRange.end - tapRange.start;
+  return durationMs < (medianDurationMs as number) * TAP_CLUSTER_OUTLIER_MIN_RATIO
+    || durationMs > (medianDurationMs as number) * TAP_CLUSTER_OUTLIER_MAX_RATIO;
+}
+
+function tapMarkerLineBuild(markerState: TapMarkerState) {
+  if (markerState === "selected") return { color: resolveColorRgbaFromRole("wavePrimarySelection", 0.95), width: 4 };
+  if (markerState === "rejected") return { color: "rgba(255, 126, 102, 0.42)", width: 1.4, dash: "dash" };
+  if (markerState === "weak") return { color: resolveColorRgbaFromRole("waveTapMarker", 0.34), width: 1.4, dash: "dot" };
+  return { color: resolveColorRgbaFromRole("waveTapMarker", 0.62), width: 2 };
+}
+
+function tapMedianDurationMsResolve(tapSegments: TapSegment[], sampleRate: number) {
+  const durations = tapSegments
+    .map((tap) => {
+      const range = tapRangeMsBuild(tap, sampleRate);
+      return range ? range.end - range.start : null;
+    })
+    .filter((duration): duration is number => Number.isFinite(duration) && duration > 0)
+    .sort((left, right) => left - right);
+  if (!durations.length) return null;
+  const middleIndex = Math.floor(durations.length / 2);
+  if (durations.length % 2 === 1) return durations[middleIndex];
+  return (durations[middleIndex - 1] + durations[middleIndex]) / 2;
 }
 
 function buildNoteSliceShapes(noteSlices: Array<{ id: number; startMs: number; endMs: number }>, activeRange: { start: number; end: number } | null) {
@@ -276,26 +334,66 @@ function buildWaveAnnotations(
   return annotations;
 }
 
-function buildWaveShapes(
+export function buildWaveShapes(
   sampleRate: number,
   primaryRange: { start: number; end: number } | null,
   noteSelectionRange: { start: number; end: number } | null,
-  tapSegments: Array<{ start: number; end: number }> | null | undefined,
+  tapSegments: TapSegment[] | null | undefined,
   noteSlices: Array<{ id: number; startMs: number; endMs: number }> | null | undefined,
   measureMode: unknown,
+  selectedTapIndex?: unknown,
 ) {
   const shapes: any[] = [];
-  shapes.push(...buildNoteSliceShapes(noteSlices || [], primaryRange));
-  shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate));
+  const activeTapIndex = selectedTapIndexForMeasureMode(measureMode, selectedTapIndex);
+  const visiblePrimaryRange = primaryRange;
+  const peakAnalysisPrimaryRange = measureModeNormalize(measureMode) === "peak_analysis" ? primaryRange : null;
+  shapes.push(...buildNoteSliceShapes(noteSlices || [], visiblePrimaryRange));
+  shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate, activeTapIndex, peakAnalysisPrimaryRange));
   if (noteSelectionRangeVisibleForMeasureMode(measureMode)) {
     shapes.push(...buildNoteSelectionShapes(noteSelectionRange));
   }
-  shapes.push(...buildSelectionShapes(primaryRange));
+  shapes.push(...buildSelectionShapes(visiblePrimaryRange));
   return shapes;
+}
+
+function selectedTapIndexForMeasureMode(measureMode: unknown, selectedTapIndex: unknown) {
+  if (measureModeNormalize(measureMode) !== "peak_analysis") return null;
+  const index = Number(selectedTapIndex);
+  return Number.isInteger(index) && index >= 0 ? index : 0;
 }
 
 export function noteSelectionRangeVisibleForMeasureMode(measureMode: unknown) {
   return measureModeNormalize(measureMode) === "played_note";
+}
+
+export function tapSegmentAtTimeResolve(
+  tapSegments: TapSegment[] | null | undefined,
+  sampleRate: number,
+  timeMs: number,
+) {
+  const taps = Array.isArray(tapSegments) ? tapSegments : [];
+  if (!Number.isFinite(sampleRate) || sampleRate <= 0 || !Number.isFinite(timeMs)) return null;
+  for (let index = 0; index < taps.length; index += 1) {
+    const range = tapRangeMsBuild(taps[index], sampleRate);
+    if (!range) continue;
+    if (timeMs >= range.start && timeMs <= range.end) return { tap: taps[index], index, range };
+  }
+  return null;
+}
+
+function tapRangeMsBuild(tap: TapSegment, sampleRate: number) {
+  const start = Number(tap.start);
+  const end = Number(tap.end);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  return {
+    start: (start / sampleRate) * 1000,
+    end: (end / sampleRate) * 1000,
+  };
+}
+
+function peakAnalysisSelectedTapIndexWrite(state: Record<string, any>, tapIndex: number) {
+  if (measureModeNormalize(state.measureMode) !== "peak_analysis") return;
+  state.peakAnalysisSelectedTapIndex = tapIndex;
 }
 
 function renderWaveSelection(
@@ -315,6 +413,7 @@ function renderWaveSelection(
     deps.state.tapSegments,
     deps.state.noteSlices,
     deps.state.measureMode,
+    deps.state.peakAnalysisSelectedTapIndex,
   );
 
   waveUpdatingShapes = true;
@@ -343,6 +442,7 @@ function makeWaveNavigatorPlot(
   const Plotly = (window as any).Plotly;
   if (!Plotly) return;
 
+  markWaveformSurfaceReadyFromPlot(plot);
   const absWave = Array.from(slice.wave, (v: number) => Math.abs(v));
   const timeMs = Array.isArray(slice.timeMs)
     ? slice.timeMs
@@ -363,6 +463,7 @@ function makeWaveNavigatorPlot(
   };
 
   const layout = {
+    height: 80,
     margin: { l: 40, r: 10, t: 6, b: 26 },
     paper_bgcolor: "transparent",
     plot_bgcolor: "transparent",
@@ -387,6 +488,7 @@ function makeWaveNavigatorPlot(
       deps.state.tapSegments,
       deps.state.noteSlices,
       deps.state.measureMode,
+      deps.state.peakAnalysisSelectedTapIndex,
     ),
     annotations: buildWaveAnnotations(deps.state.noteSlices || [], deps.state.noteResults || [], deps),
   };
@@ -416,6 +518,13 @@ function makeWaveNavigatorPlot(
     if (!pt) return;
     const x = pt.x as number;
     if (!Number.isFinite(x)) return;
+    if (measureModeNormalize(deps.state.measureMode) === "peak_analysis") {
+      const tapHit = tapSegmentAtTimeResolve(deps.state.tapSegments, slice.sampleRate, x);
+      if (!tapHit) return;
+      peakAnalysisSelectedTapIndexWrite(deps.state, tapHit.index);
+      renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
+      return;
+    }
     const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], x);
     if (note) {
       if (waveNoteOverrideRequestedFromClickEvent(ev?.event)) {
@@ -434,16 +543,10 @@ function makeWaveNavigatorPlot(
       onPrimaryRangeChange?.(range);
       return;
     }
-    const tap = (deps.state.tapSegments || []).find((seg: { start: number; end: number }) => {
-      const startMs = (seg.start / slice.sampleRate) * 1000;
-      const endMs = (seg.end / slice.sampleRate) * 1000;
-      return x >= startMs && x <= endMs;
-    });
-    if (!tap) return;
-    const range = {
-      start: (tap.start / slice.sampleRate) * 1000,
-      end: (tap.end / slice.sampleRate) * 1000,
-    };
+    const tapHit = tapSegmentAtTimeResolve(deps.state.tapSegments, slice.sampleRate, x);
+    if (!tapHit) return;
+    peakAnalysisSelectedTapIndexWrite(deps.state, tapHit.index);
+    const range = tapHit.range;
     deps.state.viewRangeMs = range;
     renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
     onPrimaryRangeChange?.(range);
@@ -652,6 +755,12 @@ function waveNoteQuickChoicesRender(host: HTMLElement, detectedLabel: string, in
     };
     host.appendChild(button);
   });
+}
+
+function markWaveformSurfaceReadyFromPlot(plot: HTMLElement) {
+  const surface = plot.closest("#wave_nav");
+  if (!surface) return;
+  surface.setAttribute("data-waveform-ready", "true");
 }
 
 export function waveNoteOverrideRequestedFromClickEvent(event: { altKey?: boolean; metaKey?: boolean } | null | undefined) {

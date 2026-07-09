@@ -99,7 +99,7 @@ export function settingsSmoothingPatchBuild(value) {
         };
     }
     return {
-        useSpectrumSmoothing: true,
+        useSpectrumSmoothing: value === "celestial" ? true : RESONANCE_TONELAB_DEFAULTS.useSpectrumSmoothing,
         spectrumSmoothingMode: value || null,
     };
 }
@@ -121,7 +121,7 @@ export function settingsProfilePatchBuild(value) {
         spectrumXAxisMax: null,
         spectrumYAxisMin: null,
         spectrumYAxisMax: null,
-        useSpectrumSmoothing: true,
+        useSpectrumSmoothing: value === "celestial" ? true : RESONANCE_TONELAB_DEFAULTS.useSpectrumSmoothing,
         usePeakHold: RESONANCE_TONELAB_DEFAULTS.usePeakHold,
     };
 }
@@ -239,8 +239,8 @@ function settingsCustomProfileRequired(flags) {
         || settingsNumberDiffersFromDefault(flags.spectrumLineWidth, RESONANCE_TONELAB_DEFAULTS.spectrumLineWidth)
         || settingsNumberDiffersFromDefault(flags.tapSliceWindowMs, RESONANCE_TONELAB_DEFAULTS.tapSliceWindowMs)
         || flags.energyBandWidthHz
-        || flags.useSpectrumSmoothing === false
-        || flags.useTapAveraging !== false
+        || settingsBooleanDiffersFromDefault(flags.useSpectrumSmoothing, RESONANCE_TONELAB_DEFAULTS.useSpectrumSmoothing)
+        || settingsBooleanDiffersFromDefault(flags.useTapAveraging, RESONANCE_TONELAB_DEFAULTS.useTapAveraging)
         || settingsBooleanDiffersFromDefault(flags.usePeakHold, RESONANCE_TONELAB_DEFAULTS.usePeakHold)
         || flags.useParabolicPeakRefine === false
         || flags.usePolymaxValidation !== false);

@@ -11,6 +11,7 @@ import {
   resonanceSpectrumXAxisScaleResolve,
   resonanceSpectrumYAxisModeResolve,
 } from "./resonate_debug_flags.js";
+import type { ResonanceTakeOverlay } from "./resonate_take_overlays.js";
 
 type SpectrumPayload = {
   freqs: number[];
@@ -19,6 +20,7 @@ type SpectrumPayload = {
   modes?: any[];
   secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
   peakHoldSpectrum?: { freqs: number[]; mags: number[] } | null;
+  takeOverlays?: ResonanceTakeOverlay[];
   polymaxCandidates?: Array<{ freqHz: number; zeta: number; stability: number; orderCount: number }>;
 };
 
@@ -48,7 +50,8 @@ let modeOverrideLabelBound = false;
 let toneHoverBound = false;
 const TONE_FREQ_DEDUPE_EPSILON_HZ = 0.05;
 const CELESTIAL_Y_AXIS_RANGE: [number, number] = [-100, -40];
-const MEASURED_TRACE_LINE_WIDTH = 2;
+const MEASURED_TRACE_LINE_WIDTH = 1;
+const TAKE_OVERLAY_LINE_COLOR = "rgba(210, 218, 232, 0.58)";
 const AUTOMATIC_Y_FLOOR_MAX_HZ = 300;
 const MODE_CALLOUT_ARROW_OFFSET_PX = -15;
 const MODE_CALLOUT_COLLISION_HZ = 35;
@@ -59,7 +62,7 @@ export function renderSpectrum(payload: SpectrumPayload, deps: SpectrumRenderDep
   const priorRanges = spectrumAxisRangesReadFromPlot(plot);
   const preserveRanges = spectrumRangesPreserveNextRenderConsumeFromState();
   resetModeOverrideLabelBindState();
-  const { freqs, mags, overlay, modes, secondarySpectrum, peakHoldSpectrum, polymaxCandidates } = payload;
+  const { freqs, mags, overlay, modes, secondarySpectrum, peakHoldSpectrum, takeOverlays, polymaxCandidates } = payload;
   const { overlaySegments, overlayVisible, toggle } = overlayContextResolve(freqs, overlay);
   const hoverNoteData = hoverNoteDataResolveFromFreqs(freqs);
   const {
@@ -79,13 +82,12 @@ export function renderSpectrum(payload: SpectrumPayload, deps: SpectrumRenderDep
     hoverNoteData,
     secondarySpectrum: secondarySpectrum || null,
     peakHoldSpectrum: peakHoldSpectrum || null,
+    takeOverlays: takeOverlays || [],
     polymaxCandidates: polymaxCandidates || [],
     deps,
   });
   if (preserveRanges) spectrumLayoutApplyAxisRanges(layout, priorRanges);
-  renderSpectrumPlot(plot, plotData, layout);
-  modeOverrideLabelBind(plot as HTMLElement, modeAnnotationKeys, modeAnnotationAnchorX);
-  bindFftHomeResetToDefaultRange(plot as HTMLElement, deps, layout);
+  const plotReady = renderSpectrumPlot(plot, plotData, layout);
   const plotAny = plot as any;
   seedModePreviewState(
     plotAny,
@@ -99,7 +101,44 @@ export function renderSpectrum(payload: SpectrumPayload, deps: SpectrumRenderDep
   seedModePreviewRelayoutState(plotAny);
 
   bindFftOverlayToggleSyncAndRerender(toggle);
-  bindFftToneHoverFollow(plot as HTMLElement, toneTraceIndex, mags);
+  bindSpectrumPlotInteractionsWhenReady(
+    plot as HTMLElement,
+    plotReady,
+    deps,
+    layout,
+    modeAnnotationKeys,
+    modeAnnotationAnchorX,
+    toneTraceIndex,
+    mags,
+  );
+}
+
+function bindSpectrumPlotInteractionsWhenReady(
+  plot: HTMLElement,
+  plotReady: unknown,
+  deps: SpectrumRenderDeps,
+  layout: any,
+  modeAnnotationKeys: string[],
+  modeAnnotationAnchorX: Record<string, number>,
+  toneTraceIndex: number,
+  mags: number[],
+) {
+  const bindInteractions = () => {
+    resetSpectrumPlotListenerBindState(plot as any);
+    modeOverrideLabelBind(plot, modeAnnotationKeys, modeAnnotationAnchorX);
+    bindFftHomeResetToDefaultRange(plot, deps, layout);
+    bindFftToneHoverFollow(plot, toneTraceIndex, mags);
+  };
+  if (plotReady && typeof (plotReady as Promise<unknown>).then === "function") {
+    Promise.resolve(plotReady).then(bindInteractions);
+    return;
+  }
+  bindInteractions();
+}
+
+function resetSpectrumPlotListenerBindState(plotAny: any) {
+  resetModeOverrideLabelBindState();
+  plotAny.__fftHomeResetBound = false;
 }
 
 function bindFftHomeResetToDefaultRange(plot: HTMLElement, deps: SpectrumRenderDeps, layout: any) {
@@ -244,12 +283,13 @@ function buildSecondaryMeasuredTrace(
   shouldRender: boolean,
 ) {
   if (!shouldRender || !secondarySpectrum?.freqs?.length || !secondarySpectrum?.mags?.length) return null;
+  const lineWidth = resonanceSpectrumLineWidthResolve(MEASURED_TRACE_LINE_WIDTH);
   return {
     x: secondarySpectrum.freqs,
     y: secondarySpectrum.mags,
     type: "scatter",
     mode: "lines",
-    line: { color: resolveColorHexFromRole("waveNoteSelection"), width: 2.5 },
+    line: { color: resolveColorHexFromRole("waveNoteSelection"), width: lineWidth },
     name: "Selected Note Window",
     customdata: spectrumHoverNoteDataBuild(secondarySpectrum.freqs),
     hovertemplate: spectrumLineHoverTemplateBuild(),
@@ -273,6 +313,23 @@ function buildPeakHoldTrace(
     hoverlabel: spectrumLineHoverLabelStyleBuild(),
     showlegend: false,
   };
+}
+
+function buildTakeOverlayTraces(takeOverlays: ResonanceTakeOverlay[]) {
+  const lineWidth = resonanceSpectrumLineWidthResolve(MEASURED_TRACE_LINE_WIDTH);
+  return takeOverlays
+    .filter((take) => take.visible && take.freqs.length && take.mags.length)
+    .map((take) => ({
+      x: take.freqs,
+      y: take.mags,
+      type: "scatter",
+      mode: "lines",
+      line: { color: TAKE_OVERLAY_LINE_COLOR, width: lineWidth },
+      name: take.label,
+      hoverinfo: "skip",
+      showlegend: false,
+      meta: { kind: "takeOverlay", id: take.id, label: take.label },
+    }));
 }
 
 function spectrumLineHoverTemplateBuild() {
@@ -559,6 +616,7 @@ function spectrumRoundUpToStep(value: number, step: number) {
 }
 
 function buildSpectrumPlotData(
+  takeOverlayTraces: any[],
   measuredTrace: any,
   secondaryMeasuredTrace: any | null,
   peakHoldTrace: any | null,
@@ -569,6 +627,7 @@ function buildSpectrumPlotData(
 ) {
   const flatModeTraces = modeTraces.flatMap((m: any) => m.traces);
   return [
+    ...takeOverlayTraces,
     measuredTrace,
     ...(secondaryMeasuredTrace ? [secondaryMeasuredTrace] : []),
     ...(peakHoldTrace ? [peakHoldTrace] : []),
@@ -607,8 +666,48 @@ function buildModeAnnotationIndexByKey(modeAnnotationKeys: string[]) {
 
 function renderSpectrumPlot(plot: HTMLElement, plotData: any[], layout: any) {
   const plotAny = plot as any;
-  plotAny.__spectrumPlotReady = spectrumPlotReadyChain(plotAny.__spectrumPlotReady, () => (window as any).Plotly.newPlot(plot, plotData, layout, {
-    displayModeBar: true,
+  plotAny.__spectrumLatestRender = { plotData, layout };
+  plotAny.__spectrumPlotNeedsRedraw = true;
+  if (plotAny.__spectrumPlotDrawing) return plotAny.__spectrumPlotReady;
+  plotAny.__spectrumPlotReady = spectrumPlotDrainLatest(plot);
+  return plotAny.__spectrumPlotReady;
+}
+
+function spectrumPlotModeBarShouldDisplay() {
+  return spectrumViewportWidthResolve() > 600;
+}
+
+function spectrumViewportWidthResolve() {
+  const width = (window as any)?.innerWidth;
+  return Number.isFinite(width) && width > 0 ? Number(width) : 1024;
+}
+
+function spectrumPlotDrainLatest(plot: HTMLElement) {
+  const plotAny = plot as any;
+  plotAny.__spectrumPlotDrawing = true;
+  const drawNext = (): unknown => {
+    if (!plotAny.__spectrumPlotNeedsRedraw) {
+      plotAny.__spectrumPlotDrawing = false;
+      return undefined;
+    }
+    plotAny.__spectrumPlotNeedsRedraw = false;
+    const latest = plotAny.__spectrumLatestRender;
+    const drawResult = (window as any).Plotly.newPlot(plot, latest.plotData, latest.layout, spectrumPlotConfigBuild());
+    if (drawResult && typeof drawResult.then === "function") {
+      return Promise.resolve(drawResult).catch(() => undefined).then(drawNext);
+    }
+    return drawNext();
+  };
+  const ready = drawNext();
+  if (!ready || typeof (ready as Promise<unknown>).then !== "function") {
+    plotAny.__spectrumPlotDrawing = false;
+  }
+  return ready;
+}
+
+function spectrumPlotConfigBuild() {
+  return {
+    displayModeBar: spectrumPlotModeBarShouldDisplay(),
     displaylogo: false,
     modeBarButtonsToAdd: [settingsModebarButtonBuild()],
     responsive: true,
@@ -624,12 +723,7 @@ function renderSpectrumPlot(plot: HTMLElement, plotData: any[], layout: any) {
       shapePosition: false,
       titleText: false,
     },
-  }));
-}
-
-function spectrumPlotReadyChain(previousReady: Promise<unknown> | undefined, drawPlot: () => unknown) {
-  if (!previousReady || typeof previousReady.then !== "function") return drawPlot();
-  return Promise.resolve(previousReady).catch(() => undefined).then(() => drawPlot());
+  };
 }
 
 function settingsModebarButtonBuild() {
@@ -795,7 +889,19 @@ function modeAnnotationTextBuild(
   noteLabel: string,
   centsLabel: string,
 ) {
+  if (spectrumModeAnnotationShouldUseCompactText()) {
+    return `${modeAnnotationCompactLabelResolve(meta, aliasLabel)}<br><span style="color:${meta.color}; font-weight:600;">${freqHz.toFixed(1)} Hz</span>`;
+  }
   return `${meta.label}${aliasLabel}<br><span style="color:${meta.color}; font-weight:600;">${freqHz.toFixed(1)} Hz</span> · ${noteLabel} ${centsLabel}`;
+}
+
+function spectrumModeAnnotationShouldUseCompactText() {
+  return spectrumViewportWidthResolve() <= 600;
+}
+
+function modeAnnotationCompactLabelResolve(meta: ModeMeta, aliasLabel: string) {
+  const alias = aliasLabel.trim();
+  return alias.length > 0 && alias.length <= 3 ? alias : meta.label;
 }
 
 function modeAnnotationPreviewTextFromFreq(meta: ModeMeta, aliasLabel: string, freqHz: number) {
@@ -824,9 +930,11 @@ function spectrumRenderModelAssemble(args: {
   hoverNoteData: Array<[string, string]>;
   secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
   peakHoldSpectrum?: { freqs: number[]; mags: number[] } | null;
+  takeOverlays: ResonanceTakeOverlay[];
   polymaxCandidates: Array<{ freqHz: number; zeta: number; stability: number; orderCount: number }> ;
   deps: SpectrumRenderDeps;
 }) {
+  const takeOverlayTraces = buildTakeOverlayTraces(args.takeOverlays);
   const measuredTrace = buildMeasuredTrace(args.freqs, args.mags, args.hoverNoteData);
   const secondaryMeasuredTrace = buildSecondaryMeasuredTrace(
     args.secondarySpectrum,
@@ -843,8 +951,14 @@ function spectrumRenderModelAssemble(args: {
     args.deps.modeMeta,
   );
   const layout = buildSpectrumLayout(args.deps, modeAnnotations, spectrumRangeSourcesBuild(args));
-  const plotData = buildSpectrumPlotData(measuredTrace, secondaryMeasuredTrace, peakHoldTrace, overlayTraces, polymaxTraces, modeTraces, toneTrace);
-  const modeTraceIndexByKey = buildModeTraceIndexByKey(modeTraces, args.modes, overlayTraces.length + polymaxTraces.length, Boolean(secondaryMeasuredTrace), Boolean(peakHoldTrace));
+  const plotData = buildSpectrumPlotData(takeOverlayTraces, measuredTrace, secondaryMeasuredTrace, peakHoldTrace, overlayTraces, polymaxTraces, modeTraces, toneTrace);
+  const modeTraceIndexByKey = buildModeTraceIndexByKey(
+    modeTraces,
+    args.modes,
+    takeOverlayTraces.length + overlayTraces.length + polymaxTraces.length,
+    Boolean(secondaryMeasuredTrace),
+    Boolean(peakHoldTrace),
+  );
   const modeAnnotationIndexByKey = buildModeAnnotationIndexByKey(modeAnnotationKeys);
   const toneTraceIndex = plotData.length - 1;
   return {
@@ -863,9 +977,11 @@ function spectrumRangeSourcesBuild(args: {
   mags: number[];
   secondarySpectrum?: { freqs: number[]; mags: number[] } | null;
   peakHoldSpectrum?: { freqs: number[]; mags: number[] } | null;
+  takeOverlays: ResonanceTakeOverlay[];
 }) {
   return [
     { freqs: args.freqs, mags: args.mags },
+    ...args.takeOverlays,
     args.secondarySpectrum || null,
     args.peakHoldSpectrum || null,
   ].filter((source): source is SpectrumRangeSource => Boolean(source?.freqs?.length && source?.mags?.length));
@@ -949,6 +1065,7 @@ function modeOverrideLabelBind(plot: HTMLElement, modeAnnotationKeys: string[], 
       return;
     }
     if (commit) {
+      modeOverridePreviewUpdate(plotAny, snap, true);
       emitModeOverrideRequested(snap.modeKey, snap.freqHz);
       return;
     }

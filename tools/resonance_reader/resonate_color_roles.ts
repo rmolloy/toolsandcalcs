@@ -25,7 +25,9 @@ export type ColorRoleName =
   | "customMode"
   | "wavePrimarySelection"
   | "waveNoteSelection"
-  | "waveTapMarker";
+  | "waveTapMarker"
+  | "peakAnalysisWaveform"
+  | "peakAnalysisProjection";
 
 const COLOR_PALETTE_OKABE_ITO: Record<PaletteColorName, RgbTriplet> = {
   black: [0, 0, 0],
@@ -54,6 +56,8 @@ const COLOR_ROLE_TO_PALETTE: Record<ColorRoleName, PaletteColorName> = {
   wavePrimarySelection: "orange",
   waveNoteSelection: "bluishGreen",
   waveTapMarker: "reddishPurple",
+  peakAnalysisWaveform: "skyBlue",
+  peakAnalysisProjection: "yellow",
 };
 
 function resolvePaletteRgbFromName(colorName: PaletteColorName): RgbTriplet {

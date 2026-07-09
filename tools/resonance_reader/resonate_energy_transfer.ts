@@ -1,6 +1,6 @@
 import { measureModeNormalize } from "./resonate_mode_config.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
-import { resonanceEnergyBandWidthHzResolve } from "./resonate_debug_flags.js";
+import { resonanceEnergyBandWidthHzResolve, resonanceSpectrumLineWidthResolve } from "./resonate_debug_flags.js";
 
 type EnergyMode = { id: string; label: string; color: string; peakFreq: number };
 type EnergySeriesView = {
@@ -53,6 +53,7 @@ const ENERGY_STRIDE_TARGET = 360;
 const ENERGY_SLICE_CACHE_KEY = "__energySliceCache";
 const ENERGY_BANDWIDTH_CENTS = 25;
 const ENERGY_BANDWIDTH_FLOOR_HZ = 0.5;
+const ENERGY_NOTE_TRACE_LINE_WIDTH = 1;
 
 export function energyBandWidthHzResolveFromFrequency(
   frequencyHz: number,
@@ -751,6 +752,7 @@ function tracesBuildFromSeries(series: EnergySeriesView, state: Record<string, a
   const fundamentalHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz, entry.noteOverrideLabel));
   const secondPartialHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz * 2));
   const thirdPartialHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz * 3));
+  const noteTraceWidth = energyNoteTraceLineWidthResolve();
   const traces: any[] = [
     {
       x: series.t,
@@ -758,7 +760,7 @@ function tracesBuildFromSeries(series: EnergySeriesView, state: Record<string, a
       type: "scatter",
       mode: "lines",
       name: "Fundamental",
-      line: { color: ENERGY_COLORS.fundamental, width: 3, dash: "solid" },
+      line: { color: ENERGY_COLORS.fundamental, width: noteTraceWidth, dash: "solid" },
       fill: "tozeroy",
       fillcolor: resolveColorRgbaFromRole("stringFundamental", 0.25),
       customdata: fundamentalHoverData,
@@ -771,7 +773,7 @@ function tracesBuildFromSeries(series: EnergySeriesView, state: Record<string, a
       type: "scatter",
       mode: "lines",
       name: "Second Partial",
-      line: { color: ENERGY_COLORS.secondPartial, width: 3, dash: "solid" },
+      line: { color: ENERGY_COLORS.secondPartial, width: noteTraceWidth, dash: "solid" },
       fill: "none",
       customdata: secondPartialHoverData,
       hovertemplate: hoverTemplateBuildFromCustomData(),
@@ -783,7 +785,7 @@ function tracesBuildFromSeries(series: EnergySeriesView, state: Record<string, a
       type: "scatter",
       mode: "lines",
       name: "Third Partial",
-      line: { color: ENERGY_COLORS.thirdPartial, width: 3, dash: "solid" },
+      line: { color: ENERGY_COLORS.thirdPartial, width: noteTraceWidth, dash: "solid" },
       fill: "none",
       fillcolor: ENERGY_COLORS.thirdPartialFill,
       customdata: thirdPartialHoverData,
@@ -808,6 +810,10 @@ function tracesBuildFromSeries(series: EnergySeriesView, state: Record<string, a
   });
 
   return traces;
+}
+
+function energyNoteTraceLineWidthResolve() {
+  return resonanceSpectrumLineWidthResolve(ENERGY_NOTE_TRACE_LINE_WIDTH);
 }
 
 export function energyXWindowResolveFromState(

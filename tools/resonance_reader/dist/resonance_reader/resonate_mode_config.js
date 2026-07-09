@@ -86,6 +86,7 @@ const BRACE_STOCK_META = {
 const MODE_PROFILES = {
     guitar: { bands: GUITAR_BANDS, meta: GUITAR_META },
     played_note: { bands: GUITAR_BANDS, meta: GUITAR_META },
+    peak_analysis: { bands: GUITAR_BANDS, meta: GUITAR_META },
     plate_stock: { bands: PLATE_STOCK_BANDS, meta: PLATE_STOCK_META },
     brace_stock: { bands: BRACE_STOCK_BANDS, meta: BRACE_STOCK_META },
 };
@@ -94,6 +95,8 @@ export const MODE_META = GUITAR_META;
 export function measureModeNormalize(input) {
     if (input === "played_note")
         return "played_note";
+    if (input === "peak_analysis")
+        return "peak_analysis";
     if (input === "plate_stock" || input === "top")
         return "plate_stock";
     if (input === "back")
@@ -104,4 +107,26 @@ export function measureModeNormalize(input) {
 }
 export function modeProfileResolveFromMeasureMode(measureMode) {
     return MODE_PROFILES[measureModeNormalize(measureMode)];
+}
+export function peakAnalysisSourceMeasureModeResolve(state) {
+    const measureMode = measureModeNormalize(state?.measureMode);
+    if (measureMode !== "peak_analysis")
+        return measureMode;
+    const sourceMode = measureModeNormalize(state?.peakAnalysisSourceMeasureMode);
+    return sourceMode === "peak_analysis" ? "guitar" : sourceMode;
+}
+export function measureModeLabelBuild(measureMode) {
+    const normalized = measureModeNormalize(measureMode);
+    if (normalized === "played_note")
+        return "Played note";
+    if (normalized === "peak_analysis")
+        return "Peak/Q";
+    if (normalized === "plate_stock")
+        return "Plate stock";
+    if (normalized === "brace_stock")
+        return "Brace stock";
+    return "Guitar";
+}
+export function modeProfileResolveFromState(state) {
+    return modeProfileResolveFromMeasureMode(peakAnalysisSourceMeasureModeResolve(state));
 }
