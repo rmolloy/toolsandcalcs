@@ -171,17 +171,21 @@
         const endIdx = fitEndIndexResolve(envelope, startIdx, fitFloorDb);
         const fitTimes = fitTimesBuild(sampleRate, startIdx, endIdx);
         const fitVals = fitLogEnvelopeBuild(envelope, startIdx, endIdx);
+        const fitStartSec = startIdx / sampleRate;
+        const fitEndSec = endIdx / sampleRate;
         if (fitTimes.length <= 8) {
-            return { tau: null, envelopeR2: null, slope: null };
+            return { tau: null, envelopeR2: null, slope: null, fitStartSec, fitEndSec };
         }
         const reg = linearRegression(fitTimes, fitVals);
         if (!reg) {
-            return { tau: null, envelopeR2: null, slope: null };
+            return { tau: null, envelopeR2: null, slope: null, fitStartSec, fitEndSec };
         }
         return {
             slope: reg.slope,
             tau: reg.slope < 0 ? -1 / reg.slope : null,
             envelopeR2: reg.r2,
+            fitStartSec,
+            fitEndSec,
         };
     }
     function fitStartIndexResolve(envelope, sampleRate, attackSkipMs) {
@@ -356,10 +360,9 @@
             : null;
         const flags = flagsResolve(Q, args.deltaF, args.peakFrequencyHz, fit.envelopeR2);
         const downsampleStep = Math.max(1, Math.floor(args.envelope.length / 400));
-        const envelopePreview = [];
-        for (let i = 0; i < args.envelope.length; i += downsampleStep)
-            envelopePreview.push(args.envelope[i]);
-        const timeAxis = Array.from(args.envelope, (_v, idx) => idx / args.sampleRate);
+        const envelopePreview = previewSeriesBuild(args.envelope, downsampleStep);
+        const responsePreview = normalizedResponsePreviewBuild(args.response, downsampleStep);
+        const timeAxis = timeAxisPreviewBuild(args.envelope.length, args.sampleRate, downsampleStep);
         return {
             f0: (_a = args.peakFrequencyHz) !== null && _a !== void 0 ? _a : null,
             tau: fit.tau,
@@ -367,7 +370,10 @@
             deltaF: args.deltaF,
             envelopeR2: fit.envelopeR2,
             slope: fit.slope,
+            fitStartSec: fit.fitStartSec,
+            fitEndSec: fit.fitEndSec,
             flags,
+            response: responsePreview,
             envelope: envelopePreview,
             envelopeFull: Array.from(args.envelope),
             timeAxis,
@@ -376,6 +382,23 @@
             attackSkipMs: args.attackSkipMs,
             smoothWindowMs: args.smoothWindowMs,
         };
+    }
+    function previewSeriesBuild(series, downsampleStep) {
+        const preview = [];
+        for (let i = 0; i < series.length; i += downsampleStep)
+            preview.push(Number(series[i]) || 0);
+        return preview;
+    }
+    function normalizedResponsePreviewBuild(signal, downsampleStep) {
+        const preview = previewSeriesBuild(signal, downsampleStep);
+        const maxAbs = preview.reduce((max, value) => Math.max(max, Math.abs(value)), EPS);
+        return preview.map((value) => value / maxAbs);
+    }
+    function timeAxisPreviewBuild(sampleCount, sampleRate, downsampleStep) {
+        const preview = [];
+        for (let i = 0; i < sampleCount; i += downsampleStep)
+            preview.push(i / sampleRate);
+        return preview;
     }
     function flagsResolve(Q, deltaF, peak, envelopeR2) {
         const flags = [];
@@ -396,6 +419,7 @@
         const peak = Number.isFinite(f0) ? f0 : findPeakFrequency(spectrum);
         const deltaF = spectrum ? findDeltaF(spectrum, peak) : null;
         return ringdownResultBuild({
+            response: signal,
             envelope,
             sampleRate,
             smoothWindowMs,
@@ -423,6 +447,7 @@
             ? localDeltaFNearTarget(spectrum, targetFrequencyHz, bandwidthHz)
             : null;
         return ringdownResultBuild({
+            response: filteredSignal,
             envelope,
             sampleRate,
             smoothWindowMs,
