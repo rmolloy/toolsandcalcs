@@ -656,6 +656,26 @@ body { padding: 28px; }
   z-index: 0;
 }
 
+@supports (background-image: image-set(url("assets/starfield-768.webp") type("image/webp") 1x)) {
+  .card-surface::before {
+    background-image: image-set(
+      url("assets/starfield-768.webp") type("image/webp") 1x,
+      url("assets/starfield.png") type("image/png") 1x
+    );
+  }
+}
+
+@media (min-width: 901px) {
+  @supports (background-image: image-set(url("assets/starfield-1280.webp") type("image/webp") 1x)) {
+    .card-surface::before {
+      background-image: image-set(
+        url("assets/starfield-1280.webp") type("image/webp") 1x,
+        url("assets/starfield.png") type("image/png") 1x
+      );
+    }
+  }
+}
+
 .card-surface::after {
   content: "";
   position: absolute;
