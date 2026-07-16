@@ -819,24 +819,20 @@ body { padding: 28px; }
 .peak-analysis-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .peak-analysis-plot-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .peak-analysis-plot-panel {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 16px;
-  background: rgba(8, 12, 21, 0.34);
+  gap: 8px;
 }
 
 .peak-analysis-plot-panel h3 {
@@ -854,18 +850,9 @@ body { padding: 28px; }
 }
 
 .peak-analysis-provenance {
-  margin-top: 10px;
   color: rgba(230, 233, 239, 0.68);
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);
-}
-
-.peak-analysis-interpretation {
-  margin-top: 10px;
-  max-width: 78ch;
-  color: rgba(230, 233, 239, 0.82);
-  font-size: var(--type-small-size);
-  line-height: var(--type-small-line);
 }
 
 .peak-analysis-actions {
@@ -873,11 +860,29 @@ body { padding: 28px; }
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
-  margin-top: 14px;
 }
 
 .peak-analysis-actions .btn-small {
   min-height: 36px;
+}
+
+.peak-analysis-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.peak-analysis-position {
+  min-width: 76px;
+  color: rgba(230, 233, 239, 0.76);
+  font-size: var(--type-caption-size);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.peak-analysis-actions .icon-btn {
+  width: 36px;
+  min-width: 36px;
 }
 
 .peak-analysis-model-link {
@@ -892,28 +897,12 @@ body { padding: 28px; }
 }
 
 @media (max-width: 640px) {
-  .peak-analysis-interpretation {
-    order: 1;
-    margin-top: 0;
-    padding: 10px 12px;
-    border: 1px solid rgba(245, 196, 111, 0.18);
-    border-radius: 12px;
-    background: rgba(245, 196, 111, 0.06);
-    color: rgba(255, 255, 255, 0.9);
-  }
-
   .peak-analysis-actions {
-    order: 2;
     margin-top: 0;
     align-items: stretch;
   }
 
-  .peak-analysis-plot-grid {
-    order: 3;
-  }
-
   .peak-analysis-provenance {
-    order: 4;
     margin-top: 0;
   }
 
@@ -922,6 +911,15 @@ body { padding: 28px; }
     justify-content: center;
     width: 100%;
     margin-left: 0;
+  }
+
+  .peak-analysis-stepper {
+    width: 100%;
+  }
+
+  .peak-analysis-actions .icon-btn {
+    width: 36px;
+    min-width: 36px;
   }
 
 }
@@ -1451,6 +1449,16 @@ body { padding: 28px; }
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01), 0 0 42px rgba(92, 120, 216, 0.09);
 }
 
+#plot_peak_analysis,
+#plot_peak_ringdown {
+  border-color: rgba(140, 166, 255, 0.03);
+  background:
+    radial-gradient(circle at 38% 42%, rgba(103, 140, 255, 0.08), transparent 52%),
+    radial-gradient(circle at 57% 45%, rgba(242, 181, 87, 0.065), transparent 44%),
+    rgba(8, 12, 21, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01), 0 0 42px rgba(92, 120, 216, 0.09);
+}
+
 /* Plotly hover: add glow + gold edge (mode tooltips use hoverlabel overrides). */
 #plot_fft .hoverlayer .hovertext {
   filter:
@@ -1569,6 +1577,12 @@ body { padding: 28px; }
   margin-top: 0;
 }
 
+.wave-transport-inline .transport-recording {
+  height: 35px;
+  width: clamp(12ch, 22vw, 30ch);
+  border-radius: 10px;
+}
+
 .take-overlay-controls {
   position: relative;
   display: inline-flex;
@@ -1584,30 +1598,8 @@ body { padding: 28px; }
   display: none;
 }
 
-.take-overlay-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 18px;
-}
-
-.take-overlay-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(210, 218, 232, 0.58);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
-}
-
-.take-overlay-dot.is-current {
-  background: var(--accent);
-  box-shadow: 0 0 0 2px rgba(83, 184, 255, 0.2);
-}
-
 .take-overlay-clear {
-  width: 35px;
-  padding-inline: 0;
-  justify-content: center;
+  padding-inline: 10px;
 }
 
 .take-overlay-panel {
@@ -1856,6 +1848,10 @@ body { padding: 28px; }
   .take-overlay-controls {
     grid-column: 1 / -1;
     width: max-content;
+  }
+  .wave-transport-inline .transport-recording {
+    grid-column: 1 / -1;
+    width: 100%;
   }
   .measure-action-row .dof-model-link {
     margin-left: 0;
