@@ -785,6 +785,13 @@ function bindFftToneHoverFollow(plot: HTMLElement, toneTraceIndex: number, mags:
   const plotAny = plot as any;
   if (!plotAny?.on || toneHoverBound) return;
   toneHoverBound = true;
+  plot.addEventListener(
+    "mousemove",
+    (event) => {
+      toneHoverApplyFromPointer(event, plot, toneTraceIndex, mags);
+    },
+    true,
+  );
   plotAny.on("plotly_hover", (evt: any) => {
     toneHoverApplyFromEvent(evt, plot, toneTraceIndex, mags);
   });
@@ -793,10 +800,19 @@ function bindFftToneHoverFollow(plot: HTMLElement, toneTraceIndex: number, mags:
   });
 }
 
+function toneHoverApplyFromPointer(event: MouseEvent, plot: HTMLElement, toneTraceIndex: number, mags: number[]) {
+  const freqHz = toneFrequencyHzResolveFromPointer(plot, event);
+  toneHoverApplyFrequency(freqHz, plot, toneTraceIndex, mags);
+}
+
 function toneHoverApplyFromEvent(evt: any, plot: HTMLElement, toneTraceIndex: number, mags: number[]) {
+  const freqHz = toneFreqResolveFromHoverEvent(evt);
+  toneHoverApplyFrequency(freqHz, plot, toneTraceIndex, mags);
+}
+
+function toneHoverApplyFrequency(freqHz: number | null, plot: HTMLElement, toneTraceIndex: number, mags: number[]) {
   const state = (window as any).FFTState as Record<string, any> | undefined;
   if (!state?.toneEnabled) return;
-  const freqHz = toneFreqResolveFromHoverEvent(evt);
   if (!Number.isFinite(freqHz)) return;
   const nextFreqHz = freqHz as number;
   if (toneFrequencyUpdateRequired(state.toneFreqHz, nextFreqHz)) {
@@ -831,6 +847,20 @@ function toneFreqResolveFromHoverEvent(evt: any) {
   const freqHz = Number(point?.x);
   if (!Number.isFinite(freqHz)) return null;
   return freqHz;
+}
+
+export function toneFrequencyHzResolveFromPointer(plot: HTMLElement, event: MouseEvent) {
+  const fullLayout = (plot as any)?._fullLayout;
+  const size = fullLayout?._size;
+  const xAxis = fullLayout?.xaxis;
+  const plotRect = plot.getBoundingClientRect();
+  const leftPx = Number(size?.l);
+  const widthPx = Number(size?.w);
+  if (!xAxis || !Number.isFinite(leftPx) || !Number.isFinite(widthPx) || widthPx <= 1) return null;
+  const localPx = Math.min(widthPx, Math.max(0, event.clientX - plotRect.left - leftPx));
+  const freqHz = Number(xAxis.p2d?.(localPx));
+  if (!Number.isFinite(freqHz)) return null;
+  return Math.round(freqHz * 10) / 10;
 }
 
 function spectrumRangesPreserveNextRenderMarkOnState() {

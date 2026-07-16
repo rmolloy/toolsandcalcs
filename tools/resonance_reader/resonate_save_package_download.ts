@@ -1,4 +1,4 @@
-import { resonanceCapturePackageZipBlobBuild } from "./resonate_capture_package.js";
+import { resonanceCapturePackageZipBlobBuild, resonanceCaptureWaveBlobBuild } from "./resonate_capture_package.js";
 
 export async function downloadResonanceCapturePackage(args: {
   state: Record<string, any>;
@@ -17,6 +17,16 @@ export async function downloadResonanceCapturePackage(args: {
   resonanceCaptureBlobDownload({
     blob: packageBlob,
     filename: `${resonanceCaptureFilenameStemBuild(args.recordingLabel, savedAt)}.zip`,
+  });
+}
+
+export function downloadResonanceWave(args: {
+  state: Record<string, any>;
+  recordingLabel: string;
+}): void {
+  resonanceCaptureBlobDownload({
+    blob: resonanceCaptureWaveBlobBuild(args.state),
+    filename: `${resonanceCaptureFilenameLabelBuild(args.recordingLabel)}.wav`,
   });
 }
 

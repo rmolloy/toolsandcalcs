@@ -10,7 +10,7 @@ const TAP_CLUSTER_OUTLIER_MAX_RATIO = 1.8;
 const FALLBACK_WINDOW_MIN_MS = 900;
 const FALLBACK_WINDOW_MAX_MS = 3000;
 const FALLBACK_WINDOW_RATIO = 0.22;
-const RANGE_DRAG_EDGE_TOLERANCE_PX = 10;
+const RANGE_DRAG_EDGE_TOLERANCE_PX = 18;
 const RANGE_DRAG_MIN_WIDTH_MS = 80;
 const NOTE_EDITOR_POPOVER_ID = "wave_note_override_editor";
 function waveRangeFingerprint(range) {
@@ -282,10 +282,10 @@ function buildWaveAnnotations(noteSlices, noteResults, deps) {
 export function buildWaveShapes(sampleRate, primaryRange, noteSelectionRange, tapSegments, noteSlices, measureMode, selectedTapIndex) {
     const shapes = [];
     const activeTapIndex = selectedTapIndexForMeasureMode(measureMode, selectedTapIndex);
-    const visiblePrimaryRange = primaryRange;
-    const peakAnalysisPrimaryRange = measureModeNormalize(measureMode) === "peak_analysis" ? primaryRange : null;
+    const peakAnalysisActive = measureModeNormalize(measureMode) === "peak_analysis";
+    const visiblePrimaryRange = peakAnalysisActive ? null : primaryRange;
     shapes.push(...buildNoteSliceShapes(noteSlices || [], visiblePrimaryRange));
-    shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate, activeTapIndex, peakAnalysisPrimaryRange));
+    shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate, activeTapIndex, null));
     if (noteSelectionRangeVisibleForMeasureMode(measureMode)) {
         shapes.push(...buildNoteSelectionShapes(noteSelectionRange));
     }
@@ -328,6 +328,11 @@ function peakAnalysisSelectedTapIndexWrite(state, tapIndex) {
     if (measureModeNormalize(state.measureMode) !== "peak_analysis")
         return;
     state.peakAnalysisSelectedTapIndex = tapIndex;
+}
+function peakAnalysisTapSelectionApply(deps, slice, tapIndex) {
+    peakAnalysisSelectedTapIndexWrite(deps.state, tapIndex);
+    renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
+    deps.renderPeakAnalysis?.();
 }
 function renderWaveSelection(primaryRange, noteSelectionRange, deps, slice) {
     const plot = document.getElementById("plot_waveform");
@@ -415,6 +420,7 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
     }
     bindWaveNoteOverrideDismissInteractions(plot);
     bindWaveNoteOverrideModifierClickInteractions(plot, deps, slice);
+    bindPeakAnalysisTapPointerInteractions(plot, deps, slice);
     plot.on("plotly_click", (ev) => {
         if (plot.__resonateSuppressClick) {
             plot.__resonateSuppressClick = false;
@@ -430,8 +436,7 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
             const tapHit = tapSegmentAtTimeResolve(deps.state.tapSegments, slice.sampleRate, x);
             if (!tapHit)
                 return;
-            peakAnalysisSelectedTapIndexWrite(deps.state, tapHit.index);
-            renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
+            peakAnalysisTapSelectionApply(deps, slice, tapHit.index);
             return;
         }
         const note = noteWindowSliceFindByTime(deps.state.noteSlices || [], x);
@@ -472,6 +477,8 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
     });
     plot.on("plotly_relayout", (ev) => {
         if (waveUpdatingShapes)
+            return;
+        if (measureModeNormalize(deps.state.measureMode) === "peak_analysis")
             return;
         const range0 = ev["xaxis.range[0]"];
         const range1 = ev["xaxis.range[1]"];
@@ -645,6 +652,29 @@ function bindWaveNoteOverrideModifierClickInteractions(plot, deps, slice) {
     };
     plot.addEventListener("mousedown", onMouseDown);
     anyPlot.__resonateWaveNoteOverrideModifierClickBound = true;
+}
+function bindPeakAnalysisTapPointerInteractions(plot, deps, slice) {
+    const anyPlot = plot;
+    anyPlot.__resonatePeakAnalysisTapPointerDeps = deps;
+    anyPlot.__resonatePeakAnalysisTapPointerSlice = slice;
+    if (anyPlot.__resonatePeakAnalysisTapPointerBound)
+        return;
+    const onMouseDown = (event) => {
+        const activeDeps = anyPlot.__resonatePeakAnalysisTapPointerDeps;
+        const activeSlice = anyPlot.__resonatePeakAnalysisTapPointerSlice;
+        if (event.button !== 0 || measureModeNormalize(activeDeps.state.measureMode) !== "peak_analysis")
+            return;
+        const cursorMs = waveformMsAtPointerResolve(plot, event);
+        const tapHit = tapSegmentAtTimeResolve(activeDeps.state.tapSegments, activeSlice.sampleRate, cursorMs);
+        if (!tapHit)
+            return;
+        anyPlot.__resonateSuppressClick = true;
+        event.preventDefault();
+        event.stopPropagation();
+        peakAnalysisTapSelectionApply(activeDeps, activeSlice, tapHit.index);
+    };
+    plot.addEventListener("mousedown", onMouseDown, true);
+    anyPlot.__resonatePeakAnalysisTapPointerBound = true;
 }
 function waveNoteOverrideEditorPosition(plot, editor, anchorMs) {
     const axis = waveformAxisRangeResolve(plot);
@@ -935,6 +965,8 @@ function bindRangeDirectDragInteractions(plot, deps, slice, onPrimaryRangeChange
     if (anyPlot.__resonateRangeDragBound)
         return;
     const onPointerDown = (event) => {
+        if (measureModeNormalize(deps.state.measureMode) === "peak_analysis")
+            return;
         if (plotlyWaveToolsEnabledResolve())
             return;
         if (event.button !== 0)

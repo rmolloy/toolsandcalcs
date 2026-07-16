@@ -75,6 +75,9 @@ function takeOverlaySnapshotStateBuild(state, freqs, mags) {
         lastWaveSlice: takeOverlayValueClone(state.lastWaveSlice),
         lastPeakHoldSpectrum: takeOverlayValueClone(state.lastPeakHoldSpectrum),
         lastSpectrumNoteSelection: takeOverlayValueClone(state.lastSpectrumNoteSelection),
+        viewRangeMs: takeOverlayValueClone(state.viewRangeMs),
+        noteSelectionRangeMs: takeOverlayValueClone(state.noteSelectionRangeMs),
+        peakAnalysisSelectedTapIndex: takeOverlayValueClone(state.peakAnalysisSelectedTapIndex),
     };
 }
 function takeOverlaySnapshotRestoreIntoState(state, take) {
@@ -89,6 +92,9 @@ function takeOverlaySnapshotRestoreIntoState(state, take) {
     state.lastWaveSlice = takeOverlayValueClone(snapshot.lastWaveSlice);
     state.lastPeakHoldSpectrum = takeOverlayValueClone(snapshot.lastPeakHoldSpectrum);
     state.lastSpectrumNoteSelection = takeOverlayValueClone(snapshot.lastSpectrumNoteSelection);
+    state.viewRangeMs = takeOverlayValueClone(snapshot.viewRangeMs ?? null);
+    state.noteSelectionRangeMs = takeOverlayValueClone(snapshot.noteSelectionRangeMs ?? null);
+    state.peakAnalysisSelectedTapIndex = takeOverlayValueClone(snapshot.peakAnalysisSelectedTapIndex ?? null);
 }
 function takeOverlayLabelResolve(state) {
     const label = String(state.recordingLabel || "").trim();

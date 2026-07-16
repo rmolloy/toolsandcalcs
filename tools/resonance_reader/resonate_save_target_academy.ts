@@ -4,7 +4,7 @@ import type {
   ResonanceSaveSurface,
 } from "./resonate_save_contract.js";
 import { readOfflineDownloadSaveSurface } from "../common/offline_save_surface.js";
-import { downloadResonanceCapturePackage } from "./resonate_save_package_download.js";
+import { downloadResonanceWave } from "./resonate_save_package_download.js";
 
 export function resonanceSaveRunnerCreate(): ResonanceSaveActionRunner {
   return {
@@ -15,8 +15,8 @@ export function resonanceSaveRunnerCreate(): ResonanceSaveActionRunner {
 
 async function readResonanceSaveSurface(): Promise<ResonanceSaveSurface> {
   return readOfflineDownloadSaveSurface({
-    label: "Download Package",
-    hint: "Notebook saving is not available here. Download the package instead.",
+    label: "Save",
+    hint: "Save the current WAV file locally.",
   });
 }
 
@@ -26,12 +26,11 @@ async function runResonanceSaveAction(request: ResonanceSaveActionRequest): Prom
     return false;
   }
 
-  await downloadResonanceCapturePackage({
+  downloadResonanceWave({
     state: request.state,
     recordingLabel: resonanceCaptureRecordingLabelRead(request.state),
-    plotElement: document.getElementById("plot_fft"),
   });
-  request.setStatus("Package downloaded.");
+  request.setStatus("WAV saved.");
   return true;
 }
 

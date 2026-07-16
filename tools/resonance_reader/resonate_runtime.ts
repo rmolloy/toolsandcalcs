@@ -397,7 +397,12 @@ function runtimeBootstrapArgsBuild(boundaries: ResonanceBoundarySet) {
 }
 
 function renderWaveformConfigBuild() {
-  return { state, setStatus, runResonatePipeline: resonatePipelineRunnerRun };
+  return {
+    state,
+    setStatus,
+    runResonatePipeline: resonatePipelineRunnerRun,
+    renderPeakAnalysis: () => peakAnalysisPanelRenderFromState(state),
+  };
 }
 
 function runtimeBoundaryArgsBuild(boundaries: ResonanceBoundarySet) {

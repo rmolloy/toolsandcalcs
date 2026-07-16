@@ -30,10 +30,6 @@
               <option value="peak_analysis">Peak / Q</option>
             </select>
           </div>
-          <select class="recording-dropdown hero-control" id="recording_select">
-            <option value="" selected>Demo (click record)</option>
-          </select>
-          <button class="ghost-btn hero-control tl-save-action" id="btn_save_audio">Save</button>
           <input class="sr-only" type="file" id="file_input" accept="audio/*" tabindex="-1" aria-hidden="true">
         </div>
         <div class="hero-actions">
@@ -71,15 +67,15 @@
           <div class="plot-header">
             <div class="plot-header-copy">
               <h2>Peak / Q Inspector</h2>
-              <p class="muted small" id="peak_analysis_description">Select a built-in or custom mode card to inspect the local peak window and spectral peak metrics.</p>
+              <p class="muted small" id="peak_analysis_description">Inspect the full 0–500 Hz response beside the selected peak’s frequency-isolated tap ring-down.</p>
             </div>
           </div>
           <div class="peak-analysis-plot-grid">
             <section class="peak-analysis-plot-panel" aria-labelledby="peak_analysis_spectrum_title">
               <div class="plot-header">
                 <div class="plot-header-copy">
-                  <h3 id="peak_analysis_spectrum_title">Local Spectrum</h3>
-                  <p class="muted small">Selected peak window and -3 dB bandwidth.</p>
+                  <h3 id="peak_analysis_spectrum_title">Frequency Response</h3>
+                  <p class="muted small">0–500 Hz response with the selected peak and -3 dB bandwidth.</p>
                 </div>
               </div>
               <div class="plot peak-analysis-plot" id="plot_peak_analysis" hidden></div>
@@ -95,12 +91,13 @@
             </section>
           </div>
           <div class="peak-analysis-provenance" id="peak_analysis_provenance"></div>
-          <div class="peak-analysis-interpretation" id="peak_analysis_interpretation"></div>
           <div class="peak-analysis-actions" id="peak_analysis_actions" aria-label="Peak/Q actions">
-            <button class="primary-btn btn-small" id="peak_analysis_review_next" type="button">Review next peak</button>
-            <button class="ghost-btn btn-small" id="peak_analysis_use_interpretation" type="button">Use this interpretation</button>
-            <button class="ghost-btn btn-small" id="peak_analysis_compare_peak" type="button">Compare peak</button>
-            <button class="ghost-btn btn-small" id="peak_analysis_export_data" type="button">Export data</button>
+            <div class="peak-analysis-stepper" role="group" aria-label="Peak navigation">
+              <span class="peak-analysis-position" id="peak_analysis_position">Peak -</span>
+              <button class="ghost-btn btn-small icon-btn" id="peak_analysis_previous" type="button" aria-label="Previous peak" title="Previous peak"><span aria-hidden="true">&larr;</span></button>
+              <button class="ghost-btn btn-small icon-btn" id="peak_analysis_next" type="button" aria-label="Next peak" title="Next peak"><span aria-hidden="true">&rarr;</span></button>
+            </div>
+            <button class="ghost-btn btn-small" id="peak_analysis_export_data" type="button">Export peak data</button>
             <a class="link peak-analysis-model-link" id="peak_analysis_open_model" href="../dof_model/">Open in 4-DOF model</a>
           </div>
         </section>
@@ -158,10 +155,13 @@
           <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Play</button>
           <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Stop</button>
           <label class="ghost-btn btn-small" id="btn_import" for="file_input" role="button" tabindex="0"><span class="transport-icon" aria-hidden="true">⬆</span>Import</label>
+          <select class="recording-dropdown transport-recording" id="recording_select" aria-label="Current recording">
+            <option value="" selected>Demo (click record)</option>
+          </select>
+          <button class="ghost-btn btn-small tl-save-action" id="btn_save_audio">Save</button>
           <div class="take-overlay-controls" id="take_overlay_controls" hidden>
             <button class="ghost-btn btn-small take-overlay-menu" id="take_overlay_menu" type="button" aria-expanded="false" aria-controls="take_overlay_panel">Takes ▾</button>
-            <div class="take-overlay-dots" id="take_overlay_dots" aria-label="Visible take overlays"></div>
-            <button class="ghost-btn btn-small take-overlay-clear" id="take_overlay_clear" type="button" aria-label="Clear take overlays">×</button>
+            <button class="ghost-btn btn-small take-overlay-clear" id="take_overlay_clear" type="button">Clear takes</button>
             <div class="take-overlay-panel" id="take_overlay_panel" hidden></div>
           </div>
         </div>

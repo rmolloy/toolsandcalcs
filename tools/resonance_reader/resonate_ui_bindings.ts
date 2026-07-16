@@ -77,7 +77,7 @@ function saveButtonRenderFromState(state: Record<string, any>) {
 }
 
 function saveButtonLabelBuild(saveSurfaceMode: SaveSurfaceMode): string {
-  if (saveSurfaceMode === "offline") return "Download";
+  if (saveSurfaceMode === "offline") return "Save";
   if (saveSurfaceMode === "lab-disconnected") return "Save ▾";
   return "Save";
 }
@@ -380,12 +380,10 @@ function takeOverlayControlsRender(deps: UiBindingsDeps) {
   const controls = takeOverlayControlsElementGet();
   const panel = takeOverlayPanelElementGet();
   const menu = takeOverlayMenuElementGet();
-  const dots = takeOverlayDotsElementGet();
   const overlays = takeOverlayListRead(deps.state);
-  if (!controls || !panel || !menu || !dots) return;
+  if (!controls || !panel || !menu) return;
   controls.hidden = overlays.length === 0;
   menu.textContent = `Takes ${overlays.length + 1} ▾`;
-  dots.innerHTML = takeOverlayDotsHtmlBuild(overlays);
   panel.innerHTML = takeOverlayPanelHtmlBuild(deps.state, overlays);
   if (!overlays.length) {
     panel.hidden = true;
@@ -422,14 +420,6 @@ function takeOverlayRowHtmlBuild(take: ReturnType<typeof takeOverlayListRead>[nu
   ].join("");
 }
 
-function takeOverlayDotsHtmlBuild(overlays: ReturnType<typeof takeOverlayListRead>) {
-  const visibleOverlays = overlays.filter((take) => take.visible);
-  return [
-    `<span class="take-overlay-dot is-current" aria-hidden="true"></span>`,
-    ...visibleOverlays.map(() => `<span class="take-overlay-dot" aria-hidden="true"></span>`),
-  ].join("");
-}
-
 function takeOverlayCurrentLabelRead(state: Record<string, any>) {
   const label = String(state.recordingLabel || "").trim();
   if (label) return label;
@@ -456,10 +446,6 @@ function takeOverlayMenuElementGet() {
 
 function takeOverlayPanelElementGet() {
   return document.getElementById("take_overlay_panel") as HTMLElement | null;
-}
-
-function takeOverlayDotsElementGet() {
-  return document.getElementById("take_overlay_dots") as HTMLElement | null;
 }
 
 function takeOverlayClearElementGet() {

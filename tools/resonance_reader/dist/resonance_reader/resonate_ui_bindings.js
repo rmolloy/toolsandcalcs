@@ -41,7 +41,7 @@ function saveButtonRenderFromState(state) {
 }
 function saveButtonLabelBuild(saveSurfaceMode) {
     if (saveSurfaceMode === "offline")
-        return "Download";
+        return "Save";
     if (saveSurfaceMode === "lab-disconnected")
         return "Save ▾";
     return "Save";
@@ -339,13 +339,11 @@ function takeOverlayControlsRender(deps) {
     const controls = takeOverlayControlsElementGet();
     const panel = takeOverlayPanelElementGet();
     const menu = takeOverlayMenuElementGet();
-    const dots = takeOverlayDotsElementGet();
     const overlays = takeOverlayListRead(deps.state);
-    if (!controls || !panel || !menu || !dots)
+    if (!controls || !panel || !menu)
         return;
     controls.hidden = overlays.length === 0;
     menu.textContent = `Takes ${overlays.length + 1} ▾`;
-    dots.innerHTML = takeOverlayDotsHtmlBuild(overlays);
     panel.innerHTML = takeOverlayPanelHtmlBuild(deps.state, overlays);
     if (!overlays.length) {
         panel.hidden = true;
@@ -375,13 +373,6 @@ function takeOverlayRowHtmlBuild(take) {
         `</button>`,
     ].join("");
 }
-function takeOverlayDotsHtmlBuild(overlays) {
-    const visibleOverlays = overlays.filter((take) => take.visible);
-    return [
-        `<span class="take-overlay-dot is-current" aria-hidden="true"></span>`,
-        ...visibleOverlays.map(() => `<span class="take-overlay-dot" aria-hidden="true"></span>`),
-    ].join("");
-}
 function takeOverlayCurrentLabelRead(state) {
     const label = String(state.recordingLabel || "").trim();
     if (label)
@@ -405,9 +396,6 @@ function takeOverlayMenuElementGet() {
 }
 function takeOverlayPanelElementGet() {
     return document.getElementById("take_overlay_panel");
-}
-function takeOverlayDotsElementGet() {
-    return document.getElementById("take_overlay_dots");
 }
 function takeOverlayClearElementGet() {
     return document.getElementById("take_overlay_clear");

@@ -11,6 +11,9 @@ type TakeSnapshotState = {
   lastSpectrum?: { freqs?: number[]; dbs?: number[]; mags?: number[] } | null;
   currentWave?: unknown;
   recordingLabel?: string;
+  viewRangeMs?: unknown;
+  noteSelectionRangeMs?: unknown;
+  peakAnalysisSelectedTapIndex?: unknown;
 };
 
 type ResonanceTakeSnapshot = {
@@ -23,6 +26,9 @@ type ResonanceTakeSnapshot = {
   lastWaveSlice?: unknown;
   lastPeakHoldSpectrum?: unknown;
   lastSpectrumNoteSelection?: unknown;
+  viewRangeMs?: unknown;
+  noteSelectionRangeMs?: unknown;
+  peakAnalysisSelectedTapIndex?: unknown;
 };
 
 const MAX_TAKES_STORED = 8;
@@ -110,6 +116,9 @@ function takeOverlaySnapshotStateBuild(
     lastWaveSlice: takeOverlayValueClone(state.lastWaveSlice),
     lastPeakHoldSpectrum: takeOverlayValueClone(state.lastPeakHoldSpectrum),
     lastSpectrumNoteSelection: takeOverlayValueClone(state.lastSpectrumNoteSelection),
+    viewRangeMs: takeOverlayValueClone(state.viewRangeMs),
+    noteSelectionRangeMs: takeOverlayValueClone(state.noteSelectionRangeMs),
+    peakAnalysisSelectedTapIndex: takeOverlayValueClone(state.peakAnalysisSelectedTapIndex),
   };
 }
 
@@ -125,6 +134,9 @@ function takeOverlaySnapshotRestoreIntoState(state: Record<string, any>, take: R
   state.lastWaveSlice = takeOverlayValueClone(snapshot.lastWaveSlice);
   state.lastPeakHoldSpectrum = takeOverlayValueClone(snapshot.lastPeakHoldSpectrum);
   state.lastSpectrumNoteSelection = takeOverlayValueClone(snapshot.lastSpectrumNoteSelection);
+  state.viewRangeMs = takeOverlayValueClone(snapshot.viewRangeMs ?? null);
+  state.noteSelectionRangeMs = takeOverlayValueClone(snapshot.noteSelectionRangeMs ?? null);
+  state.peakAnalysisSelectedTapIndex = takeOverlayValueClone(snapshot.peakAnalysisSelectedTapIndex ?? null);
 }
 
 function takeOverlayLabelResolve(state: TakeSnapshotState) {

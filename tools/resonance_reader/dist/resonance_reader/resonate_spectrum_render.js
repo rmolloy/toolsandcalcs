@@ -631,6 +631,9 @@ function bindFftToneHoverFollow(plot, toneTraceIndex, mags) {
     if (!plotAny?.on || toneHoverBound)
         return;
     toneHoverBound = true;
+    plot.addEventListener("mousemove", (event) => {
+        toneHoverApplyFromPointer(event, plot, toneTraceIndex, mags);
+    }, true);
     plotAny.on("plotly_hover", (evt) => {
         toneHoverApplyFromEvent(evt, plot, toneTraceIndex, mags);
     });
@@ -638,11 +641,18 @@ function bindFftToneHoverFollow(plot, toneTraceIndex, mags) {
         toneHoverClear(plot, toneTraceIndex);
     });
 }
+function toneHoverApplyFromPointer(event, plot, toneTraceIndex, mags) {
+    const freqHz = toneFrequencyHzResolveFromPointer(plot, event);
+    toneHoverApplyFrequency(freqHz, plot, toneTraceIndex, mags);
+}
 function toneHoverApplyFromEvent(evt, plot, toneTraceIndex, mags) {
+    const freqHz = toneFreqResolveFromHoverEvent(evt);
+    toneHoverApplyFrequency(freqHz, plot, toneTraceIndex, mags);
+}
+function toneHoverApplyFrequency(freqHz, plot, toneTraceIndex, mags) {
     const state = window.FFTState;
     if (!state?.toneEnabled)
         return;
-    const freqHz = toneFreqResolveFromHoverEvent(evt);
     if (!Number.isFinite(freqHz))
         return;
     const nextFreqHz = freqHz;
@@ -679,6 +689,21 @@ function toneFreqResolveFromHoverEvent(evt) {
     if (!Number.isFinite(freqHz))
         return null;
     return freqHz;
+}
+export function toneFrequencyHzResolveFromPointer(plot, event) {
+    const fullLayout = plot?._fullLayout;
+    const size = fullLayout?._size;
+    const xAxis = fullLayout?.xaxis;
+    const plotRect = plot.getBoundingClientRect();
+    const leftPx = Number(size?.l);
+    const widthPx = Number(size?.w);
+    if (!xAxis || !Number.isFinite(leftPx) || !Number.isFinite(widthPx) || widthPx <= 1)
+        return null;
+    const localPx = Math.min(widthPx, Math.max(0, event.clientX - plotRect.left - leftPx));
+    const freqHz = Number(xAxis.p2d?.(localPx));
+    if (!Number.isFinite(freqHz))
+        return null;
+    return Math.round(freqHz * 10) / 10;
 }
 function spectrumRangesPreserveNextRenderMarkOnState() {
     const state = window.FFTState;
