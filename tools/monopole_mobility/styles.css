@@ -420,19 +420,53 @@ button:disabled {
   display: none !important;
 }
 
-@media (max-width: 600px) {
-  #mc_embed_signup form {
-    margin: 0 !important;
-  }
+#mc_embed_shell,
+#mc_embed_signup,
+#mc_embed_signup form,
+#mc_embed_signup_scroll {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
 
-  #mc_embed_shell,
-  #mc_embed_signup,
-  #mc_embed_signup form,
-  #mc_embed_signup_scroll,
-  #mc_embed_signup input {
-    box-sizing: border-box;
-    max-width: 100%;
-    min-width: 0;
+#mc_embed_signup form {
+  margin: 0;
+}
+
+#mc_embed_signup_scroll {
+  display: grid;
+  gap: 12px;
+}
+
+#mc_embed_signup h2 {
+  margin: 0;
+}
+
+#mc_embed_signup .mc-field-group {
+  display: grid;
+  gap: 6px;
+}
+
+#mc_embed_signup input {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+#mc_embed_signup .indicates-required,
+#mc_embed_signup .asterisk {
+  color: var(--mm-text-muted);
+  font-size: 12px;
+}
+
+#mc_embed_signup #mc-embedded-subscribe {
+  width: auto;
+}
+
+@media (max-width: 600px) {
+  #mc_embed_signup #mc-embedded-subscribe {
     width: 100%;
   }
 }
