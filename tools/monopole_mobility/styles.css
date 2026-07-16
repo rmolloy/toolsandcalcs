@@ -466,6 +466,17 @@ button:disabled {
 }
 
 @media (max-width: 600px) {
+  .hero-controls-left {
+    min-width: 0;
+  }
+
+  .hero-controls-left h1 {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
   #mc_embed_signup #mc-embedded-subscribe {
     width: 100%;
   }
