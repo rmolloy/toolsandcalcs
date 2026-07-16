@@ -419,3 +419,16 @@ button:disabled {
 .hidden {
   display: none !important;
 }
+
+@media (max-width: 600px) {
+  #mc_embed_shell,
+  #mc_embed_signup,
+  #mc_embed_signup form,
+  #mc_embed_signup_scroll,
+  #mc_embed_signup input {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+}
