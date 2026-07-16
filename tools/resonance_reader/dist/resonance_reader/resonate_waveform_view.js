@@ -977,7 +977,7 @@ function bindRangeDirectDragInteractions(plot, deps, slice, onPrimaryRangeChange
         const axis = waveformAxisRangeResolve(plot);
         if (!axis)
             return;
-        const target = rangeDragTargetResolve(cursorMs, axis.min, axis.max, axis.widthPx, deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null);
+        const target = rangeDragTargetResolve(cursorMs, axis.min, axis.max, axis.widthPx, deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, event.shiftKey);
         if (!target)
             return;
         const activeRange = target.rangeKind === "note"
@@ -1069,14 +1069,16 @@ function rangeMatchesExactly(left, right) {
         return false;
     return left.start === right.start && left.end === right.end;
 }
-export function rangeDragTargetResolve(cursorMs, axisMinMs, axisMaxMs, axisWidthPx, primaryRange, noteRange) {
+export function rangeDragTargetResolve(cursorMs, axisMinMs, axisMaxMs, axisWidthPx, primaryRange, noteRange, preferNoteRange = false) {
     const toleranceMs = ((axisMaxMs - axisMinMs) / axisWidthPx) * RANGE_DRAG_EDGE_TOLERANCE_PX;
     const noteTarget = rangeDragTargetForRangeResolve(cursorMs, noteRange, toleranceMs);
-    if (noteTarget)
-        return { rangeKind: "note", dragMode: noteTarget };
     const primaryTarget = rangeDragTargetForRangeResolve(cursorMs, primaryRange, toleranceMs);
+    if (preferNoteRange && noteTarget)
+        return { rangeKind: "note", dragMode: noteTarget };
     if (primaryTarget)
         return { rangeKind: "primary", dragMode: primaryTarget };
+    if (noteTarget)
+        return { rangeKind: "note", dragMode: noteTarget };
     return null;
 }
 function rangeDragTargetForRangeResolve(cursorMs, range, toleranceMs) {

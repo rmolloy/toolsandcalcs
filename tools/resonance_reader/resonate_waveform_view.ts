@@ -1071,6 +1071,7 @@ function bindRangeDirectDragInteractions(
       axis.widthPx,
       deps.state.viewRangeMs || null,
       deps.state.noteSelectionRangeMs || null,
+      event.shiftKey,
     );
     if (!target) return;
     const activeRange = target.rangeKind === "note"
@@ -1171,12 +1172,14 @@ export function rangeDragTargetResolve(
   axisWidthPx: number,
   primaryRange: WaveRange | null,
   noteRange: WaveRange | null,
+  preferNoteRange = false,
 ): RangeDragTarget | null {
   const toleranceMs = ((axisMaxMs - axisMinMs) / axisWidthPx) * RANGE_DRAG_EDGE_TOLERANCE_PX;
   const noteTarget = rangeDragTargetForRangeResolve(cursorMs, noteRange, toleranceMs);
-  if (noteTarget) return { rangeKind: "note", dragMode: noteTarget };
   const primaryTarget = rangeDragTargetForRangeResolve(cursorMs, primaryRange, toleranceMs);
+  if (preferNoteRange && noteTarget) return { rangeKind: "note", dragMode: noteTarget };
   if (primaryTarget) return { rangeKind: "primary", dragMode: primaryTarget };
+  if (noteTarget) return { rangeKind: "note", dragMode: noteTarget };
   return null;
 }
 
