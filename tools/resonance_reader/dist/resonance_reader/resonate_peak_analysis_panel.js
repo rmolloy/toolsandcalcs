@@ -19,8 +19,6 @@ const PEAK_ANALYSIS_WAVEFORM_COLOR = resolveColorHexFromRole("peakAnalysisWavefo
 const PEAK_ANALYSIS_PROJECTION_COLOR = resolveColorHexFromRole("peakAnalysisProjection");
 export function peakAnalysisPanelInitialize(state) {
     peakAnalysisActionListenersAttach(state);
-    peakAnalysisSelectionSyncFromState(state);
-    peakAnalysisPanelRenderFromState(state);
 }
 export function peakAnalysisPanelRenderFromState(state) {
     const selectedMode = peakAnalysisSelectionSyncFromState(state);

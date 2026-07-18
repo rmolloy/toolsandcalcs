@@ -90,8 +90,6 @@ type PeakAnalysisCandidate = ModeCard & {
 
 export function peakAnalysisPanelInitialize(state: Record<string, any>) {
   peakAnalysisActionListenersAttach(state);
-  peakAnalysisSelectionSyncFromState(state);
-  peakAnalysisPanelRenderFromState(state);
 }
 
 export function peakAnalysisPanelRenderFromState(state: Record<string, any>) {

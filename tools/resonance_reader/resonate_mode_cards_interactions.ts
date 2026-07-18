@@ -3,7 +3,7 @@ import { type ModeCardDeps } from "./resonate_mode_cards_render.js";
 import { emitModeOverrideResetRequested } from "./resonate_override_commands.js";
 import type { ModeCard } from "./resonate_types.js";
 import { analysisTabActivatePeakAnalysis } from "./resonate_analysis_tabs.js";
-import { peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js";
+import { peakAnalysisPanelRenderFromState, peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js";
 import {
   customMeasurementCreateAndAppendFromState,
   customMeasurementDeleteFromState,
@@ -59,6 +59,7 @@ function peakAnalysisModeSelectHandle(e: Event, modes: ModeCard[], deps: ModeCar
   peakAnalysisSelectionApplyFromModeKey(deps.state, key);
   analysisTabActivatePeakAnalysis(deps.state);
   modeTargetRerenderFromDepsWithoutDof(modes, deps);
+  peakAnalysisPanelRenderFromState(deps.state);
   return true;
 }
 

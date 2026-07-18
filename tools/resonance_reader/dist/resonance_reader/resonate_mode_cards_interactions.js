@@ -1,7 +1,7 @@
 import { overlayToggleShouldRender } from "./resonate_overlay_gate.js";
 import { emitModeOverrideResetRequested } from "./resonate_override_commands.js";
 import { analysisTabActivatePeakAnalysis } from "./resonate_analysis_tabs.js";
-import { peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js";
+import { peakAnalysisPanelRenderFromState, peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js";
 import { customMeasurementCreateAndAppendFromState, customMeasurementDeleteFromState, customMeasurementFrequencySetFromState, customMeasurementRenameFromState, } from "./resonate_custom_measurements.js";
 let modeTargetHandlersBound = false;
 let modeTargetRender = null;
@@ -53,6 +53,7 @@ function peakAnalysisModeSelectHandle(e, modes, deps) {
     peakAnalysisSelectionApplyFromModeKey(deps.state, key);
     analysisTabActivatePeakAnalysis(deps.state);
     modeTargetRerenderFromDepsWithoutDof(modes, deps);
+    peakAnalysisPanelRenderFromState(deps.state);
     return true;
 }
 function peakAnalysisCardResolveFromEvent(e) {

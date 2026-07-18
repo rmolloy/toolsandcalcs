@@ -1,6 +1,6 @@
 // Orchestrate resonance reader runtime wiring.
 import { renderWaveform } from "./resonate_waveform_view.js";
-import { modeProfileResolveFromState, peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
+import { measureModeNormalize, modeProfileResolveFromState, peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
 import { spectrumFftMaxHzResolve, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js";
 import { renderEnergyTransferFromState, renderModesFromState, renderSpectrumFromConfig, setStatusText } from "./resonate_ui_render.js";
 import { fullWaveFromState, sliceCurrentWaveFromState } from "./resonate_wave_slices.js";
@@ -297,9 +297,14 @@ export function resonanceReaderRuntimeStart() {
     resonanceReaderBootstrap(runtimeBootstrapArgsBuild(boundaries));
 }
 function analysisSurfaceRenderFromState() {
-    peakAnalysisPanelRenderFromState(state);
+    if (peakAnalysisShouldRender()) {
+        peakAnalysisPanelRenderFromState(state);
+    }
     plateMaterialPanelRenderFromState(state);
     analysisTabsRenderFromState(state);
+}
+function peakAnalysisShouldRender() {
+    return measureModeNormalize(state.measureMode) === "peak_analysis" || typeof state.peakAnalysisSelectedKey === "string";
 }
 function renderWaveformBoundBuild() {
     return (wave) => renderWaveform(wave, renderWaveformConfigBuild());
@@ -321,7 +326,11 @@ function renderWaveformConfigBuild() {
         state,
         setStatus,
         runResonatePipeline: resonatePipelineRunnerRun,
-        renderPeakAnalysis: () => peakAnalysisPanelRenderFromState(state),
+        renderPeakAnalysis: () => {
+            if (peakAnalysisShouldRender()) {
+                peakAnalysisPanelRenderFromState(state);
+            }
+        },
     };
 }
 function runtimeBoundaryArgsBuild(boundaries) {
