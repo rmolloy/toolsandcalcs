@@ -9,7 +9,7 @@ export type ExternalModelDestination = {
 };
 
 const GUITAR_DESTINATION: ExternalModelDestination = {
-  href: "../dof_model/",
+  href: "../dof_model/index.html",
   label: "Open in 4-DOF model",
   showOverlayToggle: true,
   showModelRow: true,
@@ -33,7 +33,7 @@ const BRACE_STOCK_DESTINATION: ExternalModelDestination = {
 };
 
 const PLATE_STOCK_DESTINATION: ExternalModelDestination = {
-  href: "../plate_thickness/",
+  href: "../plate_thickness/index.html",
   label: "Open in Plate Thickness calculator",
   showOverlayToggle: false,
   showModelRow: true,

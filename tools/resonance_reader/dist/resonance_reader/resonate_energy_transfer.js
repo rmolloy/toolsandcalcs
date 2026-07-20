@@ -588,6 +588,7 @@ function hoverTemplateBuild(freqHz) {
         "<b>%{fullData.name}</b>",
         `${freq} · ${note.note} ${note.deviation}`,
         `Cents: ${note.cents}`,
+        "%{x:.2f} s",
         "Amp: %{y:.1f}",
         "<extra></extra>",
     ].join("<br>");
@@ -597,6 +598,7 @@ function hoverTemplateBuildFromCustomData() {
         "<b>%{fullData.name}</b>",
         "%{customdata[0]} · %{customdata[1]} %{customdata[2]}",
         "Cents: %{customdata[3]}",
+        "%{x:.2f} s",
         "Amp: %{y:.1f}",
         "<extra></extra>",
     ].join("<br>");
@@ -648,13 +650,14 @@ export function energyHoverDescriptorsResolveFromState(state, timesSec, fallback
 }
 function tracesBuildFromSeries(series, state) {
     const hoverDescriptors = energyHoverDescriptorsResolveFromState(state, series.t, series.f0Hz);
+    const elapsedTimes = energyElapsedTimesBuildFromSeries(series);
     const fundamentalHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz, entry.noteOverrideLabel));
     const secondPartialHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz * 2));
     const thirdPartialHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz * 3));
     const noteTraceWidth = energyNoteTraceLineWidthResolve();
     const traces = [
         {
-            x: series.t,
+            x: elapsedTimes,
             y: applyLevelScale(series.partialShares.f0 || [], series.levelScale),
             type: "scatter",
             mode: "lines",
@@ -667,7 +670,7 @@ function tracesBuildFromSeries(series, state) {
             hoverlabel: hoverLabelStyleBuild(),
         },
         {
-            x: series.t,
+            x: elapsedTimes,
             y: applyLevelScale(series.partialShares.secondPartial || [], series.levelScale),
             type: "scatter",
             mode: "lines",
@@ -679,7 +682,7 @@ function tracesBuildFromSeries(series, state) {
             hoverlabel: hoverLabelStyleBuild(),
         },
         {
-            x: series.t,
+            x: elapsedTimes,
             y: applyLevelScale(series.partialShares.thirdPartial || [], series.levelScale),
             type: "scatter",
             mode: "lines",
@@ -694,7 +697,7 @@ function tracesBuildFromSeries(series, state) {
     ];
     series.bodyModes.forEach((mode) => {
         traces.push({
-            x: series.t,
+            x: elapsedTimes,
             y: applyLevelScale(series.bodyShares[mode.id] || [], series.levelScale),
             type: "scatter",
             mode: "lines",
@@ -707,6 +710,9 @@ function tracesBuildFromSeries(series, state) {
         });
     });
     return traces;
+}
+export function energyElapsedTimesBuildFromSeries(series) {
+    return series.t.map((timeSec) => (Number.isFinite(timeSec) ? timeSec - series.xWindowSec.start : timeSec));
 }
 function energyNoteTraceLineWidthResolve() {
     return resonanceSpectrumLineWidthResolve(ENERGY_NOTE_TRACE_LINE_WIDTH);
@@ -799,8 +805,8 @@ function layoutBuildFromSeries(series) {
             tickfont: { color: "rgba(255,255,255,0.5)" },
         },
         xaxis: {
-            title: "Time (s)",
-            range: [series.xWindowSec.start, series.xWindowSec.end],
+            title: "Seconds from selected window start",
+            range: [0, series.xWindowSec.end - series.xWindowSec.start],
             gridcolor: "rgba(255,255,255,0.06)",
             tickfont: { color: "rgba(255,255,255,0.5)" },
         },
@@ -827,9 +833,26 @@ function renderEnergyPlotFromSeries(series, state) {
     const plotly = window.Plotly;
     if (!plotly?.newPlot)
         return;
-    const traces = tracesBuildFromSeries(series, state);
+    const traceVisibilityByName = energyTraceVisibilityByNameRead(plot);
+    const traces = energyTraceVisibilityApplyByName(tracesBuildFromSeries(series, state), traceVisibilityByName);
     const layout = layoutBuildFromSeries(series);
     plotly.newPlot(plot, traces, layout, { displayModeBar: true, displaylogo: false, responsive: true });
+}
+function energyTraceVisibilityByNameRead(plot) {
+    const traces = Array.isArray(plot.data) ? plot.data : [];
+    return traces.reduce((visibilityByName, trace) => {
+        if (typeof trace?.name === "string" && trace.visible !== undefined) {
+            visibilityByName[trace.name] = trace.visible;
+        }
+        return visibilityByName;
+    }, {});
+}
+function energyTraceVisibilityApplyByName(traces, visibilityByName) {
+    return traces.map((trace) => {
+        if (!Object.prototype.hasOwnProperty.call(visibilityByName, trace.name))
+            return trace;
+        return { ...trace, visible: visibilityByName[trace.name] };
+    });
 }
 export function renderEnergyTransferFromState(state) {
     const shouldRender = energyTransferShouldRenderForMeasureMode(state.measureMode);

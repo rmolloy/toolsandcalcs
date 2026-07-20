@@ -69,7 +69,7 @@ type PeakAnalysisRingdownProvenance = {
 };
 
 const PEAK_RINGDOWN_DEFAULT_WINDOW_MS = 1200;
-const PEAK_RINGDOWN_MIN_WINDOW_MS = 400;
+const PEAK_RINGDOWN_MIN_WINDOW_MS = PEAK_RINGDOWN_DEFAULT_WINDOW_MS;
 const PEAK_RINGDOWN_MAX_WINDOW_MS = 3000;
 const PEAK_RINGDOWN_PRE_ONSET_MS = 20;
 const PEAK_RINGDOWN_NEXT_TAP_GUARD_MS = 20;
@@ -90,6 +90,8 @@ type PeakAnalysisCandidate = ModeCard & {
 
 export function peakAnalysisPanelInitialize(state: Record<string, any>) {
   peakAnalysisActionListenersAttach(state);
+  peakAnalysisSelectionSyncFromState(state);
+  peakAnalysisPanelRenderFromState(state);
 }
 
 export function peakAnalysisPanelRenderFromState(state: Record<string, any>) {
@@ -723,11 +725,32 @@ function peakAnalysisRingdownFitLineBuild(args: { x: number[]; envelope: number[
   const y0 = Math.max(envelope[startIndex] ?? envelope[0] ?? 0, 1e-6);
   const x0 = x[startIndex] ?? x[0] ?? 0;
   const slope = result.slope as number;
-  const fitX = x.slice(startIndex, endIndex + 1);
+  const fitX = peakAnalysisRingdownFitProjectionAxisBuild({
+    observed: x.slice(startIndex, endIndex + 1),
+    slope,
+    startAmplitude: y0,
+  });
   return {
     x: fitX,
     y: fitX.map((value) => y0 * Math.exp(slope * (value - x0))),
   };
+}
+
+function peakAnalysisRingdownFitProjectionAxisBuild(args: { observed: number[]; slope: number; startAmplitude: number }) {
+  const lastObserved = args.observed[args.observed.length - 1];
+  const firstObserved = args.observed[0];
+  if (!Number.isFinite(lastObserved) || !Number.isFinite(firstObserved) || args.slope >= 0 || args.startAmplitude <= 0) {
+    return args.observed;
+  }
+  const decayFloorRatio = Math.pow(10, -PEAK_RINGDOWN_FIT_FLOOR_DB / 20);
+  const projectionEnd = firstObserved + Math.log(decayFloorRatio) / args.slope;
+  if (!Number.isFinite(projectionEnd) || projectionEnd <= lastObserved) return args.observed;
+  const extensionCount = 120;
+  const extension = Array.from(
+    { length: extensionCount },
+    (_value, index) => lastObserved + ((projectionEnd - lastObserved) * (index + 1)) / extensionCount,
+  );
+  return [...args.observed, ...extension];
 }
 
 function peakAnalysisRingdownFitEndIndexResolve(x: number[], fitEndSec: number) {
@@ -762,7 +785,8 @@ function peakAnalysisRingdownTracesBuild(data: {
             y: data.response,
             type: "scatter",
             mode: "lines",
-            line: { color: PEAK_ANALYSIS_WAVEFORM_COLOR, width: 1.4 },
+            line: { color: PEAK_ANALYSIS_WAVEFORM_COLOR, width: 1 },
+            opacity: 0.82,
             hovertemplate: "%{x:.3f} s<br>%{y:.3f}<extra></extra>",
             name: "Selected tap response",
           },
@@ -773,7 +797,7 @@ function peakAnalysisRingdownTracesBuild(data: {
       y: data.envelope,
       type: "scatter",
       mode: "lines",
-      line: { color: PEAK_ANALYSIS_PROJECTION_COLOR, width: 1.4 },
+      line: { color: PEAK_ANALYSIS_PROJECTION_COLOR, width: 2.2 },
       hovertemplate: "%{x:.3f} s<br>%{y:.3f}<extra></extra>",
       name: "Envelope",
     },
@@ -792,7 +816,7 @@ function peakAnalysisRingdownTracesBuild(data: {
   return traces;
 }
 
-function peakAnalysisRingdownLayoutBuild(data: { x: number[]; response: number[] }, result: PeakAnalysisRingdownResult) {
+function peakAnalysisRingdownLayoutBuild(data: { x: number[]; response: number[]; fit: { x: number[]; y: number[] } | null }, result: PeakAnalysisRingdownResult) {
   return {
     margin: { l: 54, r: 18, t: 24, b: 42 },
     paper_bgcolor: "rgba(0,0,0,0)",
@@ -802,6 +826,7 @@ function peakAnalysisRingdownLayoutBuild(data: { x: number[]; response: number[]
       title: "Seconds",
       gridcolor: "rgba(255,255,255,0.08)",
       zeroline: false,
+      range: peakAnalysisRingdownXAxisRangeBuild([...data.x, ...(data.fit?.x || [])]),
     },
     yaxis: {
       title: "Amplitude",
@@ -811,8 +836,15 @@ function peakAnalysisRingdownLayoutBuild(data: { x: number[]; response: number[]
     },
     showlegend: false,
     shapes: peakAnalysisRingdownFitWindowShapesBuild(data.x, result),
-    annotations: peakAnalysisRingdownFitWindowAnnotationsBuild(data.x, result),
   };
+}
+
+function peakAnalysisRingdownXAxisRangeBuild(x: number[]) {
+  const first = x[0];
+  const last = x[x.length - 1];
+  if (!Number.isFinite(first) || !Number.isFinite(last) || last <= first) return undefined;
+  const padding = Math.max(0.02, (last - first) * 0.06);
+  return [Math.max(0, first), last + padding];
 }
 
 function peakAnalysisRingdownFitWindowShapesBuild(x: number[], result: PeakAnalysisRingdownResult) {
@@ -820,46 +852,26 @@ function peakAnalysisRingdownFitWindowShapesBuild(x: number[], result: PeakAnaly
   const fitWindow = peakAnalysisRingdownFitWindowResolve(x, result);
   return [
     {
-      type: "rect",
+      type: "line",
       x0: fitWindow.start,
+      x1: fitWindow.start,
+      y0: 0,
+      y1: 1,
+      yref: "paper",
+      line: { color: resolveColorRgbaFromRole("peakAnalysisProjection", 0.62), width: 1, dash: "dot" },
+      layer: "below",
+    },
+    {
+      type: "line",
+      x0: fitWindow.end,
       x1: fitWindow.end,
       y0: 0,
       y1: 1,
       yref: "paper",
-      fillcolor: resolveColorRgbaFromRole("peakAnalysisProjection", 0.08),
-      line: { width: 0 },
+      line: { color: resolveColorRgbaFromRole("peakAnalysisProjection", 0.38), width: 1, dash: "dot" },
       layer: "below",
     },
   ];
-}
-
-function peakAnalysisRingdownFitWindowAnnotationsBuild(x: number[], result: PeakAnalysisRingdownResult) {
-  if (!x.length || !Number.isFinite(result.slope)) return [];
-  const fitWindow = peakAnalysisRingdownFitWindowResolve(x, result);
-  return [
-    peakAnalysisRingdownWindowAnnotationBuild(fitWindow.start, peakAnalysisRingdownFitStartLabelBuild(fitWindow.start)),
-    peakAnalysisRingdownWindowAnnotationBuild(fitWindow.end, "fit ends"),
-  ];
-}
-
-function peakAnalysisRingdownFitStartLabelBuild(fitStartSec: number) {
-  return fitStartSec > 0 ? "attack excluded / fit starts" : "fit starts";
-}
-
-function peakAnalysisRingdownWindowAnnotationBuild(x: number, text: string) {
-  return {
-    x,
-    y: 1,
-    yref: "paper",
-    yanchor: "top",
-    text,
-    showarrow: false,
-    bgcolor: "rgba(15, 17, 24, 0.74)",
-    bordercolor: resolveColorRgbaFromRole("peakAnalysisProjection", 0.24),
-    borderwidth: 1,
-    borderpad: 3,
-    font: { color: "rgba(230, 233, 239, 0.82)", size: 10 },
-  };
 }
 
 function peakAnalysisTracesBuild(data: {
