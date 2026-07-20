@@ -17,7 +17,7 @@ No redistribution, modification, or commercial use without written consent from 
   <link rel="stylesheet" href="../common/layout.css" />
 </head>
 
-<body>
+<body data-monopole-save-mode="offline">
   <div class="tl-app">
     <div class="tl-page">
       <section class="hero">
@@ -40,8 +40,8 @@ No redistribution, modification, or commercial use without written consent from 
             <div class="results-header">
               <h2>Calculated Properties</h2>
               <div class="results-meta">
-                <span id="instrument_display" class="badge">Rick Molloy OM (10/25/2025) • Steel-string</span>
-                <span id="status" class="status muted">Live: Rick Molloy OM (10/25/2025)</span>
+                <span id="instrument_display" class="badge" hidden>Rick Molloy OM (10/25/2025) • Steel-string</span>
+                <span id="status" class="status muted">Live calculation</span>
               </div>
             </div>
             <div class="result-grid">
@@ -84,30 +84,34 @@ No redistribution, modification, or commercial use without written consent from 
         <aside class="tl-controls">
           <section class="card pad tl-card tl-card-controls controls">
             <h2>Measurement Inputs</h2>
-            <div class="mode-toggle" role="group" aria-label="Select calculation mode">
-              <button id="mode_static" class="mode-btn active" type="button">
-                Static mode (Gore jig)
-                <span class="help-text">Uses dial indicator deflection</span>
-              </button>
-              <button id="mode_dynamic" class="mode-btn" type="button" title="Dynamic Mode uses two frequency readings instead of a dial indicator.">
-                Dynamic mode (mass-loading)
-                <span class="help-text">Two FFT frequencies, no deflection</span>
-              </button>
+            <div id="monopole_mode_controls">
+              <div class="mode-toggle" role="group" aria-label="Select calculation mode">
+                <button id="mode_static" class="mode-btn active" type="button">
+                  Static mode (Gore jig)
+                  <span class="help-text">Uses dial indicator deflection</span>
+                </button>
+                <button id="mode_dynamic" class="mode-btn" type="button" title="Dynamic Mode uses two frequency readings instead of a dial indicator.">
+                  Dynamic mode (mass-loading)
+                  <span class="help-text">Two FFT frequencies, no deflection</span>
+                </button>
+              </div>
+              <div class="muted small" id="mode_hint_static" data-mode-note="static">Static Mode: enter f<sub>u</sub>, dial-gauge deflection x, and test mass.</div>
+              <div class="muted small hidden" id="mode_hint_dynamic" data-mode-note="dynamic">Dynamic Mode: enter the unloaded frequency f<sub>0</sub>, the loaded frequency f<sub>1</sub>, and the added mass in grams.</div>
             </div>
-            <div class="muted small" id="mode_hint_static" data-mode-note="static">Static Mode: enter f<sub>u</sub>, dial-gauge deflection x, and test mass.</div>
-            <div class="muted small hidden" id="mode_hint_dynamic" data-mode-note="dynamic">Dynamic Mode: enter the unloaded frequency f<sub>0</sub>, the loaded frequency f<sub>1</sub>, and the added mass in grams.</div>
-            <label class="name-input">
-              Guitar / sample name
-              <input id="instrument_name" type="text" value="Rick Molloy OM (10/25/2025)" />
-            </label>
-            <label class="type-input">
-              Build type
-              <select id="instrument_type">
-                <option value="steel" selected>Steel-string</option>
-                <option value="classical">Classical</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
+            <div id="monopole_identity_controls" hidden>
+              <label class="name-input">
+                Guitar / sample name
+                <input id="instrument_name" type="text" value="Rick Molloy OM (10/25/2025)" />
+              </label>
+              <label class="type-input">
+                Build type
+                <select id="instrument_type">
+                  <option value="steel" selected>Steel-string</option>
+                  <option value="classical">Classical</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+            </div>
             <div class="inputs mode-panel" id="staticInputs">
               <div class="slider-block">
                 <div class="slider-row row">

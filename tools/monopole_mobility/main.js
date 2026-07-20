@@ -80,6 +80,7 @@ const nameInput = document.getElementById("instrument_name");
 const typeSelect = document.getElementById("instrument_type");
 
 const instrumentDisplay = document.getElementById("instrument_display");
+const identityControls = document.getElementById("monopole_identity_controls");
 
 const outputs = {
   stiffness: document.getElementById("stiffness"),
@@ -260,8 +261,6 @@ function compute() {
   outputs.mobilityScore.textContent = fmtMobility.format(result.mobilityScore);
   outputs.warnings.textContent = result.warnings.join(" ");
 
-  const nameMatches = nameInput.value.trim() === defaults.name;
-  const typeMatches = typeSelect.value === defaults.type;
   const modeLabel = currentMode === modes.STATIC ? "Static Mode" : "Dynamic Mode";
 
   const defaultsMatch =
@@ -269,8 +268,8 @@ function compute() {
       ? matchesStaticDefaults(staticInputs)
       : matchesDynamicDefaults(dynamicInputs);
 
-  if (defaultsMatch && nameMatches && typeMatches) {
-    outputs.status.textContent = `Live: default sample (${modeLabel})`;
+  if (defaultsMatch) {
+    outputs.status.textContent = `Live: default calculation (${modeLabel})`;
   } else {
     outputs.status.textContent = `Live: custom input (${modeLabel})`;
   }
@@ -379,7 +378,6 @@ async function loadResults() {
 function buildCopyResultLines() {
   const snapshot = readCurrentMonopoleSaveSnapshot();
   const payload = [
-    `Sample: ${snapshot.name || "Untitled sample"} (${getTypeLabel(snapshot.type)})`,
     `Mode: ${snapshot.mode === modes.STATIC ? "Static (Gore jig)" : "Dynamic (mass-loading)"}`,
   ];
 
@@ -461,8 +459,17 @@ function applyMonopoleSaveSurface(button, surface) {
     return;
   }
 
+  document.body.dataset.monopoleSaveMode = surface.mode || "offline";
+  applyMonopoleIdentitySurface(surface);
   button.textContent = surface.label || "Download JSON";
   button.title = surface.hint || "";
+}
+
+function applyMonopoleIdentitySurface(surface) {
+  const isNotebookConnected = surface.mode === "lab-connected";
+
+  identityControls.hidden = !isNotebookConnected;
+  instrumentDisplay.hidden = !isNotebookConnected;
 }
 
 function applyLoadedMonopoleSnapshot(snapshot) {

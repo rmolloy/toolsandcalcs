@@ -74,6 +74,17 @@ main {
   }
 }
 
+@media (max-width: 600px) {
+  .tl-layout.tl-layout-stacked .tl-controls {
+    order: -1;
+  }
+}
+
+body[data-monopole-save-mode="offline"] #monopole_mode_controls,
+body[data-monopole-save-mode="offline"] #status {
+  display: none;
+}
+
 .help-accordion summary {
   display: flex;
   gap: 8px;
@@ -269,6 +280,10 @@ main {
   gap: 8px;
   align-items: center;
   justify-content: flex-end;
+}
+
+.results-meta [hidden] {
+  display: none !important;
 }
 
 .result-grid {
