@@ -1,0 +1,56 @@
+:root {
+  --bg: #24221f;
+  --panel: #1b1b19;
+  --panel-hover: #24231f;
+  --border-strong: rgba(236, 223, 196, 0.14);
+  --border-soft: rgba(236, 223, 196, 0.08);
+  --card-bg: linear-gradient(135deg, rgba(37, 35, 31, 0.96), rgba(25, 25, 23, 0.94));
+  --frame-soft: 1px solid rgba(221, 191, 133, 0.14);
+  --frame-ghost: rgba(221, 191, 133, 0.08);
+  --nebula-blue: rgba(112, 87, 61, 0.18);
+  --nebula-gold: rgba(196, 161, 99, 0.12);
+  --nebula-cyan: rgba(118, 120, 103, 0.1);
+  --atmo-nebula-blue: rgba(112, 87, 61, 0.16);
+  --atmo-nebula-gold: rgba(196, 161, 99, 0.12);
+  --atmo-nebula-cyan: rgba(118, 120, 103, 0.08);
+  --tl-hero-surface: linear-gradient(150deg, rgba(37, 36, 32, 0.84), rgba(23, 23, 21, 0.76));
+  --tl-hero-shadow: 0 18px 52px rgba(0, 0, 0, 0.3), 0 0 34px rgba(137, 103, 69, 0.06);
+  --tl-menu-surface: rgba(27, 26, 23, 0.97);
+  --tl-menu-border: rgba(221, 191, 133, 0.18);
+  --tl-menu-hover: rgba(236, 223, 196, 0.08);
+}
+
+body {
+  background: var(--bg);
+}
+
+body::after {
+  background: none;
+}
+
+/* Resonance Reader keeps its atmospheric layers in its tool stylesheet. */
+body::before {
+  background: none;
+}
+
+.card-surface {
+  background: linear-gradient(152deg, rgba(33, 32, 29, 0.9), rgba(23, 23, 21, 0.82));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+}
+
+.card-surface::before {
+  background-image: none;
+  opacity: 0;
+}
+
+.card-surface::after {
+  background: none;
+}
+
+#plot_fft,
+#plot_peak_analysis,
+#plot_peak_ringdown {
+  border-color: rgba(236, 223, 196, 0.05);
+  background: rgba(10, 10, 9, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.01);
+}
