@@ -72,25 +72,20 @@ function saveStatePipelineDirtySubscriptionAttach(bus, state) {
         saveStateMarkDirtyAndRender(state);
     });
 }
-function recordingSelectLabelSet(label, state) {
+function recordingMenuLabelSet(label, state) {
     if (state)
         state.recordingLabel = label;
-    const select = document.getElementById("recording_select");
-    if (!select)
+    const menu = takeOverlayMenuElementGet();
+    if (!menu)
         return;
-    select.innerHTML = "";
-    const option = document.createElement("option");
-    option.value = label;
-    option.textContent = label;
-    option.selected = true;
-    select.appendChild(option);
-    recordingSelectWidthSyncFromLabel(select, label);
+    menu.textContent = label;
+    recordingMenuWidthSyncFromLabel(menu, label);
 }
-function recordingSelectWidthSyncFromLabel(select, label) {
-    const charUnits = recordingSelectWidthCharUnitsFromLabel(label);
-    select.style.width = `${charUnits}ch`;
+function recordingMenuWidthSyncFromLabel(menu, label) {
+    const charUnits = recordingMenuWidthCharUnitsFromLabel(label);
+    menu.style.width = `${charUnits}ch`;
 }
-function recordingSelectWidthCharUnitsFromLabel(label) {
+function recordingMenuWidthCharUnitsFromLabel(label) {
     const minCh = 14;
     const maxCh = 34;
     const paddingCh = 4;
@@ -127,7 +122,7 @@ function recordCaptureRunFromMic(deps) {
     const input = { trigger: "record", source: { wave, sampleRate, sourceKind: "mic" } };
     const config = { version: "v1", stages: ["ingest", "refresh"] };
     const runner = window.ResonatePipelineRunner;
-    recordingSelectLabelSet("Recording (mic)", deps.state);
+    recordingMenuLabelSet("Recording (mic)", deps.state);
     takeOverlayControlsRender(deps);
     if (!runner?.run) {
         console.warn("[Resonance Reader] Pipeline runner missing while event rendering is enabled.");
@@ -254,7 +249,7 @@ function bindImport(deps) {
             return;
         takeOverlayCaptureCurrentAndRender(deps);
         deps.setStatus(`Loading ${file.name}...`);
-        recordingSelectLabelSet(file.name, deps.state);
+        recordingMenuLabelSet(file.name, deps.state);
         takeOverlayControlsRender(deps);
         try {
             deps.state.viewRangeMs = null;
@@ -299,6 +294,8 @@ function takeOverlayClearAndRender(deps) {
     rerenderFromLastSpectrumIfPossible(deps.state);
 }
 function takeOverlayPanelToggle(menu, panel) {
+    if (menu.disabled)
+        return;
     const expanded = menu.getAttribute("aria-expanded") === "true";
     menu.setAttribute("aria-expanded", expanded ? "false" : "true");
     panel.hidden = expanded;
@@ -321,7 +318,7 @@ function takeOverlaySelectRowResolveFromEvent(event) {
     return event.target?.closest?.(".take-overlay-row[data-take-overlay-id]");
 }
 function takeOverlayCurrentTakeRender(deps) {
-    recordingSelectLabelSet(takeOverlayCurrentLabelRead(deps.state), deps.state);
+    recordingMenuLabelSet(takeOverlayCurrentLabelRead(deps.state), deps.state);
     deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
     if (deps.state.lastWaveSlice)
         deps.renderWaveform(deps.state.lastWaveSlice);
@@ -339,11 +336,13 @@ function takeOverlayControlsRender(deps) {
     const controls = takeOverlayControlsElementGet();
     const panel = takeOverlayPanelElementGet();
     const menu = takeOverlayMenuElementGet();
+    const clear = takeOverlayClearElementGet();
     const overlays = takeOverlayListRead(deps.state);
-    if (!controls || !panel || !menu)
+    if (!controls || !panel || !menu || !clear)
         return;
-    controls.hidden = overlays.length === 0;
-    menu.textContent = `Takes ${overlays.length + 1} ▾`;
+    menu.disabled = overlays.length === 0;
+    clear.hidden = overlays.length === 0;
+    recordingMenuLabelSet(takeOverlayCurrentLabelRead(deps.state));
     panel.innerHTML = takeOverlayPanelHtmlBuild(deps.state, overlays);
     if (!overlays.length) {
         panel.hidden = true;
@@ -354,7 +353,6 @@ function takeOverlayPanelHtmlBuild(state, overlays) {
     return [
         takeOverlayCurrentRowHtmlBuild(takeOverlayCurrentLabelRead(state)),
         ...overlays.map(takeOverlayRowHtmlBuild),
-        `<button class="take-overlay-row take-overlay-row--clear" type="button" data-take-overlay-clear="true">Clear overlays</button>`,
     ].join("");
 }
 function takeOverlayCurrentRowHtmlBuild(label) {
@@ -377,7 +375,7 @@ function takeOverlayCurrentLabelRead(state) {
     const label = String(state.recordingLabel || "").trim();
     if (label)
         return label;
-    return document.getElementById("recording_select")?.selectedOptions?.[0]?.textContent?.trim() || "Current take";
+    return takeOverlayMenuElementGet()?.textContent?.trim() || "Demo (click record)";
 }
 function takeOverlayHtmlEscape(value) {
     return String(value).replace(/[&<>"']/g, (char) => ({
@@ -556,7 +554,7 @@ export function uiBindingsAttach(deps) {
         }
         await refreshResonanceSaveSurfaceAndRender(deps.state, resonanceSaveRunner, deps.setStatus);
         saveStatePipelineDirtySubscriptionAttach(deps.pipelineBus, deps.state);
-        recordingSelectInitialWidthSync();
+        recordingMenuInitialWidthSync();
         bindImport(deps);
         bindSaveAudio(deps);
         bindRecord(deps);
@@ -626,7 +624,7 @@ async function restoreNotebookEventIntoUi(deps) {
 }
 function restoreNotebookConnectDraftControls(state) {
     writeMeasureModeSelectValue(state.measureMode);
-    recordingSelectLabelSet(String(state.recordingLabel || "Notebook draft"), state);
+    recordingMenuLabelSet(String(state.recordingLabel || "Notebook draft"), state);
 }
 function writeMeasureModeSelectValue(measureMode) {
     const select = measureModeSelectElementGet();
@@ -662,13 +660,11 @@ function renderNotebookConnectDraftWaveform(deps) {
     }
     deps.renderWaveform(deps.state.currentWave);
 }
-function recordingSelectInitialWidthSync() {
-    const select = document.getElementById("recording_select");
-    if (!select)
+function recordingMenuInitialWidthSync() {
+    const menu = takeOverlayMenuElementGet();
+    if (!menu)
         return;
-    const selected = select.options[select.selectedIndex];
-    const label = (selected?.textContent || "Demo (click record)").trim();
-    recordingSelectWidthSyncFromLabel(select, label);
+    recordingMenuWidthSyncFromLabel(menu, menu.textContent || "Demo (click record)");
 }
 function measureModeSelectElementGet() {
     return document.getElementById("measure_mode");
@@ -729,7 +725,7 @@ export function measureModeChangeShouldRenderMock(state) {
     return !state?.currentWave;
 }
 export function measureModeChangeShouldReseedDemoWave() {
-    return recordingSelectValueRead() === "";
+    return !String(window.FFTState?.recordingLabel || "").trim();
 }
 export function measureModeChangeShouldRunPipelineForDemoWave() {
     return measureModeChangeShouldReseedDemoWave();
@@ -755,12 +751,6 @@ function renderTryModePanelForMeasureMode(measureMode, deps) {
     if (measureMode === "guitar" || measureMode === "played_note")
         return;
     deps.state.modeTargets = {};
-}
-function recordingSelectValueRead() {
-    return recordingSelectElementGet()?.value || "";
-}
-function recordingSelectElementGet() {
-    return document.getElementById("recording_select");
 }
 function rerenderFromLastSpectrumIfPossible(state) {
     if (typeof state?.rerenderFromLastSpectrum !== "function")

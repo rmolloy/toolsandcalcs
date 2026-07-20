@@ -28,5 +28,5 @@ function hasWaveformCapture() {
     return Boolean(window.FFTState?.currentWave);
 }
 function resonanceCaptureRecordingLabelRead(state) {
-    return String(state.recordingLabel || document.getElementById("recording_select")?.textContent || "resonance-capture");
+    return String(state.recordingLabel || document.getElementById("take_overlay_menu")?.textContent || "resonance-capture");
 }

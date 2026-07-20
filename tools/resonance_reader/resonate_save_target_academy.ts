@@ -39,5 +39,5 @@ function hasWaveformCapture(): boolean {
 }
 
 function resonanceCaptureRecordingLabelRead(state: Record<string, any>): string {
-  return String(state.recordingLabel || document.getElementById("recording_select")?.textContent || "resonance-capture");
+  return String(state.recordingLabel || document.getElementById("take_overlay_menu")?.textContent || "resonance-capture");
 }

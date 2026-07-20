@@ -143,11 +143,11 @@ function hasWaveformCapture() {
     return Boolean(window.FFTState?.currentWave);
 }
 function resonanceCaptureRecordingLabelRead(state) {
-    return String(state.recordingLabel || recordingSelectElementRead()?.selectedOptions?.[0]?.textContent || "resonance-capture");
+    return String(state.recordingLabel || recordingMenuLabelRead() || "resonance-capture");
 }
 function resonanceReaderToolVersionRead() {
     return (document.documentElement?.dataset?.toolVersion || "dev").trim() || "dev";
 }
-function recordingSelectElementRead() {
-    return document.getElementById("recording_select");
+function recordingMenuLabelRead() {
+    return document.getElementById("take_overlay_menu")?.textContent?.trim() || "";
 }

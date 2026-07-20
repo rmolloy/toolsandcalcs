@@ -155,15 +155,12 @@
           <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Play</button>
           <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Stop</button>
           <label class="ghost-btn btn-small" id="btn_import" for="file_input" role="button" tabindex="0"><span class="transport-icon" aria-hidden="true">⬆</span>Import</label>
-          <select class="recording-dropdown transport-recording" id="recording_select" aria-label="Current recording">
-            <option value="" selected>Demo (click record)</option>
-          </select>
-          <button class="ghost-btn btn-small tl-save-action" id="btn_save_audio">Save</button>
-          <div class="take-overlay-controls" id="take_overlay_controls" hidden>
-            <button class="ghost-btn btn-small take-overlay-menu" id="take_overlay_menu" type="button" aria-expanded="false" aria-controls="take_overlay_panel">Takes ▾</button>
-            <button class="ghost-btn btn-small take-overlay-clear" id="take_overlay_clear" type="button">Clear takes</button>
+          <div class="take-overlay-controls" id="take_overlay_controls">
+            <button class="ghost-btn btn-small take-overlay-menu transport-recording" id="take_overlay_menu" type="button" aria-expanded="false" aria-controls="take_overlay_panel">Demo (click record)</button>
             <div class="take-overlay-panel" id="take_overlay_panel" hidden></div>
           </div>
+          <button class="ghost-btn btn-small tl-save-action" id="btn_save_audio">Save</button>
+          <button class="ghost-btn btn-small take-overlay-clear" id="take_overlay_clear" type="button" hidden>Clear takes</button>
         </div>
         <section class="dof-model-row">
           <div class="dof-model-copy">

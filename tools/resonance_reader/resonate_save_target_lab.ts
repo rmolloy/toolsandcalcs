@@ -195,13 +195,13 @@ function hasWaveformCapture(): boolean {
 }
 
 function resonanceCaptureRecordingLabelRead(state: Record<string, any>): string {
-  return String(state.recordingLabel || recordingSelectElementRead()?.selectedOptions?.[0]?.textContent || "resonance-capture");
+  return String(state.recordingLabel || recordingMenuLabelRead() || "resonance-capture");
 }
 
 function resonanceReaderToolVersionRead(): string {
   return (document.documentElement?.dataset?.toolVersion || "dev").trim() || "dev";
 }
 
-function recordingSelectElementRead(): HTMLSelectElement | null {
-  return document.getElementById("recording_select") as HTMLSelectElement | null;
+function recordingMenuLabelRead(): string {
+  return document.getElementById("take_overlay_menu")?.textContent?.trim() || "";
 }
