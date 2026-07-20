@@ -1576,6 +1576,8 @@ body { padding: 28px; }
 }
 
 .measure-action-row {
+  position: relative;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1600,22 +1602,26 @@ body { padding: 28px; }
 .wave-transport-inline .transport-recording {
   height: 35px;
   width: clamp(12ch, 22vw, 30ch);
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   border-radius: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wave-transport-inline .take-overlay-menu::after {
+  content: "▾";
+  flex: 0 0 auto;
 }
 
 .take-overlay-controls {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   height: 35px;
-  padding-left: 8px;
-  margin-left: 2px;
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.take-overlay-controls[hidden] {
-  display: none;
 }
 
 .take-overlay-clear {
@@ -1624,9 +1630,9 @@ body { padding: 28px; }
 
 .take-overlay-panel {
   position: absolute;
-  left: 8px;
+  left: 0;
   bottom: calc(100% + 8px);
-  z-index: 20;
+  z-index: 30;
   width: min(320px, 82vw);
   padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1867,7 +1873,7 @@ body { padding: 28px; }
   }
   .take-overlay-controls {
     grid-column: 1 / -1;
-    width: max-content;
+    width: min(100%, 34ch);
   }
   .wave-transport-inline .transport-recording {
     grid-column: 1 / -1;
