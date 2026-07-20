@@ -503,9 +503,7 @@ function peakAnalysisProvenanceTextBuild(provenance) {
         : `tap ${provenance.tapIndex + 1} of ${Math.max(provenance.tapCount, provenance.tapIndex + 1)}`;
     const bandwidth = Number.isFinite(provenance.bandwidthHz) ? `${provenance.bandwidthHz.toFixed(2)} Hz band` : "automatic band";
     const limit = provenance.limit === "next_tap" ? " (next tap)" : provenance.limit === "recording_end" ? " (recording ends)" : "";
-    const window = provenance.windowMs < provenance.expectedWindowMs
-        ? `${provenance.windowMs} ms observed of ${provenance.expectedWindowMs} ms expected${limit}`
-        : `${provenance.expectedWindowMs} ms expected observation`;
+    const window = `Tap window: ${(provenance.windowMs / 1000).toFixed(2)} seconds${limit}`;
     return `Ring-down source: ${tapLabel} · ${window} · ${provenance.preOnsetMs} ms pre-onset · ${bandwidth} · ${provenance.sampleRate.toLocaleString()} Hz`;
 }
 function peakAnalysisRingdownPlotRender(plot, data) {
