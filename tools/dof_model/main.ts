@@ -192,7 +192,7 @@ const FIT_TASK_CARD_DEFS: TaskCardDef[] = [
     alias: "Fitting actions",
     badgeText: "Fit",
     copy: "Run the fitter, compare the result, and clear the inputs when you want to start over.",
-    actionIds: ["btn_fit_guitar", "btn_fit_guitar_fast", "btn_fit_guitar_measured", "btn_fit_clear"],
+    actionIds: ["btn_fit_guitar", "btn_fit_clear"],
     statusId: "fit_status",
   },
 ];
@@ -1834,41 +1834,6 @@ function solveTargets(
   }
 }
 
-function solveTargetsMeasured(
-  targets: Record<ModeKey, number | null | undefined> & Record<string, number | null | undefined>,
-  opts: { useWhatIf?: boolean } = {},
-) {
-  const useWhatIf = Boolean(opts.useWhatIf && isWhatIfEnabled());
-  const baseParams = useWhatIf ? (getWhatIfParams() || currentParams) : currentParams;
-  const constrainedBase = { ...baseParams };
-
-  if (Number.isFinite(targets.mass_top)) {
-    constrainedBase.mass_top = clampToBounds("mass_top", targets.mass_top as number);
-  }
-  if (Number.isFinite(targets.stiffness_top)) {
-    constrainedBase.stiffness_top = clampToBounds("stiffness_top", targets.stiffness_top as number);
-  }
-
-  const tweakIds = ["stiffness_back", "volume_air", "area_hole"];
-  if (!Number.isFinite(targets.stiffness_top)) tweakIds.push("stiffness_top");
-
-  const fit = fit4DofFromTargets(targets, {
-    maxIter: 14,
-    tweakIds,
-    baseParams: constrainedBase,
-  });
-
-  if (fit?.raw) {
-    if (useWhatIf) {
-      applyWhatIfParams(fit.raw as DofParams);
-    } else {
-      currentParams = { ...currentParams, ...fit.raw };
-      syncCardInputs();
-      scheduleRender();
-    }
-  }
-}
-
 function fitTargetFromInput(elementId: string): number | null {
   const element = document.getElementById(elementId) as HTMLInputElement | null;
   if (!element) return null;
@@ -1997,10 +1962,8 @@ function bindSolveRecipeActions() {
 
 function bindFitMyGuitarActions() {
   const fitButton = document.getElementById("btn_fit_guitar");
-  const fitFastButton = document.getElementById("btn_fit_guitar_fast");
-  const fitMeasuredButton = document.getElementById("btn_fit_guitar_measured");
   const clearButton = document.getElementById("btn_fit_clear");
-  if (!fitButton || !fitFastButton || !fitMeasuredButton || !clearButton) return;
+  if (!fitButton || !clearButton) return;
 
   fitButton.addEventListener("click", () => {
     const targets = fitTargetsFromInputs();
@@ -2014,32 +1977,6 @@ function bindFitMyGuitarActions() {
       tweakIds: fitSolveTweakIdsFromTargets(targets),
     });
     fitStatusSet("Fit applied.");
-  });
-
-  fitFastButton.addEventListener("click", () => {
-    const targets = fitTargetsFromInputs();
-    const hasFrequencyTarget = MODE_KEYS.some((mode) => Number.isFinite(targets[mode]));
-    if (!hasFrequencyTarget) {
-      fitStatusSet("Fit 2 needs at least one Air/Top/Back target.");
-      return;
-    }
-    solveTargetsFast(targets as Record<ModeKey, number | null>, {
-      useWhatIf: isWhatIfEnabled(),
-    });
-    fitStatusSet("Fit 2 applied (fast).");
-  });
-
-  fitMeasuredButton.addEventListener("click", () => {
-    const targets = fitTargetsFromInputs();
-    const hasFrequencyTarget = MODE_KEYS.some((mode) => Number.isFinite(targets[mode]));
-    if (!hasFrequencyTarget) {
-      fitStatusSet("Fit 3 needs at least one Air/Top/Back target.");
-      return;
-    }
-    solveTargetsMeasured(targets as Record<ModeKey, number | null> & Record<string, number | null>, {
-      useWhatIf: isWhatIfEnabled(),
-    });
-    fitStatusSet("Fit 3 applied (measured-constrained).");
   });
 
   clearButton.addEventListener("click", () => {

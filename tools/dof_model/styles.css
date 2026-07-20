@@ -787,6 +787,7 @@ body.whatif-mode .param-whatif-row {
 }
 
 .dof-fit-field input {
+  box-sizing: border-box;
   width: 100%;
   border: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
   background: color-mix(in srgb, var(--ink) 5%, transparent);
