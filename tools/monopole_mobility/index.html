@@ -173,124 +173,71 @@ No redistribution, modification, or commercial use without written consent from 
         <section class="tl-content tl-content-secondary">
           <header class="card pad tl-card tl-card-info">
             <h2>Overview &amp; required measurements</h2>
-            <p class="tl-card-desc">
-              <strong>Use this tool to</strong> translate your measurements into top stiffness K,
-              effective modal mass M<sub>eff</sub>, and a monopole mobility score using either the
-              classic Gore jig (Static Mode) or a two-reading mass-loading FFT method (Dynamic Mode).
-            </p>
-            <p class="tl-card-desc">
-              <strong>Why this matters:</strong> Monopole mobility shows how freely the top pumps air at its main resonance and is a measure of how responsive a guitar is across a whole range of frequencies. It shows how much sound you can get out for how hard you pluck the strings. It doesn’t help guard against structural issues, but does show that low mass, low stiffness tops will be more responsive (provided they hold up!)
-            </p>
-            <div class="sample-note badge">
-              Default dataset (Static Mode): Rick Molloy OM (10/25/2025) (spruce / steel-string, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
-            </div>
-            <details class="tl-accordion">
-              <summary>Overview &amp; setup workflow</summary>
+            
               <p class="tl-card-desc">
-                Choose your measurement path. Static Mode uses the Gore &amp; Gilet jig: load the bridge with a known force and record the deflection. Dynamic Mode skips the dial gauge and instead uses two monopole resonance readings: unloaded and with a small added mass.
+                <strong>Use this tool to</strong> translate your Gore-style monopole mobility jig readings into top stiffness K,
+                effective modal mass M<sub>eff</sub>, and then calculate a guitar's monopole mobility value, so you can compare guitars on a consistent basis.
               </p>
-              <div class="before-card">
-                <h3>Measurements required</h3>
-                <ul class="tl-list">
-                  <li>Uncoupled top monopole frequency, f<sub>0</sub> (Hz)</li>
-                  <li>Static Mode: bridge deflection under test load, x (mm)</li>
-                  <li>Static Mode: test mass, m (kg)</li>
-                  <li>Dynamic Mode: loaded frequency f<sub>1</sub> (Hz) and added mass (g)</li>
-                  <li>Guitar type (steel-string, classical, other)</li>
-                </ul>
+              <p class="tl-card-desc">
+                <strong>Why this matters:</strong> Monopole mobility shows how freely the top pumps air at its main resonance and is a measure of how responsive a guitar is across a whole range of frequencies. It shows how much sound you can get out for how hard you pluck the strings. It does not help guard against structural issues, but does show that low mass, low stiffness tops will be more responsive, provided they hold up.
+              </p>
+              <div class="sample-note badge">
+                Default dataset: Rick Molloy OM (10/25/2025) (spruce / steel-string, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
               </div>
-              <div class="before-card">
-                <h3>How to use this tool</h3>
-                <ol class="tl-steps">
-                  <li>Seal the sound hole with a low mass, rigid cover so the box is airtight.</li>
-                  <li>Mute the strings, tap the top, and record the uncoupled top frequency f<sub>0</sub> with your FFT app.</li>
-                  <li>Pick a mode:
-                    <ul class="tl-list">
-                      <li class="muted">Static Mode — Mount the mobility jig, load it over the bridge using a known test mass (m) and measure the panel deflection (x) in millimeters.</li>
-                      <li class="muted">Dynamic Mode — Add a small known mass at the bridge, measure the shifted monopole frequency f<sub>1</sub> with your FFT app. No dial indicator required.</li>
-                    </ul>
-                  </li>
-                  <li>Enter the mode-specific inputs. The calculator computes K, M<sub>eff</sub>, and mobility.</li>
-                  <li>Review the score and compare to the target ranges.</li>
-                </ol>
-              </div>
-            </details>
-          </header>
-
-          <section class="card pad tl-card tl-card-info tl-span-2">
-            <h2>How this tool works</h2>
-            <p class="tl-card-desc">
-              The calculator supports two workflows: the classic Gore &amp; Gilet monopole mobility jig (Static Mode) and a mass-loading frequency shift method (Dynamic Mode). Both paths output stiffness K at the bridge, effective modal mass (M<sub>eff</sub>), and the standard monopole mobility score for build-to-build comparisons.
-            </p>
-
-            <div class="tl-eq-block">
-              <h3>Static Mode: Force from test mass</h3>
-              <p class="small muted">The mass sets the applied force through the jig.</p>
-              <div class="tl-equation">F = m · g</div>
-            </div>
-
-            <div class="tl-eq-block">
-              <h3>Static Mode: Top stiffness at the bridge</h3>
-              <p class="small muted">The applied force divided by the deflection x (converted to meters) gives the stiffness, K.</p>
-              <div class="tl-equation">K = F / x</div>
-            </div>
-
-            <div class="tl-eq-block">
-              <h3>Dynamic Mode: Effective modal mass from frequency shift</h3>
-              <p class="small muted">Two frequency measurements and the added mass give M<sub>eff</sub> directly.</p>
-              <div class="tl-equation">M<sub>eff</sub> = (f<sub>1</sub><sup>2</sup> · m) / (f<sub>0</sub><sup>2</sup> − f<sub>1</sub><sup>2</sup>)</div>
-            </div>
-
-            <div class="tl-eq-block">
-              <h3>Effective stiffness (Dynamic Mode)</h3>
-              <p class="small muted">Once M<sub>eff</sub> is known, stiffness follows from f<sub>0</sub>.</p>
-              <div class="tl-equation">K = (2π f<sub>0</sub>)<sup>2</sup> · M<sub>eff</sub></div>
-            </div>
-
-            <div class="tl-eq-block">
-              <h3>Effective modal mass (Static Mode)</h3>
-              <p class="small muted">Derived from stiffness, K and the uncoupled top frequency, f<sub>u</sub>.</p>
-              <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
-            </div>
-
-            <div class="tl-eq-block">
-              <h3>Monopole mobility score</h3>
-              <p class="small muted">Index used for build-to-build responsiveness comparisons. Monopole mobility has dimensions of admittance, (s/Kg)</p>
-              <div class="tl-equation">Mobility score = 1000 / √(K · M<sub>eff</sub>)</div>
-            </div>
-          </section>
-
-          <section class="card pad tl-card tl-card-info">
-            <details class="tl-accordion help-accordion">
-              <summary>Need help with this tool? <span class="muted">I read every message.</span></summary>
-              <p class="muted">If your results don’t match what you’re hearing, share your measurements and a short tap clip. I’ll take a look.</p>
-              <div id="mc_embed_shell">
-                <div id="mc_embed_signup">
-                  <form action="https://celestialinstruments.us12.list-manage.com/subscribe/post?u=64b5700d159e15ecf6f527445&amp;id=4d023713d1&amp;f_id=00f844e0f0" method="post" id="mc-embedded-subscribe-form" name="mc-embedded-subscribe-form" class="validate" target="_blank">
-                    <div id="mc_embed_signup_scroll">
-                      <h2>Reach out to Rick</h2>
-                      <div class="indicates-required"><span class="asterisk">*</span> indicates required</div>
-                      <div class="mc-field-group">
-                        <label for="mce-EMAIL">Email Address <span class="asterisk">*</span></label>
-                        <input type="email" name="EMAIL" class="required email" id="mce-EMAIL" required value="">
-                      </div>
-                      <div class="mc-field-group">
-                        <label for="mce-FNAME">First Name </label>
-                        <input type="text" name="FNAME" class=" text" id="mce-FNAME" value="">
-                      </div>
-                      <div id="mce-responses" class="clear">
-                        <div class="response" id="mce-error-response" style="display: none;"></div>
-                        <div class="response" id="mce-success-response" style="display: none;"></div>
-                      </div>
-                      <div aria-hidden="true" style="position: absolute; left: -5000px;"><input type="text" name="b_64b5700d159e15ecf6f527445_4d023713d1" tabindex="-1" value=""></div>
-                      <div class="clear"><input type="submit" name="subscribe" id="mc-embedded-subscribe" class="button" value="Send"></div>
-                    </div>
-                  </form>
+              <details class="tl-accordion">
+                <summary>Overview &amp; required measurements</summary>
+                <p class="tl-card-desc">
+                  Seal the sound hole, mute the strings, tap the top to find the frequency f<sub>u</sub> of the uncoupled monopole resonance. Then, using the monopole mobility jig, load the bridge with a known force and record its deflection x.
+                </p>
+                <div class="before-card">
+                  <h3>Measurements required</h3>
+                  <ul class="tl-list">
+                    <li>Uncoupled top monopole frequency, f<sub>u</sub> (Hz)</li>
+                    <li>Bridge deflection under test load, x (mm)</li>
+                    <li>Test mass, m (kg)</li>
+                  </ul>
                 </div>
+                <div class="before-card">
+                  <h3>How to use this tool</h3>
+                  <ol class="tl-steps">
+                    <li>Seal the sound hole with a low mass, rigid cover so the box is airtight.</li>
+                    <li>Mute the strings, tap the top, and record the uncoupled top frequency f<sub>u</sub> with your FFT app.</li>
+                    <li>Mount the mobility jig. Load it over the bridge using a known test mass (m) and measure the panel deflection (x) in millimeters.</li>
+                    <li>Enter f<sub>u</sub>, x, and m. The calculator computes K, M<sub>eff</sub>, and mobility.</li>
+                    <li>Review the score and compare it with your own build records.</li>
+                  </ol>
+                </div>
+              </details>
+            </header>
+
+          
+            <section class="card pad tl-card tl-card-info tl-span-2">
+              <h2>How this tool works</h2>
+              <p class="tl-card-desc">
+                This tool is based on the Gore &amp; Gilet monopole mobility jig (Vol. 1, Appendix AI 3). The calculator converts your jig measurements into top stiffness at the bridge (K), effective modal mass (M<sub>eff</sub>), and the standard monopole mobility score.
+              </p>
+              <div class="tl-eq-block">
+                <h3>Force from test mass</h3>
+                <p class="small muted">The mass sets the applied force through the jig.</p>
+                <div class="tl-equation">F = m · g</div>
               </div>
-            </details>
+              <div class="tl-eq-block">
+                <h3>Top stiffness at the bridge</h3>
+                <p class="small muted">The applied force divided by the deflection x, converted to meters, gives the stiffness K.</p>
+                <div class="tl-equation">K = F / x</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Effective modal mass</h3>
+                <p class="small muted">Derived from stiffness K and the uncoupled top frequency f<sub>u</sub>.</p>
+                <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Monopole mobility score</h3>
+                <p class="small muted">Index used for build-to-build responsiveness comparisons.</p>
+                <div class="tl-equation">Mobility score = 1000 / √(K · M<sub>eff</sub>)</div>
+              </div>
+            </section>
           </section>
-        </section>
       </main>
 
       <footer class="tl-footer" data-tool-footer></footer>
