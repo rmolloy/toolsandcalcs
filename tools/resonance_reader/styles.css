@@ -631,11 +631,11 @@ body { padding: 28px; }
 
 .card-surface {
   position: relative;
-  background: linear-gradient(152deg, rgba(19, 24, 35, 0.78), rgba(10, 14, 22, 0.62));
+  background: var(--tl-resonance-surface, linear-gradient(152deg, rgba(19, 24, 35, 0.78), rgba(10, 14, 22, 0.62)));
   border: 1px solid var(--frame-ghost);
   border-radius: 18px;
   padding: 16px 18px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32), 0 0 46px rgba(101, 122, 214, 0.1);
+  box-shadow: var(--tl-resonance-shadow, 0 24px 64px rgba(0, 0, 0, 0.32), 0 0 46px rgba(101, 122, 214, 0.1));
   backdrop-filter: blur(10px);
   display: flex;
   flex-direction: column;
@@ -647,7 +647,7 @@ body { padding: 28px; }
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("assets/starfield.png");
+  background-image: var(--tl-resonance-starfield, url("assets/starfield.png"));
   background-size: cover;
   background-position: center;
   opacity: 0.5;
@@ -658,20 +658,20 @@ body { padding: 28px; }
 
 @supports (background-image: image-set(url("assets/starfield-768.webp") type("image/webp") 1x)) {
   .card-surface::before {
-    background-image: image-set(
+    background-image: var(--tl-resonance-starfield, image-set(
       url("assets/starfield-768.webp") type("image/webp") 1x,
       url("assets/starfield.png") type("image/png") 1x
-    );
+    ));
   }
 }
 
 @media (min-width: 901px) {
   @supports (background-image: image-set(url("assets/starfield-1280.webp") type("image/webp") 1x)) {
     .card-surface::before {
-      background-image: image-set(
+      background-image: var(--tl-resonance-starfield, image-set(
         url("assets/starfield-1280.webp") type("image/webp") 1x,
         url("assets/starfield.png") type("image/png") 1x
-      );
+      ));
     }
   }
 }
@@ -680,10 +680,10 @@ body { padding: 28px; }
   content: "";
   position: absolute;
   inset: 0;
-  background:
+  background: var(--tl-resonance-atmosphere,
     radial-gradient(circle at 28% 42%, rgba(111, 156, 255, 0.2), transparent 44%),
     radial-gradient(circle at 56% 47%, rgba(243, 188, 102, 0.16), transparent 40%),
-    radial-gradient(circle at 74% 48%, rgba(102, 216, 180, 0.14), transparent 38%);
+    radial-gradient(circle at 74% 48%, rgba(102, 216, 180, 0.14), transparent 38%));
   filter: blur(18px);
   pointer-events: none;
   z-index: 0;
