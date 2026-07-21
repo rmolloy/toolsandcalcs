@@ -13,8 +13,8 @@ body {
   position: relative;
   margin: 0;
   font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial;
-  background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 35%),
-    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--orange) 16%, transparent), transparent 32%),
+  background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--tl-canvas-blue, var(--blue)) 16%, transparent), transparent 35%),
+    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--tl-canvas-gold, var(--orange)) 16%, transparent), transparent 32%),
     var(--bg);
   color: var(--ink);
   min-height: 100vh;
@@ -42,9 +42,9 @@ body::after {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--blue) 18%, transparent), transparent 48%),
-    radial-gradient(circle at 49% 52%, color-mix(in srgb, var(--orange) 13%, transparent), transparent 40%),
-    radial-gradient(circle at 73% 56%, color-mix(in srgb, var(--green) 10%, transparent), transparent 38%);
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--tl-canvas-blue, var(--blue)) 18%, transparent), transparent 48%),
+    radial-gradient(circle at 49% 52%, color-mix(in srgb, var(--tl-canvas-gold, var(--orange)) 13%, transparent), transparent 40%),
+    radial-gradient(circle at 73% 56%, color-mix(in srgb, var(--tl-canvas-green, var(--green)) 10%, transparent), transparent 38%);
   filter: blur(40px);
 }
 

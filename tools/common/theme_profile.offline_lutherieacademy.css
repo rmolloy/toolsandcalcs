@@ -18,6 +18,13 @@
   --tl-menu-surface: rgba(27, 26, 23, 0.97);
   --tl-menu-border: rgba(221, 191, 133, 0.18);
   --tl-menu-hover: rgba(236, 223, 196, 0.08);
+  --tl-canvas-blue: #70573d;
+  --tl-canvas-gold: #c4a163;
+  --tl-canvas-green: #767867;
+  --tl-resonance-surface: linear-gradient(152deg, rgba(33, 32, 29, 0.9), rgba(23, 23, 21, 0.82));
+  --tl-resonance-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+  --tl-resonance-starfield: none;
+  --tl-resonance-atmosphere: none;
 }
 
 body {

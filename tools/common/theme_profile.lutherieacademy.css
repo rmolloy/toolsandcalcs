@@ -1,5 +1,20 @@
 :root {
-  --atmo-nebula-blue: color-mix(in srgb, var(--blue, #56B4E9) 18%, transparent);
-  --atmo-nebula-gold: color-mix(in srgb, var(--orange, #E69F00) 14%, transparent);
-  --atmo-nebula-cyan: color-mix(in srgb, var(--green, #009E73) 12%, transparent);
+  --bg: #24221f;
+  --panel: #1b1b19;
+  --panel-hover: #24231f;
+  --border-strong: rgba(236, 223, 196, 0.14);
+  --border-soft: rgba(236, 223, 196, 0.08);
+  --card-bg: linear-gradient(135deg, rgba(37, 35, 31, 0.96), rgba(25, 25, 23, 0.94));
+  --frame-soft: 1px solid rgba(221, 191, 133, 0.14);
+  --frame-ghost: rgba(221, 191, 133, 0.08);
+  --tl-canvas-blue: #70573d;
+  --tl-canvas-gold: #c4a163;
+  --tl-canvas-green: #767867;
+  --atmo-nebula-blue: rgba(112, 87, 61, 0.16);
+  --atmo-nebula-gold: rgba(196, 161, 99, 0.12);
+  --atmo-nebula-cyan: rgba(118, 120, 103, 0.08);
+  --tl-resonance-surface: linear-gradient(152deg, rgba(33, 32, 29, 0.9), rgba(23, 23, 21, 0.82));
+  --tl-resonance-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+  --tl-resonance-starfield: none;
+  --tl-resonance-atmosphere: none;
 }
