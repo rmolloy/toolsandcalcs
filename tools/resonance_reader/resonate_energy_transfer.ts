@@ -911,7 +911,7 @@ function layoutBuildFromSeries(series: EnergySeriesView) {
     paper_bgcolor: "transparent",
     plot_bgcolor: "transparent",
     yaxis: {
-      title: "Relative level",
+      title: "Relative band energy",
       range: [0, energyYMaxVisibleResolveFromSeries(series)],
       gridcolor: "rgba(255,255,255,0.06)",
       zeroline: false,
