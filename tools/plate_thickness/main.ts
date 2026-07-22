@@ -28,8 +28,8 @@ type PlateSolution = {
   const calc = calculator;
 
   const defaults = {
-    bodyLength: 0.49,
-    lowerBout: 0.39,
+    bodyLength: 0.494,
+    lowerBout: 0.381,
     panelMass: 0.2114,
     panelHeight: 0.0041,
     panelLength: 0.555,
@@ -40,6 +40,15 @@ type PlateSolution = {
     targetFreq: 75         // Hz
   } as const;
 
+  const bodyPresetGeometry = {
+    gore_medium_ss: { bodyLength: 490, lowerBout: 390 },
+    obrien_om_ss: { bodyLength: 494, lowerBout: 381 },
+    martin_om_ss: { bodyLength: 492, lowerBout: 381 },
+    obrien_classical: { bodyLength: 494, lowerBout: 365 },
+  } as const;
+
+  type BodyPresetKey = keyof typeof bodyPresetGeometry;
+
   type DefaultKey = keyof typeof defaults;
 
   const fields: Record<string, HTMLInputElement> = {};
@@ -47,6 +56,7 @@ type PlateSolution = {
     const key = input.dataset.field;
     if (key) fields[key] = input;
   });
+  const bodyPresetSelect = document.getElementById("body_preset") as HTMLSelectElement | null;
 
   const resultEls = {
     thickness: document.getElementById("result_thickness") as HTMLElement | null,
@@ -152,6 +162,10 @@ type PlateSolution = {
   }
 
   function reset() {
+    const bodyPresetKey = readDefaultBodyPresetKey();
+    if (bodyPresetSelect) {
+      bodyPresetSelect.value = bodyPresetKey;
+    }
     Object.entries(fields).forEach(([key, input]) => {
       const defaultKey = key;
       const value = defaults[camelCase(defaultKey) as DefaultKey];
@@ -160,8 +174,31 @@ type PlateSolution = {
         input.value = Number.isFinite(scaled) ? formatNumber(scaled) : "";
       }
     });
+    applyBodyPresetGeometry(bodyPresetKey);
     applyQueryParams();
     run();
+  }
+
+  function applySelectedBodyPreset() {
+    if (!bodyPresetSelect) return;
+
+    applyBodyPresetGeometry(bodyPresetSelect.value as BodyPresetKey);
+    run();
+  }
+
+  function readDefaultBodyPresetKey(): BodyPresetKey {
+    const configuredKey = document.body.dataset.plateDefaultPreset;
+    return configuredKey && configuredKey in bodyPresetGeometry
+      ? configuredKey as BodyPresetKey
+      : "obrien_om_ss";
+  }
+
+  function applyBodyPresetGeometry(bodyPresetKey: BodyPresetKey) {
+    const preset = bodyPresetGeometry[bodyPresetKey];
+    if (!preset) return;
+
+    fields.body_length.value = formatNumber(preset.bodyLength);
+    fields.lower_bout.value = formatNumber(preset.lowerBout);
   }
 
   async function saveResults() {
@@ -314,6 +351,7 @@ type PlateSolution = {
   if (saveButton) saveButton.addEventListener("click", () => void saveResults());
   if (loadButton && loadFileInput) loadButton.addEventListener("click", () => loadFileInput.click());
   if (loadFileInput) loadFileInput.addEventListener("change", loadResults);
+  if (bodyPresetSelect) bodyPresetSelect.addEventListener("change", applySelectedBodyPreset);
 
   reset();
   void initializePlateThicknessToolSurface();

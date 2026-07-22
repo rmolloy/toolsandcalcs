@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../common/layout.css">
 </head>
 
-<body>
+<body data-plate-default-preset="obrien_om_ss">
   <div class="tl-app">
     <div class="tl-page">
       <section class="hero">
@@ -86,8 +86,11 @@
             <div class="plate-preset-row">
               <label class="plate-fit-field plate-fit-field-preset">
                 <span class="field-label">Preset</span>
-                <select disabled>
-                  <option selected>Martin style OM</option>
+                <select id="body_preset">
+                  <option value="gore_medium_ss">Gore Medium SS</option>
+                  <option value="obrien_om_ss" selected>O'Brien OM SS</option>
+                  <option value="martin_om_ss">Martin OM SS</option>
+                  <option value="obrien_classical">O'Brien Classical</option>
                 </select>
               </label>
             </div>
@@ -103,11 +106,11 @@
                   </label>
                   <label class="plate-fit-field">
                     <span class="field-label">Lower bout width (mm)</span>
-                    <input type="number" step="1" min="200" data-field="lower_bout" value="390">
+                    <input type="number" step="1" min="200" data-field="lower_bout" value="381">
                   </label>
                   <label class="plate-fit-field">
                     <span class="field-label">Guitar box length (mm)</span>
-                    <input type="number" step="1" min="200" data-field="body_length" value="490">
+                    <input type="number" step="1" min="200" data-field="body_length" value="494">
                   </label>
                 </form>
               </div>
@@ -263,25 +266,6 @@
 
       <p class="small muted">URL tip: append <code>?long=80&amp;cross=120&amp;twisting=45</code> to prefill the modal
         taps when sharing results.</p>
-    </section>
-    <section class="card pad tl-card tl-card-info">
-      <details class="tl-accordion help-accordion">
-        <summary>Need help with this tool? <span class="muted">I read every message.</span></summary>
-        <p class="tl-card-desc">
-          If your results don’t match what you’re expecting, share your measurements and a note. I’ll take a look.
-        </p>
-        <form class="tl-help-form">
-          <label>
-            <span>Email</span>
-            <input type="email" placeholder="you@example.com" required>
-          </label>
-          <label>
-            <span>Measurements or notes</span>
-            <textarea placeholder="Paste your readings, tap frequencies, or questions" rows="4" required></textarea>
-          </label>
-          <button type="submit">Send to Rick</button>
-        </form>
-      </details>
     </section>
           </section>
         </main>
