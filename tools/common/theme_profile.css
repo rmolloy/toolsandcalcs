@@ -18,3 +18,12 @@
   --tl-resonance-starfield: none;
   --tl-resonance-atmosphere: none;
 }
+
+body {
+  background: var(--bg);
+}
+
+body::before,
+body::after {
+  background: none;
+}
