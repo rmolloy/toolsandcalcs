@@ -14,6 +14,10 @@ type ResonatePipelineBootstrapDeps = {
   renderSpectrum: (payload: { freqs: number[]; mags: number[]; overlay?: number[]; modes?: any[] }) => void;
   renderModes: (modes: any[]) => void;
   renderWaveform: (wave: any) => void;
+  perTabSession?: {
+    restoreIntoState(state: Record<string, any>): Promise<boolean>;
+    persistFromState(state: Record<string, any>): Promise<void>;
+  } | null;
   analysisBoundary?: import("./resonate_analysis_boundary.js").AnalysisBoundary;
   signalBoundary?: import("./resonate_signal_boundary.js").SignalBoundary;
   overlayBoundary?: import("./resonate_overlay_boundary.js").OverlayBoundary;
@@ -53,6 +57,7 @@ export function resonatePipelineBootstrapAttach(deps: ResonatePipelineBootstrapD
     renderSpectrum: deps.renderSpectrum,
     renderModes: deps.renderModes,
     renderWaveform: deps.renderWaveform,
+    perTabSession: deps.perTabSession,
     pipelineBus: bus,
   });
 }

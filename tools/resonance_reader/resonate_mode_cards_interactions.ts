@@ -286,6 +286,7 @@ function modeTargetTargetsUpdateFromInput(input: HTMLInputElement, key: string, 
   const action = MODE_TARGET_VALUE_ACTIONS[parsed.kind];
   if (!action) return;
   action(targets, key, parsed);
+  deps.state.dofRefitRequested = true;
 }
 
 function modeTargetRerenderFromDeps(modes: ModeCard[], deps: ModeCardDeps) {

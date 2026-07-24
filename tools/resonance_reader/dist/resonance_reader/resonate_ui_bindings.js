@@ -6,6 +6,7 @@ import { resonanceSaveRunnerCreate } from "./resonate_save_target.js";
 import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js";
 import { settingsModalBind } from "./resonate_settings_modal.js";
 import { takeOverlayCaptureCurrentFromState, takeOverlayClearAll, takeOverlayListRead, takeOverlaySelectAsCurrent, } from "./resonate_take_overlays.js";
+import { resonancePerTabSessionCreate } from "./resonate_per_tab_session.js";
 const resonanceSaveRunner = resonanceSaveRunnerCreate();
 function saveButtonElementGet() {
     return document.getElementById("btn_save_audio");
@@ -71,6 +72,14 @@ function saveStatePipelineDirtySubscriptionAttach(bus, state) {
             return;
         saveStateMarkDirtyAndRender(state);
     });
+}
+function perTabSessionPersist(deps) {
+    return perTabSessionResolve(deps)?.persistFromState(deps.state).catch((error) => {
+        console.warn("[Resonance Reader] Per-tab restoration save failed", error);
+    }) || Promise.resolve();
+}
+function perTabSessionResolve(deps) {
+    return deps.perTabSession || resonancePerTabSessionCreate();
 }
 function recordingMenuLabelSet(label, state) {
     if (state)
@@ -290,6 +299,7 @@ function bindTakeOverlayControls(deps) {
 }
 function takeOverlayClearAndRender(deps) {
     takeOverlayClearAll(deps.state);
+    perTabSessionPersist(deps);
     takeOverlayControlsRender(deps);
     rerenderFromLastSpectrumIfPossible(deps.state);
 }
@@ -310,6 +320,7 @@ function takeOverlayPanelClickHandle(event, deps) {
     if (!row)
         return;
     takeOverlaySelectAsCurrent(deps.state, row.dataset.takeOverlayId || "");
+    perTabSessionPersist(deps);
     takeOverlayControlsRender(deps);
     takeOverlayPanelClose();
     takeOverlayCurrentTakeRender(deps);
@@ -554,6 +565,7 @@ export function uiBindingsAttach(deps) {
         }
         await refreshResonanceSaveSurfaceAndRender(deps.state, resonanceSaveRunner, deps.setStatus);
         saveStatePipelineDirtySubscriptionAttach(deps.pipelineBus, deps.state);
+        deps.pipelineBus?.wire("pipeline.completed", () => perTabSessionPersist(deps));
         recordingMenuInitialWidthSync();
         bindImport(deps);
         bindSaveAudio(deps);
@@ -570,6 +582,9 @@ export function uiBindingsAttach(deps) {
         if (await restoreNotebookEventIntoUi(deps)) {
             saveStateMarkCleanAndRender(deps.state);
             deps.setStatus("Notebook event restored.");
+            return;
+        }
+        if (await restorePerTabSessionIntoUi(deps)) {
             return;
         }
         let hasStartup = false;
@@ -600,6 +615,16 @@ export function uiBindingsAttach(deps) {
     else {
         void attach();
     }
+}
+async function restorePerTabSessionIntoUi(deps) {
+    if (!await perTabSessionResolve(deps)?.restoreIntoState(deps.state)) {
+        return false;
+    }
+    restoreNotebookConnectDraftControls(deps.state);
+    renderNotebookConnectDraftIntoUi(deps);
+    takeOverlayControlsRender(deps);
+    saveStateMarkDirtyAndRender(deps.state);
+    return true;
 }
 export function restoreNotebookConnectDraftIntoUi(deps) {
     const draft = consumeResonanceNotebookConnectDraft(window);

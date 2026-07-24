@@ -177,6 +177,7 @@ function pipelineModeOverrideRequestedEventHandle(
   if (!modeKey || !Number.isFinite(requestedFreqHz)) return;
   const state = (window as any).FFTState as Record<string, any> | undefined;
   if (!state) return;
+  state.dofRefitRequested = true;
   const storedOnCustomMode = customMeasurementFrequencySetFromState(state, modeKey, requestedFreqHz as number);
   if (!storedOnCustomMode) {
     modeOverrideStateSet(state, modeKey, requestedFreqHz as number);
@@ -199,6 +200,7 @@ function pipelineModeOverrideResetRequestedEventHandle(
   if (!modeKey) return;
   const state = (window as any).FFTState as Record<string, any> | undefined;
   if (!state) return;
+  state.dofRefitRequested = true;
   modeOverrideStateReset(state, modeKey);
   pipelineOverrideRerenderFromState(state);
   ctx.log(`mode.override.reset.requested:${modeKey}`);

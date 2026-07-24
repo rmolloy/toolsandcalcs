@@ -27,6 +27,7 @@ export function resonatePipelineBootstrapAttach(deps) {
         renderSpectrum: deps.renderSpectrum,
         renderModes: deps.renderModes,
         renderWaveform: deps.renderWaveform,
+        perTabSession: deps.perTabSession,
         pipelineBus: bus,
     });
 }

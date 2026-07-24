@@ -259,6 +259,7 @@ function modeTargetTargetsUpdateFromInput(input, key, deps) {
     if (!action)
         return;
     action(targets, key, parsed);
+    deps.state.dofRefitRequested = true;
 }
 function modeTargetRerenderFromDeps(modes, deps) {
     const rerender = modeTargetRerenderFunctionFromDeps(deps);

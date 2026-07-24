@@ -18,7 +18,9 @@ export function stageSolveDofRun(args: SolveDofDeps) {
   const freqs = Array.from(spectrum.freqs as ArrayLike<number>, (v) => Number(v));
   const dbs = Array.from((spectrum.dbs || spectrum.mags || []) as ArrayLike<number>, (v) => Number(v));
   const toggle = document.getElementById("toggle_overlay") as HTMLInputElement | null;
-  if (!overlayToggleShouldRender(toggle)) {
+  const overlayVisible = overlayToggleShouldRender(toggle);
+  const refitRequested = args.state.dofRefitRequested === true;
+  if (!overlayVisible && !refitRequested) {
     renderTryPanel([], [], false);
     args.state.lastOverlay = undefined;
     emitArtifactEventFromState(args.state);
@@ -26,7 +28,7 @@ export function stageSolveDofRun(args: SolveDofDeps) {
   }
   const boundary = args.state.overlayBoundary || overlayBoundaryDefault;
   const fitMaxIter = args.fitMaxIter ?? 18;
-  args.state.lastOverlay = computeOverlayCurveFromState(
+  const overlay = computeOverlayCurveFromState(
     args.state,
     freqs,
     dbs,
@@ -34,5 +36,13 @@ export function stageSolveDofRun(args: SolveDofDeps) {
     boundary,
     { fitMaxIter },
   );
+  delete args.state.dofRefitRequested;
+  if (!overlayVisible) {
+    renderTryPanel([], [], false);
+    args.state.lastOverlay = undefined;
+    emitArtifactEventFromState(args.state);
+    return;
+  }
+  args.state.lastOverlay = overlay;
   emitArtifactEventFromState(args.state);
 }

@@ -55,6 +55,7 @@ const TAKE_OVERLAY_LINE_COLOR = "rgba(210, 218, 232, 0.58)";
 const AUTOMATIC_Y_FLOOR_MAX_HZ = 300;
 const MODE_CALLOUT_ARROW_OFFSET_PX = -15;
 const MODE_CALLOUT_COLLISION_HZ = 35;
+const MODE_OVERRIDE_PEAK_SNAP_RADIUS_HZ = 8;
 
 export function renderSpectrum(payload: SpectrumPayload, deps: SpectrumRenderDeps) {
   const plot = spectrumPlotElementSelect();
@@ -943,12 +944,24 @@ function modeAnnotationPreviewTextFromFreq(meta: ModeMeta, aliasLabel: string, f
 
 function dragPreviewSnapFromFreq(freqs: number[], mags: number[], freqHz: number) {
   if (!Number.isFinite(freqHz) || !freqs.length || !mags.length) return null;
-  const idx = nearestSpectrumIndexFromFreq(freqs, freqHz);
+  const idx = localPeakIndexNearFrequency(freqs, mags, freqHz) ?? nearestSpectrumIndexFromFreq(freqs, freqHz);
   if (!Number.isFinite(idx)) return null;
   const x = freqs[idx as number];
   const y = mags[idx as number];
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
   return { idx: idx as number, x, y } as SpectrumDragPreview;
+}
+
+function localPeakIndexNearFrequency(freqs: number[], mags: number[], targetHz: number) {
+  let closestPeakIndex: number | null = null;
+  for (let index = 1; index < freqs.length - 1; index += 1) {
+    if (Math.abs(freqs[index] - targetHz) > MODE_OVERRIDE_PEAK_SNAP_RADIUS_HZ) continue;
+    if (!(mags[index] >= mags[index - 1] && mags[index] >= mags[index + 1])) continue;
+    if (closestPeakIndex === null || Math.abs(freqs[index] - targetHz) < Math.abs(freqs[closestPeakIndex] - targetHz)) {
+      closestPeakIndex = index;
+    }
+  }
+  return closestPeakIndex;
 }
 
 function spectrumRenderModelAssemble(args: {
@@ -1085,7 +1098,6 @@ function modeOverrideLabelBind(plot: HTMLElement, modeAnnotationKeys: string[], 
       plotAny.__modeAnnotationKeys || [],
     );
     if (!move) return;
-    if (commit && modeOverridePreviewRelayoutInFlight(plotAny)) return;
     const snap = modeOverrideSnapFromPreview(plotAny, move);
     if (!snap) {
       if (!(plotAny.__modePreviewSkipLogAt && performance.now() - plotAny.__modePreviewSkipLogAt < 500)) {
@@ -1095,7 +1107,9 @@ function modeOverrideLabelBind(plot: HTMLElement, modeAnnotationKeys: string[], 
       return;
     }
     if (commit) {
-      modeOverridePreviewUpdate(plotAny, snap, true);
+      if (!modeOverridePreviewRelayoutInFlight(plotAny)) {
+        modeOverridePreviewUpdate(plotAny, snap, true);
+      }
       emitModeOverrideRequested(snap.modeKey, snap.freqHz);
       return;
     }

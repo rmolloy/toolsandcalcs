@@ -50,6 +50,11 @@ function fullWave() {
 }
 function renderModes(modes) {
     renderModesFromState(modes, renderModesConfigBuild());
+    const link = document.querySelector('a[data-view-model]');
+    if (link) {
+        viewModelDestinationApplyToUi(link);
+        return;
+    }
     analysisSurfaceRenderFromState();
 }
 function renderModesConfigBuild() {

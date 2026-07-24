@@ -156,6 +156,7 @@ function pipelineModeOverrideRequestedEventHandle(payload, ctx) {
     const state = window.FFTState;
     if (!state)
         return;
+    state.dofRefitRequested = true;
     const storedOnCustomMode = customMeasurementFrequencySetFromState(state, modeKey, requestedFreqHz);
     if (!storedOnCustomMode) {
         modeOverrideStateSet(state, modeKey, requestedFreqHz);
@@ -176,6 +177,7 @@ function pipelineModeOverrideResetRequestedEventHandle(payload, ctx) {
     const state = window.FFTState;
     if (!state)
         return;
+    state.dofRefitRequested = true;
     modeOverrideStateReset(state, modeKey);
     pipelineOverrideRerenderFromState(state);
     ctx.log(`mode.override.reset.requested:${modeKey}`);

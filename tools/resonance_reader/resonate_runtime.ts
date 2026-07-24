@@ -79,6 +79,11 @@ function fullWave() {
 
 function renderModes(modes: ModeCard[]) {
   renderModesFromState(modes, renderModesConfigBuild());
+  const link = document.querySelector<HTMLAnchorElement>('a[data-view-model]');
+  if (link) {
+    viewModelDestinationApplyToUi(link);
+    return;
+  }
   analysisSurfaceRenderFromState();
 }
 

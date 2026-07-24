@@ -25,6 +25,9 @@ const FALLBACK_WINDOW_RATIO = 0.22;
 const RANGE_DRAG_EDGE_TOLERANCE_PX = 18;
 const RANGE_DRAG_MIN_WIDTH_MS = 80;
 const NOTE_EDITOR_POPOVER_ID = "wave_note_override_editor";
+const NOTE_RANGE_GRIP_Y = { start: 0.02, end: 0.25 };
+const PRIMARY_RANGE_GRIP_Y = { start: 0.37, end: 0.6 };
+const RANGE_CENTER_GRIP_Y = { start: -0.16, end: 0.06 };
 
 type WaveRange = { start: number; end: number };
 type TapSegment = { start: number; end: number };
@@ -35,6 +38,12 @@ type RangeDragSession = {
   target: RangeDragTarget;
   startCursorMs: number;
   startRange: WaveRange;
+};
+type RangeDragContext = {
+  deps: WaveformViewDeps;
+  slice: any;
+  onPrimaryRangeChange: (range: any) => void;
+  onNoteSelectionRangeChange: (range: any) => void;
 };
 type NoteLabelOverrideMap = Record<number, string>;
 type NotePitch = { semitone: number; octave: number };
@@ -98,6 +107,36 @@ function buildSelectionShapes(range: { start: number; end: number } | null) {
       y1: 1,
       line: { color: resolveColorRgbaFromRole("wavePrimarySelection", 0.95), width: 6 },
     },
+    {
+      type: "line",
+      xref: "x",
+      yref: "paper",
+      x0: range.start,
+      x1: range.start,
+      y0: PRIMARY_RANGE_GRIP_Y.start,
+      y1: PRIMARY_RANGE_GRIP_Y.end,
+      layer: "above",
+      line: { color: resolveColorRgbaFromRole("wavePrimarySelection", 1), width: 10 },
+      name: "FFT range left grip",
+    },
+    {
+      type: "line",
+      xref: "x",
+      yref: "paper",
+      x0: range.end,
+      x1: range.end,
+      y0: PRIMARY_RANGE_GRIP_Y.start,
+      y1: PRIMARY_RANGE_GRIP_Y.end,
+      layer: "above",
+      line: { color: resolveColorRgbaFromRole("wavePrimarySelection", 1), width: 10 },
+      name: "FFT range right grip",
+    },
+    rangeCenterGripShapeBuild(
+      range,
+      "wavePrimarySelection",
+      "FFT range center grip",
+      RANGE_CENTER_GRIP_Y,
+    ),
   ];
 }
 
@@ -135,7 +174,66 @@ function buildNoteSelectionShapes(range: { start: number; end: number } | null) 
       y1: 1,
       line: { color: resolveColorRgbaFromRole("waveNoteSelection", 0.95), width: 6 },
     },
+    {
+      type: "line",
+      xref: "x",
+      yref: "paper",
+      x0: range.start,
+      x1: range.start,
+      y0: NOTE_RANGE_GRIP_Y.start,
+      y1: NOTE_RANGE_GRIP_Y.end,
+      layer: "above",
+      line: { color: resolveColorRgbaFromRole("waveNoteSelection", 1), width: 10 },
+      name: "Note range left grip",
+    },
+    {
+      type: "line",
+      xref: "x",
+      yref: "paper",
+      x0: range.end,
+      x1: range.end,
+      y0: NOTE_RANGE_GRIP_Y.start,
+      y1: NOTE_RANGE_GRIP_Y.end,
+      layer: "above",
+      line: { color: resolveColorRgbaFromRole("waveNoteSelection", 1), width: 10 },
+      name: "Note range right grip",
+    },
+    rangeCenterGripShapeBuild(
+      range,
+      "waveNoteSelection",
+      "Note range center grip",
+      RANGE_CENTER_GRIP_Y,
+    ),
   ];
+}
+
+function rangeCenterGripShapeBuild(
+  range: WaveRange,
+  colorRole: "wavePrimarySelection" | "waveNoteSelection",
+  name: string,
+  yRange: { start: number; end: number },
+) {
+  const center = (range.start + range.end) / 2;
+  const halfSpan = rangeCenterGripSpanResolve(range) / 2;
+  return {
+    type: "rect",
+    xref: "x",
+    yref: "paper",
+    x0: center - halfSpan,
+    x1: center + halfSpan,
+    y0: yRange.start,
+    y1: yRange.end,
+    layer: "above",
+    line: { color: resolveColorRgbaFromRole(colorRole, 1), width: 1 },
+    fillcolor: resolveColorRgbaFromRole(colorRole, 1),
+    name,
+  };
+}
+
+function rangeCenterGripSpanResolve(range: WaveRange) {
+  const rangeWidth = range.end - range.start;
+  const desiredSpan = Math.min(480, Math.max(90, rangeWidth * 0.25));
+  return Math.min(desiredSpan, rangeWidth * 0.6);
 }
 
 function buildTapSegmentShapes(
@@ -1055,31 +1153,71 @@ function bindRangeDirectDragInteractions(
   onNoteSelectionRangeChange: (range: any) => void,
 ) {
   const anyPlot = plot as any;
+  anyPlot.__resonateRangeDragContext = {
+    deps,
+    slice,
+    onPrimaryRangeChange,
+    onNoteSelectionRangeChange,
+  } as RangeDragContext;
   if (anyPlot.__resonateRangeDragBound) return;
+  const dragContextRead = () => anyPlot.__resonateRangeDragContext as RangeDragContext;
   const onPointerDown = (event: MouseEvent) => {
-    if (measureModeNormalize(deps.state.measureMode) === "peak_analysis") return;
+    const current = dragContextRead();
+    if (measureModeNormalize(current.deps.state.measureMode) === "peak_analysis") return;
     if (plotlyWaveToolsEnabledResolve()) return;
     if (event.button !== 0) return;
     const cursorMs = waveformMsAtPointerResolve(plot, event);
     if (!Number.isFinite(cursorMs)) return;
     const axis = waveformAxisRangeResolve(plot);
     if (!axis) return;
+    const size = (plot as any)._fullLayout?._size;
+    const heightPx = Number(size?.h);
+    const topPx = Number(size?.t);
+    const rect = plot.getBoundingClientRect();
+    const relativeY = event.clientY - rect.top - topPx;
+    const paperY = waveformNavigatorPaperYResolve(relativeY, heightPx);
+    const noteRange = current.deps.state.noteSelectionRangeMs;
+    const edgeToleranceMs = ((axis.max - axis.min) / axis.widthPx) * RANGE_DRAG_EDGE_TOLERANCE_PX;
+    const noteGripEdgeSelected = Boolean(
+      noteRange
+      && (Math.abs(cursorMs - noteRange.start) <= edgeToleranceMs || Math.abs(cursorMs - noteRange.end) <= edgeToleranceMs),
+    );
+    const noteGripTrackSelected = Boolean(
+      noteSelectionRangeVisibleForMeasureMode(current.deps.state.measureMode)
+      && noteGripEdgeSelected
+      && Number.isFinite(heightPx)
+      && Number.isFinite(topPx)
+      && paperY >= NOTE_RANGE_GRIP_Y.start - 0.05
+      && paperY <= NOTE_RANGE_GRIP_Y.end + 0.05,
+    );
+    const noteCenterGripSelected = Boolean(
+      noteSelectionRangeVisibleForMeasureMode(current.deps.state.measureMode)
+      && rangeCenterGripContainsPointer(noteRange, cursorMs, paperY, RANGE_CENTER_GRIP_Y),
+    );
+    const primaryCenterGripSelected = rangeCenterGripContainsPointer(
+      current.deps.state.viewRangeMs || null,
+      cursorMs,
+      paperY,
+      RANGE_CENTER_GRIP_Y,
+    );
+    const gripTarget = rangeGripDragTargetResolve(noteCenterGripSelected, primaryCenterGripSelected);
     const target = rangeDragTargetResolve(
       cursorMs,
       axis.min,
       axis.max,
       axis.widthPx,
-      deps.state.viewRangeMs || null,
-      deps.state.noteSelectionRangeMs || null,
-      event.shiftKey,
+      current.deps.state.viewRangeMs || null,
+      current.deps.state.noteSelectionRangeMs || null,
+      event.shiftKey || noteGripTrackSelected,
     );
-    if (!target) return;
-    const activeRange = target.rangeKind === "note"
-      ? deps.state.noteSelectionRangeMs || null
-      : deps.state.viewRangeMs || null;
+    const resolvedTarget = gripTarget || target;
+    if (!resolvedTarget) return;
+    const activeRange = resolvedTarget.rangeKind === "note"
+      ? current.deps.state.noteSelectionRangeMs || null
+      : current.deps.state.viewRangeMs || null;
     if (!activeRange) return;
     anyPlot.__resonateRangeDrag = {
-      target,
+      target: resolvedTarget,
       startCursorMs: cursorMs,
       startRange: { start: activeRange.start, end: activeRange.end },
     } as RangeDragSession;
@@ -1089,6 +1227,7 @@ function bindRangeDirectDragInteractions(
   const onPointerMove = (event: MouseEvent) => {
     const session = anyPlot.__resonateRangeDrag as RangeDragSession | undefined;
     if (!session) return;
+    const current = dragContextRead();
     const cursorMs = waveformMsAtPointerResolve(plot, event);
     if (!Number.isFinite(cursorMs)) return;
     const axis = waveformAxisRangeResolve(plot);
@@ -1103,22 +1242,28 @@ function bindRangeDirectDragInteractions(
     );
     if (!nextRange) return;
     if (session.target.rangeKind === "note") {
-      deps.state.noteSelectionRangeMs = nextRange;
+      current.deps.state.noteSelectionRangeMs = nextRange;
     } else {
-      deps.state.viewRangeMs = nextRange;
+      current.deps.state.viewRangeMs = nextRange;
     }
-    renderWaveSelection(deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps, slice);
+    renderWaveSelection(
+      current.deps.state.viewRangeMs || null,
+      current.deps.state.noteSelectionRangeMs || null,
+      current.deps,
+      current.slice,
+    );
   };
   const onPointerUp = () => {
     const session = anyPlot.__resonateRangeDrag as RangeDragSession | undefined;
     if (!session) return;
+    const current = dragContextRead();
     const range = session.target.rangeKind === "note"
-      ? deps.state.noteSelectionRangeMs || null
-      : deps.state.viewRangeMs || null;
+      ? current.deps.state.noteSelectionRangeMs || null
+      : current.deps.state.viewRangeMs || null;
     if (session.target.rangeKind === "note") {
-      onNoteSelectionRangeChange(range);
+      current.onNoteSelectionRangeChange(range);
     } else {
-      onPrimaryRangeChange(range);
+      current.onPrimaryRangeChange(range);
     }
     anyPlot.__resonateRangeDrag = null;
   };
@@ -1127,6 +1272,31 @@ function bindRangeDirectDragInteractions(
   window.addEventListener("mouseup", onPointerUp);
   anyPlot.__resonateRangeDragBound = true;
   anyPlot.__resonateRangeDrag = null;
+}
+
+function rangeCenterGripContainsPointer(
+  range: WaveRange | null,
+  cursorMs: number,
+  paperY: number,
+  yRange: { start: number; end: number },
+) {
+  if (!range || !Number.isFinite(paperY)) return false;
+  const center = (range.start + range.end) / 2;
+  const halfSpan = rangeCenterGripSpanResolve(range) / 2;
+  const withinX = cursorMs >= center - halfSpan && cursorMs <= center + halfSpan;
+  const withinY = paperY >= yRange.start && paperY <= yRange.end;
+  return withinX && withinY;
+}
+
+function waveformNavigatorPaperYResolve(relativeY: number, heightPx: number) {
+  if (!Number.isFinite(relativeY) || !Number.isFinite(heightPx) || heightPx <= 0) return NaN;
+  return 1 - (relativeY / heightPx);
+}
+
+function rangeGripDragTargetResolve(noteCenterGripSelected: boolean, primaryCenterGripSelected: boolean) {
+  if (noteCenterGripSelected) return { rangeKind: "note", dragMode: "move" } as RangeDragTarget;
+  if (primaryCenterGripSelected) return { rangeKind: "primary", dragMode: "move" } as RangeDragTarget;
+  return null;
 }
 
 function waveformMsAtPointerResolve(plot: HTMLElement, event: MouseEvent) {
