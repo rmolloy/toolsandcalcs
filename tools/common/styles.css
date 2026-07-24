@@ -231,3 +231,25 @@ canvas {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--orange);
 }
+.per-tab-session-reset-confirmation {
+  position: fixed;
+  z-index: 10000;
+  top: 1rem;
+  right: 1rem;
+  max-width: min(24rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--accent, #e8a83a);
+  border-radius: 0.5rem;
+  background: var(--panel, #161b27);
+  color: var(--text, #f5f7fa);
+  box-shadow: 0 0.75rem 2rem rgb(0 0 0 / 28%);
+}
+
+.per-tab-session-reset-confirmation p {
+  margin: 0 0 0.65rem;
+}
+
+.per-tab-session-reset-confirmation button + button {
+  margin-left: 0.5rem;
+}
