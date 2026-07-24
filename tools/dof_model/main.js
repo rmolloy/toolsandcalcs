@@ -358,6 +358,7 @@ const SOLVE_TWEAK_IDS = ["stiffness_top", "stiffness_back", "volume_air", "area_
 let currentParams = { ...DEFAULT_PARAMS };
 let currentOrder = 4;
 let currentTaskMode = "edit";
+const dofPerTabSession = dofPerTabSessionRead();
 let plotlyRef = null;
 let pendingRender = null;
 let lastResponse = null;
@@ -1048,6 +1049,7 @@ function setTaskMode(mode) {
     buildCards();
 }
 function scheduleRender() {
+    dofPerTabSessionPersist();
     if (pendingRender !== null)
         cancelAnimationFrame(pendingRender);
     pendingRender = requestAnimationFrame(() => {
@@ -2044,6 +2046,18 @@ function readCurrentDofSaveSnapshot() {
         solveOptions: readCurrentDofSolveOptions(),
     };
 }
+function dofPerTabSessionRead() {
+    var _a;
+    return ((_a = window.PerTabToolSession) === null || _a === void 0 ? void 0 : _a.perTabToolSessionCreate)
+        ? window.PerTabToolSession.perTabToolSessionCreate({ toolId: "dof_model", version: 1 })
+        : null;
+}
+function dofPerTabSessionPersist() {
+    dofPerTabSession === null || dofPerTabSession === void 0 ? void 0 : dofPerTabSession.write(readCurrentDofSaveSnapshot());
+}
+function dofPerTabSessionSnapshotRead() {
+    return (dofPerTabSession === null || dofPerTabSession === void 0 ? void 0 : dofPerTabSession.read()) || null;
+}
 function readCurrentDofFitInputs() {
     return Object.fromEntries(DOF_FIT_FIELD_IDS.map((id) => [id, readDofInputValue(id)]));
 }
@@ -2331,12 +2345,8 @@ function init() {
     const saveButton = document.getElementById("save_model");
     const loadButton = document.getElementById("load_model");
     const loadFileInput = document.getElementById("load_model_file");
+    const perTabSnapshot = dofPerTabSessionSnapshotRead();
     const fromUrl = dofParamsFromLocation();
-    if (fromUrl) {
-        currentParams = { ...currentParams, ...fromUrl };
-        if (Number.isFinite(fromUrl.model_order))
-            currentOrder = fromUrl.model_order;
-    }
     bindTabs();
     bindTaskModeTabs();
     bindFitMyGuitarActions();
@@ -2349,10 +2359,17 @@ function init() {
         loadFileInput.addEventListener("change", loadResults);
     setTaskMode(currentTaskMode);
     setOrder(currentOrder);
+    if (perTabSnapshot)
+        applyLoadedDofSnapshot(perTabSnapshot);
+    if (fromUrl) {
+        currentParams = { ...currentParams, ...fromUrl };
+        if (Number.isFinite(fromUrl.model_order))
+            currentOrder = fromUrl.model_order;
+        syncCardInputs();
+        setOrder(currentOrder);
+    }
     void initializeDofSaveSurface();
     dofPipelineRunnerExpose();
-    if (fromUrl)
-        syncCardInputs();
     scheduleRender();
     const overlayToggle = document.getElementById("toggle_overlay");
     if (overlayToggle) {
