@@ -73,6 +73,7 @@ type PlateSolution = {
   const loadButton = document.getElementById("load_results") as HTMLButtonElement | null;
   const loadFileInput = document.getElementById("load_results_file") as HTMLInputElement | null;
   const saveRunner = readPlateThicknessSaveRunner();
+  const perTabSession = readPlateThicknessPerTabSession();
 
   function format(value: number, { digits = 2, notation = "standard" as Intl.NumberFormatOptions["notation"] } = {}) {
     if (!Number.isFinite(value)) return "—";
@@ -140,6 +141,8 @@ type PlateSolution = {
   }
 
   function run() {
+    persistPlateThicknessPerTabSession();
+
     try {
       const raw = readInputs();
       const mapped = {
@@ -161,7 +164,11 @@ type PlateSolution = {
     }
   }
 
-  function reset() {
+  function reset(clearPerTabSession = false) {
+    if (clearPerTabSession) {
+      perTabSession?.clear();
+    }
+
     const bodyPresetKey = readDefaultBodyPresetKey();
     if (bodyPresetSelect) {
       bodyPresetSelect.value = bodyPresetKey;
@@ -175,6 +182,7 @@ type PlateSolution = {
       }
     });
     applyBodyPresetGeometry(bodyPresetKey);
+    restorePlateThicknessPerTabSession();
     applyQueryParams();
     run();
   }
@@ -234,6 +242,36 @@ type PlateSolution = {
       }
     });
     run();
+  }
+
+  function readPlateThicknessPerTabSession() {
+    return (window as any).PerTabToolSession?.perTabToolSessionCreate
+      ? (window as any).PerTabToolSession.perTabToolSessionCreate({ toolId: "plate_thickness", version: 1 })
+      : null;
+  }
+
+  function persistPlateThicknessPerTabSession() {
+    perTabSession?.write({
+      bodyPreset: bodyPresetSelect?.value,
+      fields: readCurrentPlateThicknessSaveInputs(),
+    });
+  }
+
+  function restorePlateThicknessPerTabSession() {
+    const snapshot = perTabSession?.read();
+    if (!snapshot) {
+      return;
+    }
+
+    if (bodyPresetSelect && typeof snapshot.bodyPreset === "string") {
+      bodyPresetSelect.value = snapshot.bodyPreset;
+    }
+
+    Object.entries(snapshot.fields || {}).forEach(([key, value]) => {
+      if (fields[key]) {
+        fields[key].value = String(value ?? "");
+      }
+    });
   }
 
   async function applyPlateThicknessSaveSurface() {
@@ -346,7 +384,7 @@ type PlateSolution = {
   const resetBtn = document.getElementById("reset_inputs");
   if (resetBtn) resetBtn.addEventListener("click", event => {
     event.preventDefault();
-    reset();
+    reset(true);
   });
   if (saveButton) saveButton.addEventListener("click", () => void saveResults());
   if (loadButton && loadFileInput) loadButton.addEventListener("click", () => loadFileInput.click());

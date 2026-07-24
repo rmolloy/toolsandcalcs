@@ -55,6 +55,7 @@ Panel thickness calculator UI logic.
     const loadButton = document.getElementById("load_results");
     const loadFileInput = document.getElementById("load_results_file");
     const saveRunner = readPlateThicknessSaveRunner();
+    const perTabSession = readPlateThicknessPerTabSession();
     function format(value, { digits = 2, notation = "standard" } = {}) {
         if (!Number.isFinite(value))
             return "—";
@@ -137,6 +138,7 @@ Panel thickness calculator UI logic.
     }
     function run() {
         var _a, _b, _c, _d, _e, _f;
+        persistPlateThicknessPerTabSession();
         try {
             const raw = readInputs();
             const mapped = {
@@ -158,7 +160,10 @@ Panel thickness calculator UI logic.
             setError(error.message);
         }
     }
-    function reset() {
+    function reset(clearPerTabSession = false) {
+        if (clearPerTabSession) {
+            perTabSession === null || perTabSession === void 0 ? void 0 : perTabSession.clear();
+        }
         const bodyPresetKey = readDefaultBodyPresetKey();
         if (bodyPresetSelect) {
             bodyPresetSelect.value = bodyPresetKey;
@@ -172,6 +177,7 @@ Panel thickness calculator UI logic.
             }
         });
         applyBodyPresetGeometry(bodyPresetKey);
+        restorePlateThicknessPerTabSession();
         applyQueryParams();
         run();
     }
@@ -226,6 +232,32 @@ Panel thickness calculator UI logic.
             }
         });
         run();
+    }
+    function readPlateThicknessPerTabSession() {
+        var _a;
+        return ((_a = window.PerTabToolSession) === null || _a === void 0 ? void 0 : _a.perTabToolSessionCreate)
+            ? window.PerTabToolSession.perTabToolSessionCreate({ toolId: "plate_thickness", version: 1 })
+            : null;
+    }
+    function persistPlateThicknessPerTabSession() {
+        perTabSession === null || perTabSession === void 0 ? void 0 : perTabSession.write({
+            bodyPreset: bodyPresetSelect === null || bodyPresetSelect === void 0 ? void 0 : bodyPresetSelect.value,
+            fields: readCurrentPlateThicknessSaveInputs(),
+        });
+    }
+    function restorePlateThicknessPerTabSession() {
+        const snapshot = perTabSession === null || perTabSession === void 0 ? void 0 : perTabSession.read();
+        if (!snapshot) {
+            return;
+        }
+        if (bodyPresetSelect && typeof snapshot.bodyPreset === "string") {
+            bodyPresetSelect.value = snapshot.bodyPreset;
+        }
+        Object.entries(snapshot.fields || {}).forEach(([key, value]) => {
+            if (fields[key]) {
+                fields[key].value = String(value !== null && value !== void 0 ? value : "");
+            }
+        });
     }
     async function applyPlateThicknessSaveSurface() {
         const saveSurface = await saveRunner.readPlateThicknessSaveSurface();
@@ -319,7 +351,7 @@ Panel thickness calculator UI logic.
     if (resetBtn)
         resetBtn.addEventListener("click", event => {
             event.preventDefault();
-            reset();
+            reset(true);
         });
     if (saveButton)
         saveButton.addEventListener("click", () => void saveResults());
