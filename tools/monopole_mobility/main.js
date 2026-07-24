@@ -99,6 +99,7 @@ const buttons = {
 };
 
 const saveRunner = readMonopoleSaveRunner();
+const perTabSession = readMonopolePerTabSession();
 
 const formatter = (options = {}) =>
   new Intl.NumberFormat("en-US", {
@@ -276,6 +277,48 @@ function compute() {
 
   buttons.copy.disabled = false;
   buttons.save.disabled = false;
+  persistMonopolePerTabSession();
+}
+
+function readMonopolePerTabSession() {
+  return window.PerTabToolSession?.perTabToolSessionCreate
+    ? window.PerTabToolSession.perTabToolSessionCreate({ toolId: "monopole_mobility", version: 1 })
+    : null;
+}
+
+function persistMonopolePerTabSession() {
+  perTabSession?.write({
+    name: nameInput.value,
+    type: typeSelect.value,
+    mode: currentMode,
+    staticInputs: readMonopoleInputValues(fields),
+    dynamicInputs: readMonopoleInputValues(dynamicFields),
+  });
+}
+
+function readMonopoleInputValues(source) {
+  return Object.fromEntries(Object.entries(source).map(([key, input]) => [key, input.value]));
+}
+
+function restoreMonopolePerTabSession() {
+  const snapshot = perTabSession?.read();
+  if (!snapshot) {
+    return;
+  }
+
+  nameInput.value = String(snapshot.name || nameInput.value);
+  typeSelect.value = String(snapshot.type || typeSelect.value);
+  writeMonopoleInputValues(fields, snapshot.staticInputs);
+  writeMonopoleInputValues(dynamicFields, snapshot.dynamicInputs);
+  currentMode = snapshot.mode === modes.DYNAMIC ? modes.DYNAMIC : modes.STATIC;
+}
+
+function writeMonopoleInputValues(target, values) {
+  Object.entries(values || {}).forEach(([key, value]) => {
+    if (target[key]) {
+      target[key].value = String(value ?? "");
+    }
+  });
 }
 
 function matchesStaticDefaults({ freq, deflection, mass }) {
@@ -322,6 +365,7 @@ function applyDynamicDefaults() {
 }
 
 function resetInputs() {
+  perTabSession?.clear();
   nameInput.value = defaults.name;
   typeSelect.value = defaults.type;
   applyStaticDefaults();
@@ -610,6 +654,7 @@ typeSelect.addEventListener("change", compute);
 
 applyStaticDefaults();
 applyDynamicDefaults();
+restoreMonopolePerTabSession();
 void initializeMonopoleSaveSurface();
 updateInstrumentLabel();
 setMode(currentMode);
