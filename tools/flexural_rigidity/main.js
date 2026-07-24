@@ -79,6 +79,7 @@
     let segmentCounter = 0;
     let braceStack = [];
     let latestValues = null;
+    const perTabSession = readFlexuralPerTabSession();
     function nextSegmentId() {
         segmentCounter += 1;
         return `segment-${segmentCounter}`;
@@ -469,6 +470,7 @@
         resultEls.status.textContent = message;
     }
     function run() {
+        persistFlexuralPerTabSession();
         try {
             const values = readInputs();
             latestValues = values;
@@ -576,8 +578,39 @@
             }
         });
         braceStack = createDefaultStack();
+        restoreFlexuralPerTabSession();
         renderBraceStack();
         run();
+    }
+    function readFlexuralPerTabSession() {
+        var _a;
+        return ((_a = window.PerTabToolSession) === null || _a === void 0 ? void 0 : _a.perTabToolSessionCreate)
+            ? window.PerTabToolSession.perTabToolSessionCreate({ toolId: "flexural_rigidity", version: 1 })
+            : null;
+    }
+    function persistFlexuralPerTabSession() {
+        perTabSession === null || perTabSession === void 0 ? void 0 : perTabSession.write({
+            fields: Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field.value])),
+            braceStack: cloneStack(),
+        });
+    }
+    function restoreFlexuralPerTabSession() {
+        const snapshot = perTabSession === null || perTabSession === void 0 ? void 0 : perTabSession.read();
+        if (!snapshot) {
+            return;
+        }
+        Object.entries(snapshot.fields || {}).forEach(([key, value]) => {
+            if (fields[key]) {
+                fields[key].value = String(value !== null && value !== void 0 ? value : "");
+            }
+        });
+        if (Array.isArray(snapshot.braceStack) && snapshot.braceStack.length) {
+            braceStack = snapshot.braceStack.map((segment, index) => createStackSegment({
+                label: segment.label || (index === 0 ? "Base" : `Cap ${index}`),
+                shape: normalizeShape(segment.shape),
+                height: Math.max(0, Number(segment.height) || 0),
+            }));
+        }
     }
     reset();
     function renderViz(dimensions, slice) {

@@ -130,6 +130,7 @@ type RotationState = { rotationDeg?: number; rotationPass?: boolean };
   let segmentCounter = 0;
   let braceStack: BraceStackSegment[] = [];
   let latestValues: FormValues | null = null;
+  const perTabSession = readFlexuralPerTabSession();
 
   function nextSegmentId(): string {
     segmentCounter += 1;
@@ -531,6 +532,8 @@ type RotationState = { rotationDeg?: number; rotationPass?: boolean };
   }
 
   function run(): void {
+    persistFlexuralPerTabSession();
+
     try {
       const values = readInputs();
       latestValues = values;
@@ -629,8 +632,45 @@ type RotationState = { rotationDeg?: number; rotationPass?: boolean };
       }
     });
     braceStack = createDefaultStack();
+    restoreFlexuralPerTabSession();
     renderBraceStack();
     run();
+  }
+
+  function readFlexuralPerTabSession() {
+    return (window as any).PerTabToolSession?.perTabToolSessionCreate
+      ? (window as any).PerTabToolSession.perTabToolSessionCreate({ toolId: "flexural_rigidity", version: 1 })
+      : null;
+  }
+
+  function persistFlexuralPerTabSession(): void {
+    perTabSession?.write({
+      fields: Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, field.value])),
+      braceStack: cloneStack(),
+    });
+  }
+
+  function restoreFlexuralPerTabSession(): void {
+    const snapshot = perTabSession?.read();
+    if (!snapshot) {
+      return;
+    }
+
+    Object.entries(snapshot.fields || {}).forEach(([key, value]) => {
+      if (fields[key]) {
+        fields[key].value = String(value ?? "");
+      }
+    });
+
+    if (Array.isArray(snapshot.braceStack) && snapshot.braceStack.length) {
+      braceStack = snapshot.braceStack.map((segment: Partial<BraceStackSegment>, index: number) =>
+        createStackSegment({
+          label: segment.label || (index === 0 ? "Base" : `Cap ${index}`),
+          shape: normalizeShape(segment.shape),
+          height: Math.max(0, Number(segment.height) || 0),
+        }),
+      );
+    }
   }
 
   reset();
