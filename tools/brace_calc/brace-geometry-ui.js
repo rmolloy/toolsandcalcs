@@ -32,6 +32,7 @@
         const defaultLayout = readDefaultLayout();
         let activeTop = readTopFromLayout(defaultLayout);
         let braces = createInitialBraces();
+        const perTabSession = readBracePerTabSession();
         function nextBraceId() {
             braceCounter += 1;
             return `brace-${braceCounter}`;
@@ -148,6 +149,7 @@
             return wrapper;
         }
         function run(fullRebuild = false) {
+            persistBracePerTabSession();
             const renderInfo = {};
             const totalHeights = [];
             const breadths = [];
@@ -638,6 +640,63 @@
                 }))
             }));
         }
+        function readBracePerTabSession() {
+            var _a;
+            return ((_a = window.PerTabToolSession) === null || _a === void 0 ? void 0 : _a.perTabToolSessionCreate)
+                ? window.PerTabToolSession.perTabToolSessionCreate({ toolId: "brace_calculator", version: 1 })
+                : null;
+        }
+        function persistBracePerTabSession() {
+            perTabSession === null || perTabSession === void 0 ? void 0 : perTabSession.write({
+                braces: readBraceSaveSnapshot(),
+                activeTop,
+                showAdvanced,
+            });
+        }
+        function syncActiveTopFromFlexuralInputs() {
+            const top = readFlexuralTopInputs();
+            if (top) {
+                activeTop = top;
+            }
+        }
+        function readFlexuralTopInputs() {
+            const span = readFiniteInputValue("top_span_input");
+            const thickness = readFiniteInputValue("top_thickness_input");
+            const modulus = readFiniteInputValue("top_modulus_input");
+            if (span === null || thickness === null) {
+                return null;
+            }
+            return { span, thickness, modulus: modulus !== null && modulus !== void 0 ? modulus : undefined };
+        }
+        function readFiniteInputValue(id) {
+            const input = document.getElementById(id);
+            const value = Number(input === null || input === void 0 ? void 0 : input.value);
+            return Number.isFinite(value) ? value : null;
+        }
+        function bindFlexuralTopInputPersistence() {
+            ["top_span_input", "top_thickness_input", "top_modulus_input"].forEach((id) => {
+                var _a;
+                (_a = document.getElementById(id)) === null || _a === void 0 ? void 0 : _a.addEventListener("input", () => {
+                    syncActiveTopFromFlexuralInputs();
+                    persistBracePerTabSession();
+                });
+            });
+        }
+        function restoreBracePerTabSession() {
+            const snapshot = perTabSession === null || perTabSession === void 0 ? void 0 : perTabSession.read();
+            if (!snapshot) {
+                return;
+            }
+            const restoredBraces = sanitizeBraceLayout(snapshot.braces);
+            if (restoredBraces.length) {
+                braces = restoredBraces;
+            }
+            const restoredTop = readTopFromLayout({ top: snapshot.activeTop });
+            if (restoredTop) {
+                activeTop = restoredTop;
+            }
+            showAdvanced = Boolean(snapshot.showAdvanced);
+        }
         function readBraceSaveSurfaceApi() {
             if (window.BraceSaveSurface) {
                 return window.BraceSaveSurface;
@@ -807,6 +866,8 @@
             saveBtn.textContent = saveSurface.label;
             saveBtn.title = saveSurface.hint;
         }
+        restoreBracePerTabSession();
+        bindFlexuralTopInputPersistence();
         run(true);
     })();
 });

@@ -72,6 +72,7 @@ interface BraceRenderInfo {
   const defaultLayout = readDefaultLayout();
   let activeTop = readTopFromLayout(defaultLayout);
   let braces: BraceConfig[] = createInitialBraces();
+  const perTabSession = readBracePerTabSession();
 
   function nextBraceId(): string {
     braceCounter += 1;
@@ -196,6 +197,8 @@ interface BraceRenderInfo {
   }
 
   function run(fullRebuild = false): void {
+    persistBracePerTabSession();
+
     const renderInfo: Record<string, BraceRenderInfo> = {};
     const totalHeights: number[] = [];
     const breadths: number[] = [];
@@ -745,6 +748,73 @@ interface BraceRenderInfo {
     }));
   }
 
+  function readBracePerTabSession() {
+    return (window as any).PerTabToolSession?.perTabToolSessionCreate
+      ? (window as any).PerTabToolSession.perTabToolSessionCreate({ toolId: "brace_calculator", version: 1 })
+      : null;
+  }
+
+  function persistBracePerTabSession(): void {
+    perTabSession?.write({
+      braces: readBraceSaveSnapshot(),
+      activeTop,
+      showAdvanced,
+    });
+  }
+
+  function syncActiveTopFromFlexuralInputs(): void {
+    const top = readFlexuralTopInputs();
+    if (top) {
+      activeTop = top;
+    }
+  }
+
+  function readFlexuralTopInputs(): { span: number; thickness: number; modulus?: number } | null {
+    const span = readFiniteInputValue("top_span_input");
+    const thickness = readFiniteInputValue("top_thickness_input");
+    const modulus = readFiniteInputValue("top_modulus_input");
+
+    if (span === null || thickness === null) {
+      return null;
+    }
+
+    return { span, thickness, modulus: modulus ?? undefined };
+  }
+
+  function readFiniteInputValue(id: string): number | null {
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    const value = Number(input?.value);
+    return Number.isFinite(value) ? value : null;
+  }
+
+  function bindFlexuralTopInputPersistence(): void {
+    ["top_span_input", "top_thickness_input", "top_modulus_input"].forEach((id) => {
+      document.getElementById(id)?.addEventListener("input", () => {
+        syncActiveTopFromFlexuralInputs();
+        persistBracePerTabSession();
+      });
+    });
+  }
+
+  function restoreBracePerTabSession(): void {
+    const snapshot = perTabSession?.read();
+    if (!snapshot) {
+      return;
+    }
+
+    const restoredBraces = sanitizeBraceLayout(snapshot.braces);
+    if (restoredBraces.length) {
+      braces = restoredBraces;
+    }
+
+    const restoredTop = readTopFromLayout({ top: snapshot.activeTop });
+    if (restoredTop) {
+      activeTop = restoredTop;
+    }
+
+    showAdvanced = Boolean(snapshot.showAdvanced);
+  }
+
   function readBraceSaveSurfaceApi() {
     if (window.BraceSaveSurface) {
       return window.BraceSaveSurface;
@@ -925,5 +995,7 @@ interface BraceRenderInfo {
     saveBtn.title = saveSurface.hint;
   }
 
+  restoreBracePerTabSession();
+  bindFlexuralTopInputPersistence();
   run(true);
 })();
