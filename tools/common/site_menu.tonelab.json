@@ -11,6 +11,10 @@
       "href": "/lab/"
     },
     {
+      "label": "Notebook (Alpha)",
+      "href": "/notebook/"
+    },
+    {
       "label": "Resonance Reader",
       "href": "/lab/tools/resonance_reader/"
     },
