@@ -18,6 +18,7 @@ export interface SegmentSpec {
   shape?: ShapeKind;
   h?: number;
   height?: number;
+  breadth?: number;
   material?: { E?: number };
   E?: number;
 }
@@ -54,6 +55,10 @@ export interface BraceTransformResult {
   transformedCentroid: number;
   transformedI: number;
   segments: BraceSegmentDetail[];
+}
+
+export interface BraceElasticRigidityResult extends BraceTransformResult {
+  EI: number;
 }
 
 export interface TopSection {
@@ -172,7 +177,9 @@ export function computeBraceTransformed(
     if (height <= 0 || shape === Shapes.NONE) {
       continue;
     }
-    const props = shapeProperties(shape, breadth, height);
+    const segmentBreadth = segment.breadth ?? breadth;
+    assertPositive(segmentBreadth, `${segment.label || "segment"} breadth`);
+    const props = shapeProperties(shape, segmentBreadth, height);
     const yAbs = baseOffset + runningBase + props.centroid;
     const Eseg = segment.material?.E ?? segment.E;
     assertPositive(Eseg, `${segment.label || "segment"} modulus`);
@@ -188,7 +195,7 @@ export function computeBraceTransformed(
       label: segment.label,
       shape,
       height,
-      breadth,
+      breadth: segmentBreadth,
       area: props.area,
       centroid: yAbs,
       I: props.I,
@@ -218,6 +225,19 @@ export function computeBraceTransformed(
     transformedCentroid: yBar,
     transformedI: ITransformed,
     segments
+  };
+}
+
+export function computeBraceElasticRigidity(
+  brace: BraceSpec,
+  spanAA: number,
+  referenceModulus: number,
+): BraceElasticRigidityResult {
+  assertPositive(referenceModulus, "reference modulus");
+  const transformed = computeBraceTransformed(brace, spanAA, referenceModulus);
+  return {
+    ...transformed,
+    EI: referenceModulus * transformed.transformedI,
   };
 }
 
@@ -267,6 +287,7 @@ export const FlexuralRigidity = {
   shapeProperties,
   computeInterceptBreadth,
   computeBraceTransformed,
+  computeBraceElasticRigidity,
   computeTopSection,
   computeSlice,
   clamp,
@@ -285,6 +306,13 @@ if (typeof window !== "undefined") {
   window.FlexuralRigidity = FlexuralRigidity;
 }
 
-if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
+if (typeof module !== "undefined" && commonJsExportsCanBeReplaced(module)) {
   module.exports = FlexuralRigidity;
+}
+
+function commonJsExportsCanBeReplaced(candidate: unknown): candidate is { exports: unknown } {
+  if (typeof candidate !== "object" || candidate === null) return false;
+  if (Object.prototype.toString.call((candidate as { exports?: unknown }).exports) === "[object Module]") return false;
+  const descriptor = Object.getOwnPropertyDescriptor(candidate, "exports");
+  return descriptor?.writable === true || typeof descriptor?.set === "function";
 }

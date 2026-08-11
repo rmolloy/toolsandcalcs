@@ -13,6 +13,7 @@
     exports.shapeProperties = shapeProperties;
     exports.computeInterceptBreadth = computeInterceptBreadth;
     exports.computeBraceTransformed = computeBraceTransformed;
+    exports.computeBraceElasticRigidity = computeBraceElasticRigidity;
     exports.computeTopSection = computeTopSection;
     exports.computeSlice = computeSlice;
     exports.Shapes = {
@@ -78,7 +79,7 @@
         return clamp(bRaw, 0, spanAA);
     }
     function computeBraceTransformed(brace, spanAA, ETop, baseOffset = 0) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         assertPositive(ETop, "top modulus");
         if (!Number.isFinite(baseOffset) || baseOffset < 0) {
             throw new Error("brace base offset must be a finite, non-negative number.");
@@ -108,9 +109,11 @@
             if (height <= 0 || shape === exports.Shapes.NONE) {
                 continue;
             }
-            const props = shapeProperties(shape, breadth, height);
+            const segmentBreadth = (_h = segment.breadth) !== null && _h !== void 0 ? _h : breadth;
+            assertPositive(segmentBreadth, `${segment.label || "segment"} breadth`);
+            const props = shapeProperties(shape, segmentBreadth, height);
             const yAbs = baseOffset + runningBase + props.centroid;
-            const Eseg = (_j = (_h = segment.material) === null || _h === void 0 ? void 0 : _h.E) !== null && _j !== void 0 ? _j : segment.E;
+            const Eseg = (_k = (_j = segment.material) === null || _j === void 0 ? void 0 : _j.E) !== null && _k !== void 0 ? _k : segment.E;
             assertPositive(Eseg, `${segment.label || "segment"} modulus`);
             const modularRatio = Eseg / ETop;
             const APrime = modularRatio * props.area;
@@ -122,7 +125,7 @@
                 label: segment.label,
                 shape,
                 height,
-                breadth,
+                breadth: segmentBreadth,
                 area: props.area,
                 centroid: yAbs,
                 I: props.I,
@@ -148,6 +151,14 @@
             transformedCentroid: yBar,
             transformedI: ITransformed,
             segments
+        };
+    }
+    function computeBraceElasticRigidity(brace, spanAA, referenceModulus) {
+        assertPositive(referenceModulus, "reference modulus");
+        const transformed = computeBraceTransformed(brace, spanAA, referenceModulus);
+        return {
+            ...transformed,
+            EI: referenceModulus * transformed.transformedI,
         };
     }
     function computeTopSection(spanAA, thickness) {
@@ -186,6 +197,7 @@
         shapeProperties,
         computeInterceptBreadth,
         computeBraceTransformed,
+        computeBraceElasticRigidity,
         computeTopSection,
         computeSlice,
         clamp,
@@ -195,7 +207,15 @@
     if (typeof window !== "undefined") {
         window.FlexuralRigidity = exports.FlexuralRigidity;
     }
-    if (typeof module !== "undefined" && typeof module.exports !== "undefined") {
+    if (typeof module !== "undefined" && commonJsExportsCanBeReplaced(module)) {
         module.exports = exports.FlexuralRigidity;
+    }
+    function commonJsExportsCanBeReplaced(candidate) {
+        if (typeof candidate !== "object" || candidate === null)
+            return false;
+        if (Object.prototype.toString.call(candidate.exports) === "[object Module]")
+            return false;
+        const descriptor = Object.getOwnPropertyDescriptor(candidate, "exports");
+        return (descriptor === null || descriptor === void 0 ? void 0 : descriptor.writable) === true || typeof (descriptor === null || descriptor === void 0 ? void 0 : descriptor.set) === "function";
     }
 });
