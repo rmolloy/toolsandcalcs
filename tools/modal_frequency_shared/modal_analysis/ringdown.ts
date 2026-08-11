@@ -25,6 +25,8 @@
     sampleRate: number;
     attackSkipMs: number;
     smoothWindowMs: number;
+    fitMethod: "envelope" | "damped_sinusoid";
+    isolationBandwidthHz: number | null;
   }
 
   interface EnvelopeFitResult {
@@ -33,6 +35,13 @@
     slope: number | null;
     fitStartSec: number | null;
     fitEndSec: number | null;
+  }
+
+  interface DampedSinusoidFitResult {
+    frequencyHz: number | null;
+    tau: number | null;
+    r2: number | null;
+    slope: number | null;
   }
 
   function nextPow2(n: number): number {
@@ -280,6 +289,167 @@
     return fitVals;
   }
 
+  function fitDampedSinusoid({
+    signal,
+    sampleRate,
+    targetFrequencyHz,
+    fitStartSec,
+    fitEndSec,
+    initialTau,
+  }: {
+    signal: ArrayLike<number>;
+    sampleRate: number;
+    targetFrequencyHz: number;
+    fitStartSec: number;
+    fitEndSec: number;
+    initialTau?: number | null;
+  }): DampedSinusoidFitResult {
+    const startIndex = Math.max(0, Math.round(fitStartSec * sampleRate));
+    const endIndex = Math.min(signal.length - 1, Math.round(fitEndSec * sampleRate));
+    if (endIndex - startIndex < 8 || !Number.isFinite(targetFrequencyHz) || targetFrequencyHz <= 0) {
+      return { frequencyHz: null, tau: null, r2: null, slope: null };
+    }
+    const frequencyRadiusHz = Math.max(1, Math.min(6, targetFrequencyHz * 0.03));
+    const alphaCenter = Number.isFinite(initialTau) && (initialTau as number) > 0
+      ? 1 / (initialTau as number)
+      : 4;
+    const initialBest = dampedSinusoidCandidateResolve({
+      signal,
+      sampleRate,
+      startIndex,
+      endIndex,
+      frequencyCandidates: centeredCandidatesBuild(targetFrequencyHz, frequencyRadiusHz, 17),
+      alphaCandidates: scaledCandidatesBuild(alphaCenter),
+    });
+    const best = dampedSinusoidCandidateRefine({
+      signal,
+      sampleRate,
+      startIndex,
+      endIndex,
+      initialBest,
+      initialFrequencyRadiusHz: frequencyRadiusHz,
+    });
+    if (!best) return { frequencyHz: null, tau: null, r2: null, slope: null };
+    return {
+      frequencyHz: best.frequencyHz,
+      tau: 1 / best.alpha,
+      r2: best.r2,
+      slope: -best.alpha,
+    };
+  }
+
+  function centeredCandidatesBuild(center: number, radius: number, count: number): number[] {
+    return Array.from(
+      { length: count },
+      (_value, index) => center - radius + (2 * radius * index) / Math.max(1, count - 1),
+    );
+  }
+
+  function scaledCandidatesBuild(center: number): number[] {
+    return [0.4, 0.55, 0.7, 0.85, 1, 1.15, 1.35, 1.65, 2.1].map((factor) => center * factor);
+  }
+
+  function dampedSinusoidCandidateRefine({
+    signal,
+    sampleRate,
+    startIndex,
+    endIndex,
+    initialBest,
+    initialFrequencyRadiusHz,
+  }: {
+    signal: ArrayLike<number>;
+    sampleRate: number;
+    startIndex: number;
+    endIndex: number;
+    initialBest: { frequencyHz: number; alpha: number; r2: number } | null;
+    initialFrequencyRadiusHz: number;
+  }) {
+    let best = initialBest;
+    let frequencyRadiusHz = initialFrequencyRadiusHz / 4;
+    for (let pass = 0; pass < 3 && best; pass += 1) {
+      best = dampedSinusoidCandidateResolve({
+        signal,
+        sampleRate,
+        startIndex,
+        endIndex,
+        frequencyCandidates: centeredCandidatesBuild(best.frequencyHz, frequencyRadiusHz, 13),
+        alphaCandidates: centeredCandidatesBuild(best.alpha, best.alpha * 0.25, 13),
+      });
+      frequencyRadiusHz /= 4;
+    }
+    return best;
+  }
+
+  function dampedSinusoidCandidateResolve({
+    signal,
+    sampleRate,
+    startIndex,
+    endIndex,
+    frequencyCandidates,
+    alphaCandidates,
+  }: {
+    signal: ArrayLike<number>;
+    sampleRate: number;
+    startIndex: number;
+    endIndex: number;
+    frequencyCandidates: number[];
+    alphaCandidates: number[];
+  }) {
+    let best: { frequencyHz: number; alpha: number; r2: number } | null = null;
+    frequencyCandidates.forEach((frequencyHz) => {
+      alphaCandidates.forEach((alpha) => {
+        const r2 = dampedSinusoidFitQualityResolve(
+          signal,
+          sampleRate,
+          startIndex,
+          endIndex,
+          frequencyHz,
+          alpha,
+        );
+        if (r2 === null || !Number.isFinite(r2) || (best && r2 <= best.r2)) return;
+        best = { frequencyHz, alpha, r2 };
+      });
+    });
+    return best;
+  }
+
+  function dampedSinusoidFitQualityResolve(
+    signal: ArrayLike<number>,
+    sampleRate: number,
+    startIndex: number,
+    endIndex: number,
+    frequencyHz: number,
+    alpha: number,
+  ): number | null {
+    const stride = Math.max(1, Math.floor(sampleRate / 4000));
+    const angularFrequency = 2 * Math.PI * frequencyHz;
+    let cosineEnergy = 0;
+    let sineEnergy = 0;
+    let crossEnergy = 0;
+    let cosineSignal = 0;
+    let sineSignal = 0;
+    let signalEnergy = 0;
+    for (let index = startIndex; index <= endIndex; index += stride) {
+      const timeSec = (index - startIndex) / sampleRate;
+      const decay = Math.exp(-alpha * timeSec);
+      const cosine = decay * Math.cos(angularFrequency * timeSec);
+      const sine = decay * Math.sin(angularFrequency * timeSec);
+      const value = Number(signal[index]) || 0;
+      cosineEnergy += cosine * cosine;
+      sineEnergy += sine * sine;
+      crossEnergy += cosine * sine;
+      cosineSignal += cosine * value;
+      sineSignal += sine * value;
+      signalEnergy += value * value;
+    }
+    const determinant = cosineEnergy * sineEnergy - crossEnergy * crossEnergy;
+    if (Math.abs(determinant) < EPS || signalEnergy < EPS) return null;
+    const cosineCoefficient = (cosineSignal * sineEnergy - sineSignal * crossEnergy) / determinant;
+    const sineCoefficient = (sineSignal * cosineEnergy - cosineSignal * crossEnergy) / determinant;
+    const explainedEnergy = cosineCoefficient * cosineSignal + sineCoefficient * sineSignal;
+    return Math.max(0, Math.min(1, explainedEnergy / signalEnergy));
+  }
+
   function findPeakFrequency(spectrum: SpectrumLike | null | undefined): number | null {
     if (!spectrum?.freqs?.length || (!spectrum.mags && !spectrum.dbs)) return null;
     const mags = spectrum.mags || (spectrum.dbs as any)?.map((db: number) => 10 ** (db / 20));
@@ -440,15 +610,22 @@
     peakFrequencyHz: number | null;
     deltaF: number | null;
     fitFloorDb: number;
+    fitOverride?: EnvelopeFitResult | null;
+    qFrequencyHz?: number | null;
+    fitMethod?: "envelope" | "damped_sinusoid";
+    isolationBandwidthHz?: number | null;
   }): RingdownResult {
-    const fit = envelopeFitResultFromDecay(
-      args.envelope,
-      args.sampleRate,
-      args.attackSkipMs,
-      args.fitFloorDb,
-    );
-    const Q = Number.isFinite(args.peakFrequencyHz) && Number.isFinite(fit.tau)
-      ? Math.PI * (args.peakFrequencyHz as number) * (fit.tau as number)
+    const fit = args.fitOverride || envelopeFitResultFromDecay(
+        args.envelope,
+        args.sampleRate,
+        args.attackSkipMs,
+        args.fitFloorDb,
+      );
+    const qFrequencyHz = Number.isFinite(args.qFrequencyHz)
+      ? args.qFrequencyHz
+      : args.peakFrequencyHz;
+    const Q = Number.isFinite(qFrequencyHz) && Number.isFinite(fit.tau)
+      ? Math.PI * (qFrequencyHz as number) * (fit.tau as number)
       : null;
     const flags = flagsResolve(Q, args.deltaF, args.peakFrequencyHz, fit.envelopeR2);
     const downsampleStep = Math.max(1, Math.floor(args.envelope.length / 400));
@@ -473,6 +650,8 @@
       sampleRate: args.sampleRate,
       attackSkipMs: args.attackSkipMs,
       smoothWindowMs: args.smoothWindowMs,
+      fitMethod: args.fitMethod || "envelope",
+      isolationBandwidthHz: args.isolationBandwidthHz ?? null,
     };
   }
 
@@ -568,13 +747,26 @@
     }
     const signal = meanRemovedSignalFromBuffer(buffer);
     const bandwidthHz = modeBandwidthResolve(targetFrequencyHz, modeBandwidthHz);
+    const isolationBandwidthHz = Math.max(12, bandwidthHz * 4);
     const filteredSignal = bandpassSignalAroundTargetFrequency(
       signal,
       sampleRate,
       targetFrequencyHz,
-      bandwidthHz,
+      isolationBandwidthHz,
     );
     const envelope = normalizedEnvelopeFromSignal(filteredSignal, sampleRate, smoothWindowMs);
+    const envelopeFit = envelopeFitResultFromDecay(
+      envelope,
+      sampleRate,
+      attackSkipMs,
+      fitFloorDb,
+    );
+    const directFit = dampedSinusoidFitFromEnvelopeWindow(
+      filteredSignal,
+      sampleRate,
+      targetFrequencyHz,
+      envelopeFit,
+    );
     const peak = spectrum
       ? localPeakFrequencyNearTarget(spectrum, targetFrequencyHz, bandwidthHz)
       : targetFrequencyHz;
@@ -590,16 +782,52 @@
       peakFrequencyHz: peak ?? targetFrequencyHz,
       deltaF,
       fitFloorDb,
+      fitOverride: directFit,
+      qFrequencyHz: directFit ? directFit.frequencyHz : null,
+      fitMethod: directFit ? "damped_sinusoid" : "envelope",
+      isolationBandwidthHz,
     });
+  }
+
+  function dampedSinusoidFitFromEnvelopeWindow(
+    signal: ArrayLike<number>,
+    sampleRate: number,
+    targetFrequencyHz: number,
+    envelopeFit: EnvelopeFitResult,
+  ): (EnvelopeFitResult & { frequencyHz: number }) | null {
+    if (!Number.isFinite(envelopeFit.fitStartSec) || !Number.isFinite(envelopeFit.fitEndSec)) return null;
+    const fit = fitDampedSinusoid({
+      signal,
+      sampleRate,
+      targetFrequencyHz,
+      fitStartSec: envelopeFit.fitStartSec as number,
+      fitEndSec: envelopeFit.fitEndSec as number,
+      initialTau: envelopeFit.tau,
+    });
+    if (
+      !Number.isFinite(fit.frequencyHz)
+      || !Number.isFinite(fit.tau)
+      || !Number.isFinite(fit.r2)
+      || !Number.isFinite(fit.slope)
+    ) return null;
+    return {
+      frequencyHz: fit.frequencyHz as number,
+      tau: fit.tau,
+      envelopeR2: fit.r2,
+      slope: fit.slope,
+      fitStartSec: envelopeFit.fitStartSec,
+      fitEndSec: envelopeFit.fitEndSec,
+    };
   }
 
   type ModalRingdownApi = {
     analyzeRingdown: typeof analyzeRingdown;
     analyzeModeRingdown: typeof analyzeModeRingdown;
+    fitDampedSinusoid: typeof fitDampedSinusoid;
   };
   const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
     ModalRingdown?: ModalRingdownApi;
   };
 
-  scope.ModalRingdown = { analyzeRingdown, analyzeModeRingdown };
+  scope.ModalRingdown = { analyzeRingdown, analyzeModeRingdown, fitDampedSinusoid };
 })();
