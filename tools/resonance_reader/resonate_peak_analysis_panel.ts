@@ -7,6 +7,14 @@ import {
   resonanceTapAveragingEnabled,
 } from "./resonate_debug_flags.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
+import {
+  braceStockEstimatePanelInitialize,
+  braceStockEstimatePanelRenderFromState,
+} from "./resonate_brace_stock_estimate_panel.js";
+import {
+  flexuralRigidityBaseHrefResolve,
+  flexuralRigidityOpenFromBraceStock,
+} from "./resonate_flexural_rigidity_link.js";
 
 type SpectrumLike = {
   freqs?: number[];
@@ -49,6 +57,8 @@ type PeakAnalysisRingdownResult = {
   sampleRate: number;
   attackSkipMs: number;
   smoothWindowMs: number;
+  fitMethod?: "envelope" | "damped_sinusoid";
+  isolationBandwidthHz?: number | null;
 };
 
 type PeakAnalysisRingdownData = {
@@ -90,6 +100,13 @@ type PeakAnalysisCandidate = ModeCard & {
 
 export function peakAnalysisPanelInitialize(state: Record<string, any>) {
   peakAnalysisActionListenersAttach(state);
+  braceStockEstimatePanelInitialize(state, {
+    selectedPeakResolve: () => peakAnalysisSelectionSyncFromState(state),
+    render: () => peakAnalysisPanelRenderFromState(state),
+    transfer: () => {
+      flexuralRigidityOpenFromBraceStock(flexuralRigidityBaseHrefResolve(), state);
+    },
+  });
   peakAnalysisSelectionSyncFromState(state);
   peakAnalysisPanelRenderFromState(state);
 }
@@ -99,6 +116,9 @@ export function peakAnalysisPanelRenderFromState(state: Record<string, any>) {
   const ringdownData = peakAnalysisRingdownDataBuild(state, selectedMode);
   peakAnalysisPlotRender(state, selectedMode);
   peakAnalysisRingdownRender(ringdownData);
+  braceStockEstimatePanelRenderFromState(state, selectedMode
+    ? { key: selectedMode.key, freq: selectedMode.freq }
+    : null);
   peakAnalysisActionsRender(state, selectedMode, ringdownData);
 }
 
@@ -497,7 +517,7 @@ function peakAnalysisRingdownRender(data: PeakAnalysisRingdownData | null) {
     }
     return;
   }
-  if (provenance) provenance.textContent = peakAnalysisProvenanceTextBuild(data.provenance);
+  if (provenance) provenance.textContent = peakAnalysisProvenanceTextBuild(data.provenance, data.result);
   peakAnalysisRingdownPlotRender(plot, data);
 }
 
@@ -625,11 +645,20 @@ function peakAnalysisRingdownConfidenceLabelBuild(result: PeakAnalysisRingdownRe
   return "weak";
 }
 
-function peakAnalysisProvenanceTextBuild(provenance: PeakAnalysisRingdownProvenance) {
+function peakAnalysisProvenanceTextBuild(
+  provenance: PeakAnalysisRingdownProvenance,
+  result: PeakAnalysisRingdownResult,
+) {
   const tapLabel = provenance.tapIndex === null
     ? "full file start"
     : `tap ${provenance.tapIndex + 1} of ${Math.max(provenance.tapCount, provenance.tapIndex + 1)}`;
-  const bandwidth = Number.isFinite(provenance.bandwidthHz) ? `${(provenance.bandwidthHz as number).toFixed(2)} Hz band` : "automatic band";
+  const spectralBandwidth = Number.isFinite(provenance.bandwidthHz)
+    ? `spectral BW ${(provenance.bandwidthHz as number).toFixed(2)} Hz`
+    : "automatic spectral BW";
+  const isolationBandwidth = Number.isFinite(result.isolationBandwidthHz)
+    ? `isolation ${(result.isolationBandwidthHz as number).toFixed(2)} Hz`
+    : null;
+  const bandwidth = [spectralBandwidth, isolationBandwidth].filter(Boolean).join(" · ");
   const limit = provenance.limit === "next_tap" ? " (next tap)" : provenance.limit === "recording_end" ? " (recording ends)" : "";
   const window = `Tap window: ${(provenance.windowMs / 1000).toFixed(2)} seconds${limit}`;
   return `Ring-down source: ${tapLabel} · ${window} · ${provenance.preOnsetMs} ms pre-onset · ${bandwidth} · ${provenance.sampleRate.toLocaleString()} Hz`;

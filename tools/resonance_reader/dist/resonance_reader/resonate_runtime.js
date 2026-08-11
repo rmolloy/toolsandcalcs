@@ -182,7 +182,7 @@ function viewModelDestinationApplyToUi(link) {
     const measureMode = viewModelMeasureModeResolve();
     const destination = externalModelDestinationResolveFromMeasureMode(viewModelDestinationMeasureModeResolve(measureMode));
     const overlayToggle = overlayToggleInputElementGet();
-    if (overlayToggle && !destination.showModelRow)
+    if (overlayToggle && !destination.showOverlayToggle)
         overlayToggle.checked = false;
     const row = viewModelRowElementGet();
     if (row)
@@ -223,8 +223,15 @@ function viewModelLinkAttach() {
         if (!href)
             return;
         e.preventDefault();
+        await perTabStatePersistBeforeNavigation();
         window.location.href = href;
     });
+}
+async function perTabStatePersistBeforeNavigation() {
+    const persist = window.ResonatePerTabState?.persist;
+    if (typeof persist !== "function")
+        return;
+    await persist();
 }
 async function braceCalculatorTransferPromptOpen(baseHref) {
     const modesDetected = transferModesDetectedFromState();
@@ -232,6 +239,7 @@ async function braceCalculatorTransferPromptOpen(baseHref) {
     if (result === null)
         return;
     const measurements = result.action === "continue" ? result.measurements : undefined;
+    await perTabStatePersistBeforeNavigation();
     window.location.href = braceCalculatorHrefBuildFromModes(baseHref, modesDetected, measurements);
 }
 async function plateThicknessTransferPromptOpen(baseHref) {
@@ -244,6 +252,7 @@ async function plateThicknessTransferPromptOpen(baseHref) {
         state.plateMaterialMeasurements = result.measurements;
     }
     const measurements = result.action === "continue" ? result.measurements : undefined;
+    await perTabStatePersistBeforeNavigation();
     window.location.href = plateThicknessHrefBuildFromModes(baseHref, modesDetected, measurements);
 }
 function transferModesDetectedFromState() {

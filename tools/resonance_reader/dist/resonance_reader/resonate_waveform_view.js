@@ -181,9 +181,11 @@ function rangeCenterGripSpanResolve(range) {
     const desiredSpan = Math.min(480, Math.max(90, rangeWidth * 0.25));
     return Math.min(desiredSpan, rangeWidth * 0.6);
 }
-function buildTapSegmentShapes(tapSegments, sampleRate, selectedTapIndex, primaryRange) {
+function buildTapSegmentShapes(tapSegments, sampleRate, selectedTapIndex, primaryRange, classifyDurationOutliers = true) {
     const shapes = [];
-    const tapMedianDurationMs = tapMedianDurationMsResolve(tapSegments, sampleRate);
+    const tapMedianDurationMs = classifyDurationOutliers
+        ? tapMedianDurationMsResolve(tapSegments, sampleRate)
+        : null;
     tapSegments.forEach((tap, index) => {
         const midMs = ((tap.start + tap.end) / 2 / sampleRate) * 1000;
         const markerState = tapMarkerStateResolve(tap, index, sampleRate, selectedTapIndex, primaryRange, tapMedianDurationMs);
@@ -360,7 +362,7 @@ export function buildWaveShapes(sampleRate, primaryRange, noteSelectionRange, ta
     const peakAnalysisActive = measureModeNormalize(measureMode) === "peak_analysis";
     const visiblePrimaryRange = peakAnalysisActive ? null : primaryRange;
     shapes.push(...buildNoteSliceShapes(noteSlices || [], visiblePrimaryRange));
-    shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate, activeTapIndex, null));
+    shapes.push(...buildTapSegmentShapes(tapSegments || [], sampleRate, activeTapIndex, null, !peakAnalysisActive));
     if (noteSelectionRangeVisibleForMeasureMode(measureMode)) {
         shapes.push(...buildNoteSelectionShapes(noteSelectionRange));
     }

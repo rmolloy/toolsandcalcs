@@ -14,6 +14,7 @@ import {
   takeOverlayClearAll,
   takeOverlayCurrentPayloadBuild,
   takeOverlayListRead,
+  takeOverlayPrepareNewCurrentState,
   takeOverlaySelectAsCurrent,
 } from "./resonate_take_overlays.js";
 import { resonancePerTabSessionCreate } from "./resonate_per_tab_session.js";
@@ -132,6 +133,18 @@ function perTabSessionResolve(deps: UiBindingsDeps) {
   return deps.perTabSession || resonancePerTabSessionCreate();
 }
 
+function perTabSessionLifecyclePersistenceAttach(deps: UiBindingsDeps) {
+  window.addEventListener("pagehide", () => {
+    void perTabSessionPersist(deps);
+  });
+}
+
+function perTabSessionPersistenceExpose(deps: UiBindingsDeps) {
+  (window as any).ResonatePerTabState = {
+    persist: () => perTabSessionPersist(deps),
+  };
+}
+
 function recordingMenuLabelSet(label: string, state?: Record<string, any>) {
   if (state) state.recordingLabel = label;
   const menu = takeOverlayMenuElementGet();
@@ -208,6 +221,7 @@ function recordToggleFromMic(deps: UiBindingsDeps) {
   updateWaveTransportLabels();
   deps.setStatus("Recording...");
   takeOverlayCaptureCurrentAndRender(deps);
+  takeOverlayPrepareNewCurrentState(deps.state);
   state.__livePreviewActive = true;
   delete state.peakHoldSpectrumState;
   previewDispatch.start?.();
@@ -303,6 +317,7 @@ function bindImport(deps: UiBindingsDeps) {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
     takeOverlayCaptureCurrentAndRender(deps);
+    takeOverlayPrepareNewCurrentState(deps.state);
     deps.setStatus(`Loading ${file.name}...`);
     recordingMenuLabelSet(file.name, deps.state);
     takeOverlayControlsRender(deps);
@@ -381,7 +396,14 @@ function takeOverlayCurrentTakeRender(deps: UiBindingsDeps) {
   recordingMenuLabelSet(takeOverlayCurrentLabelRead(deps.state), deps.state);
   deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
   if (deps.state.lastWaveSlice) deps.renderWaveform(deps.state.lastWaveSlice);
-  rerenderFromLastSpectrumIfPossible(deps.state);
+  rerenderCurrentTakeFromLastSpectrumIfPossible(deps.state);
+}
+
+function rerenderCurrentTakeFromLastSpectrumIfPossible(state: Record<string, any>) {
+  if (typeof state?.rerenderFromLastSpectrum !== "function") return;
+  state.preserveSpectrumRangesOnNextRender = true;
+  state.dofRefitRequested = true;
+  state.rerenderFromLastSpectrum();
 }
 
 function takeOverlayPanelClose() {
@@ -650,6 +672,8 @@ export function uiBindingsAttach(deps: UiBindingsDeps) {
     await refreshResonanceSaveSurfaceAndRender(deps.state, resonanceSaveRunner, deps.setStatus);
     saveStatePipelineDirtySubscriptionAttach(deps.pipelineBus, deps.state);
     deps.pipelineBus?.wire("pipeline.completed", () => perTabSessionPersist(deps));
+    perTabSessionLifecyclePersistenceAttach(deps);
+    perTabSessionPersistenceExpose(deps);
     recordingMenuInitialWidthSync();
     bindImport(deps);
     bindSaveAudio(deps);
@@ -708,7 +732,13 @@ async function restorePerTabSessionIntoUi(deps: UiBindingsDeps): Promise<boolean
   renderNotebookConnectDraftIntoUi(deps);
   takeOverlayControlsRender(deps);
   saveStateMarkDirtyAndRender(deps.state);
+  await refreshRestoredPerTabSession(deps);
   return true;
+}
+
+async function refreshRestoredPerTabSession(deps: UiBindingsDeps) {
+  if (!deps.state.currentWave?.wave?.length) return;
+  await deps.runResonatePipeline("per-tab-restore");
 }
 
 export function restoreNotebookConnectDraftIntoUi(deps: UiBindingsDeps): boolean {
@@ -828,7 +858,6 @@ export function measureModeChangeApply(
     measureModeStateResetForDemoWave(deps.state);
   }
   measureModeStatePreserveCustomCardsOnly(deps.state);
-  renderTryModePanelForMeasureMode(nextMode, deps as UiBindingsDeps);
   energyTransferPanelSyncFromState(deps.state);
   deps.renderModes(Array.isArray(deps.state.lastModeCards) ? deps.state.lastModeCards : []);
   if (measureModeChangeShouldRunPipelineForDemoWave()) {
@@ -885,14 +914,6 @@ export function measureModeViewRangesReset(state: Record<string, any>) {
   state.noteSelectionRangeMs = null;
   state.lastPrimaryRangePipelineFingerprint = null;
   state.lastNoteRangePipelineFingerprint = null;
-}
-
-function renderTryModePanelForMeasureMode(
-  measureMode: MeasureMode,
-  deps: UiBindingsDeps,
-) {
-  if (measureMode === "guitar" || measureMode === "played_note") return;
-  deps.state.modeTargets = {};
 }
 
 function rerenderFromLastSpectrumIfPossible(state: Record<string, any>) {

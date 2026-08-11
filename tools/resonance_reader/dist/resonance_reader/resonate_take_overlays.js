@@ -37,6 +37,18 @@ export function takeOverlayRemove(state, takeId) {
 export function takeOverlayClearAll(state) {
     state.takeOverlays = [];
 }
+export function takeOverlayPrepareNewCurrentState(state) {
+    state.modePeakOverrides = {};
+    state.peakAnalysisSelectedTapIndex = null;
+    state.braceStockConfirmedLongMode = null;
+    state.braceStockMeasurements = null;
+    state.lastFitTargetKey = null;
+    state.lastFittedParams = null;
+    state.whatIfTargetKey = null;
+    state.whatIfFittedParams = null;
+    state.massOnlyTargetKey = null;
+    state.massOnlyFittedParams = null;
+}
 export function takeOverlayListRead(state) {
     return Array.isArray(state.takeOverlays) ? state.takeOverlays.filter(takeOverlayValid) : [];
 }
@@ -78,6 +90,9 @@ function takeOverlaySnapshotStateBuild(state, freqs, mags) {
         viewRangeMs: takeOverlayValueClone(state.viewRangeMs),
         noteSelectionRangeMs: takeOverlayValueClone(state.noteSelectionRangeMs),
         peakAnalysisSelectedTapIndex: takeOverlayValueClone(state.peakAnalysisSelectedTapIndex),
+        modePeakOverrides: takeOverlayValueClone(state.modePeakOverrides || {}),
+        braceStockConfirmedLongMode: takeOverlayValueClone(state.braceStockConfirmedLongMode ?? null),
+        braceStockMeasurements: takeOverlayValueClone(state.braceStockMeasurements ?? null),
     };
 }
 function takeOverlaySnapshotRestoreIntoState(state, take) {
@@ -95,6 +110,9 @@ function takeOverlaySnapshotRestoreIntoState(state, take) {
     state.viewRangeMs = takeOverlayValueClone(snapshot.viewRangeMs ?? null);
     state.noteSelectionRangeMs = takeOverlayValueClone(snapshot.noteSelectionRangeMs ?? null);
     state.peakAnalysisSelectedTapIndex = takeOverlayValueClone(snapshot.peakAnalysisSelectedTapIndex ?? null);
+    state.modePeakOverrides = takeOverlayValueClone(snapshot.modePeakOverrides || {});
+    state.braceStockConfirmedLongMode = takeOverlayValueClone(snapshot.braceStockConfirmedLongMode ?? null);
+    state.braceStockMeasurements = takeOverlayValueClone(snapshot.braceStockMeasurements ?? null);
 }
 function takeOverlayLabelResolve(state) {
     const label = String(state.recordingLabel || "").trim();

@@ -1,3 +1,4 @@
+import { braceStockMaterialBuildFromMeasurements, } from "./resonate_brace_stock_material.js";
 const MODE_TO_PARAM = {
     long: "long",
     cross: "cross",
@@ -28,33 +29,11 @@ function braceModeFrequencyResolveByKey(modesDetected, modeKey) {
 function braceMeasurementsApplyToUrl(url, modesDetected, measurements) {
     if (!measurements)
         return;
-    const material = braceMaterialBuildFromMeasurements(measurements, modesDetected);
+    const material = braceStockMaterialBuildFromMeasurements(measurements, braceLongModeFrequencyResolve(modesDetected));
     if (!material)
         return;
     url.searchParams.set("brace_density", material.densityKgM3.toFixed(1));
     url.searchParams.set("brace_modulus", material.dynamicYoungsModulusGPa.toFixed(3));
-}
-function braceMaterialBuildFromMeasurements(measurements, modesDetected) {
-    const frequencyHz = braceLongModeFrequencyResolve(modesDetected);
-    if (frequencyHz === null)
-        return null;
-    const lengthM = measurements.stockLengthMm / 1000;
-    const widthM = measurements.stockWidthMm / 1000;
-    const heightM = measurements.stockHeightMm / 1000;
-    const massKg = measurements.stockMassG / 1000;
-    const spanM = lengthM;
-    if (![lengthM, widthM, heightM, massKg, spanM].every((value) => Number.isFinite(value) && value > 0)) {
-        return null;
-    }
-    const densityKgM3 = massKg / (lengthM * widthM * heightM);
-    const correctionFactor = 1 + 6.585 * Math.pow(heightM / spanM, 2);
-    const dynamicYoungsModulusPa = 0.9465
-        * ((massKg * Math.pow(frequencyHz, 2) * Math.pow(spanM, 3)) / (widthM * Math.pow(heightM, 3)))
-        * correctionFactor;
-    return {
-        densityKgM3,
-        dynamicYoungsModulusGPa: dynamicYoungsModulusPa / 1000000000,
-    };
 }
 function braceLongModeFrequencyResolve(modesDetected) {
     const frequency = modesDetected.find((mode) => mode.mode === "long")?.peakFreq;

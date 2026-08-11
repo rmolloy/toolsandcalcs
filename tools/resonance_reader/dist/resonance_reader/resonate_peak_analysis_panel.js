@@ -2,6 +2,8 @@ import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js"
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
 import { resonanceSpectrumSmoothingEnabled, resonanceSpectrumLineWidthResolve, resonanceTapAveragingEnabled, } from "./resonate_debug_flags.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
+import { braceStockEstimatePanelInitialize, braceStockEstimatePanelRenderFromState, } from "./resonate_brace_stock_estimate_panel.js";
+import { flexuralRigidityBaseHrefResolve, flexuralRigidityOpenFromBraceStock, } from "./resonate_flexural_rigidity_link.js";
 const PEAK_RINGDOWN_DEFAULT_WINDOW_MS = 1200;
 const PEAK_RINGDOWN_MIN_WINDOW_MS = PEAK_RINGDOWN_DEFAULT_WINDOW_MS;
 const PEAK_RINGDOWN_MAX_WINDOW_MS = 3000;
@@ -19,6 +21,13 @@ const PEAK_ANALYSIS_WAVEFORM_COLOR = resolveColorHexFromRole("peakAnalysisWavefo
 const PEAK_ANALYSIS_PROJECTION_COLOR = resolveColorHexFromRole("peakAnalysisProjection");
 export function peakAnalysisPanelInitialize(state) {
     peakAnalysisActionListenersAttach(state);
+    braceStockEstimatePanelInitialize(state, {
+        selectedPeakResolve: () => peakAnalysisSelectionSyncFromState(state),
+        render: () => peakAnalysisPanelRenderFromState(state),
+        transfer: () => {
+            flexuralRigidityOpenFromBraceStock(flexuralRigidityBaseHrefResolve(), state);
+        },
+    });
     peakAnalysisSelectionSyncFromState(state);
     peakAnalysisPanelRenderFromState(state);
 }
@@ -27,6 +36,9 @@ export function peakAnalysisPanelRenderFromState(state) {
     const ringdownData = peakAnalysisRingdownDataBuild(state, selectedMode);
     peakAnalysisPlotRender(state, selectedMode);
     peakAnalysisRingdownRender(ringdownData);
+    braceStockEstimatePanelRenderFromState(state, selectedMode
+        ? { key: selectedMode.key, freq: selectedMode.freq }
+        : null);
     peakAnalysisActionsRender(state, selectedMode, ringdownData);
 }
 export function peakAnalysisSelectionApplyFromModeKey(state, modeKey) {
@@ -381,7 +393,7 @@ function peakAnalysisRingdownRender(data) {
         return;
     }
     if (provenance)
-        provenance.textContent = peakAnalysisProvenanceTextBuild(data.provenance);
+        provenance.textContent = peakAnalysisProvenanceTextBuild(data.provenance, data.result);
     peakAnalysisRingdownPlotRender(plot, data);
 }
 function peakAnalysisActionsRender(state, selectedMode, data) {
@@ -497,11 +509,17 @@ function peakAnalysisRingdownConfidenceLabelBuild(result) {
         return "usable";
     return "weak";
 }
-function peakAnalysisProvenanceTextBuild(provenance) {
+function peakAnalysisProvenanceTextBuild(provenance, result) {
     const tapLabel = provenance.tapIndex === null
         ? "full file start"
         : `tap ${provenance.tapIndex + 1} of ${Math.max(provenance.tapCount, provenance.tapIndex + 1)}`;
-    const bandwidth = Number.isFinite(provenance.bandwidthHz) ? `${provenance.bandwidthHz.toFixed(2)} Hz band` : "automatic band";
+    const spectralBandwidth = Number.isFinite(provenance.bandwidthHz)
+        ? `spectral BW ${provenance.bandwidthHz.toFixed(2)} Hz`
+        : "automatic spectral BW";
+    const isolationBandwidth = Number.isFinite(result.isolationBandwidthHz)
+        ? `isolation ${result.isolationBandwidthHz.toFixed(2)} Hz`
+        : null;
+    const bandwidth = [spectralBandwidth, isolationBandwidth].filter(Boolean).join(" · ");
     const limit = provenance.limit === "next_tap" ? " (next tap)" : provenance.limit === "recording_end" ? " (recording ends)" : "";
     const window = `Tap window: ${(provenance.windowMs / 1000).toFixed(2)} seconds${limit}`;
     return `Ring-down source: ${tapLabel} · ${window} · ${provenance.preOnsetMs} ms pre-onset · ${bandwidth} · ${provenance.sampleRate.toLocaleString()} Hz`;

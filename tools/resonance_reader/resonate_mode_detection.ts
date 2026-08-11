@@ -10,6 +10,12 @@ export type ModeDetection = {
   prominenceDb: number | null;
 };
 
+type ModePeakCandidate = {
+  idx: number;
+  db: number;
+  prominence: number;
+};
+
 export function smoothSpectrumFast(freqs: number[], mags: number[], smoothHz: number): number[] {
   if (!smoothHz || smoothHz <= 0) return mags;
   if (freqs.length < 3 || mags.length < 3) return mags;
@@ -117,26 +123,92 @@ export function analyzeModesWithBands(
   spectrum: { freqs: number[]; dbs: number[] },
   bands: Record<string, { low: number; high: number }>,
 ): ModeDetection[] {
-  const { freqs, dbs } = spectrum;
   return Object.entries(bands).map(([key, band]) => {
-    const peaks: { idx: number; db: number; prominence: number }[] = [];
-    for (let i = 1; i < freqs.length - 1; i += 1) {
-      if (!(dbs[i] > dbs[i - 1] && dbs[i] > dbs[i + 1])) continue;
-      const f = freqs[i];
-      if (f < band.low || f > band.high) continue;
-      const start = Math.max(0, i - 6);
-      const end = Math.min(dbs.length - 1, i + 6);
-      const neighbors = dbs.slice(start, end + 1);
-      neighbors.splice(i - start, 1);
-      const baseline = neighbors.length ? median(neighbors) : dbs[i];
-      const prominence = dbs[i] - baseline;
-      peaks.push({ idx: i, db: dbs[i], prominence });
-    }
-    if (!peaks.length) return { mode: key, peakFreq: null, peakDb: null, peakIdx: null, prominenceDb: null };
-    peaks.sort((a, b) => b.db - a.db);
-    const primary = peaks[0];
-    const refined = resonanceParabolicPeakRefineEnabled() ? refineParabolicPeak(freqs, dbs, primary.idx) : null;
-    if (refined) return { mode: key, peakFreq: refined.freq, peakDb: refined.y, peakIdx: primary.idx, prominenceDb: primary.prominence };
-    return { mode: key, peakFreq: freqs[primary.idx], peakDb: dbs[primary.idx], peakIdx: primary.idx, prominenceDb: primary.prominence };
+    const primary = modePeakCandidatesBuild(spectrum, band)
+      .sort((left, right) => right.db - left.db)[0] || null;
+    return modeDetectionBuildFromCandidate(key, spectrum, primary);
   });
+}
+
+export function analyzeModesWithBandsByQAndLevel(
+  spectrum: { freqs: number[]; dbs: number[] },
+  bands: Record<string, { low: number; high: number }>,
+  estimateQ: (freqs: number[], dbs: number[], peak: { freq: number; db: number }) => number | null,
+): ModeDetection[] {
+  return Object.entries(bands).map(([key, band]) => {
+    const primary = modePeakCandidatesBuild(spectrum, band)
+      .sort((left, right) => modePeakQAndLevelCompare(spectrum, estimateQ, left, right))[0] || null;
+    return modeDetectionBuildFromCandidate(key, spectrum, primary);
+  });
+}
+
+function modePeakQAndLevelCompare(
+  spectrum: { freqs: number[]; dbs: number[] },
+  estimateQ: (freqs: number[], dbs: number[], peak: { freq: number; db: number }) => number | null,
+  left: ModePeakCandidate,
+  right: ModePeakCandidate,
+) {
+  const leftScore = modePeakQAndLevelScoreResolve(spectrum, estimateQ, left);
+  const rightScore = modePeakQAndLevelScoreResolve(spectrum, estimateQ, right);
+  if (leftScore !== null && rightScore !== null && leftScore !== rightScore) return rightScore - leftScore;
+  if (leftScore !== null && rightScore === null) return -1;
+  if (leftScore === null && rightScore !== null) return 1;
+  return right.db - left.db;
+}
+
+function modePeakQAndLevelScoreResolve(
+  spectrum: { freqs: number[]; dbs: number[] },
+  estimateQ: (freqs: number[], dbs: number[], peak: { freq: number; db: number }) => number | null,
+  candidate: ModePeakCandidate,
+) {
+  const frequencyHz = spectrum.freqs[candidate.idx];
+  const q = estimateQ(spectrum.freqs, spectrum.dbs, { freq: frequencyHz, db: candidate.db });
+  if (!Number.isFinite(q) || (q as number) <= 0) return null;
+  const linearAmplitude = 10 ** (candidate.db / 20);
+  return (q as number) * linearAmplitude;
+}
+
+function modePeakCandidatesBuild(
+  spectrum: { freqs: number[]; dbs: number[] },
+  band: { low: number; high: number },
+) {
+  const { freqs, dbs } = spectrum;
+  const peaks: ModePeakCandidate[] = [];
+  for (let index = 1; index < freqs.length - 1; index += 1) {
+    if (!(dbs[index] > dbs[index - 1] && dbs[index] > dbs[index + 1])) continue;
+    if (freqs[index] < band.low || freqs[index] > band.high) continue;
+    peaks.push({
+      idx: index,
+      db: dbs[index],
+      prominence: modePeakProminenceResolve(dbs, index),
+    });
+  }
+  return peaks;
+}
+
+function modePeakProminenceResolve(dbs: number[], index: number) {
+  const start = Math.max(0, index - 6);
+  const end = Math.min(dbs.length - 1, index + 6);
+  const neighbors = dbs.slice(start, end + 1);
+  neighbors.splice(index - start, 1);
+  const baseline = neighbors.length ? median(neighbors) : dbs[index];
+  return dbs[index] - baseline;
+}
+
+function modeDetectionBuildFromCandidate(
+  mode: string,
+  spectrum: { freqs: number[]; dbs: number[] },
+  candidate: ModePeakCandidate | null,
+): ModeDetection {
+  if (!candidate) return { mode, peakFreq: null, peakDb: null, peakIdx: null, prominenceDb: null };
+  const refined = resonanceParabolicPeakRefineEnabled()
+    ? refineParabolicPeak(spectrum.freqs, spectrum.dbs, candidate.idx)
+    : null;
+  return {
+    mode,
+    peakFreq: refined?.freq ?? spectrum.freqs[candidate.idx],
+    peakDb: refined?.y ?? candidate.db,
+    peakIdx: candidate.idx,
+    prominenceDb: candidate.prominence,
+  };
 }

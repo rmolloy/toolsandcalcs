@@ -56,9 +56,7 @@ const PLATE_STOCK_META = {
     },
 };
 const BRACE_STOCK_BANDS = {
-    long: { low: 65, high: 100 },
-    cross: { low: 110, high: 140 },
-    transverse: { low: 24, high: 55 },
+    long: { low: 100, high: 500 },
 };
 const BRACE_STOCK_META = {
     long: {
@@ -67,20 +65,6 @@ const BRACE_STOCK_META = {
         aliasText: "L",
         tooltip: "Long\nLong-grain brace-stock mode.",
         color: resolveColorHexFromRole("plateLongMode"),
-    },
-    cross: {
-        label: "Cross",
-        aliasHtml: "C",
-        aliasText: "C",
-        tooltip: "Cross\nCross-grain brace-stock mode.",
-        color: resolveColorHexFromRole("plateCrossMode"),
-    },
-    transverse: {
-        label: "Transverse",
-        aliasHtml: "T",
-        aliasText: "T",
-        tooltip: "Transverse\nTransverse/twisting brace-stock mode.",
-        color: resolveColorHexFromRole("plateTransverseMode"),
     },
 };
 const MODE_PROFILES = {

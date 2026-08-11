@@ -8,19 +8,27 @@ export const CELESTIAL_FREQ_AXIS_MAX = 1000;
 export const CELESTIAL_FFT_MAX_HZ = 1000;
 export const STOCK_FREQ_MIN = 25;
 export const STOCK_FREQ_AXIS_MAX = 200;
+export const BRACE_STOCK_FREQ_MIN = 100;
 
 export function spectrumViewRangeResolveFromMeasureMode(measureMode: unknown): { freqMin: number; freqAxisMax: number } {
   if (resonanceSpectrumDisplayRangeResolve() === "celestial") {
     return { freqMin: CELESTIAL_FREQ_MIN, freqAxisMax: CELESTIAL_FREQ_AXIS_MAX };
   }
-  if (measureModeUsesStockFrequencyRange(measureMode)) {
+  if (measureModeUsesBraceStockFrequencyRange(measureMode)) {
+    return { freqMin: BRACE_STOCK_FREQ_MIN, freqAxisMax: FREQ_AXIS_MAX };
+  }
+  if (measureModeUsesPlateStockFrequencyRange(measureMode)) {
     return { freqMin: STOCK_FREQ_MIN, freqAxisMax: STOCK_FREQ_AXIS_MAX };
   }
   return { freqMin: FREQ_MIN, freqAxisMax: FREQ_AXIS_MAX };
 }
 
-function measureModeUsesStockFrequencyRange(measureMode: unknown) {
-  return measureMode === "plate_stock" || measureMode === "top" || measureMode === "back" || measureMode === "brace_stock";
+function measureModeUsesPlateStockFrequencyRange(measureMode: unknown) {
+  return measureMode === "plate_stock" || measureMode === "top";
+}
+
+function measureModeUsesBraceStockFrequencyRange(measureMode: unknown) {
+  return measureMode === "back" || measureMode === "brace_stock";
 }
 
 export function spectrumFftMaxHzResolve() {

@@ -26,12 +26,13 @@ export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, o
             top: Number.isFinite(userTargets.top) ? Number(userTargets.top.toFixed(1)) : null,
             back: Number.isFinite(userTargets.back) ? Number(userTargets.back.toFixed(1)) : null,
         });
-        if (state.whatIfTargetKey !== targetKey) {
+        const fitKey = `${targetKey}|${String(state.lastFitTargetKey || "")}`;
+        if (state.whatIfTargetKey !== fitKey) {
             const fit = boundary.fit4DofFromTargets(userTargets, { maxIter: fitMaxIter, modeWeights, priors });
-            state.whatIfTargetKey = targetKey;
+            state.whatIfTargetKey = fitKey;
             state.whatIfFittedParams = fit?.raw || null;
         }
-        const massKey = `${targetKey}|${String(state.lastFitTargetKey || "")}`;
+        const massKey = fitKey;
         if (state.massOnlyTargetKey !== massKey) {
             const base = state.lastFittedParams || BASE_PARAMS;
             const fit = boundary.fit4DofFromTargets(userTargets, {
@@ -59,6 +60,7 @@ export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, o
             .map(([mode, peakFreq]) => ({ mode, peakFreq }));
         return boundary.buildOverlayFromModes(freqs, dbs, targetModes);
     }
+    inactiveWhatIfFitClearFromState(state);
     renderTryPanel([], [], false);
     ensureBaselineFitFromDetected(state, modesDetected, (targets, _opts) => boundary.fit4DofFromTargets(targets, { maxIter: fitMaxIter, modeWeights, priors }));
     if (state.lastFittedParams) {
@@ -67,4 +69,10 @@ export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, o
             return curve;
     }
     return boundary.buildOverlayFromModes(freqs, dbs, modesDetected);
+}
+function inactiveWhatIfFitClearFromState(state) {
+    state.whatIfTargetKey = null;
+    state.whatIfFittedParams = null;
+    state.massOnlyTargetKey = null;
+    state.massOnlyFittedParams = null;
 }

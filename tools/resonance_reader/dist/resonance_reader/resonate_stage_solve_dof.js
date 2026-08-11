@@ -3,6 +3,7 @@ import { overlayBoundaryDefault } from "./resonate_overlay_boundary.js";
 import { overlayToggleShouldRender } from "./resonate_overlay_gate.js";
 import { emitArtifactEventFromState } from "./resonate_artifact_emit.js";
 import { renderTryPanel } from "./resonate_try_panel.js";
+import { measureModeNormalize } from "./resonate_mode_config.js";
 export function stageSolveDofRun(args) {
     const spectrum = args.state.lastSpectrum;
     if (!spectrum?.freqs?.length)
@@ -15,7 +16,7 @@ export function stageSolveDofRun(args) {
     const toggle = document.getElementById("toggle_overlay");
     const overlayVisible = overlayToggleShouldRender(toggle);
     const refitRequested = args.state.dofRefitRequested === true;
-    if (!overlayVisible && !refitRequested) {
+    if (!dofFitComputationShouldRun(args.state, overlayVisible, refitRequested)) {
         renderTryPanel([], [], false);
         args.state.lastOverlay = undefined;
         emitArtifactEventFromState(args.state);
@@ -33,4 +34,7 @@ export function stageSolveDofRun(args) {
     }
     args.state.lastOverlay = overlay;
     emitArtifactEventFromState(args.state);
+}
+function dofFitComputationShouldRun(state, overlayVisible, refitRequested) {
+    return overlayVisible || refitRequested || measureModeNormalize(state.measureMode) === "guitar";
 }

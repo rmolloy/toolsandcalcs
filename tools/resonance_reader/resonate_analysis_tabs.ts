@@ -10,7 +10,7 @@ const WAVEFORM_NAVIGATOR_COPY = {
 };
 const PEAK_ANALYSIS_TAP_NAVIGATOR_COPY = {
   title: "Tap Navigator",
-  description: "Select a tap to inspect its Peak/Q ring-down. Solid taps are accepted and dotted taps are weak.",
+  description: "Select a tap to inspect its Peak/Q ring-down. Every marker is a detected tap.",
 };
 
 export function analysisTabsInitialize(state: Record<string, any>) {

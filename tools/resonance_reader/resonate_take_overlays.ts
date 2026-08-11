@@ -14,6 +14,9 @@ type TakeSnapshotState = {
   viewRangeMs?: unknown;
   noteSelectionRangeMs?: unknown;
   peakAnalysisSelectedTapIndex?: unknown;
+  modePeakOverrides?: unknown;
+  braceStockConfirmedLongMode?: unknown;
+  braceStockMeasurements?: unknown;
 };
 
 type ResonanceTakeSnapshot = {
@@ -29,6 +32,9 @@ type ResonanceTakeSnapshot = {
   viewRangeMs?: unknown;
   noteSelectionRangeMs?: unknown;
   peakAnalysisSelectedTapIndex?: unknown;
+  modePeakOverrides?: unknown;
+  braceStockConfirmedLongMode?: unknown;
+  braceStockMeasurements?: unknown;
 };
 
 const MAX_TAKES_STORED = 8;
@@ -75,6 +81,19 @@ export function takeOverlayClearAll(state: Record<string, any>) {
   state.takeOverlays = [];
 }
 
+export function takeOverlayPrepareNewCurrentState(state: Record<string, any>) {
+  state.modePeakOverrides = {};
+  state.peakAnalysisSelectedTapIndex = null;
+  state.braceStockConfirmedLongMode = null;
+  state.braceStockMeasurements = null;
+  state.lastFitTargetKey = null;
+  state.lastFittedParams = null;
+  state.whatIfTargetKey = null;
+  state.whatIfFittedParams = null;
+  state.massOnlyTargetKey = null;
+  state.massOnlyFittedParams = null;
+}
+
 export function takeOverlayListRead(state: Record<string, any>): ResonanceTakeOverlay[] {
   return Array.isArray(state.takeOverlays) ? state.takeOverlays.filter(takeOverlayValid) : [];
 }
@@ -119,6 +138,9 @@ function takeOverlaySnapshotStateBuild(
     viewRangeMs: takeOverlayValueClone(state.viewRangeMs),
     noteSelectionRangeMs: takeOverlayValueClone(state.noteSelectionRangeMs),
     peakAnalysisSelectedTapIndex: takeOverlayValueClone(state.peakAnalysisSelectedTapIndex),
+    modePeakOverrides: takeOverlayValueClone(state.modePeakOverrides || {}),
+    braceStockConfirmedLongMode: takeOverlayValueClone(state.braceStockConfirmedLongMode ?? null),
+    braceStockMeasurements: takeOverlayValueClone(state.braceStockMeasurements ?? null),
   };
 }
 
@@ -137,6 +159,9 @@ function takeOverlaySnapshotRestoreIntoState(state: Record<string, any>, take: R
   state.viewRangeMs = takeOverlayValueClone(snapshot.viewRangeMs ?? null);
   state.noteSelectionRangeMs = takeOverlayValueClone(snapshot.noteSelectionRangeMs ?? null);
   state.peakAnalysisSelectedTapIndex = takeOverlayValueClone(snapshot.peakAnalysisSelectedTapIndex ?? null);
+  state.modePeakOverrides = takeOverlayValueClone(snapshot.modePeakOverrides || {});
+  state.braceStockConfirmedLongMode = takeOverlayValueClone(snapshot.braceStockConfirmedLongMode ?? null);
+  state.braceStockMeasurements = takeOverlayValueClone(snapshot.braceStockMeasurements ?? null);
 }
 
 function takeOverlayLabelResolve(state: TakeSnapshotState) {

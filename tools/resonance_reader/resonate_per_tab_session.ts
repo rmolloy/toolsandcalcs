@@ -19,6 +19,7 @@ const STATE_KEYS = [
   "lastModeCards",
   "lastPolymaxCandidates",
   "lastWaveSlice",
+  "tapSegments",
   "lastPeakHoldSpectrum",
   "viewRangeMs",
   "noteSelectionRangeMs",
@@ -29,7 +30,13 @@ const STATE_KEYS = [
   "measureMode",
   "customMeasurements",
   "plateMaterialMeasurements",
-  "modeOverrides",
+  "braceStockMeasurements",
+  "braceStockConfirmedLongMode",
+  "modePeakOverrides",
+  "modeTargets",
+  "lastFittedParams",
+  "whatIfFittedParams",
+  "lastFitTargetKey",
 ] as const;
 
 export function resonancePerTabSessionCreate(): ResonancePerTabSession | null {
