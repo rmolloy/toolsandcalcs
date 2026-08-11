@@ -875,6 +875,59 @@ body { padding: 28px; }
   line-height: var(--type-caption-line);
 }
 
+.brace-stock-estimate {
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 196, 111, 0.22);
+  border-radius: 10px;
+  background: rgba(7, 12, 20, 0.42);
+}
+
+.brace-stock-estimate[hidden] {
+  display: none;
+}
+
+.brace-stock-estimate__content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.brace-stock-estimate__summary {
+  color: rgba(230, 233, 239, 0.76);
+  font-size: var(--type-caption-size);
+  line-height: var(--type-caption-line);
+}
+
+.brace-stock-estimate__metrics,
+.brace-stock-estimate__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.brace-stock-estimate__metrics {
+  flex: 1 1 auto;
+}
+
+.brace-stock-estimate__metric {
+  display: inline-flex;
+  gap: 5px;
+  align-items: baseline;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: var(--type-caption-size);
+  white-space: nowrap;
+}
+
+.brace-stock-estimate__label {
+  color: rgba(230, 233, 239, 0.58);
+}
+
+.brace-stock-estimate__actions {
+  margin-left: auto;
+}
+
 .peak-analysis-actions {
   display: flex;
   flex-wrap: wrap;
@@ -924,6 +977,16 @@ body { padding: 28px; }
 
   .peak-analysis-provenance {
     margin-top: 0;
+  }
+
+  .brace-stock-estimate__content {
+    align-items: stretch;
+  }
+
+  .brace-stock-estimate__metrics,
+  .brace-stock-estimate__actions {
+    width: 100%;
+    margin-left: 0;
   }
 
   .peak-analysis-actions .btn-small,
@@ -988,6 +1051,17 @@ body { padding: 28px; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.brace-stock-details-results {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.brace-stock-details-results > div {
+  display: grid;
+  gap: 3px;
 }
 
 .plate-transfer-mode-list {
@@ -1294,7 +1368,7 @@ body { padding: 28px; }
   font-weight: var(--type-meta-weight);
   color: rgba(255,255,255,0.52);
 }
-.overlay-off .mode-target {
+.overlay-off .mode-card:not(.mode-custom) .mode-target {
   display: none;
 }
 .mode-target-link {
