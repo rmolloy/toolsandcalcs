@@ -796,6 +796,23 @@ body.whatif-mode .param-whatif-row {
   padding: 0.45rem 0.6rem;
 }
 
+.dof-fit-range-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.dof-fit-range-field input[type="range"] {
+  grid-column: 1 / -1;
+  padding: 0;
+  accent-color: var(--blue);
+}
+
+.dof-fit-range-value {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
 .dof-fit-status {
   min-height: 1.2em;
   margin: 0;

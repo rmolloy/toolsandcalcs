@@ -1,14 +1,69 @@
 // @ts-nocheck
 
+import {
+  buildDofOverlayPresentation,
+  colorWithAlpha,
+} from "./dof_display_format";
+import {
+  DOF_MODE_BANDS as MODE_BANDS,
+  modelPeaksFromResponse,
+} from "./dof_peak_detection";
+import {
+  buildDofTargetOverlayTraces,
+  buildDofTrace,
+  computeDofYRange,
+} from "./dof_plot_data";
+import {
+  buildDofFastTargetWarmParams,
+  fitDofFromTargets,
+} from "./dof_target_fit";
+import {
+  buildDofTaskCards,
+  restoreDofFitTaskControls,
+  restoreDofSolveTaskControls,
+  type DofTaskCardDefinition,
+} from "./dof_task_cards";
+import {
+  adaptDofLegacyParams,
+  computeDofLegacyResponse,
+} from "./dof_legacy_solver";
+import { sampleDofSeriesAtFrequency } from "./dof_series_sampling";
+import {
+  readDofPlotAxes,
+  readDofPointerFrequency,
+} from "./dof_plot_pointer";
+import { applyDofPlotResize } from "./dof_plot_resize";
+import {
+  applyDofTraceVisibility,
+  DOF_TRACE_DEFAULT_VISIBLE,
+  DofTraceVisibilityState,
+  syncDofTraceVisibilityStateFromPlot,
+} from "./dof_trace_visibility";
+import {
+  buildDofFitInputTargets,
+  dofFitIncreaseOnlyFactorAllowed,
+  dofFitSolveTweakIdsFromTargets,
+  dofFitTargetsHaveAnyValue,
+  readDofRestrictedTweakIds,
+} from "./dof_fit_input_policy";
+import {
+  applyDofModeCardPresentation,
+  buildDofModeCardPresentation,
+  formatDofSigned,
+} from "./dof_mode_card_presentation";
+import {
+  dofDisplayValueToInternal as displayToInternal,
+  dofInternalValueToDisplay as internalToDisplay,
+  isDofUncommittedDecimalInput as isUncommittedDecimalInput,
+  readDofParamsFromSearch,
+} from "./dof_parameter_input_policy";
+
 type DofParams = {
   [key: string]: number;
 };
 
 type ModeKey = "air" | "top" | "back";
 type TaskMode = "edit" | "fit" | "solve";
-type TraceName = "Current" | "Target" | "Top" | "Air" | "Back" | "Sides";
-type OverlaySegment = { x: number[]; y: number[]; width: number; opacity: number };
-
 type ThumbElements = {
   root: HTMLDivElement;
   label: HTMLDivElement;
@@ -71,18 +126,6 @@ type CardDef = {
   color: string;
   fields: CardField[];
   badgeText?: string;
-};
-type TaskCardDef = {
-  key: string;
-  label: string;
-  alias: string;
-  badgeText: string;
-  copy?: string;
-  fieldIds?: string[];
-  optionIds?: string[];
-  actionIds?: string[];
-  statusId?: string;
-  panelIds?: string[];
 };
 type TaskModeCopy = {
   cardsTitle: string;
@@ -161,7 +204,7 @@ const CARD_DEFS: CardDef[] = [
   },
 ];
 
-const FIT_TASK_CARD_DEFS: TaskCardDef[] = [
+const FIT_TASK_CARD_DEFS: DofTaskCardDefinition[] = [
   {
     key: "air",
     label: "Air",
@@ -189,15 +232,16 @@ const FIT_TASK_CARD_DEFS: TaskCardDef[] = [
   {
     key: "environment",
     label: "Environment",
-    alias: "Fitting actions",
+    alias: "Atmosphere + actions",
     badgeText: "Fit",
-    copy: "Run the fitter, compare the result, and clear the inputs when you want to start over.",
+    copy: "Set the measurement altitude, run the fitter, and clear the inputs when you want to start over.",
+    fieldIds: ["fit_altitude"],
     actionIds: ["btn_fit_guitar", "btn_fit_clear"],
     statusId: "fit_status",
   },
 ];
 
-const SOLVE_TASK_CARD_DEFS: TaskCardDef[] = [
+const SOLVE_TASK_CARD_DEFS: DofTaskCardDefinition[] = [
   {
     key: "air",
     label: "Air",
@@ -255,46 +299,8 @@ function cardDefsForTaskMode(taskMode: TaskMode) {
   return CARD_DEFS;
 }
 
-function taskFieldElementRead(fieldId: string) {
-  return document.getElementById(fieldId)?.closest(".dof-fit-field") as HTMLElement | null;
-}
-
-function taskActionElementRead(actionId: string) {
-  return document.getElementById(actionId) as HTMLElement | null;
-}
-
-function taskStatusElementRead(statusId: string) {
-  return document.getElementById(statusId) as HTMLElement | null;
-}
-
 function fitTaskControlGridRead() {
   return fitPanelSection()?.querySelector(".dof-fit-controls") as HTMLDivElement | null;
-}
-
-function fitTaskControlsRestoreHome() {
-  const controls = fitTaskControlGridRead();
-  const panel = fitPanelSection();
-  if (!controls || !panel) return;
-  FIT_TASK_CARD_DEFS.forEach((card) => {
-    card.fieldIds?.forEach((fieldId) => {
-      const field = taskFieldElementRead(fieldId);
-      if (field) controls.appendChild(field);
-    });
-    card.actionIds?.forEach((actionId) => {
-      const action = taskActionElementRead(actionId);
-      if (action) controls.appendChild(action);
-    });
-  });
-  const status = taskStatusElementRead("fit_status");
-  if (status) panel.appendChild(status);
-}
-
-function taskOptionElementRead(optionId: string) {
-  return document.getElementById(optionId)?.closest(".dof-guided-option") as HTMLElement | null;
-}
-
-function taskPanelElementRead(panelId: string) {
-  return document.getElementById(panelId) as HTMLElement | null;
 }
 
 function solveTaskActionsGroupRead() {
@@ -302,84 +308,12 @@ function solveTaskActionsGroupRead() {
 }
 
 function solveTaskControlsRestoreHome() {
-  const actions = solveTaskActionsGroupRead();
-  const panel = solvePanelSection();
-  if (!actions || !panel) return;
-  SOLVE_TASK_CARD_DEFS.forEach((card) => {
-    card.optionIds?.forEach((optionId) => {
-      const option = taskOptionElementRead(optionId);
-      if (option) panel.appendChild(option);
-    });
-    card.actionIds?.forEach((actionId) => {
-      const action = taskActionElementRead(actionId);
-      if (action) actions.appendChild(action);
-    });
-    if (card.actionIds?.length) panel.appendChild(actions);
-    card.panelIds?.forEach((panelId) => {
-      const cardPanel = taskPanelElementRead(panelId);
-      if (cardPanel) panel.appendChild(cardPanel);
-    });
-  });
-}
-
-function taskCardTitleHtml(card: TaskCardDef) {
-  return `<div class="mode-label">${card.label}<span class="mode-label-alias">${card.alias}</span></div><span class="badge">${card.badgeText}</span>`;
-}
-
-function taskCardCopyElementBuild(card: TaskCardDef) {
-  if (!card.copy) return null;
-  const copy = document.createElement("p");
-  copy.className = "task-card-copy";
-  copy.textContent = card.copy;
-  return copy;
-}
-
-function taskCardElementBuild(card: TaskCardDef) {
-  const cardEl = document.createElement("div");
-  cardEl.className = `mode-card mode-${card.key}`;
-
-  const title = document.createElement("div");
-  title.className = "dof-card-title";
-  title.innerHTML = taskCardTitleHtml(card);
-
-  const body = document.createElement("div");
-  body.className = "task-card-fields";
-  const copy = taskCardCopyElementBuild(card);
-  if (copy) body.appendChild(copy);
-  card.fieldIds?.forEach((fieldId) => {
-    const field = taskFieldElementRead(fieldId);
-    if (field) body.appendChild(field);
-  });
-  card.optionIds?.forEach((optionId) => {
-    const option = taskOptionElementRead(optionId);
-    if (option) body.appendChild(option);
-  });
-  if (card.actionIds?.length) {
-    const actions = document.createElement("div");
-    actions.className = "task-card-actions";
-    card.actionIds.forEach((actionId) => {
-      const action = taskActionElementRead(actionId);
-      if (action) actions.appendChild(action);
-    });
-    body.appendChild(actions);
-  }
-  card.panelIds?.forEach((panelId) => {
-    const panel = taskPanelElementRead(panelId);
-    if (panel) body.appendChild(panel);
-  });
-  if (card.statusId) {
-    const status = taskStatusElementRead(card.statusId);
-    if (status) body.appendChild(status);
-  }
-
-  cardEl.append(title, body);
-  return cardEl;
-}
-
-function taskCardsBuild(container: HTMLElement, cardDefs: TaskCardDef[]) {
-  cardDefs.forEach((card) => {
-    container.appendChild(taskCardElementBuild(card));
-  });
+  restoreDofSolveTaskControls(
+    document,
+    solvePanelSection(),
+    solveTaskActionsGroupRead(),
+    SOLVE_TASK_CARD_DEFS,
+  );
 }
 
 const MODE_META: Record<ModeKey, { label: string; color: string }> = {
@@ -388,22 +322,7 @@ const MODE_META: Record<ModeKey, { label: string; color: string }> = {
   back: { label: "Back", color: "var(--green)" },
 };
 
-const MODE_BANDS: Record<ModeKey, { low: number; high: number }> = {
-  air: { low: 75, high: 115 },
-  top: { low: 150, high: 205 },
-  back: { low: 210, high: 260 },
-};
-
 const MODE_KEYS: ModeKey[] = ["air", "top", "back"];
-
-const TRACE_DEFAULT_VISIBLE: Record<TraceName, boolean> = {
-  Current: true,
-  Target: true,
-  Top: false,
-  Air: false,
-  Back: false,
-  Sides: false,
-};
 
 const TARGET_OVERLAY = {
   min: 85,
@@ -454,8 +373,7 @@ let pendingDragMode: ModeKey | null = null;
 let pendingDragFreq: number | null = null;
 let dragLockedTargets: Record<ModeKey, number | null> | null = null;
 let dragUseWhatIf = false;
-const traceVisibilityState: Partial<Record<TraceName, boolean>> = { ...TRACE_DEFAULT_VISIBLE };
-const PLOT_RESIZE_SYNC_TOLERANCE_PX = 1;
+const traceVisibilityState: DofTraceVisibilityState = { ...DOF_TRACE_DEFAULT_VISIBLE };
 const DOF_FIT_FIELD_IDS = [
   "fit_target_air",
   "fit_target_top",
@@ -469,33 +387,10 @@ const DOF_FIT_FIELD_IDS = [
 ] as const;
 
 function dofParamsFromLocation(): Partial<DofParams> | null {
-  const raw = new URLSearchParams(window.location.search).get("params");
-  if (!raw) return null;
-  try {
-    const decoded = decodeURIComponent(raw);
-    const parsed = JSON.parse(decoded) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== "object") return null;
-    const next: Partial<DofParams> = {};
-    Object.keys(DEFAULT_PARAMS).forEach((key) => {
-      const value = parsed[key];
-      if (Number.isFinite(value)) next[key] = value as number;
-    });
-    return Object.keys(next).length ? next : null;
-  } catch {
-    return null;
-  }
-}
-
-function displayToInternal(param: keyof typeof DEFAULT_PARAMS, displayValue: number): number {
-  if (!Number.isFinite(displayValue)) return displayValue;
-  if (String(param).startsWith("mass_")) return displayValue / 1000;
-  return displayValue;
-}
-
-function internalToDisplay(param: keyof typeof DEFAULT_PARAMS, internalValue: number): number {
-  if (!Number.isFinite(internalValue)) return internalValue;
-  if (String(param).startsWith("mass_")) return internalValue * 1000;
-  return internalValue;
+  return readDofParamsFromSearch(
+    window.location.search,
+    Object.keys(DEFAULT_PARAMS),
+  ) as Partial<DofParams> | null;
 }
 
 function getPlotly(): typeof Plotly | null {
@@ -503,39 +398,6 @@ function getPlotly(): typeof Plotly | null {
   const ref = (window as any).Plotly;
   plotlyRef = ref || null;
   return plotlyRef;
-}
-
-function plotResizeSyncReadContainerWidth(plotEl: HTMLElement | null | undefined): number | null {
-  const width = plotEl?.getBoundingClientRect?.().width ?? plotEl?.clientWidth ?? null;
-  return plotResizeSyncNormalizeWidth(width);
-}
-
-function plotResizeSyncReadGraphWidth(plotEl: any): number | null {
-  return plotResizeSyncNormalizeWidth(plotEl?._fullLayout?.width ?? null);
-}
-
-function plotResizeSyncNeedsResize(plotEl: HTMLElement | null | undefined): boolean {
-  const containerWidth = plotResizeSyncReadContainerWidth(plotEl);
-  const graphWidth = plotResizeSyncReadGraphWidth(plotEl);
-  if (containerWidth === null || graphWidth === null) return false;
-  return Math.abs(containerWidth - graphWidth) > PLOT_RESIZE_SYNC_TOLERANCE_PX;
-}
-
-function plotResizeSyncApply(plotEl: HTMLElement): Promise<boolean> {
-  if (!plotResizeSyncNeedsResize(plotEl)) return Promise.resolve(false);
-  const plotly = getPlotly() as any;
-  if (!plotly) return Promise.resolve(false);
-  const resize = plotly?.Plots?.resize;
-  if (typeof resize === "function") {
-    return Promise.resolve(resize(plotEl)).then(() => true);
-  }
-  const width = plotResizeSyncReadContainerWidth(plotEl);
-  if (width === null || typeof plotly?.relayout !== "function") return Promise.resolve(false);
-  return Promise.resolve(plotly.relayout(plotEl, { width })).then(() => true);
-}
-
-function plotResizeSyncNormalizeWidth(width: unknown): number | null {
-  return typeof width === "number" && Number.isFinite(width) && width > 0 ? width : null;
 }
 
 function updateParam(param: keyof typeof DEFAULT_PARAMS, value: number) {
@@ -569,67 +431,11 @@ function commitParamInput(
   updateParam(param, value);
 }
 
-function isUncommittedDecimalInput(value: string) {
-  return /^-?\d+\.$/.test(value.trim());
-}
-
-function isTraceName(value: unknown): value is TraceName {
-  return typeof value === "string" && value in TRACE_DEFAULT_VISIBLE;
-}
-
-function traceVisibleValue(name: TraceName): true | "legendonly" {
-  const visible = traceVisibilityState[name];
-  const fallback = TRACE_DEFAULT_VISIBLE[name];
-  return (visible ?? fallback) ? true : "legendonly";
-}
-
-function applyTraceVisibility(trace: Partial<Plotly.PlotData> | null, name: TraceName) {
-  if (!trace) return;
-  trace.visible = traceVisibleValue(name);
-}
-
-function syncTraceVisibilityStateFromPlot(plotEl: HTMLElement) {
-  const traces = (plotEl as any).data;
-  if (!Array.isArray(traces)) return;
-  const nextState: Partial<Record<TraceName, boolean>> = {};
-  traces.forEach((trace: any) => {
-    const name = trace?.name;
-    if (!isTraceName(name)) return;
-    const isVisible = trace.visible === undefined || trace.visible === true;
-    nextState[name] = (nextState[name] ?? false) || isVisible;
-  });
-  Object.keys(nextState).forEach((name) => {
-    if (!isTraceName(name)) return;
-    traceVisibilityState[name] = Boolean(nextState[name]);
-  });
-}
-
 function tokenColor(token: string, fallbackToken = "--ink") {
   const styles = getComputedStyle(document.documentElement);
   return styles.getPropertyValue(token).trim()
     || styles.getPropertyValue(fallbackToken).trim()
     || "currentColor";
-}
-
-function colorWithAlpha(color: string, alpha: number) {
-  const hex = color.trim().replace(/^#/, "");
-  if (/^[0-9a-fA-F]{3}$/.test(hex)) {
-    const r = parseInt(`${hex[0]}${hex[0]}`, 16);
-    const g = parseInt(`${hex[1]}${hex[1]}`, 16);
-    const b = parseInt(`${hex[2]}${hex[2]}`, 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  if (/^[0-9a-fA-F]{6}$/.test(hex)) {
-    const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
-    const b = parseInt(hex.slice(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  const rgb = color.match(/^rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i);
-  if (rgb) return `rgba(${rgb[1]}, ${rgb[2]}, ${rgb[3]}, ${alpha})`;
-  const rgba = color.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*[\d.]+\s*\)$/i);
-  if (rgba) return `rgba(${rgba[1]}, ${rgba[2]}, ${rgba[3]}, ${alpha})`;
-  return color;
 }
 
 function plotThemeColors() {
@@ -649,27 +455,6 @@ function plotThemeColors() {
     ink,
     grid: colorWithAlpha(ink, 0.08),
   };
-}
-
-function sliderFillPercent(slider: HTMLInputElement, value: number) {
-  const min = parseFloat(slider.min);
-  const max = parseFloat(slider.max);
-  if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return 0;
-  const normalized = (value - min) / (max - min);
-  return Math.max(0, Math.min(100, normalized * 100));
-}
-
-function decimalPlacesFromStep(stepValue: number) {
-  if (!Number.isFinite(stepValue) || stepValue <= 0) return 0;
-  const text = stepValue.toString();
-  const decimal = text.split(".")[1];
-  return decimal ? decimal.length : 0;
-}
-
-function formatOverlayDisplayValue(value: number, stepValue: number) {
-  if (!Number.isFinite(value)) return "--";
-  const decimals = Math.min(4, decimalPlacesFromStep(stepValue));
-  return value.toFixed(decimals);
 }
 
 function cssPercentValue(value: number) {
@@ -715,15 +500,20 @@ function sliderPresentationSync(
 function buildCards() {
   const container = document.getElementById("dof_cards");
   if (!container) return;
-  fitTaskControlsRestoreHome();
+  restoreDofFitTaskControls(
+    document,
+    fitPanelSection(),
+    fitTaskControlGridRead(),
+    FIT_TASK_CARD_DEFS,
+  );
   solveTaskControlsRestoreHome();
   container.innerHTML = "";
   if (currentTaskMode === "fit") {
-    taskCardsBuild(container, FIT_TASK_CARD_DEFS);
+    buildDofTaskCards(document, container, FIT_TASK_CARD_DEFS);
     return;
   }
   if (currentTaskMode === "solve") {
-    taskCardsBuild(container, SOLVE_TASK_CARD_DEFS);
+    buildDofTaskCards(document, container, SOLVE_TASK_CARD_DEFS);
     return;
   }
   cardDefsForTaskMode(currentTaskMode).forEach((card) => {
@@ -954,34 +744,38 @@ function updateOverlayLatch(param: keyof typeof DEFAULT_PARAMS) {
   if (!slider || !overlay) return;
   const baseValue = internalToDisplay(param, currentParams[param]);
   const overlayValue = parseFloat(overlay.value);
-  const step = parseFloat(overlay.step || "0.0001");
-  const epsilon = Math.max(1e-6, step * 0.5);
-  const isActive = Number.isFinite(baseValue) && Number.isFinite(overlayValue)
-    ? Math.abs(overlayValue - (baseValue as number)) > epsilon
-    : false;
-  if (isActive) overlayLatched.add(param);
+  const presentation = buildDofOverlayPresentation({
+    baseSlider: slider,
+    overlaySlider: overlay,
+    baseValue,
+    overlayValue,
+    showWhatIf: isWhatIfEnabled(),
+  });
+  if (presentation.isActive) overlayLatched.add(param);
   else overlayLatched.delete(param);
-  overlay.classList.toggle("overlay-active", isActive);
+  overlay.classList.toggle("overlay-active", presentation.isActive);
 
-  const baseFill = sliderFillPercent(slider, baseValue as number);
-  const overlayFill = sliderFillPercent(overlay, overlayValue);
-  const start = Math.min(baseFill, overlayFill);
-  const end = Math.max(baseFill, overlayFill);
-  sliderPresentationSync(slider, start, end, baseFill, overlayFill);
+  sliderPresentationSync(
+    slider,
+    presentation.start,
+    presentation.end,
+    presentation.baseFill,
+    presentation.overlayFill,
+  );
 
   if (deltaBar) {
-    deltaBar.classList.toggle("active", isActive && Math.max(0, end - start) > 0);
+    deltaBar.classList.toggle("active", presentation.deltaBarActive);
   }
   if (glowDot) {
-    glowDot.classList.toggle("active", isActive);
+    glowDot.classList.toggle("active", presentation.isActive);
   }
 
   if (whatIfRow && whatIfValue && whatIfDelta) {
-    const showMode = isWhatIfEnabled();
-    const delta = overlayValue - (baseValue as number);
-    whatIfRow.classList.toggle("active", showMode && isActive);
-    whatIfValue.textContent = formatOverlayDisplayValue(overlayValue, step);
-    whatIfDelta.textContent = isActive ? formatSigned(delta, decimalPlacesFromStep(step)) : "";
+    whatIfRow.classList.toggle("active", presentation.whatIfActive);
+    whatIfValue.textContent = presentation.overlayValueText;
+    whatIfDelta.textContent = presentation.delta == null
+      ? ""
+      : formatDofSigned(presentation.delta, presentation.deltaDigits);
   }
 }
 
@@ -1005,6 +799,16 @@ function resetWhatIf() {
   lastWhatIfResponse = null;
   updateModeCards(lastResponse, null);
   whatIfSummarySet(null);
+}
+
+function resetWhatIfComparison() {
+  const toggle = document.getElementById("toggle_overlay") as HTMLInputElement | null;
+  if (!toggle?.checked) {
+    resetWhatIf();
+    return;
+  }
+  toggle.checked = false;
+  toggle.dispatchEvent(new Event("change"));
 }
 
 function getWhatIfParams(): DofParams | null {
@@ -1032,73 +836,23 @@ function getDragLockResponse(useWhatIf: boolean) {
   return lastResponse || computeResponseForParams(currentParams);
 }
 
-const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-
-function freqToNoteCents(freq: number | null | undefined) {
-  if (!Number.isFinite(freq) || (freq as number) <= 0) {
-    return { name: "--", cents: "--", centsNum: null };
-  }
-  const midi = 69 + 12 * Math.log2((freq as number) / 440);
-  const nearest = Math.round(midi);
-  const cents = Math.round((midi - nearest) * 100);
-  const name = `${NOTE_NAMES[(nearest + 1200) % 12]}${Math.floor(nearest / 12) - 1}`;
-  const centsStr = `${cents >= 0 ? "+" : ""}${cents}c`;
-  return { name, cents: centsStr, centsNum: cents };
-}
-
-function formatSigned(value: number, digits = 1) {
-  if (!Number.isFinite(value)) return "--";
-  const sign = value >= 0 ? "+" : "";
-  return `${sign}${value.toFixed(digits)}`;
-}
-
-function getModeDisplayFreq(mode: ModeKey, peaks: Record<ModeKey, number | null> | null) {
-  if (!dragUseWhatIf && dragState.mode === mode && Number.isFinite(dragState.freq)) return dragState.freq as number;
-  const freq = peaks?.[mode];
-  return Number.isFinite(freq) ? (freq as number) : null;
-}
-
 function updateModeCards(baseResponse = lastResponse, whatIfResponse = lastWhatIfResponse) {
   const basePeaks = baseResponse ? modelPeaksFromResponse(baseResponse) : null;
   const whatIfPeaks = whatIfResponse ? modelPeaksFromResponse(whatIfResponse) : null;
-  const showWhatIf = false;
   MODE_KEYS.forEach((mode) => {
     const els = modeCardEls[mode];
     if (!els) return;
-    const baseFreq = getModeDisplayFreq(mode, basePeaks || { air: null, top: null, back: null });
-    els.freqValue.textContent = Number.isFinite(baseFreq) ? (baseFreq as number).toFixed(1) : "--";
-
-    const baseNote = freqToNoteCents(baseFreq);
-    els.noteName.textContent = baseNote.name;
-    els.noteCents.textContent = baseNote.cents;
-    els.noteCents.classList.toggle("positive", typeof baseNote.centsNum === "number" && baseNote.centsNum > 0);
-    els.noteCents.classList.toggle("negative", typeof baseNote.centsNum === "number" && baseNote.centsNum < 0);
-
-    els.whatIfRow.style.display = showWhatIf ? "" : "none";
-    els.whatIfNoteRow.style.display = showWhatIf ? "" : "none";
-    if (!showWhatIf) {
-      els.whatIfValue.textContent = "--";
-      els.whatIfDelta.textContent = "";
-      els.whatIfNoteName.textContent = "--";
-      els.whatIfNoteCents.textContent = "--";
-      els.whatIfNoteCents.classList.remove("positive", "negative");
-      return;
-    }
-
-    const whatIfFreq = whatIfPeaks?.[mode];
-    els.whatIfValue.textContent = Number.isFinite(whatIfFreq) ? `${(whatIfFreq as number).toFixed(1)} Hz` : "--";
-    if (Number.isFinite(baseFreq) && Number.isFinite(whatIfFreq)) {
-      const hzDelta = (whatIfFreq as number) - (baseFreq as number);
-      els.whatIfDelta.textContent = `(${formatSigned(hzDelta, 1)} Hz)`;
-    } else {
-      els.whatIfDelta.textContent = "";
-    }
-
-    const whatNote = freqToNoteCents(whatIfFreq);
-    els.whatIfNoteName.textContent = whatNote.name;
-    els.whatIfNoteCents.textContent = whatNote.cents;
-    els.whatIfNoteCents.classList.toggle("positive", typeof whatNote.centsNum === "number" && whatNote.centsNum > 0);
-    els.whatIfNoteCents.classList.toggle("negative", typeof whatNote.centsNum === "number" && whatNote.centsNum < 0);
+    const presentation = buildDofModeCardPresentation({
+      mode,
+      basePeaks,
+      whatIfPeaks,
+      drag: {
+        mode: dragState.mode,
+        frequency: dragState.freq,
+        useWhatIf: dragUseWhatIf,
+      },
+    });
+    applyDofModeCardPresentation(els, presentation);
   });
 }
 
@@ -1113,6 +867,29 @@ function syncCardInputs() {
     }
     syncOverlayToBase(param);
     updateOverlayLatch(param);
+  });
+  fitAltitudeControlSync();
+}
+
+function fitAltitudeControlSync() {
+  const slider = document.getElementById("fit_altitude") as HTMLInputElement | null;
+  const value = document.getElementById("fit_altitude_value");
+  if (!slider || !value) return;
+  const altitude = internalToDisplay("altitude", currentParams.altitude);
+  if (!Number.isFinite(altitude)) return;
+  slider.value = String(altitude);
+  value.textContent = `${Math.round(altitude)} m`;
+}
+
+function fitAltitudeControlBind() {
+  const slider = document.getElementById("fit_altitude") as HTMLInputElement | null;
+  if (!slider) return;
+  fitAltitudeControlSync();
+  slider.addEventListener("input", () => {
+    const altitude = parseFloat(slider.value);
+    if (!Number.isFinite(altitude)) return;
+    updateParam("altitude", altitude);
+    fitAltitudeControlSync();
   });
 }
 
@@ -1208,39 +985,11 @@ function sharedDofSolverAdapterRead() {
 }
 
 function computeResponseSafeLegacy(params: DofParams) {
-  try {
-    const fn = (window as any).computeResponse || (window as any).ModelCore?.computeResponse;
-    if (typeof fn === "function") return fn(params);
-  } catch (err) {
-    console.warn("computeResponse failed", err);
-  }
-  return null;
+  return computeDofLegacyResponse(window, params);
 }
 
 function adaptParamsToSolverLegacy(raw: DofParams): Record<string, any> {
-  const out: Record<string, any> = { ...raw };
-
-  const AtmosphereLib = (window as any).Atmosphere;
-  const deriveAtmosphere = AtmosphereLib?.deriveAtmosphere;
-  const referenceRho = AtmosphereLib?.REFERENCE_RHO ?? 1.205;
-  const altitude = typeof out.altitude === "number" && Number.isFinite(out.altitude) ? out.altitude : 0;
-  const temp = typeof out.ambient_temp === "number" && Number.isFinite(out.ambient_temp) ? out.ambient_temp : 20;
-
-  if (typeof deriveAtmosphere === "function") {
-    const atm = deriveAtmosphere(altitude, temp);
-    out.air_density = atm.rho;
-    out.speed_of_sound = atm.c;
-    out.air_pressure = atm.pressure;
-    out.air_temp_k = atm.tempK;
-    const baseMassAirKg = typeof out.mass_air === "number" && Number.isFinite(out.mass_air) ? out.mass_air : null;
-    if (baseMassAirKg !== null) {
-      const densityScale = atm.rho / referenceRho;
-      out.mass_air = baseMassAirKg * densityScale;
-    }
-    out._atm = atm;
-  }
-
-  return out;
+  return adaptDofLegacyParams(window, raw);
 }
 
 function computeResponseSafe(params: DofParams) {
@@ -1268,458 +1017,40 @@ function clampToBounds(id: string, value: number) {
   return Math.max(bounds.min, Math.min(bounds.max, value));
 }
 
-function peakFreqInBand(series: Array<{ x: number; y: number }>, band: { low: number; high: number }) {
-  let bestX: number | null = null;
-  let bestY = -Infinity;
-  for (let i = 0; i < series.length; i += 1) {
-    const point = series[i];
-    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) continue;
-    if (point.x < band.low || point.x > band.high) continue;
-    if (point.y > bestY) {
-      bestY = point.y;
-      bestX = point.x;
-    }
-  }
-  return bestX;
-}
-
-function median(values: number[]) {
-  if (!values.length) return 0;
-  const sorted = values.slice().sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
-function refineParabolicPeak(xs: number[], ys: number[], idx: number) {
-  if (idx <= 0 || idx >= ys.length - 1) return null;
-  const a = ys[idx - 1];
-  const b = ys[idx];
-  const c = ys[idx + 1];
-  if (!Number.isFinite(a) || !Number.isFinite(b) || !Number.isFinite(c)) return null;
-  const bw = xs.length > 1 ? Math.abs(xs[1] - xs[0]) : null;
-  if (!bw || !Number.isFinite(bw) || bw <= 0) return null;
-  const denom = a - (2 * b) + c;
-  if (!Number.isFinite(denom) || Math.abs(denom) < 1e-12) return null;
-  const delta = 0.5 * (a - c) / denom;
-  if (!Number.isFinite(delta)) return null;
-  const clamped = Math.max(-1, Math.min(1, delta));
-  const freq = xs[idx] + clamped * bw;
-  const y = b - ((a - c) * clamped) / 4;
-  return { freq, y, delta: clamped };
-}
-
-type LocalPeak = { idx: number; freq: number; db: number; prominence: number };
-
-function collectLocalPeaks(series: Array<{ x: number; y: number }>, band?: { low: number; high: number }) {
-  if (!Array.isArray(series) || series.length < 3) return [];
-  const xs = series.map((pt) => pt?.x);
-  const ys = series.map((pt) => pt?.y);
-  const peaks: LocalPeak[] = [];
-  for (let i = 1; i < series.length - 1; i += 1) {
-    const y = ys[i];
-    const yPrev = ys[i - 1];
-    const yNext = ys[i + 1];
-    if (!Number.isFinite(y) || !Number.isFinite(yPrev) || !Number.isFinite(yNext)) continue;
-    if (!(y > yPrev && y > yNext)) continue;
-    const x = xs[i];
-    if (!Number.isFinite(x)) continue;
-    if (band && ((x as number) < band.low || (x as number) > band.high)) continue;
-    const start = Math.max(0, i - 6);
-    const end = Math.min(ys.length - 1, i + 6);
-    const neighbors: number[] = [];
-    for (let j = start; j <= end; j += 1) {
-      if (j === i) continue;
-      const v = ys[j];
-      if (Number.isFinite(v)) neighbors.push(v as number);
-    }
-    const baseline = neighbors.length ? median(neighbors) : (y as number);
-    const prominence = (y as number) - baseline;
-    const refined = refineParabolicPeak(xs as number[], ys as number[], i);
-    peaks.push({
-      idx: i,
-      freq: refined?.freq ?? (x as number),
-      db: refined?.y ?? (y as number),
-      prominence,
-    });
-  }
-  return peaks;
-}
-
-function pickDominantPeak(series: Array<{ x: number; y: number }>, band: { low: number; high: number }) {
-  const peaks = collectLocalPeaks(series, band);
-  if (!peaks.length) return null;
-  peaks.sort((a, b) => b.prominence - a.prominence);
-  return peaks[0];
-}
-
-function assignPeaksToModes(totalPeaks: LocalPeak[], targets: Record<ModeKey, number | null>) {
-  const modes: ModeKey[] = ["air", "top", "back"];
-  const out: Record<ModeKey, number | null> = { air: null, top: null, back: null };
-  if (!totalPeaks.length) return out;
-
-  if (totalPeaks.length >= modes.length) {
-    const perms: number[][] = [
-      [0, 1, 2],
-      [0, 2, 1],
-      [1, 0, 2],
-      [1, 2, 0],
-      [2, 0, 1],
-      [2, 1, 0],
-    ];
-    let best = perms[0];
-    let bestCost = Infinity;
-    perms.forEach((perm) => {
-      let cost = 0;
-      modes.forEach((mode, i) => {
-        const target = targets[mode];
-        const peak = totalPeaks[perm[i]];
-        if (!Number.isFinite(target)) {
-          cost += 1e6;
-          return;
-        }
-        cost += Math.abs(peak.freq - (target as number));
-      });
-      if (cost < bestCost) {
-        bestCost = cost;
-        best = perm;
-      }
-    });
-    modes.forEach((mode, i) => {
-      out[mode] = totalPeaks[best[i]]?.freq ?? null;
-    });
-    return out;
-  }
-
-  const remaining = totalPeaks.slice();
-  modes.forEach((mode) => {
-    if (!remaining.length) return;
-    const target = targets[mode];
-    let bestIdx = 0;
-    let bestDist = Infinity;
-    for (let i = 0; i < remaining.length; i += 1) {
-      const dist = Number.isFinite(target) ? Math.abs(remaining[i].freq - (target as number)) : 0;
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestIdx = i;
-      }
-    }
-    const chosen = remaining.splice(bestIdx, 1)[0];
-    out[mode] = chosen?.freq ?? null;
-  });
-  return out;
-}
-
-function modelPeaksFromResponse(resp: any) {
-  const total = resp?.total;
-  if (!Array.isArray(total) || !total.length) return null;
-  const totalPeaks = collectLocalPeaks(total).sort((a, b) => b.prominence - a.prominence).slice(0, 3);
-  if (!totalPeaks.length) {
-    return {
-      air: peakFreqInBand(total, MODE_BANDS.air),
-      top: peakFreqInBand(total, MODE_BANDS.top),
-      back: peakFreqInBand(total, MODE_BANDS.back),
-    };
-  }
-  const bandCenter = (mode: ModeKey) => (MODE_BANDS[mode].low + MODE_BANDS[mode].high) / 2;
-  const componentPeaks = {
-    air: pickDominantPeak(resp?.air || [], MODE_BANDS.air),
-    top: pickDominantPeak(resp?.top || [], MODE_BANDS.top),
-    back: pickDominantPeak(resp?.back || [], MODE_BANDS.back),
-  };
-  const targets = {
-    air: componentPeaks.air?.freq ?? bandCenter("air"),
-    top: componentPeaks.top?.freq ?? bandCenter("top"),
-    back: componentPeaks.back?.freq ?? bandCenter("back"),
-  };
-  return assignPeaksToModes(totalPeaks, targets);
-}
-
-function sampleSeriesAtFreqLegacy(series: Array<{ x: number; y: number }>, freq: number | null) {
-  if (!Array.isArray(series) || !series.length || !Number.isFinite(freq)) return null;
-  let i = 0;
-  while (i + 1 < series.length && series[i + 1].x < (freq as number)) i += 1;
-  const a = series[i];
-  const b = series[Math.min(i + 1, series.length - 1)];
-  if (!Number.isFinite(a?.x) || !Number.isFinite(a?.y)) return Number.isFinite(b?.y) ? b.y : null;
-  if (!Number.isFinite(b?.x) || !Number.isFinite(b?.y) || a.x === b.x) return a.y;
-  const t = ((freq as number) - a.x) / (b.x - a.x);
-  return a.y + t * (b.y - a.y);
-}
-
 function sampleSeriesAtFreq(series: Array<{ x: number; y: number }>, freq: number | null) {
   const sharedSampler = sharedSeriesSamplerRead();
   if (sharedSampler) return sharedSampler.seriesValueSampleAtFrequency(series, freq);
-  return sampleSeriesAtFreqLegacy(series, freq);
+  return sampleDofSeriesAtFrequency(series, freq);
 }
 
 function fit4DofFromTargets(
   targets: Record<string, number | null | undefined>,
   opts: { maxIter?: number; tweakIds?: string[]; baseParams?: Record<string, any>; factorAllowed?: (id: string, factor: number) => boolean } = {},
 ) {
-  const maxIter = opts.maxIter ?? 12;
-  const baseParams = opts.baseParams || DEFAULT_PARAMS;
-  const tweakIds = opts.tweakIds || Array.from(SOLVE_TWEAK_IDS);
-  const factorAllowed = opts.factorAllowed;
-  const desired = {
-    air: Number.isFinite(targets.air) ? (targets.air as number) : null,
-    top: Number.isFinite(targets.top) ? (targets.top as number) : null,
-    back: Number.isFinite(targets.back) ? (targets.back as number) : null,
-    mass_top: Number.isFinite(targets.mass_top) ? (targets.mass_top as number) : null,
-    stiffness_top: Number.isFinite(targets.stiffness_top) ? (targets.stiffness_top as number) : null,
-    mass_back: Number.isFinite(targets.mass_back) ? (targets.mass_back as number) : null,
-    stiffness_back: Number.isFinite(targets.stiffness_back) ? (targets.stiffness_back as number) : null,
-    volume_air: Number.isFinite(targets.volume_air) ? (targets.volume_air as number) : null,
-    area_hole: Number.isFinite(targets.area_hole) ? (targets.area_hole as number) : null,
-  };
-  if (
-    !desired.air
-    && !desired.top
-    && !desired.back
-    && !desired.mass_top
-    && !desired.stiffness_top
-    && !desired.mass_back
-    && !desired.stiffness_back
-    && !desired.volume_air
-    && !desired.area_hole
-  ) return null;
-
-  const baselineResp = computeResponseSafe(adaptParamsToSolver(baseParams));
-  const baselinePeaks = baselineResp ? modelPeaksFromResponse(baselineResp) : null;
-
-  const clampCandidate = (id: string, value: number) => clampToBounds(id, value);
-
-  const warm = { ...baseParams };
-  if (tweakIds.includes("stiffness_top") || tweakIds.includes("stiffness_back")) {
-    (["top", "back"] as const).forEach((k) => {
-      const tgt = desired[k];
-      const base = baselinePeaks?.[k];
-      if (Number.isFinite(tgt) && Number.isFinite(base) && (base as number) > 0) {
-        const ratio = (tgt as number) / (base as number);
-        const id = k === "top" ? "stiffness_top" : "stiffness_back";
-        if (tweakIds.includes(id)) warm[id] = clampCandidate(id, warm[id] * ratio * ratio);
-      }
-    });
-  }
-  if (tweakIds.includes("volume_air") && Number.isFinite(desired.air) && Number.isFinite(baselinePeaks?.air) && (baselinePeaks!.air as number) > 0) {
-    const ratio = (desired.air as number) / (baselinePeaks!.air as number);
-    warm.volume_air = clampCandidate("volume_air", warm.volume_air / (ratio * ratio));
-  }
-  if (tweakIds.includes("mass_top") && Number.isFinite(desired.mass_top)) {
-    warm.mass_top = clampCandidate("mass_top", desired.mass_top as number);
-  }
-  if (tweakIds.includes("stiffness_top") && Number.isFinite(desired.stiffness_top)) {
-    warm.stiffness_top = clampCandidate("stiffness_top", desired.stiffness_top as number);
-  }
-  if (tweakIds.includes("mass_back") && Number.isFinite(desired.mass_back)) {
-    warm.mass_back = clampCandidate("mass_back", desired.mass_back as number);
-  }
-  if (tweakIds.includes("stiffness_back") && Number.isFinite(desired.stiffness_back)) {
-    warm.stiffness_back = clampCandidate("stiffness_back", desired.stiffness_back as number);
-  }
-  if (tweakIds.includes("volume_air") && Number.isFinite(desired.volume_air)) {
-    warm.volume_air = clampCandidate("volume_air", desired.volume_air as number);
-  }
-  if (tweakIds.includes("area_hole") && Number.isFinite(desired.area_hole)) {
-    warm.area_hole = clampCandidate("area_hole", desired.area_hole as number);
-  }
-
-  const evaluate = (rawParams: Record<string, any>) => {
-    const resp = computeResponseSafe(adaptParamsToSolver(rawParams));
-    const peaks = resp ? modelPeaksFromResponse(resp) : null;
-    if (!peaks) return { cost: Infinity, peaks: null };
-    let cost = 0;
-    (["air", "top", "back"] as const).forEach((k) => {
-      const target = desired[k];
-      const predicted = peaks[k];
-      if (!Number.isFinite(target) || !Number.isFinite(predicted) || !(target as number)) return;
-      const diff = ((predicted as number) - (target as number)) / (target as number);
-      cost += diff * diff;
-    });
-    if (Number.isFinite(desired.mass_top) && Number.isFinite(rawParams.mass_top) && (desired.mass_top as number) > 0) {
-      const diff = (rawParams.mass_top - (desired.mass_top as number)) / (desired.mass_top as number);
-      cost += diff * diff;
-    }
-    if (Number.isFinite(desired.stiffness_top) && Number.isFinite(rawParams.stiffness_top) && (desired.stiffness_top as number) > 0) {
-      const diff = (rawParams.stiffness_top - (desired.stiffness_top as number)) / (desired.stiffness_top as number);
-      cost += diff * diff;
-    }
-    if (Number.isFinite(desired.mass_back) && Number.isFinite(rawParams.mass_back) && (desired.mass_back as number) > 0) {
-      const diff = (rawParams.mass_back - (desired.mass_back as number)) / (desired.mass_back as number);
-      cost += diff * diff;
-    }
-    if (Number.isFinite(desired.stiffness_back) && Number.isFinite(rawParams.stiffness_back) && (desired.stiffness_back as number) > 0) {
-      const diff = (rawParams.stiffness_back - (desired.stiffness_back as number)) / (desired.stiffness_back as number);
-      cost += diff * diff;
-    }
-    if (Number.isFinite(desired.volume_air) && Number.isFinite(rawParams.volume_air) && (desired.volume_air as number) > 0) {
-      const diff = (rawParams.volume_air - (desired.volume_air as number)) / (desired.volume_air as number);
-      cost += diff * diff;
-    }
-    if (Number.isFinite(desired.area_hole) && Number.isFinite(rawParams.area_hole) && (desired.area_hole as number) > 0) {
-      const diff = (rawParams.area_hole - (desired.area_hole as number)) / (desired.area_hole as number);
-      cost += diff * diff;
-    }
-    return { cost, peaks };
-  };
-
-  let best = { ...warm };
-  let bestEval = evaluate(best);
-  const steps: Record<string, number> = {};
-  tweakIds.forEach((id) => {
-    if (id.startsWith("stiffness_")) steps[id] = 0.2;
-    else if (id === "volume_air") steps[id] = 0.15;
-    else if (id === "area_hole") steps[id] = 0.12;
-    else steps[id] = 0.15;
+  return fitDofFromTargets(targets, opts, {
+    defaultParams: DEFAULT_PARAMS,
+    defaultTweakIds: SOLVE_TWEAK_IDS,
+    clampToBounds,
+    computeResponse: computeResponseSafe,
+    adaptParams: adaptParamsToSolver,
+    peaksFromResponse: modelPeaksFromResponse,
   });
-  const ids = tweakIds.slice();
-
-  for (let iter = 0; iter < maxIter; iter += 1) {
-    let improved = false;
-    for (const id of ids) {
-      const baseVal = best[id];
-      if (!Number.isFinite(baseVal)) continue;
-      const delta = steps[id];
-      const tryFactor = (factor: number) => {
-        if (factorAllowed && !factorAllowed(id, factor)) return null;
-        const candidate = { ...best, [id]: clampCandidate(id, baseVal * factor) };
-        return { candidate, eval: evaluate(candidate) };
-      };
-      const plus = tryFactor(1 + delta);
-      const minus = tryFactor(1 - delta);
-      let next = null;
-      if (plus && plus.eval.cost < bestEval.cost) next = plus;
-      if (minus && minus.eval.cost < (next?.eval.cost ?? bestEval.cost)) next = minus;
-      if (next) {
-        best = next.candidate;
-        bestEval = next.eval;
-        improved = true;
-      }
-    }
-    ids.forEach((k) => {
-      steps[k] *= improved ? 0.85 : 0.65;
-    });
-    if (Object.values(steps).every((s) => s < 0.02)) break;
-  }
-  return { raw: best, evaluation: bestEval };
 }
 
-function toTrace(points: Array<{x:number; y:number}>, name: string, color: string, opts: Partial<Plotly.PlotData["line"]> = {}): Partial<Plotly.PlotData> | null {
-  if (!Array.isArray(points) || points.length === 0) return null;
-  return {
-    x: points.map(p=>p.x),
-    y: points.map(p=>p.y),
-    mode: "lines",
-    name,
-    line: { color, ...(opts || {}) },
-    hovertemplate: "%{x:.1f} Hz · %{y:.1f} dB<extra>" + name + "</extra>"
-  };
-}
-
-function buildTargetOverlaySegments(points: Array<{ x: number; y: number }>): OverlaySegment[] {
+function targetOverlaySharedBuilderRead() {
   const shared = (window as any).overlay_segments;
   const buildShared = shared?.overlaySegmentsBuildFromPoints;
-  if (typeof buildShared === "function") {
-    return buildShared(points, TARGET_OVERLAY) as OverlaySegment[];
-  }
-  const { min, max, feather, widths, opacities } = TARGET_OVERLAY;
-  const pickBucket = (weight: number) => {
-    if (weight > 0.66) return { width: widths.thick, opacity: opacities.thick };
-    if (weight > 0.33) return { width: widths.mid, opacity: opacities.mid };
-    return { width: widths.thin, opacity: opacities.thin };
-  };
-  const segments: OverlaySegment[] = [];
-  let current: OverlaySegment | null = null;
-  points.forEach((point) => {
-    const frequency = point?.x;
-    const level = point?.y;
-    if (!Number.isFinite(frequency) || !Number.isFinite(level)) {
-      current = null;
-      return;
-    }
-    let weight = 0;
-    if (frequency >= min && frequency <= max) weight = 1;
-    else if (frequency >= min - feather && frequency < min) weight = 1 - (min - frequency) / feather;
-    else if (frequency > max && frequency <= max + feather) weight = 1 - (frequency - max) / feather;
-    if (weight <= 0) {
-      current = null;
-      return;
-    }
-    const bucket = pickBucket(weight);
-    const isSameBucket = current && current.width === bucket.width && current.opacity === bucket.opacity;
-    if (!isSameBucket) {
-      current = { x: [], y: [], width: bucket.width, opacity: bucket.opacity };
-      segments.push(current);
-    }
-    current!.x.push(frequency);
-    current!.y.push(level);
-  });
-  return segments;
+  return typeof buildShared === "function" ? buildShared : undefined;
 }
 
 function buildTargetOverlayTraces(points: Array<{ x: number; y: number }>, color: string): Partial<Plotly.PlotData>[] {
-  const segments = buildTargetOverlaySegments(points);
-  return segments.map((segment, index) => ({
-    x: segment.x,
-    y: segment.y,
-    mode: "lines",
-    name: "Target",
-    legendgroup: "target",
-    showlegend: index === 0,
-    line: {
-      color: colorWithAlpha(color, segment.opacity),
-      width: segment.width,
-      dash: "dash",
-    },
-    hovertemplate: "%{x:.1f} Hz · %{y:.1f} dB<extra>Target</extra>",
-  }));
-}
-
-function computeYRange(series: Array<{ x: number; y: number }>, pad = 6, minX?: number, maxX?: number) {
-  if (!Array.isArray(series) || !series.length) return null;
-  let min = Infinity;
-  let max = -Infinity;
-  series.forEach((pt) => {
-    if (!Number.isFinite(pt?.y)) return;
-    if (Number.isFinite(minX) && Number.isFinite(maxX)) {
-      if (!Number.isFinite(pt?.x)) return;
-      if (pt.x < (minX as number) || pt.x > (maxX as number)) return;
-    }
-    min = Math.min(min, pt.y);
-    max = Math.max(max, pt.y);
-  });
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-  const padding = Math.max(2, pad);
-  return [min - padding, max + padding];
-}
-
-function getPlotAxes(plotEl: HTMLElement) {
-  const layout = (plotEl as any)._fullLayout;
-  const xaxis = layout?.xaxis;
-  const yaxis = layout?.yaxis;
-  if (!xaxis || !yaxis || typeof xaxis.l2p !== "function" || typeof yaxis.l2p !== "function") return null;
-  return { xaxis, yaxis };
-}
-
-function getAxisRange(xaxis: any) {
-  if (Array.isArray(xaxis?.range) && xaxis.range.length === 2) {
-    const min = Math.min(xaxis.range[0], xaxis.range[1]);
-    const max = Math.max(xaxis.range[0], xaxis.range[1]);
-    return [min, max];
-  }
-  return [50, 500];
-}
-
-function pointerEventToFreq(event: PointerEvent, plotEl: HTMLElement) {
-  const axes = getPlotAxes(plotEl);
-  if (!axes || typeof axes.xaxis.p2l !== "function") return null;
-  const rect = plotEl.getBoundingClientRect();
-  const localX = event.clientX - rect.left;
-  const xPix = localX - (axes.xaxis._offset || 0);
-  const clampedPix = Math.max(0, Math.min(axes.xaxis._length || 0, xPix));
-  const raw = axes.xaxis.p2l(clampedPix);
-  if (!Number.isFinite(raw)) return null;
-  const [min, max] = getAxisRange(axes.xaxis);
-  return Math.max(min, Math.min(max, raw));
+  return buildDofTargetOverlayTraces(
+    points,
+    color,
+    TARGET_OVERLAY,
+    colorWithAlpha,
+    targetOverlaySharedBuilderRead(),
+  );
 }
 
 function ensureThumb(mode: ModeKey) {
@@ -1769,7 +1100,7 @@ function updateThumbs(response = lastResponse) {
   const plotEl = document.getElementById("plot_dof");
   const overlay = document.getElementById("plot_overlay");
   if (!plotEl || !overlay) return;
-  const axes = getPlotAxes(plotEl);
+  const axes = readDofPlotAxes(plotEl);
   const activeResponse = isWhatIfEnabled() && lastWhatIfResponse?.total?.length
     ? lastWhatIfResponse
     : response;
@@ -1837,46 +1168,16 @@ function solveTargets(
   }
 }
 
-function fitTargetFromInput(elementId: string): number | null {
-  const element = document.getElementById(elementId) as HTMLInputElement | null;
-  if (!element) return null;
-  const value = parseFloat(element.value);
-  return Number.isFinite(value) ? value : null;
-}
-
 function fitTargetsFromInputs(): Record<string, number | null> {
-  const massTopDisplay = fitTargetFromInput("fit_target_mass_top");
-  const massBackDisplay = fitTargetFromInput("fit_target_mass_back");
-  const soundholeDiameter = fitTargetFromInput("fit_target_area_hole_diam");
-  return {
-    air: fitTargetFromInput("fit_target_air"),
-    top: fitTargetFromInput("fit_target_top"),
-    back: fitTargetFromInput("fit_target_back"),
-    mass_top: Number.isFinite(massTopDisplay) ? displayToInternal("mass_top", massTopDisplay as number) : null,
-    stiffness_top: fitTargetFromInput("fit_target_stiffness_top"),
-    mass_back: Number.isFinite(massBackDisplay) ? displayToInternal("mass_back", massBackDisplay as number) : null,
-    stiffness_back: fitTargetFromInput("fit_target_stiffness_back"),
-    volume_air: fitTargetFromInput("fit_target_volume_air"),
-    area_hole_diam: soundholeDiameter,
-    area_hole: Number.isFinite(soundholeDiameter) ? Math.PI * Math.pow((soundholeDiameter as number) / 1000, 2) / 4 : null,
-  };
+  return buildDofFitInputTargets(readDofInputValue, displayToInternal);
 }
 
 function fitTargetsHaveAnyValue(targets: Record<string, number | null>) {
-  return MODE_KEYS.some((mode) => Number.isFinite(targets[mode]))
-    || Number.isFinite(targets.mass_top)
-    || Number.isFinite(targets.stiffness_top)
-    || Number.isFinite(targets.mass_back)
-    || Number.isFinite(targets.stiffness_back)
-    || Number.isFinite(targets.volume_air)
-    || Number.isFinite(targets.area_hole);
+  return dofFitTargetsHaveAnyValue(targets);
 }
 
 function fitSolveTweakIdsFromTargets(targets: Record<string, number | null>) {
-  const tweakIds = Array.from(SOLVE_TWEAK_IDS);
-  if (Number.isFinite(targets.mass_top)) tweakIds.push("mass_top");
-  if (Number.isFinite(targets.mass_back)) tweakIds.push("mass_back");
-  return tweakIds;
+  return dofFitSolveTweakIdsFromTargets(targets);
 }
 
 function fitRecipeRestrictSimpleEnabled() {
@@ -1885,12 +1186,11 @@ function fitRecipeRestrictSimpleEnabled() {
 }
 
 function fitRecipeRestrictedTweakIds() {
-  return ["mass_top", "mass_back", "area_hole"];
+  return readDofRestrictedTweakIds();
 }
 
 function fitRecipeIncreaseOnlyFactorAllowed(id: string, factor: number) {
-  if (id !== "mass_top" && id !== "mass_back" && id !== "area_hole") return false;
-  return factor >= 1;
+  return dofFitIncreaseOnlyFactorAllowed(id, factor);
 }
 
 function fitStatusSet(message: string) {
@@ -1958,8 +1258,8 @@ function bindSolveRecipeActions() {
     solveRecipeTargetsFromFitInputs();
   });
   resetButton.addEventListener("click", () => {
-    resetWhatIf();
-    fitStatusSet("What-If reset.");
+    resetWhatIfComparison();
+    fitStatusSet("What-If comparison reset.");
   });
 }
 
@@ -2024,24 +1324,12 @@ function solveTargetsFast(targets: Record<ModeKey, number | null | undefined>, o
     }
     return;
   }
-  const desired = {
-    air: Number.isFinite(targets.air) ? (targets.air as number) : null,
-    top: Number.isFinite(targets.top) ? (targets.top as number) : null,
-    back: Number.isFinite(targets.back) ? (targets.back as number) : null,
-  };
-  const warm = { ...baseParams };
-  (["top", "back"] as const).forEach((k) => {
-    const target = desired[k];
-    const base = peaks[k];
-    if (!Number.isFinite(target) || !Number.isFinite(base) || (base as number) <= 0) return;
-    const ratio = (target as number) / (base as number);
-    const id = k === "top" ? "stiffness_top" : "stiffness_back";
-    warm[id] = clampToBounds(id, warm[id] * ratio * ratio);
+  const warm = buildDofFastTargetWarmParams({
+    baseParams,
+    targets,
+    peaks,
+    clampToBounds,
   });
-  if (Number.isFinite(desired.air) && Number.isFinite(peaks.air) && (peaks.air as number) > 0) {
-    const ratio = (desired.air as number) / (peaks.air as number);
-    warm.volume_air = clampToBounds("volume_air", warm.volume_air / (ratio * ratio));
-  }
   if (useWhatIf) applyWhatIfParams(warm);
   else {
     currentParams = { ...currentParams, ...warm };
@@ -2075,7 +1363,7 @@ function handleThumbPointerDown(event: PointerEvent) {
   dragLockedTargets = lockResponse ? modelPeaksFromResponse(lockResponse) : { air: null, top: null, back: null };
   dragState.mode = mode;
   dragState.pointerId = event.pointerId;
-  const freq = pointerEventToFreq(event, plotEl);
+  const freq = readDofPointerFrequency(event, plotEl);
   if (Number.isFinite(freq)) dragState.freq = freq as number;
   target.setPointerCapture?.(event.pointerId);
   updateThumbs();
@@ -2085,7 +1373,7 @@ function handleThumbPointerMove(event: PointerEvent) {
   if (!dragState.mode || dragState.pointerId !== event.pointerId) return;
   const plotEl = document.getElementById("plot_dof") as HTMLElement | null;
   if (!plotEl) return;
-  const freq = pointerEventToFreq(event, plotEl);
+  const freq = readDofPointerFrequency(event, plotEl);
   if (!Number.isFinite(freq)) return;
   dragState.freq = freq as number;
   updateThumbs();
@@ -2119,9 +1407,9 @@ function bindPlotInteractions(plotEl: HTMLElement) {
   if (plotListenersBound || typeof (plotEl as any).on !== "function") return;
   plotListenersBound = true;
   (plotEl as any).on("plotly_relayout", () => updateThumbs());
-  (plotEl as any).on("plotly_restyle", () => syncTraceVisibilityStateFromPlot(plotEl));
+  (plotEl as any).on("plotly_restyle", () => syncDofTraceVisibilityStateFromPlot(plotEl, traceVisibilityState));
   (plotEl as any).on("plotly_legendclick", () => {
-    requestAnimationFrame(() => syncTraceVisibilityStateFromPlot(plotEl));
+    requestAnimationFrame(() => syncDofTraceVisibilityStateFromPlot(plotEl, traceVisibilityState));
   });
   bindPlotResizeSync(plotEl);
   window.addEventListener("pointermove", handleThumbPointerMove);
@@ -2295,7 +1583,7 @@ function bindPlotResizeSync(plotEl: HTMLElement) {
 }
 
 function syncPlotWidthToContainer(plotEl: HTMLElement) {
-  Promise.resolve(plotResizeSyncApply(plotEl)).finally(() => updateThumbs());
+  Promise.resolve(applyDofPlotResize(getPlotly(), plotEl)).finally(() => updateThumbs());
 }
 
 function renderPlot() {
@@ -2315,24 +1603,24 @@ function renderPlot() {
   }
   const colors = plotThemeColors();
   const traces: Array<Partial<Plotly.PlotData>> = [];
-  const totalTrace = toTrace(response.total, "Current", colors.current, { width: 3 });
-  applyTraceVisibility(totalTrace, "Current");
+  const totalTrace = buildDofTrace(response.total, "Current", colors.current, { width: 3 });
+  applyDofTraceVisibility(totalTrace, "Current", traceVisibilityState);
   if (totalTrace) traces.push(totalTrace);
   if (whatIfResponse?.total?.length) {
     const targetTraces = buildTargetOverlayTraces(whatIfResponse.total, colors.whatIf);
     targetTraces.forEach((trace) => {
-      applyTraceVisibility(trace, "Target");
+      applyDofTraceVisibility(trace, "Target", traceVisibilityState);
       traces.push(trace);
     });
   }
-  const topTrace = toTrace(response.top, "Top", colors.top, { width: 1.5, dash: "dot" });
-  const airTrace = toTrace(response.air, "Air", colors.air, { width: 1.5, dash: "dot" });
-  const backTrace = toTrace(response.back, "Back", colors.back, { width: 1.5, dash: "dot" });
-  const sidesTrace = toTrace(response.sides, "Sides", colors.sides, { width: 1, dash: "dot" });
-  applyTraceVisibility(topTrace, "Top");
-  applyTraceVisibility(airTrace, "Air");
-  applyTraceVisibility(backTrace, "Back");
-  applyTraceVisibility(sidesTrace, "Sides");
+  const topTrace = buildDofTrace(response.top, "Top", colors.top, { width: 1.5, dash: "dot" });
+  const airTrace = buildDofTrace(response.air, "Air", colors.air, { width: 1.5, dash: "dot" });
+  const backTrace = buildDofTrace(response.back, "Back", colors.back, { width: 1.5, dash: "dot" });
+  const sidesTrace = buildDofTrace(response.sides, "Sides", colors.sides, { width: 1, dash: "dot" });
+  applyDofTraceVisibility(topTrace, "Top", traceVisibilityState);
+  applyDofTraceVisibility(airTrace, "Air", traceVisibilityState);
+  applyDofTraceVisibility(backTrace, "Back", traceVisibilityState);
+  applyDofTraceVisibility(sidesTrace, "Sides", traceVisibilityState);
   [topTrace, airTrace, backTrace, sidesTrace].forEach((t)=>{ if(t) traces.push(t); });
   const xRange = [50, 300];
   const layout: Partial<Plotly.Layout> = {
@@ -2354,13 +1642,13 @@ function renderPlot() {
     },
     showlegend: true,
   };
-  const yRange = computeYRange(response.total, 6, xRange[0], xRange[1]);
+  const yRange = computeDofYRange(response.total, 6, xRange[0], xRange[1]);
   if (yRange) layout.yaxis = { ...layout.yaxis, range: yRange };
   const plotly = getPlotly();
   if (!plotly) return;
   plotly.react(plotEl, traces, layout, { displayModeBar: true, displaylogo: false })
     .then(() => {
-      syncTraceVisibilityStateFromPlot(plotEl as HTMLElement);
+      syncDofTraceVisibilityStateFromPlot(plotEl as HTMLElement, traceVisibilityState);
       bindPlotInteractions(plotEl as HTMLElement);
       updateThumbs(response);
     })
@@ -2481,6 +1769,7 @@ function init() {
   bindTabs();
   bindTaskModeTabs();
   bindFitMyGuitarActions();
+  fitAltitudeControlBind();
   bindSolveRecipeActions();
   if (saveButton) saveButton.addEventListener("click", () => void saveResults());
   if (loadButton && loadFileInput) loadButton.addEventListener("click", () => loadFileInput.click());

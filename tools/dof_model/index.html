@@ -110,6 +110,11 @@
               <span>Soundhole Diameter (mm)</span>
               <input id="fit_target_area_hole_diam" type="number" min="50" max="120" step="0.1" inputmode="decimal" placeholder="83.6">
             </label>
+            <label class="dof-fit-field dof-fit-range-field">
+              <span>Altitude</span>
+              <span class="dof-fit-range-value" id="fit_altitude_value">0 m</span>
+              <input id="fit_altitude" type="range" min="0" max="3000" step="10" value="0" aria-describedby="fit_altitude_value">
+            </label>
             <button id="btn_fit_guitar" class="ghost-btn btn-small" type="button">Fit My Guitar</button>
             <button id="btn_fit_clear" class="ghost-btn btn-small" type="button">Clear</button>
           </div>
@@ -128,7 +133,7 @@
           </label>
           <div class="dof-guided-actions">
             <button id="btn_solve_targets" class="ghost-btn btn-small" type="button">Solve Targets</button>
-            <button id="btn_reset_whatif" class="ghost-btn btn-small" type="button">Reset What-If</button>
+            <button id="btn_reset_whatif" class="ghost-btn btn-small" type="button">Reset What-If Comparison</button>
           </div>
           <div id="whatif_summary" class="delta-summary">
             <h3>What-If Recipe</h3>
@@ -162,7 +167,7 @@
   <script src="dof_save_modal.js" defer data-feature="notebook"></script>
   <script src="dof_save_target.js" defer></script>
   <script src="dof_save_snapshot.js" defer></script>
-  <script src="main.js" defer></script>
+  <script src="main.browser.js" defer></script>
 </body>
 
 </html>
