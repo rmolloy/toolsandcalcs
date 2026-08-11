@@ -1,5 +1,7 @@
 type BraceGeometryAPI = typeof import("./brace-geometry").BraceGeometry;
 type BraceGeometryResult = import("./brace-geometry").BraceGeometryResult;
+type BraceLayoutStateAPI = typeof import("./brace-layout-state").BraceLayoutState;
+type BraceStockTransferAPI = typeof import("./brace-stock-transfer").BraceStockTransfer;
 type ShapeKind = typeof import("../calculator").Shapes[keyof typeof import("../calculator").Shapes];
 
 export {};
@@ -7,6 +9,9 @@ export {};
 declare global {
   interface Window {
     BraceGeometry?: BraceGeometryAPI;
+    BraceLayoutState?: BraceLayoutStateAPI;
+    BraceStockTransfer?: BraceStockTransferAPI;
+    BraceMatchSystem?: typeof import("./brace-match-system").BraceMatchSystem;
     FlexuralDefaultLayout?: {
       top?: { span?: number; thickness?: number; modulus?: number };
       braces?: unknown[];
@@ -36,10 +41,7 @@ interface BraceConfig {
   segments: StackSegment[];
 }
 
-interface BraceRenderInfo {
-  result?: BraceGeometryResult;
-  error?: string;
-}
+type BraceRenderInfo = import("./brace-geometry").BraceCalculationInfo;
 
 (function initBraceGeometryUI() {
   const braceGeometry = window.BraceGeometry;
@@ -47,6 +49,8 @@ interface BraceRenderInfo {
     throw new Error("BraceGeometry calculator is unavailable. Ensure brace-geometry.js is loaded first.");
   }
   const api = braceGeometry;
+  const braceLayoutState = requireBraceLayoutState();
+  const braceStockTransfer = requireBraceStockTransfer();
 
   const galleryEl = requireElement<HTMLDivElement>("brace_gallery");
   const viewGalleryEl = document.getElementById("brace_gallery_view") as HTMLDivElement | null;
@@ -55,6 +59,9 @@ interface BraceRenderInfo {
   const saveBtn = requireElement<HTMLButtonElement>("save_braces");
   const loadBtn = requireElement<HTMLButtonElement>("load_braces");
   const loadInput = requireElement<HTMLInputElement>("brace_file_input");
+  const matchPlanButtons = [
+    document.getElementById("match_brace_plan_view"),
+  ].filter((element): element is HTMLButtonElement => element !== null);
 
   const shapeSet = new Set<ShapeKind>(Object.values(api.Shapes));
 
@@ -63,6 +70,7 @@ interface BraceRenderInfo {
   let braceCounter = 0;
   let segmentCounter = 0;
   let showAdvanced = false;
+  let suppressTopInputPersistence = false;
   const braceDom = new Map<string, {
     preview: HTMLElement;
     metrics: HTMLElement;
@@ -70,6 +78,8 @@ interface BraceRenderInfo {
     summary: HTMLElement;
   }>();
   const defaultLayout = readDefaultLayout();
+  const activeBraceStock = readBraceStockCharacterizationFromQuery();
+  const matchPlanMaterial = activeBraceStock || starterBraceStockCreate();
   let activeTop = readTopFromLayout(defaultLayout);
   let braces: BraceConfig[] = createInitialBraces();
   const perTabSession = readBracePerTabSession();
@@ -84,62 +94,20 @@ interface BraceRenderInfo {
     return `segment-${segmentCounter}`;
   }
 
-  function createDefaultStack(): StackSegment[] {
-    return [
-      {
-        id: nextSegmentId(),
-        label: "Base",
-        shape: api.Shapes.RECTANGLE,
-        height: 4,
-        breadth: 10,
-        density: DEFAULT_DENSITY,
-        modulus: DEFAULT_MODULUS
-      },
-      {
-        id: nextSegmentId(),
-        label: "Cap",
-        shape: api.Shapes.TRIANGLE,
-        height: 8,
-        breadth: 10,
-        density: DEFAULT_DENSITY,
-        modulus: DEFAULT_MODULUS
-      }
-    ];
-  }
-
-  function createBrace(name: string): BraceConfig {
-    return {
-      id: nextBraceId(),
-      name,
-      segments: createDefaultStack()
-    };
-  }
-
-  function createBraceFromQuery(): BraceConfig | null {
-    const transferred = readBraceStockMeasurementsFromQuery();
-    if (!transferred) return null;
-    return {
-      id: nextBraceId(),
-      name: "Transferred brace stock",
-      segments: [
-        {
-          id: nextSegmentId(),
-          label: "Measured stock",
-          shape: api.Shapes.RECTANGLE,
-          height: transferred.height,
-          breadth: transferred.breadth,
-          density: transferred.density,
-          modulus: transferred.modulus
-        }
-      ]
-    };
-  }
-
   function createInitialBraces(): BraceConfig[] {
-    const queryBrace = createBraceFromQuery();
-    if (queryBrace) return [queryBrace];
-    const defaultBraces = sanitizeBraceLayout(defaultLayout);
-    return defaultBraces.length ? defaultBraces : [createBrace("Brace 1")];
+    return braceLayoutState.createInitialBraceLayout(
+      readBraceStockMeasurementsFromQuery(),
+      defaultLayout,
+      {
+        nextBraceId,
+        nextSegmentId,
+        validShapes: shapeSet,
+        rectangleShape: api.Shapes.RECTANGLE,
+        triangleShape: api.Shapes.TRIANGLE,
+        defaultDensity: DEFAULT_DENSITY,
+        defaultModulus: DEFAULT_MODULUS
+      }
+    );
   }
 
   function readDefaultLayout(): unknown {
@@ -147,36 +115,41 @@ interface BraceRenderInfo {
   }
 
   function readTopFromLayout(layout: unknown): { span: number; thickness: number; modulus?: number } | null {
-    const top = layout && typeof layout === "object" ? (layout as any).top : null;
-    const span = Number(top?.span);
-    const thickness = Number(top?.thickness);
-    const modulus = Number(top?.modulus);
-    if (!Number.isFinite(span) || !Number.isFinite(thickness)) return null;
-    return {
-      span,
-      thickness,
-      modulus: Number.isFinite(modulus) ? modulus : undefined
-    };
+    return braceLayoutState.readBraceTopFromLayout(layout);
   }
 
   function readBraceStockMeasurementsFromQuery(): { height: number; breadth: number; density: number; modulus: number } | null {
-    const params = new URLSearchParams(window.location.search || "");
-    const height = positiveQueryNumberRead(params, "brace_height");
-    const breadth = positiveQueryNumberRead(params, "brace_width");
-    const density = positiveQueryNumberRead(params, "brace_density");
-    const modulus = positiveQueryNumberRead(params, "brace_modulus");
-    if (height === null && breadth === null && density === null && modulus === null) return null;
-    return {
-      height: height ?? 12,
-      breadth: breadth ?? 10,
-      density: density ?? DEFAULT_DENSITY,
-      modulus: modulus ?? DEFAULT_MODULUS
-    };
+    return braceStockTransfer.readBraceStockMeasurements(
+      new URLSearchParams(window.location.search || ""),
+      {
+        height: 12,
+        breadth: 10,
+        density: DEFAULT_DENSITY,
+        modulus: DEFAULT_MODULUS,
+      },
+    );
   }
 
-  function positiveQueryNumberRead(params: URLSearchParams, key: string): number | null {
-    const value = Number.parseFloat(params.get(key) || "");
-    return Number.isFinite(value) && value > 0 ? value : null;
+  function readBraceStockCharacterizationFromQuery() {
+    return braceStockTransfer.readBraceStockCharacterization?.(
+      new URLSearchParams(window.location.search || ""),
+    ) || null;
+  }
+
+  function starterBraceStockCreate() {
+    return {
+      version: 1 as const,
+      method: "free-free" as const,
+      sourceLabel: "Spruce brace stock",
+      longFrequencyHz: 175.1,
+      specimenLengthMm: 600,
+      specimenWidthMm: 10,
+      specimenHeightMm: 12,
+      specimenMassG: 30.24,
+      densityKgM3: DEFAULT_DENSITY,
+      modulusGPa: DEFAULT_MODULUS,
+      soundSpeedMps: Math.sqrt(DEFAULT_MODULUS * 1_000_000_000 / DEFAULT_DENSITY),
+    };
   }
 
   function format(value: number, digits = 2): string {
@@ -197,59 +170,151 @@ interface BraceRenderInfo {
   }
 
   function run(fullRebuild = false): void {
-    persistBracePerTabSession();
-
-    const renderInfo: Record<string, BraceRenderInfo> = {};
-    const totalHeights: number[] = [];
-    const breadths: number[] = [];
-    braces.forEach(brace => {
-      const stack = brace.segments
-        .map(segment => ({
-          label: segment.label,
-          shape: segment.shape,
-          height: Math.max(0, segment.height),
-          breadth: Math.max(0.5, segment.breadth ?? 10),
-          density: segment.density ?? DEFAULT_DENSITY,
-          modulus: segment.modulus ?? DEFAULT_MODULUS
-        }))
-        .filter(segment => segment.height > 0);
-      const totalHeight = stack.reduce((sum, segment) => sum + segment.height, 0);
-      totalHeights.push(totalHeight);
-      const representativeBreadth = stack.length ? stack[stack.length - 1].breadth : 10;
-      breadths.push(representativeBreadth);
-      try {
-        const result = api.computeBraceGeometry(stack[0]?.breadth ?? 10, stack);
-        renderInfo[brace.id] = { result };
-      } catch (error) {
-        renderInfo[brace.id] = { error: error instanceof Error ? error.message : String(error) };
-      }
+    braces = braceLayoutState.ensureBraceLayoutHasDefault(braces, {
+      nextBraceId,
+      nextSegmentId,
+      rectangleShape: api.Shapes.RECTANGLE,
+      triangleShape: api.Shapes.TRIANGLE,
+      defaultDensity: DEFAULT_DENSITY,
+      defaultModulus: DEFAULT_MODULUS
     });
-
-    const referenceBreadth = Math.max(10, Math.max(...breadths, 10) * 1.2);
-    const maxHeight = Math.max(...totalHeights, 10);
-    if (
-      fullRebuild ||
-      braceDom.size !== braces.length ||
-      !updateBraceVisuals(renderInfo, { referenceBreadth, maxHeight })
-    ) {
-      renderBraces(renderInfo, { referenceBreadth, maxHeight });
-    }
-    renderSummary(renderInfo);
-    renderViewGallery(renderInfo, { referenceBreadth, maxHeight });
+    persistBracePerTabSession();
+    renderBraceLayout(braces, fullRebuild);
     emitBraceLayout();
   }
 
+  function renderBraceLayout(
+    sourceBraces: BraceConfig[],
+    fullRebuild: boolean,
+  ): void {
+    const { renderInfo, scales } = api.calculateBraceRenderModel(sourceBraces, {
+      density: DEFAULT_DENSITY,
+      modulus: DEFAULT_MODULUS,
+    });
+    if (
+      fullRebuild ||
+      braceDom.size !== sourceBraces.length ||
+      !updateBraceVisuals(sourceBraces, renderInfo, scales)
+    ) {
+      renderBraces(sourceBraces, renderInfo, scales);
+    }
+    renderSummary(sourceBraces, renderInfo);
+    renderViewGallery(sourceBraces, renderInfo, scales);
+  }
+
+  function openBraceMatchPlan(): void {
+    if (!window.BraceMatchPlan || !window.BraceMatchPlanPrompt) return;
+    const original = structuredClone(braces);
+    const originalTop = readFlexuralTopInputs();
+    const referenceTop = readTopFromLayout(defaultLayout);
+    const actualTop = readFlexuralTopInputs();
+    const systemMatchAvailable = Boolean(
+      window.BraceMatchSystem &&
+      referenceTop &&
+      actualTop,
+    );
+    let systemResult: import("./brace-match-system").BraceMatchSystemResult | null = null;
+    const plansResolve = (
+      options: import("./brace-match-plan-prompt").BraceMatchPlanPromptOptions,
+      material: import("./brace-match-plan-prompt").BraceMatchPlanMaterial,
+      top?: import("./brace-match-plan-prompt").BraceMatchPlanTop,
+      adjustableBraceIds?: readonly string[],
+    ) => {
+      const stock = {
+        sourceLabel: material.sourceLabel,
+        densityKgM3: material.densityKgM3,
+        modulusGPa: material.modulusGPa,
+      };
+      if (
+        systemMatchAvailable &&
+        window.BraceMatchSystem &&
+        referenceTop &&
+        top
+      ) {
+        systemResult = window.BraceMatchSystem.solve(
+          original,
+          stock,
+          {
+            spanMm: referenceTop.span,
+            thicknessMm: referenceTop.thickness,
+            modulusGPa: referenceTop.modulus ?? DEFAULT_MODULUS,
+          },
+          {
+            spanMm: referenceTop.span,
+            thicknessMm: top.thicknessMm,
+            modulusGPa: top.modulusGPa,
+          },
+          options,
+          adjustableBraceIds,
+        );
+        return systemResult.plans;
+      }
+      systemResult = null;
+      return original.map((brace) => window.BraceMatchPlan!.solve(brace, stock, options));
+    };
+    window.BraceMatchPlanPrompt.open({
+      material: matchPlanMaterial,
+      materialOrigin: activeBraceStock ? "transferred" : "starter",
+      top: systemMatchAvailable && actualTop
+        ? {
+            thicknessMm: actualTop.thickness,
+            modulusGPa: actualTop.modulus ?? DEFAULT_MODULUS,
+          }
+        : undefined,
+      plansResolve,
+      systemStateRead: systemMatchAvailable ? () => systemResult : undefined,
+      preview(plans, top) {
+        const proposedBraces = braceMatchPlanApplyToLayout(original, plans);
+        writeFlexuralTopInputs(top, false);
+        renderBraceLayout(proposedBraces, true);
+        if (systemMatchAvailable) emitBraceLayoutFor(proposedBraces, activeTop);
+      },
+      commit(plans, _previewActive, top) {
+        writeFlexuralTopInputs(top);
+        braces = braceMatchPlanApplyToLayout(original, plans);
+        run(true);
+      },
+      revert() {
+        if (systemMatchAvailable) {
+          writeFlexuralTopInputs(originalTop
+            ? {
+                thicknessMm: originalTop.thickness,
+                modulusGPa: originalTop.modulus ?? DEFAULT_MODULUS,
+              }
+            : undefined, false);
+        }
+        renderBraceLayout(braces, true);
+        if (systemMatchAvailable) emitBraceLayoutFor(braces, activeTop);
+      },
+    });
+  }
+
+  function braceMatchPlanApplyToLayout(
+    source: BraceConfig[],
+    plans: import("./brace-match-plan").BraceMatchPlanResult[],
+  ) {
+    const plansById = new Map(plans.map((plan) => [plan.id, plan]));
+    return source.map((brace) => {
+      const plan = plansById.get(brace.id);
+      if (!plan) return structuredClone(brace);
+      return {
+        ...brace,
+        segments: plan.proposedSegments.map((segment, index) => ({
+          ...brace.segments[index],
+          ...segment,
+        })) as StackSegment[],
+      };
+    });
+  }
+
   function renderBraces(
+    sourceBraces: BraceConfig[],
     renderInfo: Record<string, BraceRenderInfo>,
     scales: { referenceBreadth: number; maxHeight: number }
   ): void {
     galleryEl.replaceChildren();
     braceDom.clear();
-    if (braces.length === 0) {
-      braces = [createBrace("Brace 1")];
-    }
-
-    braces.forEach((brace, index) => {
+    sourceBraces.forEach((brace, index) => {
       const info = renderInfo[brace.id];
       const card = document.createElement("div");
       card.className = "brace-card";
@@ -259,7 +324,7 @@ interface BraceRenderInfo {
       const nameInput = document.createElement("input");
       nameInput.value = brace.name;
       nameInput.placeholder = `Brace ${index + 1}`;
-      nameInput.addEventListener("input", () => updateBrace(brace.id, { name: nameInput.value.trim() || `Brace ${index + 1}` }));
+      nameInput.addEventListener("input", () => renameBrace(brace.id, nameInput.value.trim() || `Brace ${index + 1}`));
       header.append(nameInput);
 
       const previewContainer = document.createElement("div");
@@ -275,7 +340,7 @@ interface BraceRenderInfo {
       const deleteBtn = document.createElement("button");
       deleteBtn.type = "button";
       deleteBtn.textContent = "Remove";
-      deleteBtn.disabled = braces.length === 1;
+      deleteBtn.disabled = sourceBraces.length === 1;
       deleteBtn.addEventListener("click", () => removeBrace(brace.id));
       infoRow.append(widthSpan, heightSpan, deleteBtn);
       updateBraceInfoRow(infoRow, brace);
@@ -306,10 +371,11 @@ interface BraceRenderInfo {
   }
 
   function updateBraceVisuals(
+    sourceBraces: BraceConfig[],
     renderInfo: Record<string, BraceRenderInfo>,
     scales: { referenceBreadth: number; maxHeight: number }
   ): boolean {
-    for (const brace of braces) {
+    for (const brace of sourceBraces) {
       const dom = braceDom.get(brace.id);
       if (!dom) return false;
       const info = renderInfo[brace.id];
@@ -322,13 +388,14 @@ interface BraceRenderInfo {
   }
 
   function renderViewGallery(
+    sourceBraces: BraceConfig[],
     renderInfo: Record<string, BraceRenderInfo>,
     scales: { referenceBreadth: number; maxHeight: number }
   ): void {
     if (!viewGalleryEl) return;
 
     viewGalleryEl.replaceChildren();
-    braces.forEach((brace, index) => {
+    sourceBraces.forEach((brace, index) => {
       const info = renderInfo[brace.id];
       const card = document.createElement("div");
       card.className = "brace-card readonly";
@@ -576,16 +643,12 @@ interface BraceRenderInfo {
       return container;
     }
 
-  function renderSummary(renderInfo: Record<string, BraceRenderInfo>): void {
+  function renderSummary(
+    sourceBraces: BraceConfig[],
+    renderInfo: Record<string, BraceRenderInfo>,
+  ): void {
     summaryEl.replaceChildren();
-    const entries = braces
-      .map(brace => {
-        const info = renderInfo[brace.id];
-        return info?.result
-          ? { brace, result: info.result }
-          : null;
-      })
-      .filter((entry): entry is { brace: BraceConfig; result: BraceGeometryResult } => Boolean(entry));
+    const entries = api.calculateBraceComparisonModel(sourceBraces, renderInfo);
 
     if (entries.length === 0) {
       const empty = document.createElement("div");
@@ -595,109 +658,67 @@ interface BraceRenderInfo {
       return;
     }
 
-    const referenceMass = entries[0].result.massPerLength || 1;
-    const referenceEI = entries[0].result.EI || 1;
-    const referenceArea = entries[0].result.area || 1;
-    const referenceI = entries[0].result.I || 1;
-
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
       const card = document.createElement("div");
       card.className = "brace-summary-card";
-      const relMass = (entry.result.massPerLength / referenceMass) * 100;
-      const relEI = (entry.result.EI / referenceEI) * 100;
-      const relArea = (entry.result.area / referenceArea) * 100;
-      const relI = (entry.result.I / referenceI) * 100;
       card.innerHTML = `
-        <h4>${entry.brace.name}</h4>
-        <div class="metric"><span>Relative stiffness (EI)</span>${format(relEI, 1)}%</div>
-        <div class="metric"><span>Relative moment of inertia (I)</span>${format(relI, 1)}%</div>
-        <div class="metric"><span>Relative mass</span>${format(relMass, 1)}%</div>
-        <div class="metric"><span>Relative area</span>${format(relArea, 1)}%</div>
+        <h4>${entry.name}</h4>
+        <div class="metric"><span>Relative stiffness (EI)</span>${format(entry.relativeEI, 1)}%</div>
+        <div class="metric"><span>Relative moment of inertia (I)</span>${format(entry.relativeI, 1)}%</div>
+        <div class="metric"><span>Relative mass</span>${format(entry.relativeMass, 1)}%</div>
+        <div class="metric"><span>Relative area</span>${format(entry.relativeArea, 1)}%</div>
       `;
       summaryEl.append(card);
     });
   }
 
-  function updateBrace(id: string, updates: Partial<BraceConfig>): void {
-    braces = braces.map(brace => {
-      if (brace.id !== id) return brace;
-      return {
-        ...brace,
-        ...updates
-      };
-    });
+  function renameBrace(id: string, name: string): void {
+    braces = braceLayoutState.renameBraceInLayout(braces, id, name);
     run();
   }
 
   function addBrace(): void {
-    const nextIndex = braces.length + 1;
-    braces = [...braces, createBrace(`Brace ${nextIndex}`)];
+    braces = braceLayoutState.appendDefaultBraceToLayout(braces, {
+      nextBraceId,
+      nextSegmentId,
+      rectangleShape: api.Shapes.RECTANGLE,
+      triangleShape: api.Shapes.TRIANGLE,
+      defaultDensity: DEFAULT_DENSITY,
+      defaultModulus: DEFAULT_MODULUS
+    });
     run(true);
   }
 
   function removeBrace(id: string): void {
     if (braces.length === 1) return;
-    braces = braces.filter(brace => brace.id !== id);
+    braces = braceLayoutState.removeBraceFromLayout(braces, id);
     run(true);
   }
 
   function addSegment(braceId: string): void {
-    braces = braces.map(brace => {
-      if (brace.id !== braceId) return brace;
-      const last = brace.segments[brace.segments.length - 1];
-      return {
-        ...brace,
-        segments: [
-          ...brace.segments,
-          {
-            id: nextSegmentId(),
-            label: `Segment ${brace.segments.length + 1}`,
-            shape: api.Shapes.TRIANGLE,
-            height: last ? last.height : 4,
-            breadth: last ? last.breadth : 10,
-            density: last ? last.density : DEFAULT_DENSITY,
-            modulus: last ? last.modulus : DEFAULT_MODULUS
-          }
-        ]
-      };
+    braces = braceLayoutState.appendBraceSegmentToLayout(braces, braceId, {
+      nextSegmentId,
+      shape: api.Shapes.TRIANGLE,
+      defaultHeight: 4,
+      defaultBreadth: 10,
+      defaultDensity: DEFAULT_DENSITY,
+      defaultModulus: DEFAULT_MODULUS
     });
     run(true);
   }
 
   function updateSegment(braceId: string, segmentId: string, updates: Partial<StackSegment>): void {
-    braces = braces.map(brace => {
-      if (brace.id !== braceId) return brace;
-      return {
-        ...brace,
-        segments: brace.segments.map(segment => {
-          if (segment.id !== segmentId) return segment;
-          return {
-            ...segment,
-            ...updates,
-            height:
-              updates.height != null && Number.isFinite(updates.height) ? Math.max(0, updates.height) : segment.height,
-            breadth:
-              updates.breadth != null && Number.isFinite(updates.breadth) ? Math.max(0.5, updates.breadth) : segment.breadth,
-            density:
-              updates.density != null && Number.isFinite(updates.density) ? Math.max(1, updates.density) : segment.density,
-            modulus:
-              updates.modulus != null && Number.isFinite(updates.modulus) ? Math.max(0.1, updates.modulus) : segment.modulus
-          };
-        })
-      };
-    });
+    braces = braceLayoutState.updateBraceSegmentInLayout(
+      braces,
+      braceId,
+      segmentId,
+      updates
+    );
     run();
   }
 
   function removeSegment(braceId: string, segmentId: string): void {
-    braces = braces.map(brace => {
-      if (brace.id !== braceId) return brace;
-      if (brace.segments.length === 1) return brace;
-      return {
-        ...brace,
-        segments: brace.segments.filter(segment => segment.id !== segmentId)
-      };
-    });
+    braces = braceLayoutState.removeBraceSegmentFromLayout(braces, braceId, segmentId);
     run(true);
   }
 
@@ -735,17 +756,7 @@ interface BraceRenderInfo {
   }
 
   function readBraceSaveSnapshot(): unknown[] {
-    return braces.map(brace => ({
-      name: brace.name,
-      segments: brace.segments.map(segment => ({
-        label: segment.label,
-        shape: segment.shape,
-        height: segment.height,
-        breadth: segment.breadth,
-        density: segment.density,
-        modulus: segment.modulus
-      }))
-    }));
+    return braceLayoutState.readBraceSaveSnapshot(braces);
   }
 
   function readBracePerTabSession() {
@@ -781,6 +792,23 @@ interface BraceRenderInfo {
     return { span, thickness, modulus: modulus ?? undefined };
   }
 
+  function writeFlexuralTopInputs(
+    top?: import("./brace-match-plan-prompt").BraceMatchPlanTop,
+    persist = true,
+  ): void {
+    if (!top) return;
+    const thickness = document.getElementById("top_thickness_input") as HTMLInputElement | null;
+    const modulus = document.getElementById("top_modulus_input") as HTMLInputElement | null;
+    if (!thickness || !modulus) return;
+    suppressTopInputPersistence = !persist;
+    thickness.value = String(top.thicknessMm);
+    modulus.value = String(top.modulusGPa);
+    thickness.dispatchEvent(new Event("input", { bubbles: true }));
+    modulus.dispatchEvent(new Event("input", { bubbles: true }));
+    suppressTopInputPersistence = false;
+    syncActiveTopFromFlexuralInputs();
+  }
+
   function readFiniteInputValue(id: string): number | null {
     const input = document.getElementById(id) as HTMLInputElement | null;
     const value = Number(input?.value);
@@ -791,7 +819,7 @@ interface BraceRenderInfo {
     ["top_span_input", "top_thickness_input", "top_modulus_input"].forEach((id) => {
       document.getElementById(id)?.addEventListener("input", () => {
         syncActiveTopFromFlexuralInputs();
-        persistBracePerTabSession();
+        if (!suppressTopInputPersistence) persistBracePerTabSession();
       });
     });
   }
@@ -884,79 +912,25 @@ interface BraceRenderInfo {
   }
 
   function sanitizeBraceLayout(data: unknown): BraceConfig[] {
-    const braceArray = Array.isArray(data)
-      ? data
-      : Array.isArray((data as any)?.braces)
-        ? (data as any).braces
-      : [];
-    if (!braceArray.length) return [];
-    const result: BraceConfig[] = [];
-    braceArray.forEach((rawBrace: any, braceIndex: number) => {
-      if (!rawBrace || typeof rawBrace !== "object") return;
-      const rawSegments = Array.isArray((rawBrace as any).segments) ? (rawBrace as any).segments : [];
-      const segments: StackSegment[] = rawSegments
-        .map((rawSegment: any, segmentIndex: number) => sanitizeSegment(rawSegment, `Segment ${segmentIndex + 1}`))
-        .filter((segment: StackSegment | null): segment is StackSegment => Boolean(segment));
-      if (!segments.length) return;
-      const name = typeof (rawBrace as any).name === "string" && (rawBrace as any).name.trim()
-        ? (rawBrace as any).name.trim()
-        : `Brace ${braceIndex + 1}`;
-      result.push({ id: nextBraceId(), name, segments });
+    return braceLayoutState.sanitizeBraceLayout(data, {
+      nextBraceId,
+      nextSegmentId,
+      validShapes: shapeSet,
+      rectangleShape: api.Shapes.RECTANGLE,
+      defaultDensity: DEFAULT_DENSITY,
+      defaultModulus: DEFAULT_MODULUS,
     });
-    return result;
   }
 
   function emitBraceLayoutLoaded(raw: any, bracesLoaded: BraceConfig[]): void {
     try {
-      const topRaw = raw?.top || {};
-      const span = Number(topRaw.span);
-      const thickness = Number(topRaw.thickness);
-      const modulus = Number(topRaw.modulus);
       const loadedTop = readTopFromLayout(raw);
       if (loadedTop) activeTop = loadedTop;
-      const detail: any = {
-        braces: bracesLoaded.map((brace) => ({
-          name: brace.name,
-          segments: brace.segments.map((segment) => ({
-            label: segment.label,
-            shape: segment.shape,
-            height: segment.height,
-            breadth: segment.breadth,
-            modulus: segment.modulus
-          }))
-        }))
-      };
-      if (Number.isFinite(span) && Number.isFinite(thickness)) {
-        detail.top = {
-          span,
-          thickness,
-          modulus: Number.isFinite(modulus) ? modulus : undefined
-        };
-      }
+      const detail = braceLayoutState.readLoadedBraceLayoutEventDetail(raw, bracesLoaded);
       window.dispatchEvent(new CustomEvent("braceLayoutChanged", { detail }));
     } catch (err) {
       console.warn("[BraceGeometry] emit layout failed", err);
     }
-  }
-
-  function sanitizeSegment(raw: any, fallbackLabel: string): StackSegment | null {
-    if (!raw || typeof raw !== "object") return null;
-    const height = Number(raw.height);
-    if (!Number.isFinite(height) || height <= 0) return null;
-    const breadth = Number(raw.breadth);
-    const density = Number(raw.density);
-    const modulus = Number(raw.modulus);
-    const label = typeof raw.label === "string" && raw.label.trim() ? raw.label.trim() : fallbackLabel;
-    const shape = shapeSet.has(raw.shape as ShapeKind) ? (raw.shape as ShapeKind) : api.Shapes.RECTANGLE;
-    return {
-      id: nextSegmentId(),
-      label,
-      shape,
-      height,
-      breadth: Number.isFinite(breadth) && breadth > 0 ? breadth : 10,
-      density: Number.isFinite(density) && density > 0 ? density : DEFAULT_DENSITY,
-      modulus: Number.isFinite(modulus) && modulus > 0 ? modulus : DEFAULT_MODULUS
-    };
   }
 
   function requireElement<T extends Element>(id: string): T {
@@ -967,18 +941,45 @@ interface BraceRenderInfo {
     return element as unknown as T;
   }
 
+  function requireBraceLayoutState(): NonNullable<Window["BraceLayoutState"]> {
+    if (!window.BraceLayoutState) {
+      throw new Error("Brace layout state is unavailable. Ensure brace-layout-state.js is loaded first.");
+    }
+    return window.BraceLayoutState;
+  }
+
+  function requireBraceStockTransfer(): NonNullable<Window["BraceStockTransfer"]> {
+    if (!window.BraceStockTransfer) {
+      throw new Error("Brace stock transfer is unavailable. Ensure brace-stock-transfer.js is loaded first.");
+    }
+    return window.BraceStockTransfer;
+  }
+
   void initializeBraceSaveSurface();
 
   saveBtn.addEventListener("click", () => void saveBraceLayout());
   loadBtn.addEventListener("click", () => loadInput.click());
   loadInput.addEventListener("change", handleBraceFileSelect);
   addBraceBtn.addEventListener("click", () => addBrace());
+  matchPlanButtons.forEach((button) => {
+    button.disabled = false;
+    button.title = activeBraceStock
+      ? `Match brace plan with ${activeBraceStock.sourceLabel}`
+      : "Match the brace plan with entered brace stock measurements.";
+    button.addEventListener("click", openBraceMatchPlan);
+  });
   window.addEventListener("requestBraceLayout", () => emitBraceLayout());
 
   function emitBraceLayout(): void {
+    emitBraceLayoutFor(braces, activeTop);
+  }
+
+  function emitBraceLayoutFor(
+    sourceBraces: BraceConfig[],
+    top: typeof activeTop,
+  ): void {
     try {
-      const detail: any = { braces: readBraceSaveSnapshot() };
-      if (activeTop) detail.top = activeTop;
+      const detail = braceLayoutState.readBraceLayoutEventDetail(sourceBraces, top);
       window.dispatchEvent(new CustomEvent("braceLayoutChanged", { detail }));
     } catch (err) {
       console.warn("[BraceGeometry] emit layout failed", err);
