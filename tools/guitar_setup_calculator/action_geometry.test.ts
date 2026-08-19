@@ -92,6 +92,10 @@ test("invalid measurement order and impossible derived action are rejected", () 
     ...benchMeasurements,
     reliefFretNumber: 22,
   }), /reliefFretNumber must be before heldFretNumber/);
+  assert.throws(() => calculateActionProfileFromBenchMeasurements({
+    ...benchMeasurements,
+    actionMeasurementFretNumber: 22,
+  }), /actionMeasurementFretNumber must be before heldFretNumber/);
   assert.throws(() => calculateActionFromTopOfStringEnvelopeMm({
     stringIndex: 1,
     stringCount: 3,

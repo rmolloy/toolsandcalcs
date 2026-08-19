@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "check": "deno check action_geometry.ts instrument_profiles.ts setup_model.ts gore_compensation.ts setup_diagram.mjs setup_provenance.mjs main.mjs",
-    "test": "node --experimental-strip-types --test action_geometry.test.ts instrument_profiles.test.ts setup_model.test.ts gore_compensation.test.ts tension_sources.test.mjs setup_diagram.test.mjs setup_provenance.test.mjs setup_calculator.test.mjs",
+    "test": "node --experimental-strip-types --test action_geometry.test.ts instrument_profiles.test.ts setup_model.test.ts gore_compensation.test.ts reference/gore_empirical_compensation.test.ts tension_sources.test.mjs setup_diagram.test.mjs setup_provenance.test.mjs setup_calculator.test.mjs",
     "build": "bun build setup_model.ts --outfile setup_model.mjs --target browser --format esm"
   }
 }

@@ -202,6 +202,15 @@ test("bench geometry feeds a physical open-string profile into Gore", () => {
   }
 });
 
+test("bench geometry rejects measurement on the held fret", () => {
+  const setup = createDefaultSetup();
+  setup.benchActionTargets.actionMeasurementFretNumber = setup.fretCount;
+  assert.throws(
+    () => calculateSetup(setup),
+    /actionMeasurementFretNumber must be before heldFretNumber/,
+  );
+});
+
 test("the setup-model compensation entry point delegates to Gore math", () => {
   const actionByFretMm = [0.1, 0.401, 0.677, 0.931, 1.166, 1.381, 1.580, 1.764, 1.934,
     2.090, 2.235, 2.370, 2.494, 2.609, 2.716, 2.816, 2.908, 2.994, 3.074];

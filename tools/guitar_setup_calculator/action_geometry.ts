@@ -245,8 +245,8 @@ function validateBenchActionMeasurements(
   if (measurements.actionMeasurementFretNumber <= measurements.capoFretNumber) {
     throw new RangeError("actionMeasurementFretNumber must be after capoFretNumber");
   }
-  if (measurements.actionMeasurementFretNumber > measurements.heldFretNumber) {
-    throw new RangeError("actionMeasurementFretNumber must not exceed heldFretNumber");
+  if (measurements.actionMeasurementFretNumber >= measurements.heldFretNumber) {
+    throw new RangeError("actionMeasurementFretNumber must be before heldFretNumber");
   }
 }
 
