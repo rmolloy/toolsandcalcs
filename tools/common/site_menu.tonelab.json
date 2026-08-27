@@ -35,6 +35,10 @@
       "href": "/lab/tools/guitar_setup_calculator/"
     },
     {
+      "label": "FIT Design Workspace",
+      "href": "/lab/tools/fit_design/"
+    },
+    {
       "label": "Monopole Mobility",
       "href": "/lab/tools/monopole_mobility/"
     },
