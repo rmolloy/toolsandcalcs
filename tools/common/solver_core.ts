@@ -257,8 +257,15 @@ This license supersedes all previous licensing for this repository.
     return { total, top, back, air, sides };
   }
 
-  /* 4DOF: Determinant-expanded Kirby/Gore–Gilet (legacy math) */
-  function computeResponse4DOF(p: SolverParams): SolverResponse {
+  type FourDofPressures = {
+    air: Complex;
+    back: Complex;
+    sides: Complex;
+    top: Complex;
+    total: Complex;
+  };
+
+  function computeFourDofPressuresAtFrequency(p: SolverParams, frequencyHz: number): FourDofPressures {
     const atm = resolveAtmosphere(p);
     const kappa = kappaFrom(p, atm);
 
@@ -271,72 +278,78 @@ This license supersedes all previous licensing for this repository.
     const alphab = kappa * p.area_hole * p.area_back;
     const alphbt = kappa * p.area_back * p.area_top;
 
-    const freqs = sweep(0, 500, 0.1);
-
     const F = p.driving_force ?? 0;
+    const omega = 2 * Math.PI * frequencyHz;
+
+    const topImpedance = C(p.mass_top * (omt * omt - omega * omega), p.damping_top * omega);
+    const sidesImpedance = C(p.mass_sides * (oms * oms - omega * omega), p.damping_sides * omega);
+    const backImpedance = C(p.mass_back * (omb * omb - omega * omega), p.damping_back * omega);
+    const airImpedance = C(p.mass_air * (oma * oma - omega * omega), p.damping_air * omega);
+
+    const Kt = p.stiffness_top, Kb = p.stiffness_back;
+
+    const topTimesSides = mul(topImpedance, sidesImpedance);
+    const sidesTimesBack = mul(sidesImpedance, backImpedance);
+    const topSidesBack = mul(topTimesSides, backImpedance);
+    const topSidesBackAir = mul(topSidesBack, airImpedance);
+
+    const term1 = topSidesBackAir;
+    const term2 = scl(airImpedance, -2 * alphbt * Kt * Kb);
+    const term3 = scl(sidesImpedance, 2 * alphbt * alphab * alphat);
+    const term4 = C(2 * alphat * alphab * Kt * Kb, 0);
+    const term5 = scl(sub(topTimesSides, C(Kt * Kt, 0)), -(alphab * alphab));
+    const term6 = scl(sub(sidesTimesBack, C(Kb * Kb, 0)), -(alphat * alphat));
+    const term7 = scl(mul(sidesImpedance, airImpedance), -(alphbt * alphbt));
+    const term8 = scl(mul(topImpedance, airImpedance), -(Kb * Kb));
+    const term9 = scl(mul(backImpedance, airImpedance), -(Kt * Kt));
+
+    let systemDet = term1;
+    [term2, term3, term4, term5, term6, term7, term8, term9].forEach(t => { systemDet = add(systemDet, t); });
+
+    const term_t1 = mul(mul(sidesImpedance, backImpedance), airImpedance);
+    const term_t2 = scl(sidesImpedance, -(alphab * alphab));
+    const term_t3 = scl(airImpedance, -(Kb * Kb));
+    const topResponse = scl(div(add(add(term_t1, term_t2), term_t3), systemDet), F);
+
+    const term_s1 = scl(mul(backImpedance, airImpedance), Kt);
+    const term_s2 = C(-Kt * (alphab * alphab), 0);
+    const term_s3 = scl(airImpedance, alphbt * Kb);
+    const term_s4 = C(-alphat * alphab * Kb, 0);
+    const sidesResponse = scl(div(add(add(add(term_s1, term_s2), term_s3), term_s4), systemDet), F);
+
+    const term_b1 = scl(airImpedance, -Kt * Kb);
+    const term_b2 = scl(mul(airImpedance, sidesImpedance), -alphbt);
+    const term_b3 = scl(sidesImpedance, alphab * alphat);
+    const backResponse = scl(div(add(add(term_b1, term_b2), term_b3), systemDet), F);
+
+    const term_a1 = C(Kt * Kb * alphab, 0);
+    const term_a2 = scl(sidesImpedance, alphbt * alphab);
+    const term_a3 = scl(mul(sidesImpedance, backImpedance), -alphat);
+    const term_a4 = C(alphat * (Kb * Kb), 0);
+    const airResponse = scl(div(add(add(add(term_a1, term_a2), term_a3), term_a4), systemDet), F);
+
+    const top = scalePressure(topResponse, p.area_top, omega, atm.rho);
+    const sides = scalePressure(sidesResponse, p.area_sides, omega, atm.rho);
+    const back = scalePressure(backResponse, p.area_back, omega, atm.rho);
+    const air = scalePressure(airResponse, p.area_hole, omega, atm.rho);
+    const total = add(add(add(top, sides), back), air);
+
+    return { top, sides, back, air, total };
+  }
+
+  /* 4DOF: Determinant-expanded Kirby/Gore–Gilet (legacy math) */
+  function computeResponse4DOF(p: SolverParams): SolverResponse {
+    const freqs = sweep(0, 500, 0.1);
     const total: TracePoint[] = [], top: TracePoint[] = [], back: TracePoint[] = [], air: TracePoint[] = [], sides: TracePoint[] = [];
 
     for (const f of freqs) {
-      const omega = 2 * Math.PI * f;
+      const pressures = computeFourDofPressuresAtFrequency(p, f);
 
-      const topImpedance = C(p.mass_top * (omt * omt - omega * omega), p.damping_top * omega);
-      const sidesImpedance = C(p.mass_sides * (oms * oms - omega * omega), p.damping_sides * omega);
-      const backImpedance = C(p.mass_back * (omb * omb - omega * omega), p.damping_back * omega);
-      const airImpedance = C(p.mass_air * (oma * oma - omega * omega), p.damping_air * omega);
-
-      const Kt = p.stiffness_top, Kb = p.stiffness_back;
-
-      const topTimesSides = mul(topImpedance, sidesImpedance);
-      const sidesTimesBack = mul(sidesImpedance, backImpedance);
-      const topSidesBack = mul(topTimesSides, backImpedance);
-      const topSidesBackAir = mul(topSidesBack, airImpedance);
-
-      const term1 = topSidesBackAir;
-      const term2 = scl(airImpedance, -2 * alphbt * Kt * Kb);
-      const term3 = scl(sidesImpedance, 2 * alphbt * alphab * alphat);
-      const term4 = C(2 * alphat * alphab * Kt * Kb, 0);
-      const term5 = scl(sub(topTimesSides, C(Kt * Kt, 0)), -(alphab * alphab));
-      const term6 = scl(sub(sidesTimesBack, C(Kb * Kb, 0)), -(alphat * alphat));
-      const term7 = scl(mul(sidesImpedance, airImpedance), -(alphbt * alphbt));
-      const term8 = scl(mul(topImpedance, airImpedance), -(Kb * Kb));
-      const term9 = scl(mul(backImpedance, airImpedance), -(Kt * Kt));
-
-      let systemDet = term1;
-      [term2, term3, term4, term5, term6, term7, term8, term9].forEach(t => { systemDet = add(systemDet, t); });
-
-      const term_t1 = mul(mul(sidesImpedance, backImpedance), airImpedance);
-      const term_t2 = scl(sidesImpedance, -(alphab * alphab));
-      const term_t3 = scl(airImpedance, -(Kb * Kb));
-      const topResponse = scl(div(add(add(term_t1, term_t2), term_t3), systemDet), F);
-
-      const term_s1 = scl(mul(backImpedance, airImpedance), Kt);
-      const term_s2 = C(-Kt * (alphab * alphab), 0);
-      const term_s3 = scl(airImpedance, alphbt * Kb);
-      const term_s4 = C(-alphat * alphab * Kb, 0);
-      const sidesResponse = scl(div(add(add(add(term_s1, term_s2), term_s3), term_s4), systemDet), F);
-
-      const term_b1 = scl(airImpedance, -Kt * Kb);
-      const term_b2 = scl(mul(airImpedance, sidesImpedance), -alphbt);
-      const term_b3 = scl(sidesImpedance, alphab * alphat);
-      const backResponse = scl(div(add(add(term_b1, term_b2), term_b3), systemDet), F);
-
-      const term_a1 = C(Kt * Kb * alphab, 0);
-      const term_a2 = scl(sidesImpedance, alphbt * alphab);
-      const term_a3 = scl(mul(sidesImpedance, backImpedance), -alphat);
-      const term_a4 = C(alphat * (Kb * Kb), 0);
-      const airResponse = scl(div(add(add(add(term_a1, term_a2), term_a3), term_a4), systemDet), F);
-
-      const topPressure = scalePressure(topResponse, p.area_top, omega, atm.rho);
-      const sidesPressure = scalePressure(sidesResponse, p.area_sides, omega, atm.rho);
-      const backPressure = scalePressure(backResponse, p.area_back, omega, atm.rho);
-      const airPressure = scalePressure(airResponse, p.area_hole, omega, atm.rho);
-      const totalPressure = add(add(add(topPressure, sidesPressure), backPressure), airPressure);
-
-      const totalDb = 20 * Math.log10((abs(totalPressure) / pref) || 1e-30);
-      const topDb = 20 * Math.log10((abs(topPressure) / pref) || 1e-30);
-      const backDb = 20 * Math.log10((abs(backPressure) / pref) || 1e-30);
-      const airDb = 20 * Math.log10((abs(airPressure) / pref) || 1e-30);
-      const sidesDb = 20 * Math.log10((abs(sidesPressure) / pref) || 1e-30);
+      const totalDb = 20 * Math.log10((abs(pressures.total) / pref) || 1e-30);
+      const topDb = 20 * Math.log10((abs(pressures.top) / pref) || 1e-30);
+      const backDb = 20 * Math.log10((abs(pressures.back) / pref) || 1e-30);
+      const airDb = 20 * Math.log10((abs(pressures.air) / pref) || 1e-30);
+      const sidesDb = 20 * Math.log10((abs(pressures.sides) / pref) || 1e-30);
 
       total.push({ x: f, y: totalDb });
       top.push({ x: f, y: topDb });
@@ -607,6 +620,7 @@ This license supersedes all previous licensing for this repository.
     computeResponse2DOF,
     computeResponse3DOF,
     computeResponse4DOF,
+    computeFourDofPressuresAtFrequency,
     computeResponse5DOF,
     computeResponse6DOF,
     constants: {
