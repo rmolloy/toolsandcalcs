@@ -1,3 +1,5 @@
+import { lengthUnitPresentation } from "./length_units.mjs";
+
 const SVG_WIDTH = 1000;
 const STRING_TOP_Y = 88;
 const MINIMUM_STRING_BOTTOM_Y = 302;
@@ -10,7 +12,7 @@ const SADDLE_THEORETICAL_X = 835;
 const SADDLE_THICKNESS_PX = 36;
 const COMPENSATION_PX_PER_MM = 6;
 
-export function renderSetupDiagram({ setup, result }) {
+export function renderSetupDiagram({ setup, result, lengthUnit = lengthUnitPresentation.defaultUnit }) {
   const strings = result.strings;
   const layout = calculateDiagramLayout(strings);
   const yPositions = calculateStringYPositions(strings, layout);
@@ -24,9 +26,9 @@ export function renderSetupDiagram({ setup, result }) {
   const scaleMode = scaleOffsets.some((offset) => Math.abs(offset) > 0.01)
     ? "per-string"
     : "single-scale";
-  const artwork = renderDiagramArtwork({ setup, strings, geometry, layout, scaleMode });
-  const mobileNutArtwork = renderMobileNutArtwork({ setup, strings, geometry, layout });
-  const mobileSaddleArtwork = renderMobileSaddleArtwork({ setup, strings, geometry, layout });
+  const artwork = renderDiagramArtwork({ setup, strings, geometry, layout, scaleMode, lengthUnit });
+  const mobileNutArtwork = renderMobileNutArtwork({ setup, strings, geometry, layout, lengthUnit });
+  const mobileSaddleArtwork = renderMobileSaddleArtwork({ setup, strings, geometry, layout, lengthUnit });
 
   return `
     <div class="geometry-diagram-set" data-string-count="${strings.length}" data-scale-mode="${scaleMode}" data-neutral-fret="${setup.fanNeutralFret}">
@@ -50,42 +52,42 @@ export function renderSetupDiagram({ setup, result }) {
     </div>`;
 }
 
-function renderDiagramArtwork({ setup, strings, geometry, layout, scaleMode }) {
+function renderDiagramArtwork({ setup, strings, geometry, layout, scaleMode, lengthUnit }) {
   return `
     <rect x="1" y="1" width="${SVG_WIDTH - 2}" height="${layout.svgHeight - 2}" rx="10" class="geometry-canvas" />
-    ${renderWindowLabels(setup, scaleMode)}
+    ${renderWindowLabels(setup, scaleMode, lengthUnit)}
     ${renderFingerboardWindows(layout)}
     ${renderScaleBreak(layout)}
     ${renderFretReferences(geometry, layout)}
-    ${renderNut(geometry, layout)}
-    ${renderSaddle(geometry, layout)}
+    ${renderNut(geometry, layout, true, lengthUnit)}
+    ${renderSaddle(geometry, layout, true, lengthUnit)}
     ${renderStrings(strings, geometry)}
-    ${renderActionLabels(setup, layout)}
-    ${renderInsertLabels(layout)}`;
+    ${renderActionLabels(setup, layout, lengthUnit)}
+    ${renderInsertLabels(layout, lengthUnit)}`;
 }
 
-function renderMobileNutArtwork({ setup, strings, geometry, layout }) {
+function renderMobileNutArtwork({ setup, strings, geometry, layout, lengthUnit }) {
   return `
     <rect x="1" y="1" width="478" height="${layout.svgHeight - 2}" rx="10" class="geometry-canvas" />
     <text x="126" y="30" class="geometry-window-label">NUT → FRET 1</text>
     ${renderNutFingerboardWindow(layout)}
     ${renderNutFretReference(geometry, layout)}
-    ${renderNut(geometry, layout, false)}
+    ${renderNut(geometry, layout, false, lengthUnit)}
     ${renderNutStrings(strings, geometry)}
-    ${renderNutActionLabel(setup, layout)}
-    ${renderNutInsertLabel(layout)}`;
+    ${renderNutActionLabel(setup, layout, lengthUnit)}
+    ${renderNutInsertLabel(layout, lengthUnit)}`;
 }
 
-function renderMobileSaddleArtwork({ setup, strings, geometry, layout }) {
+function renderMobileSaddleArtwork({ setup, strings, geometry, layout, lengthUnit }) {
   return `
     <rect x="521" y="1" width="478" height="${layout.svgHeight - 2}" rx="10" class="geometry-canvas" />
     <text x="880" y="30" text-anchor="end" class="geometry-window-label">12TH FRET → SADDLE</text>
     ${renderSaddleFingerboardWindow(layout)}
     ${renderSaddleFretReference(geometry, layout)}
-    ${renderSaddle(geometry, layout, false)}
+    ${renderSaddle(geometry, layout, false, lengthUnit)}
     ${renderSaddleStrings(strings, geometry)}
-    ${renderSaddleActionLabel(setup, layout)}
-    ${renderSaddleInsertLabel(layout)}`;
+    ${renderSaddleActionLabel(setup, layout, lengthUnit)}
+    ${renderSaddleInsertLabel(layout, lengthUnit)}`;
 }
 
 function renderNutFingerboardWindow(layout) {
@@ -182,11 +184,11 @@ function calculateNormalizedFretPosition(fretNumber) {
   return 1 - 2 ** (-fretNumber / 12);
 }
 
-function renderWindowLabels(setup, scaleMode) {
+function renderWindowLabels(setup, scaleMode, lengthUnit) {
   const scaleLengths = setup.strings.map(({ scaleLengthMm }) => scaleLengthMm);
   const scaleLabel = scaleMode === "per-string"
-    ? `${Math.min(...scaleLengths).toFixed(1)}–${Math.max(...scaleLengths).toFixed(1)} mm · neutral fret ${setup.fanNeutralFret}`
-    : `${scaleLengths[0].toFixed(1)} mm scale`;
+    ? `${formatLengthRange(scaleLengths, lengthUnit)} · neutral fret ${setup.fanNeutralFret}`
+    : `${formatLength(scaleLengths[0], lengthUnit)} scale`;
   return `
     <text x="126" y="30" class="geometry-window-label">NUT → FRET 1</text>
     <text x="880" y="30" text-anchor="end" class="geometry-window-label">12TH FRET → SADDLE</text>
@@ -217,7 +219,7 @@ function renderFretReferences(geometry, layout) {
     <text x="604" y="${labelY}" text-anchor="middle" class="geometry-reference-label">FRET 12</text>`;
 }
 
-function renderNut(geometry, layout, includeDataAttributes = true) {
+function renderNut(geometry, layout, includeDataAttributes = true, lengthUnit = "mm") {
   const nutY = layout.stringTopY - 15;
   const nutHeight = layout.stringBottomY - layout.stringTopY + 30;
   const fittedCenter = fitLineToPoints(geometry.map(({ y, nutZeroX }) => ({ x: nutZeroX, y })));
@@ -240,13 +242,13 @@ function renderNut(geometry, layout, includeDataAttributes = true) {
       ${geometry.map(({ y, nutZeroX, nutX: compensatedX, nutCompensationMm }, index) => `
         <line x1="${nutZeroX}" y1="${y}" x2="${compensatedX}" y2="${y}" class="geometry-compensation"${dataAttribute("nut-compensation", index, includeDataAttributes)} />
         <circle cx="${compensatedX}" cy="${y}" r="2.6" class="geometry-break-point" />
-        <text x="${Math.min(nutZeroX, compensatedX) - halfThickness - 7}" y="${y + 3.5}" text-anchor="end" class="geometry-value-label">${formatSignedMm(nutCompensationMm)}</text>
+        <text x="${Math.min(nutZeroX, compensatedX) - halfThickness - 7}" y="${y + 3.5}" text-anchor="end" class="geometry-value-label">${formatSignedDiagramLength(nutCompensationMm, lengthUnit)}</text>
       `).join("")}
       <polygon points="${insertPoints}" class="geometry-insert-outline" />
     </g>`;
 }
 
-function renderSaddle(geometry, layout, includeDataAttributes = true) {
+function renderSaddle(geometry, layout, includeDataAttributes = true, lengthUnit = "mm") {
   const fittedCenter = fitLineToPoints(geometry.map(({ y, saddleX }) => ({ x: saddleX, y })));
   const topY = layout.stringTopY - 15;
   const bottomY = layout.stringBottomY + 15;
@@ -267,7 +269,7 @@ function renderSaddle(geometry, layout, includeDataAttributes = true) {
       ${geometry.map(({ y, saddleTheoreticalX, saddleX, saddleCompensationMm }, index) => `
         <line x1="${saddleTheoreticalX}" y1="${y}" x2="${saddleX}" y2="${y}" class="geometry-compensation"${dataAttribute("saddle-compensation", index, includeDataAttributes)} />
         <circle cx="${saddleX}" cy="${y}" r="2.6" class="geometry-break-point" />
-        <text x="${Math.max(saddleTheoreticalX, saddleX) + 8}" y="${y + 3.5}" class="geometry-value-label">${formatSignedMm(saddleCompensationMm)}</text>
+        <text x="${Math.max(saddleTheoreticalX, saddleX) + 8}" y="${y + 3.5}" class="geometry-value-label">${formatSignedDiagramLength(saddleCompensationMm, lengthUnit)}</text>
       `).join("")}
       <polygon points="${insertPoints}" class="geometry-insert-outline" />
     </g>`;
@@ -316,7 +318,7 @@ function stringStrokeWidth(stringResult) {
   return Math.min(4.2, 1.1 + stringResult.string.gaugeMm * 1.55);
 }
 
-function renderActionLabels(setup, layout) {
+function renderActionLabels(setup, layout, lengthUnit) {
   const nutAction = setup.benchActionTargets.nutActionAtFirstFretMm;
   const bridgeAction = setup.benchActionTargets.actionAtMeasurementWithCapoMm;
   const headingY = layout.stringBottomY + 80;
@@ -324,45 +326,45 @@ function renderActionLabels(setup, layout) {
   return `
     <g class="geometry-action-labels">
       <text x="282" y="${headingY}" text-anchor="middle">NUT ACTION @ FRET 1 · OPEN</text>
-      <text x="282" y="${valueY}" text-anchor="middle" class="geometry-action-value">first ${nutAction.firstStringMm.toFixed(2)} · last ${nutAction.lastStringMm.toFixed(2)} mm</text>
+      <text x="282" y="${valueY}" text-anchor="middle" class="geometry-action-value">first ${formatLength(nutAction.firstStringMm, lengthUnit)} · last ${formatLength(nutAction.lastStringMm, lengthUnit)}</text>
       <text x="718" y="${headingY}" text-anchor="middle">ACTION @ FRET 12 · CAPO 1</text>
-      <text x="718" y="${valueY}" text-anchor="middle" class="geometry-action-value">first ${bridgeAction.firstStringMm.toFixed(2)} · last ${bridgeAction.lastStringMm.toFixed(2)} mm</text>
+      <text x="718" y="${valueY}" text-anchor="middle" class="geometry-action-value">first ${formatLength(bridgeAction.firstStringMm, lengthUnit)} · last ${formatLength(bridgeAction.lastStringMm, lengthUnit)}</text>
     </g>`;
 }
 
-function renderNutActionLabel(setup, layout) {
+function renderNutActionLabel(setup, layout, lengthUnit) {
   const nutAction = setup.benchActionTargets.nutActionAtFirstFretMm;
   const headingY = layout.stringBottomY + 80;
   return `
     <g class="geometry-action-labels">
       <text x="282" y="${headingY}" text-anchor="middle">NUT ACTION @ FRET 1 · OPEN</text>
-      <text x="282" y="${headingY + 19}" text-anchor="middle" class="geometry-action-value">first ${nutAction.firstStringMm.toFixed(2)} · last ${nutAction.lastStringMm.toFixed(2)} mm</text>
+      <text x="282" y="${headingY + 19}" text-anchor="middle" class="geometry-action-value">first ${formatLength(nutAction.firstStringMm, lengthUnit)} · last ${formatLength(nutAction.lastStringMm, lengthUnit)}</text>
     </g>`;
 }
 
-function renderSaddleActionLabel(setup, layout) {
+function renderSaddleActionLabel(setup, layout, lengthUnit) {
   const bridgeAction = setup.benchActionTargets.actionAtMeasurementWithCapoMm;
   const headingY = layout.stringBottomY + 80;
   return `
     <g class="geometry-action-labels">
       <text x="718" y="${headingY}" text-anchor="middle">ACTION @ FRET 12 · CAPO 1</text>
-      <text x="718" y="${headingY + 19}" text-anchor="middle" class="geometry-action-value">first ${bridgeAction.firstStringMm.toFixed(2)} · last ${bridgeAction.lastStringMm.toFixed(2)} mm</text>
+      <text x="718" y="${headingY + 19}" text-anchor="middle" class="geometry-action-value">first ${formatLength(bridgeAction.firstStringMm, lengthUnit)} · last ${formatLength(bridgeAction.lastStringMm, lengthUnit)}</text>
     </g>`;
 }
 
-function renderInsertLabels(layout) {
+function renderInsertLabels(layout, lengthUnit) {
   const labelY = layout.stringBottomY + 45;
   return `
-    <text x="170" y="${labelY}" text-anchor="middle" class="geometry-insert-label">NUT · 5 MM</text>
-    <text x="838" y="${labelY}" text-anchor="middle" class="geometry-insert-label">SADDLE · 6 MM</text>`;
+    <text x="170" y="${labelY}" text-anchor="middle" class="geometry-insert-label">NUT · ${formatInsertLength(5, lengthUnit)}</text>
+    <text x="838" y="${labelY}" text-anchor="middle" class="geometry-insert-label">SADDLE · ${formatInsertLength(6, lengthUnit)}</text>`;
 }
 
-function renderNutInsertLabel(layout) {
-  return `<text x="170" y="${layout.stringBottomY + 45}" text-anchor="middle" class="geometry-insert-label">NUT · 5 MM</text>`;
+function renderNutInsertLabel(layout, lengthUnit) {
+  return `<text x="170" y="${layout.stringBottomY + 45}" text-anchor="middle" class="geometry-insert-label">NUT · ${formatInsertLength(5, lengthUnit)}</text>`;
 }
 
-function renderSaddleInsertLabel(layout) {
-  return `<text x="838" y="${layout.stringBottomY + 45}" text-anchor="middle" class="geometry-insert-label">SADDLE · 6 MM</text>`;
+function renderSaddleInsertLabel(layout, lengthUnit) {
+  return `<text x="838" y="${layout.stringBottomY + 45}" text-anchor="middle" class="geometry-insert-label">SADDLE · ${formatInsertLength(6, lengthUnit)}</text>`;
 }
 
 function dataAttribute(name, index, isIncluded) {
@@ -389,8 +391,23 @@ function average(values) {
   return values.reduce((total, value) => total + value, 0) / values.length;
 }
 
-function formatSignedMm(value) {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
+function formatLength(value, lengthUnit) {
+  return lengthUnitPresentation.format(value, lengthUnit);
+}
+
+function formatLengthRange(values, lengthUnit) {
+  return `${formatLength(Math.min(...values), lengthUnit)}–${formatLength(Math.max(...values), lengthUnit)}`;
+}
+
+function formatSignedDiagramLength(value, lengthUnit) {
+  const displayValue = lengthUnitPresentation.fromMillimetres(value, lengthUnit);
+  const precision = lengthUnit === "in" ? 3 : 2;
+  return `${displayValue >= 0 ? "+" : ""}${displayValue.toFixed(precision)}`;
+}
+
+function formatInsertLength(value, lengthUnit) {
+  const precision = lengthUnit === "in" ? 3 : 0;
+  return lengthUnitPresentation.format(value, lengthUnit, { precision }).toUpperCase();
 }
 
 function escapeMarkup(value) {

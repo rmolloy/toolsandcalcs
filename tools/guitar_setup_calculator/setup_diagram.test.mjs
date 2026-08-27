@@ -41,6 +41,19 @@ test("diagram preserves the complete desktop view and names each mobile measurem
   assert.doesNotMatch(saddleDiagram, /NUT|FRET 1(?!2)/);
 });
 
+test("diagram presents scale, inserts, and compensation in inches", () => {
+  const setup = createDefaultSetup();
+  const diagram = renderSetupDiagram({
+    setup,
+    result: calculateSetup(setup),
+    lengthUnit: "in",
+  });
+
+  assert.match(diagram, /25\.400 in scale/);
+  assert.match(diagram, /SADDLE · 0\.236 IN/);
+  assert.match(diagram, /class="geometry-value-label">[+-]0\.\d{3}</);
+});
+
 test("diagram groups double courses more tightly than adjacent courses", () => {
   const setup = createCustomSetupFromCourseMembers({
     baseSetup: createDefaultSetup(),

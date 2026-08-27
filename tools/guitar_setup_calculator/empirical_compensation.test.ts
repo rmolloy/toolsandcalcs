@@ -9,8 +9,10 @@ import {
   calculateSaddleCompensationTonalShiftCents,
   calculateStringLengthChangeMmForCents,
   calculateTotalAbsoluteResidualCents,
+  optimizeEmpiricalAdjustmentFromReadings,
   optimizeEmpiricalCompensation,
-} from "./gore_empirical_compensation.ts";
+  readingsFromDenseErrors,
+} from "./empirical_compensation.ts";
 
 test("equation 4.7-1 reproduces the published one-cent scale example", () => {
   const lengthChangeMm = calculateStringLengthChangeMmForCents(650, 1);
@@ -253,4 +255,83 @@ test("an equal empirical fit prefers less physical compensation movement", () =>
   });
 
   assert.deepEqual(result.geometry, zeroMovementGeometry);
+});
+
+test("sparse readings reach the same optimum as the equivalent dense errors", () => {
+  const scaleLengthMm = 645.16;
+  const search = {
+    bounds: { nutMinimumMm: -2, nutMaximumMm: 2, saddleMinimumMm: -2, saddleMaximumMm: 2 },
+    divisionsPerAxis: 20,
+    refinementPasses: 4,
+  };
+  const denseErrors = [4.2, 3.1, 2.4, 1.9, 1.5, 1.2];
+  const dense = optimizeEmpiricalCompensation({
+    scaleLengthMm,
+    measuredErrorsCentsByFret: denseErrors,
+    search,
+  });
+  const sparse = optimizeEmpiricalAdjustmentFromReadings({
+    scaleLengthMm,
+    readings: readingsFromDenseErrors(denseErrors),
+    search,
+  });
+  assert.equal(sparse.nutAdjustmentMm, dense.geometry.nutCompensationMm);
+  assert.equal(sparse.saddleAdjustmentMm, dense.geometry.saddleCompensationMm);
+  assert.equal(sparse.totalAbsoluteResidualCents, dense.totalAbsoluteResidualCents);
+});
+
+test("the bench protocol subset optimizes without dense measurements", () => {
+  const result = optimizeEmpiricalAdjustmentFromReadings({
+    scaleLengthMm: 645.16,
+    readings: [
+      { fretNumber: 1, measuredErrorCents: 5.5 },
+      { fretNumber: 2, measuredErrorCents: 4.6 },
+      { fretNumber: 3, measuredErrorCents: 3.9 },
+      { fretNumber: 4, measuredErrorCents: 3.4 },
+      { fretNumber: 5, measuredErrorCents: 3.0 },
+      { fretNumber: 12, measuredErrorCents: 1.8 },
+    ],
+    search: {
+      bounds: { nutMinimumMm: -3, nutMaximumMm: 3, saddleMinimumMm: -3, saddleMaximumMm: 3 },
+      divisionsPerAxis: 24,
+      refinementPasses: 5,
+    },
+  });
+  assert.equal(result.residualCentsByReading.length, 6);
+  assert.equal(result.residualCentsByReading[5].fretNumber, 12);
+  const measuredTotalCents = 5.5 + 4.6 + 3.9 + 3.4 + 3.0 + 1.8;
+  assert.ok(result.totalAbsoluteResidualCents < measuredTotalCents / 2);
+  assert.ok(Math.abs(result.nutAdjustmentMm) <= 3);
+  assert.ok(Math.abs(result.saddleAdjustmentMm) <= 3);
+});
+
+test("readings reject repeats, bad frets, and non-finite cents", () => {
+  const search = {
+    bounds: { nutMinimumMm: -2, nutMaximumMm: 2, saddleMinimumMm: -2, saddleMaximumMm: 2 },
+    divisionsPerAxis: 8,
+    refinementPasses: 2,
+  };
+  assert.throws(() => optimizeEmpiricalAdjustmentFromReadings({
+    scaleLengthMm: 645.16,
+    readings: [],
+    search,
+  }), /at least one measured fret/);
+  assert.throws(() => optimizeEmpiricalAdjustmentFromReadings({
+    scaleLengthMm: 645.16,
+    readings: [
+      { fretNumber: 3, measuredErrorCents: 1 },
+      { fretNumber: 3, measuredErrorCents: 2 },
+    ],
+    search,
+  }), /must not repeat a fret/);
+  assert.throws(() => optimizeEmpiricalAdjustmentFromReadings({
+    scaleLengthMm: 645.16,
+    readings: [{ fretNumber: 0, measuredErrorCents: 1 }],
+    search,
+  }), /positive integer/);
+  assert.throws(() => optimizeEmpiricalAdjustmentFromReadings({
+    scaleLengthMm: 645.16,
+    readings: [{ fretNumber: 1, measuredErrorCents: Number.NaN }],
+    search,
+  }), /must be finite/);
 });

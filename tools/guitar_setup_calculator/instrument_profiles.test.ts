@@ -9,6 +9,7 @@ import {
 test("review profiles preserve physical strings and user-facing courses", () => {
   const expectedCounts = {
     steel_string: [6, 6],
+    electric: [6, 6],
     tenor_ukulele: [4, 4],
     twelve_string: [12, 6],
     four_string_bass: [4, 4],

@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  calculateCompensationComparisonForString,
   calculateFretPositionMm,
+  calculateFrequencyHzFromMidi,
   calculateRadiusDropMm,
   calculateRadiusAtFretMm,
   calculateStringTopHeightMm,
@@ -10,7 +12,9 @@ import {
   calculateFrettedPitchErrorCents,
   calculateMaximumAbsoluteCentsError,
   optimizeNutAndSaddleCompensation,
+  optimizeEmpiricalAdjustmentForString,
   calculateSetup,
+  calculateSetupForString,
   applyTensionCatalogToSetup,
   createDefaultSetup,
   createCustomSetupFromCourseMembers,
@@ -18,6 +22,7 @@ import {
   estimateStringMechanicalProperties,
 } from "./setup_model.ts";
 import { calculateGoreCentsError } from "./gore_compensation.ts";
+import { calculateCombinedCompensationTonalShiftCents } from "./empirical_compensation.ts";
 import { readFile } from "node:fs/promises";
 
 test("fret positions preserve the octave relationship", () => {
@@ -171,25 +176,87 @@ test("bench geometry preserves first and last nut-action measurements", () => {
   ) < 1e-12);
 });
 
-test("bench geometry derives middle strings from the top-of-string envelope", () => {
+test("bench geometry derives middle strings from the radius-aware envelope", () => {
   const setup = createDefaultSetup();
   const result = calculateSetup(setup);
+  const stringCount = result.strings.length;
   const firstTopClearanceMm = setup.benchActionTargets.nutActionAtFirstFretMm.firstStringMm
     + setup.strings[0].gaugeMm;
   const lastTopClearanceMm = setup.benchActionTargets.nutActionAtFirstFretMm.lastStringMm
     + setup.strings.at(-1)!.gaugeMm;
+  const firstFretRadiusMm = calculateRadiusAtFretMm({
+    radiusProfile: setup.radiusProfile,
+    normalizedFretPosition: calculateFretPositionMm(setup.scaleLengthMm, 1) / setup.scaleLengthMm,
+  });
+  const outerSpanMm = setup.stringSpacingMm * (stringCount - 1);
   result.strings.forEach((stringResult, stringIndex) => {
-    const progress = stringIndex / (result.strings.length - 1);
-    const expectedTopClearanceMm = firstTopClearanceMm
+    const progress = stringIndex / (stringCount - 1);
+    const chordTopClearanceMm = firstTopClearanceMm
       + (lastTopClearanceMm - firstTopClearanceMm) * progress;
+    const distanceFromFirstMm = progress * outerSpanMm;
+    const arcHeightMm = distanceFromFirstMm
+      * (outerSpanMm - distanceFromFirstMm)
+      / (2 * firstFretRadiusMm);
     const firstFret = stringResult.actionByFret[1];
     assert.ok(Math.abs(
       firstFret.clearanceAboveFretMm
         + stringResult.string.gaugeMm
-        - expectedTopClearanceMm,
-    ) < 1e-12);
-    assert.equal(firstFret.radiusClearanceAdjustmentMm, 0);
+        - (chordTopClearanceMm + arcHeightMm),
+    ) < 1e-9);
+    assert.ok(Math.abs(firstFret.radiusClearanceAdjustmentMm - arcHeightMm) < 1e-9);
   });
+  const outerAdjustmentMm = result.strings[0].actionByFret[1].radiusClearanceAdjustmentMm;
+  const innerAdjustmentMm = result.strings[2].actionByFret[1].radiusClearanceAdjustmentMm;
+  assert.equal(outerAdjustmentMm, 0);
+  assert.ok(innerAdjustmentMm > 0.4);
+});
+
+test("sparse per-string action readings calibrate the book action profile", () => {
+  const baselineSetup = createDefaultSetup();
+  const baselineResult = calculateSetup(baselineSetup);
+  const measuredFret = 8;
+  const measuredClearanceMm = baselineResult.strings[0]
+    .actionByFret[measuredFret].clearanceAboveFretMm + 0.15;
+  const calibratedSetup = {
+    ...baselineSetup,
+    strings: baselineSetup.strings.map((string, stringIndex) => ({
+      ...string,
+      actionMeasurements: stringIndex === 0
+        ? [{ fretNumber: measuredFret, clearanceAboveFretMm: measuredClearanceMm }]
+        : undefined,
+    })),
+  };
+  const calibratedResult = calculateSetup(calibratedSetup);
+
+  assert.equal(
+    calibratedResult.strings[0].actionByFret[measuredFret].clearanceAboveFretMm,
+    measuredClearanceMm,
+  );
+  assert.ok(
+    calibratedResult.strings[0].actionByFret[measuredFret - 1].clearanceAboveFretMm
+      > baselineResult.strings[0].actionByFret[measuredFret - 1].clearanceAboveFretMm,
+  );
+  assert.deepEqual(
+    calibratedResult.strings[1].actionByFret,
+    baselineResult.strings[1].actionByFret,
+  );
+  assert.ok(Math.abs(
+    calibratedResult.strings[0].actionByFret[measuredFret].radiusClearanceAdjustmentMm
+      - baselineResult.strings[0].actionByFret[measuredFret].radiusClearanceAdjustmentMm,
+  ) < 1e-12);
+});
+
+test("a flat fingerboard keeps the chord envelope unchanged", () => {
+  const setup = createDefaultSetup();
+  setup.radiusProfile = { kind: "simple", radiusMm: Infinity };
+  const result = calculateSetup(setup);
+  for (const stringResult of result.strings) {
+    assert.equal(stringResult.actionByFret[1].radiusClearanceAdjustmentMm, 0);
+    assert.equal(
+      stringResult.actionByFret[1].clearanceAboveFretMm,
+      stringResult.actionByFret[1].baseClearanceAboveFretMm,
+    );
+  }
 });
 
 test("bench geometry feeds a physical open-string profile into Gore", () => {
@@ -231,7 +298,9 @@ test("the setup-model compensation entry point delegates to Gore math", () => {
     openMidiNote: 55,
     gaugeMm: 0.6,
     construction: "plain" as const,
+    materialFamily: "steel" as const,
     stringIndex: 0,
+    courseIndex: 0,
     scaleLengthMm,
     extraStringLengthMm: 120,
     openFrequencyHz: 440 * 2 ** ((55 - 69) / 12),
@@ -280,15 +349,40 @@ test("the setup-model compensation entry point delegates to Gore math", () => {
   });
   assert.equal(signedAdapter, signedDirect);
 
+  // Runtime authority is the book-literal length-domain optimizer (eq 4.7-37).
+  // The supplied Python cents-domain optimum (0.53707 / 0.75609) remains pinned
+  // in gore_compensation.test.ts as a legacy cross-check only.
   const optimized = optimizeNutAndSaddleCompensation({
     string,
     actionByFret,
     fingerDeflectionMm: 0.5,
     playingPressure: 0.75,
   });
-  assert.ok(Math.abs(optimized.nutCompensationMm - 0.5370650916327806) < 0.0001);
-  assert.ok(Math.abs(optimized.saddleCompensationMm - 0.7560902917826148) < 0.0001);
-  assert.ok(Math.abs(optimized.totalAbsoluteErrorCents - 0.39204416022238925) < 0.0001);
+  assert.ok(Math.abs(optimized.nutCompensationMm - 0.541352) < 0.0001);
+  assert.ok(Math.abs(optimized.saddleCompensationMm - 0.781378) < 0.0001);
+  assert.ok(Math.abs(optimized.totalAbsoluteLengthErrorMm - 0.070650) < 0.0001);
+  assert.equal(optimized.centsErrorByFret.length, 18);
+  assert.equal(optimized.lengthErrorByFretMm.length, 18);
+});
+
+test("the optimization honors the selected last fret inside the objective", () => {
+  const setup = createDefaultSetup();
+  const string = {
+    ...setup.strings[0],
+    scaleLengthMm: setup.scaleLengthMm,
+    openFrequencyHz: calculateFrequencyHzFromMidi(setup.strings[0].openMidiNote),
+    extraStringLengthMm: setup.extraStringLengthMm,
+  };
+  const actionByFret = calculateSetupForString({
+    string: setup.strings[0],
+    sharedSetup: setup,
+  }).actionByFret;
+  const full = optimizeNutAndSaddleCompensation({ string, actionByFret });
+  const scoped = optimizeNutAndSaddleCompensation({ string, actionByFret, lastFret: 8 });
+  assert.equal(scoped.centsErrorByFret.length, 8);
+  assert.notEqual(full.nutCompensationMm.toFixed(4), scoped.nutCompensationMm.toFixed(4));
+  assert.ok(scoped.totalAbsoluteLengthErrorMm
+    <= full.lengthErrorByFretMm.slice(0, 8).reduce((t, e) => t + Math.abs(e), 0) + 1e-9);
 });
 
 test("each string can carry its own scale length", () => {
@@ -304,20 +398,22 @@ test("each string can carry its own scale length", () => {
 test("the complete catalog can replace gauge estimates without changing geometry", async () => {
   const catalog = JSON.parse(await readFile(
     new URL("./tension_catalog.json", import.meta.url),
+    "utf8",
   ));
   const setup = applyTensionCatalogToSetup(
     createDefaultSetup(),
     catalog,
     { manufacturer: "D'Addario", setCode: "EJ16" },
   );
-  assert.equal(setup.strings[0].tensionSource.manufacturer, "D'Addario");
-  assert.equal(setup.strings[0].tensionSource.sourceId, "EJ16:1:U1AGFPL012-NP");
+  assert.equal(setup.strings[0].tensionSource?.manufacturer, "D'Addario");
+  assert.equal(setup.strings[0].tensionSource?.sourceId, "EJ16:1:U1AGFPL012-NP");
   assert.ok(setup.strings.every((string) => string.tensionSource));
 });
 
 test("classical profile resolves every D'Addario set row by sequence", async () => {
   const catalog = JSON.parse(await readFile(
     new URL("./tension_catalog.json", import.meta.url),
+    "utf8",
   ));
   const setup = applyTensionCatalogToSetup(
     createSetupFromInstrumentProfile("classical"),
@@ -325,12 +421,13 @@ test("classical profile resolves every D'Addario set row by sequence", async () 
     { manufacturer: "D'Addario", setCode: "EJ45" },
   );
   assert.ok(setup.strings.every((string) => string.tensionSource));
-  assert.equal(setup.strings[1].tensionSource.sourceId, "EJ45:2:ACN0.81-S");
+  assert.equal(setup.strings[1].tensionSource?.sourceId, "EJ45:2:ACN0.81-S");
 });
 
 test("clearing a manufacturer selection restores estimated string mechanics", async () => {
   const catalog = JSON.parse(await readFile(
     new URL("./tension_catalog.json", import.meta.url),
+    "utf8",
   ));
   const sourced = applyTensionCatalogToSetup(
     createDefaultSetup(),
@@ -341,4 +438,110 @@ test("clearing a manufacturer selection restores estimated string mechanics", as
   assert.equal(estimated.tensionDataSource, null);
   assert.equal(estimated.strings[0].tensionSource, undefined);
   assert.ok(Number.isFinite(estimated.strings[0].unitMassKgPerMeter));
+});
+
+test("the compensation comparison pins the nut at zero for the saddle-only path", () => {
+  const setup = createDefaultSetup();
+  const comparison = calculateCompensationComparisonForString({
+    string: setup.strings[2],
+    sharedSetup: setup,
+  });
+  assert.equal(comparison.saddleOnly.nutCompensationMm, 0);
+  assert.ok(Number.isFinite(comparison.saddleOnly.saddleCompensationMm));
+  assert.ok(comparison.nutAndSaddle.nutCompensationMm !== 0);
+});
+
+test("the saddle-only path never beats the joint optimization", () => {
+  const setup = createDefaultSetup();
+  for (const string of setup.strings) {
+    const comparison = calculateCompensationComparisonForString({
+      string,
+      sharedSetup: setup,
+    });
+    assert.ok(
+      comparison.saddleOnly.totalAbsoluteErrorCents
+        >= comparison.nutAndSaddle.totalAbsoluteErrorCents - 1e-9,
+      string.name,
+    );
+  }
+});
+
+test("both comparison paths share one action profile", () => {
+  const setup = createDefaultSetup();
+  const comparison = calculateCompensationComparisonForString({
+    string: setup.strings[0],
+    sharedSetup: setup,
+  });
+  const direct = calculateSetupForString({ string: setup.strings[0], sharedSetup: setup });
+  assert.deepEqual(
+    comparison.actionByFret.map((point) => point.clearanceAboveFretMm),
+    direct.actionByFret.map((point) => point.clearanceAboveFretMm),
+  );
+  assert.deepEqual(comparison.nutAndSaddle, direct.intonation);
+});
+
+test("the empirical entry point recovers a known adjustment from its own shifts", () => {
+  const setup = createDefaultSetup();
+  const trueGeometry = {
+    scaleLengthMm: setup.scaleLengthMm,
+    nutCompensationMm: 0.5,
+    saddleCompensationMm: 0.75,
+  };
+  const readings = [1, 2, 3, 4, 5, 12].map((fretNumber) => ({
+    fretNumber,
+    measuredErrorCents: -calculateCombinedCompensationTonalShiftCents(trueGeometry, fretNumber),
+  }));
+  const result = optimizeEmpiricalAdjustmentForString({
+    string: setup.strings[0],
+    sharedSetup: setup,
+    readings,
+  });
+  assert.ok(Math.abs(result.nutAdjustmentMm - 0.5) < 0.01);
+  assert.ok(Math.abs(result.saddleAdjustmentMm - 0.75) < 0.01);
+  assert.ok(result.totalAbsoluteResidualCents < 0.1);
+});
+
+test("the empirical entry point honors a per-string scale length", () => {
+  const setup = createDefaultSetup();
+  const fannedString = { ...setup.strings[5], scaleLengthMm: 686 };
+  const trueGeometry = {
+    scaleLengthMm: 686,
+    nutCompensationMm: 0.4,
+    saddleCompensationMm: 1.1,
+  };
+  const readings = [1, 3, 5, 12].map((fretNumber) => ({
+    fretNumber,
+    measuredErrorCents: -calculateCombinedCompensationTonalShiftCents(trueGeometry, fretNumber),
+  }));
+  const result = optimizeEmpiricalAdjustmentForString({
+    string: fannedString,
+    sharedSetup: setup,
+    readings,
+  });
+  assert.ok(Math.abs(result.nutAdjustmentMm - 0.4) < 0.01);
+  assert.ok(Math.abs(result.saddleAdjustmentMm - 1.1) < 0.01);
+});
+
+test("the empirical entry point rejects readings beyond the last fret", () => {
+  const setup = createDefaultSetup();
+  assert.throws(() => optimizeEmpiricalAdjustmentForString({
+    string: setup.strings[0],
+    sharedSetup: setup,
+    readings: [{ fretNumber: setup.fretCount + 1, measuredErrorCents: 1 }],
+  }), /beyond the instrument's last fret/);
+});
+
+test("a string-level stretchable length overrides the shared extra length", () => {
+  const setup = createDefaultSetup();
+  const shared = calculateSetupForString({ string: setup.strings[5], sharedSetup: setup });
+  const perString = calculateSetupForString({
+    string: { ...setup.strings[5], extraStringLengthMm: 65 },
+    sharedSetup: setup,
+  });
+  // The Gore worksheet uses per-string nut-to-tuner distances (60-145 mm);
+  // a shorter stretchable length raises added tension and changes compensation.
+  assert.notEqual(
+    shared.intonation.saddleCompensationMm.toFixed(3),
+    perString.intonation.saddleCompensationMm.toFixed(3),
+  );
 });

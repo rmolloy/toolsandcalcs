@@ -37,6 +37,12 @@ export function describeCalculationBasis(userEntryGroups) {
   return `Preview mixes ${userMeasurementCount} user input groups with ${profileDefaultCount} profile defaults.`;
 }
 
+export function describeActionProvenance(userEntryGroups) {
+  if (userEntryGroups.has("measuredAction")) return "Measured at frets";
+  if (userEntryGroups.has("bridgeAction")) return "User entry";
+  return "Profile default";
+}
+
 function provenanceGroupForStringField(field) {
   if (field === "scaleLengthMm") return "scaleLength";
   if (field === "unitMassKgPerMeter") return "unitMass";

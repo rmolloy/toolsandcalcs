@@ -1,8 +1,4 @@
 import {
-  applyTensionSourceRecord,
-  findTensionSourceRecord,
-} from "./tension_sources.mjs";
-import {
   calculateGoreCentsError,
   GORE_REFERENCE_BOUNDS,
   optimizeGoreCompensation,
@@ -11,16 +7,26 @@ import type {
   GoreCompensationBounds,
   GoreCompensationInput,
 } from "./gore_compensation.ts";
-import {
-  calculateActionFromTopOfStringEnvelopeMm,
-  calculateActionProfileFromBenchMeasurements,
-} from "./action_geometry.ts";
-import {
-  findInstrumentProfile,
-  INSTRUMENT_PROFILES,
-} from "./instrument_profiles.ts";
+import type { SparseActionMeasurement } from "./action_geometry.ts";
+import { optimizeEmpiricalAdjustmentFromReadings } from "./empirical_compensation.ts";
+import { optimizeGoreBookCompensation } from "./gore_book_model.ts";
 import type {
-  InstrumentProfile,
+  EmpiricalAdjustmentResult,
+  EmpiricalCompensationSearch,
+  EmpiricalIntonationReading,
+} from "./empirical_compensation.ts";
+import {
+  requireFinite,
+  requireNonNegative,
+  requireNonNegativeInteger,
+  requirePositive,
+  requirePositiveInteger,
+  requirePositiveOrInfinity,
+  requireUnitInterval,
+} from "./numeric_validation.ts";
+import { calculateBenchActionProfile } from "./setup_action_profile.ts";
+import { estimateStringMechanicalProperties } from "./setup_string_mechanics.ts";
+import type {
   InstrumentProfileId,
   ProfileMaterialFamily,
 } from "./instrument_profiles.ts";
@@ -44,17 +50,50 @@ export {
   INSTRUMENT_PROFILES,
 } from "./instrument_profiles.ts";
 
-const MILLIMETERS_PER_METER = 1000;
-const MILLIMETERS_PER_INCH = 25.4;
-const DEFAULT_STRING_SPACING_MM = 7.2;
-const DEFAULT_EXTRA_STRING_LENGTH_MM = 120;
+export {
+  optimizeEmpiricalAdjustmentFromReadings,
+  readingsFromDenseErrors,
+} from "./empirical_compensation.ts";
+
+export type { SparseActionMeasurement } from "./action_geometry.ts";
+
+export {
+  calculateClearanceFromStringTopMm,
+  calculateRadiusAtFretMm,
+  calculateRadiusDropMm,
+  calculateStringLateralPositionMm,
+  calculateStringTopHeightMm,
+} from "./setup_action_profile.ts";
+
+export { estimateStringMechanicalProperties } from "./setup_string_mechanics.ts";
+
+export {
+  applyTensionCatalogToSetup,
+  createCustomSetupFromCourseMembers,
+  createDefaultSetup,
+  createSetupFromInstrumentProfile,
+  createStringSetFromInstrumentProfile,
+} from "./setup_factory.ts";
+
+export {
+  calculateGoreBookFretState,
+  GORE_BOOK_REFERENCE_BOUNDS,
+  optimizeGoreBookCompensation,
+} from "./gore_book_model.ts";
+
+export type {
+  GoreBookCompensationResult,
+  GoreBookStringInput,
+} from "./gore_book_model.ts";
+
+export type {
+  EmpiricalAdjustmentResult,
+  EmpiricalCompensationSearch,
+  EmpiricalIntonationReading,
+} from "./empirical_compensation.ts";
+
 const DEFAULT_FINGER_DEFLECTION_MM = 0.5;
 const DEFAULT_PLAYING_PRESSURE = 0.75;
-const DEFAULT_FAN_NEUTRAL_FRET = 7;
-const DEFAULT_STRING_DENSITY_KG_PER_CUBIC_METER = 7850;
-const DEFAULT_STEEL_YOUNG_MODULUS_PA = 195_000_000_000;
-const DEFAULT_NYLON_DENSITY_KG_PER_CUBIC_METER = 1140;
-const DEFAULT_NYLON_YOUNG_MODULUS_PA = 3_000_000_000;
 
 export type StringConstruction = "plain" | "wound";
 
@@ -88,6 +127,7 @@ export interface SetupString {
   openFrequencyHz?: number;
   unitMassKgPerMeter: number;
   axialStiffnessN: number;
+  actionMeasurements?: SparseActionMeasurement[];
   tensionSource?: TensionSource;
 }
 
@@ -152,6 +192,8 @@ export interface IntonationResult {
   saddleCompensationMm: number;
   centsErrorByFret: number[];
   totalAbsoluteErrorCents: number;
+  lengthErrorByFretMm: number[];
+  totalAbsoluteLengthErrorMm: number;
 }
 
 export interface Setup {
@@ -193,150 +235,6 @@ export function calculateFrequencyHzFromMidi(midiNote: number): number {
 export function calculateMaximumAbsoluteCentsError(centsErrors: number[]): number {
   centsErrors.forEach((error, index) => requireFinite(error, `centsErrors[${index}]`));
   return centsErrors.reduce((maximum, error) => Math.max(maximum, Math.abs(error)), 0);
-}
-
-export function calculateRadiusDropMm(radiusMm: number, lateralOffsetMm: number): number {
-  requireFinite(lateralOffsetMm, "lateralOffsetMm");
-  if (radiusMm === Infinity) return 0;
-  requirePositive(radiusMm, "radiusMm");
-  if (Math.abs(lateralOffsetMm) > radiusMm) {
-    throw new RangeError("lateralOffsetMm must fit inside the fingerboard radius");
-  }
-  return radiusMm - Math.sqrt(radiusMm ** 2 - lateralOffsetMm ** 2);
-}
-
-export function calculateRadiusAtFretMm({
-  radiusProfile,
-  normalizedFretPosition,
-}: {
-  radiusProfile: RadiusProfile;
-  normalizedFretPosition: number;
-}): number {
-  requireUnitInterval(normalizedFretPosition, "normalizedFretPosition");
-  if (radiusProfile.kind === "simple") {
-    requirePositiveOrInfinity(radiusProfile.radiusMm, "radiusProfile.radiusMm");
-    return radiusProfile.radiusMm;
-  }
-  if (radiusProfile.kind !== "compound") {
-    throw new RangeError("radiusProfile.kind must be simple or compound");
-  }
-  requirePositiveOrInfinity(radiusProfile.nutRadiusMm, "radiusProfile.nutRadiusMm");
-  requirePositiveOrInfinity(radiusProfile.bridgeRadiusMm, "radiusProfile.bridgeRadiusMm");
-  return radiusProfile.nutRadiusMm
-    + (radiusProfile.bridgeRadiusMm - radiusProfile.nutRadiusMm) * normalizedFretPosition;
-}
-
-export function calculateStringLateralPositionMm({
-  stringIndex,
-  stringCount,
-  stringSpacingMm = DEFAULT_STRING_SPACING_MM,
-}: {
-  stringIndex: number;
-  stringCount: number;
-  stringSpacingMm?: number;
-}): number {
-  requireNonNegativeInteger(stringIndex, "stringIndex");
-  requirePositiveInteger(stringCount, "stringCount");
-  requirePositive(stringSpacingMm, "stringSpacingMm");
-  if (stringIndex >= stringCount) {
-    throw new RangeError("stringIndex must be less than stringCount");
-  }
-  return (stringIndex - (stringCount - 1) / 2) * stringSpacingMm;
-}
-
-export function calculateStringTopHeightMm({
-  clearanceAboveFretMm,
-  stringDiameterMm,
-  fingerboardRadiusMm,
-  lateralPositionMm,
-}: {
-  clearanceAboveFretMm: number;
-  stringDiameterMm: number;
-  fingerboardRadiusMm: number;
-  lateralPositionMm: number;
-}): number {
-  requireNonNegative(clearanceAboveFretMm, "clearanceAboveFretMm");
-  requirePositive(stringDiameterMm, "stringDiameterMm");
-  return clearanceAboveFretMm + stringDiameterMm
-    - calculateRadiusDropMm(fingerboardRadiusMm, lateralPositionMm);
-}
-
-export function calculateClearanceFromStringTopMm({
-  stringTopHeightMm,
-  stringDiameterMm,
-  fingerboardRadiusMm,
-  lateralPositionMm,
-}: {
-  stringTopHeightMm: number;
-  stringDiameterMm: number;
-  fingerboardRadiusMm: number;
-  lateralPositionMm: number;
-}): number {
-  requireFinite(stringTopHeightMm, "stringTopHeightMm");
-  requirePositive(stringDiameterMm, "stringDiameterMm");
-  return stringTopHeightMm - stringDiameterMm
-    + calculateRadiusDropMm(fingerboardRadiusMm, lateralPositionMm);
-}
-
-export function estimateStringMechanicalProperties({
-  gaugeMm,
-  construction = "plain",
-  materialFamily = "steel",
-  densityKgPerCubicMeter,
-  youngModulusPa,
-}: {
-  gaugeMm: number;
-  construction?: StringConstruction;
-  materialFamily?: ProfileMaterialFamily;
-  densityKgPerCubicMeter?: number;
-  youngModulusPa?: number;
-}): { unitMassKgPerMeter: number; axialStiffnessN: number } {
-  requirePositive(gaugeMm, "gaugeMm");
-  const materialDefaults = materialFamily === "nylon"
-    ? {
-      densityKgPerCubicMeter: DEFAULT_NYLON_DENSITY_KG_PER_CUBIC_METER,
-      youngModulusPa: DEFAULT_NYLON_YOUNG_MODULUS_PA,
-    }
-    : {
-      densityKgPerCubicMeter: DEFAULT_STRING_DENSITY_KG_PER_CUBIC_METER,
-      youngModulusPa: DEFAULT_STEEL_YOUNG_MODULUS_PA,
-    };
-  const radiusM = gaugeMm / 2 / MILLIMETERS_PER_METER;
-  const outsideAreaM2 = Math.PI * radiusM ** 2;
-  const unitMassFillFactor = construction === "wound" ? 0.72 : 1;
-  const axialDiameterMm = estimateAxialDiameterMm({
-    outsideDiameterMm: gaugeMm,
-    construction,
-    materialFamily,
-  });
-  const axialRadiusM = axialDiameterMm / 2 / MILLIMETERS_PER_METER;
-  const axialAreaM2 = Math.PI * axialRadiusM ** 2;
-  if (construction !== "plain" && construction !== "wound") {
-    throw new RangeError("construction must be plain or wound");
-  }
-  return {
-    unitMassKgPerMeter: (densityKgPerCubicMeter ?? materialDefaults.densityKgPerCubicMeter)
-      * outsideAreaM2
-      * unitMassFillFactor,
-    axialStiffnessN: (youngModulusPa ?? materialDefaults.youngModulusPa)
-      * axialAreaM2,
-  };
-}
-
-function estimateAxialDiameterMm({
-  outsideDiameterMm,
-  construction,
-  materialFamily,
-}: {
-  outsideDiameterMm: number;
-  construction: StringConstruction;
-  materialFamily: ProfileMaterialFamily;
-}): number {
-  if (construction === "plain") return outsideDiameterMm;
-  if (materialFamily === "nylon") return outsideDiameterMm * 0.6;
-  const outsideDiameterIn = outsideDiameterMm / MILLIMETERS_PER_INCH;
-  const estimatedCoreDiameterIn = 0.008 + 0.224 * outsideDiameterIn;
-  return Math.min(outsideDiameterMm, estimatedCoreDiameterIn * MILLIMETERS_PER_INCH);
 }
 
 export function calculateFrettedPitchErrorCents({
@@ -404,14 +302,19 @@ export function optimizeNutAndSaddleCompensation({
   if (lastFret >= actionByFret.length) {
     throw new RangeError("lastFret is outside actionByFret");
   }
-  const goreInput = createGoreInput({
-    string,
-    actionByFret,
-    fingerDeflectionMm,
-    playingPressure,
-  });
-  const optimized = optimizeGoreCompensation({
-    input: goreInput,
+  const fretNumbers = Array.from({ length: lastFret }, (_, index) => index + 1);
+  const optimized = optimizeGoreBookCompensation({
+    input: {
+      scaleLengthMm: string.scaleLengthMm,
+      openFrequencyHz: string.openFrequencyHz,
+      actionByFretMm: actionByFret.map((fret) => fret.clearanceAboveFretMm),
+      unitMassKgPerMeter: string.unitMassKgPerMeter,
+      axialStiffnessN: string.axialStiffnessN,
+      stretchableLengthMm: string.scaleLengthMm + string.extraStringLengthMm,
+      fingerRestDeflectionMm: fingerDeflectionMm,
+      playerPressureFactor: playingPressure,
+    },
+    fretNumbers,
     initialNutCompensationMm,
     initialSaddleCompensationMm,
     bounds,
@@ -419,10 +322,10 @@ export function optimizeNutAndSaddleCompensation({
   return {
     nutCompensationMm: optimized.nutCompensationMm,
     saddleCompensationMm: optimized.saddleCompensationMm,
-    centsErrorByFret: optimized.centsErrorByFret.slice(1, lastFret + 1),
-    totalAbsoluteErrorCents: optimized.centsErrorByFret
-      .slice(1, lastFret + 1)
-      .reduce((total, error) => total + Math.abs(error), 0),
+    centsErrorByFret: optimized.states.map((state) => state.centsError),
+    totalAbsoluteErrorCents: optimized.totalAbsoluteErrorCents,
+    lengthErrorByFretMm: optimized.states.map((state) => state.lengthErrorMm),
+    totalAbsoluteLengthErrorMm: optimized.totalAbsoluteLengthErrorMm,
   };
 }
 
@@ -453,6 +356,37 @@ function createGoreInput({
   };
 }
 
+export interface CompensationComparison {
+  actionByFret: ActionPoint[];
+  nutAndSaddle: IntonationResult;
+  saddleOnly: IntonationResult;
+}
+
+function createGoreOptimizationRequest({
+  string,
+  sharedSetup,
+  scaleLengthMm,
+  actionByFret,
+}: {
+  string: SetupString;
+  sharedSetup: Setup;
+  scaleLengthMm: number;
+  actionByFret: ActionPoint[];
+}) {
+  return {
+    string: {
+      ...string,
+      scaleLengthMm,
+      openFrequencyHz: calculateFrequencyHzFromMidi(string.openMidiNote),
+      extraStringLengthMm: string.extraStringLengthMm ?? sharedSetup.extraStringLengthMm,
+    },
+    actionByFret,
+    lastFret: sharedSetup.fretCount,
+    fingerDeflectionMm: sharedSetup.fingerDeflectionMm,
+    playingPressure: sharedSetup.playingPressure,
+  };
+}
+
 export function calculateSetupForString({
   string,
   sharedSetup,
@@ -462,19 +396,67 @@ export function calculateSetupForString({
 }): StringSetupResult {
   const scaleLengthMm = string.scaleLengthMm ?? sharedSetup.scaleLengthMm;
   const actionByFret = calculateBenchActionProfile({ string, sharedSetup, scaleLengthMm });
-  const intonation = optimizeNutAndSaddleCompensation({
-    string: {
-      ...string,
-      scaleLengthMm,
-      openFrequencyHz: calculateFrequencyHzFromMidi(string.openMidiNote),
-      extraStringLengthMm: sharedSetup.extraStringLengthMm,
-    },
-    actionByFret,
-    lastFret: sharedSetup.fretCount,
-    fingerDeflectionMm: sharedSetup.fingerDeflectionMm,
-    playingPressure: sharedSetup.playingPressure,
-  });
+  const intonation = optimizeNutAndSaddleCompensation(
+    createGoreOptimizationRequest({ string, sharedSetup, scaleLengthMm, actionByFret }),
+  );
   return { string, actionByFret, intonation };
+}
+
+export const EMPIRICAL_REFERENCE_SEARCH: EmpiricalCompensationSearch = {
+  bounds: { nutMinimumMm: -5, nutMaximumMm: 5, saddleMinimumMm: -5, saddleMaximumMm: 5 },
+  divisionsPerAxis: 40,
+  refinementPasses: 6,
+};
+
+export function optimizeEmpiricalAdjustmentForString({
+  string,
+  sharedSetup,
+  readings,
+  search = EMPIRICAL_REFERENCE_SEARCH,
+}: {
+  string: SetupString;
+  sharedSetup: Setup;
+  readings: readonly EmpiricalIntonationReading[];
+  search?: EmpiricalCompensationSearch;
+}): EmpiricalAdjustmentResult {
+  for (const reading of readings) {
+    if (Number.isInteger(reading.fretNumber) && reading.fretNumber > sharedSetup.fretCount) {
+      throw new RangeError(
+        `reading at fret ${reading.fretNumber} is beyond the instrument's last fret (${sharedSetup.fretCount})`,
+      );
+    }
+  }
+  return optimizeEmpiricalAdjustmentFromReadings({
+    scaleLengthMm: string.scaleLengthMm ?? sharedSetup.scaleLengthMm,
+    readings,
+    search,
+  });
+}
+
+export function calculateCompensationComparisonForString({
+  string,
+  sharedSetup,
+}: {
+  string: SetupString;
+  sharedSetup: Setup;
+}): CompensationComparison {
+  const scaleLengthMm = string.scaleLengthMm ?? sharedSetup.scaleLengthMm;
+  const actionByFret = calculateBenchActionProfile({ string, sharedSetup, scaleLengthMm });
+  const request = createGoreOptimizationRequest({
+    string,
+    sharedSetup,
+    scaleLengthMm,
+    actionByFret,
+  });
+  return {
+    actionByFret,
+    nutAndSaddle: optimizeNutAndSaddleCompensation(request),
+    saddleOnly: optimizeNutAndSaddleCompensation({
+      ...request,
+      initialNutCompensationMm: 0,
+      bounds: { ...GORE_REFERENCE_BOUNDS, nutMinMm: 0, nutMaxMm: 0 },
+    }),
+  };
 }
 
 export function calculateSetup(sharedSetup: Setup): { strings: StringSetupResult[] } {
@@ -484,295 +466,4 @@ export function calculateSetup(sharedSetup: Setup): { strings: StringSetupResult
       sharedSetup,
     })),
   };
-}
-
-export function applyTensionCatalogToSetup(
-  setup: Setup,
-  tensionCatalog: TensionCatalog | null | undefined,
-  sourceSelection: TensionSourceSelection | null | undefined,
-): Setup {
-  return {
-    ...setup,
-    tensionCatalog,
-    tensionDataSource: sourceSelection || null,
-    strings: setup.strings.map((string) => {
-      const estimatedProperties = estimateStringMechanicalProperties({
-        gaugeMm: string.gaugeMm,
-        construction: string.construction,
-        materialFamily: string.materialFamily,
-      });
-      const sourceRecord = sourceSelection ? findTensionSourceRecord(tensionCatalog, {
-        manufacturer: sourceSelection.manufacturer,
-        setCode: sourceSelection.setCode,
-        setCodes: sourceSelection.setCodes,
-        sequenceNumber: string.tensionSequenceNumber,
-        gaugeMm: string.gaugeMm,
-        construction: string.construction,
-      }) : null;
-      return applyTensionSourceRecord({
-        ...string,
-        ...estimatedProperties,
-      }, sourceRecord);
-    }),
-  };
-}
-
-export function createStringSetFromInstrumentProfile({
-  profile,
-  tensionCatalog = null,
-}: {
-  profile: InstrumentProfile;
-  tensionCatalog?: TensionCatalog | null;
-}): SetupString[] {
-  return profile.strings.map((profileString, stringIndex) => {
-    const estimatedProperties = estimateStringMechanicalProperties(profileString);
-    const string = {
-      ...profileString,
-      stringIndex,
-      scaleLengthMm: profile.scaleLengthMm,
-      ...estimatedProperties,
-    };
-    return applyTensionSourceRecord(string, findTensionSourceRecord(tensionCatalog, {
-      ...profile.tensionSet,
-      sequenceNumber: profileString.tensionSequenceNumber,
-      gaugeMm: profileString.gaugeMm,
-      construction: profileString.construction,
-    }));
-  });
-}
-
-export function createDefaultSetup(): Setup {
-  return createSetupFromInstrumentProfile("steel_string");
-}
-
-export function createSetupFromInstrumentProfile(profileId: InstrumentProfileId): Setup {
-  const profile = findInstrumentProfile(profileId);
-  return {
-    instrumentProfileId: profile.id,
-    courseCount: profile.courseCount,
-    benchActionTargets: {
-      capoFretNumber: 1,
-      actionMeasurementFretNumber: 12,
-      actionAtMeasurementWithCapoMm: { ...profile.actionAtFret12WithCapo1Mm },
-      nutActionAtFirstFretMm: { ...profile.nutActionAtFret1Mm },
-    },
-    scaleLengthMm: profile.scaleLengthMm,
-    fretCount: profile.fretCount,
-    fanNeutralFret: DEFAULT_FAN_NEUTRAL_FRET,
-    reliefAmountMm: profile.reliefMm,
-    reliefPeakFret: profile.reliefFretNumber,
-    extraStringLengthMm: DEFAULT_EXTRA_STRING_LENGTH_MM,
-    tensionDataSource: { ...profile.tensionSet },
-    fingerDeflectionMm: DEFAULT_FINGER_DEFLECTION_MM,
-    playingPressure: DEFAULT_PLAYING_PRESSURE,
-    stringSpacingMm: profile.outerStringSpreadMm / (profile.strings.length - 1),
-    radiusProfile: createRadiusProfileFromInstrumentProfile(profile),
-    strings: createStringSetFromInstrumentProfile({ profile }),
-  };
-}
-
-export function createCustomSetupFromCourseMembers({
-  baseSetup,
-  membersByCourse,
-}: {
-  baseSetup: Setup;
-  membersByCourse: number[];
-}): Setup {
-  if (membersByCourse.length < 1 || membersByCourse.length > 8) {
-    throw new RangeError("Custom setup must contain between 1 and 8 courses");
-  }
-  if (membersByCourse.some((memberCount) => memberCount !== 1 && memberCount !== 2)) {
-    throw new RangeError("Each custom course must contain 1 or 2 strings");
-  }
-  const stringLocations = membersByCourse.flatMap((memberCount, courseIndex) => (
-    Array.from({ length: memberCount }, (_, memberIndex) => ({ courseIndex, memberIndex }))
-  ));
-  const strings = stringLocations.map(({ courseIndex, memberIndex }, stringIndex) => {
-    const sourceStringIndex = calculateSourceStringIndex({
-      targetStringIndex: stringIndex,
-      targetStringCount: stringLocations.length,
-      sourceStringCount: baseSetup.strings.length,
-    });
-    const sourceString = baseSetup.strings[sourceStringIndex];
-    const gaugeMm = calculateInterpolatedGaugeMm({
-      targetStringIndex: stringIndex,
-      targetStringCount: stringLocations.length,
-      sourceStrings: baseSetup.strings,
-    });
-    const estimatedProperties = estimateStringMechanicalProperties({ ...sourceString, gaugeMm });
-    const courseSuffix = membersByCourse[courseIndex] === 2 ? ` ${memberIndex + 1}` : "";
-    const { tensionSource: _tensionSource, tensionSequenceNumber: _sequence, ...editableString } = sourceString;
-    return {
-      ...editableString,
-      ...estimatedProperties,
-      gaugeMm,
-      name: `${sourceString.name}${courseSuffix}`,
-      stringIndex,
-      courseIndex,
-      scaleLengthMm: sourceString.scaleLengthMm ?? baseSetup.scaleLengthMm,
-    };
-  });
-  const outerStringSpanMm = baseSetup.stringSpacingMm * Math.max(0, baseSetup.strings.length - 1);
-  const stringSpacingMm = strings.length === 1 ? 0 : outerStringSpanMm / (strings.length - 1);
-  return {
-    ...baseSetup,
-    instrumentProfileId: "custom",
-    courseCount: membersByCourse.length,
-    tensionDataSource: null,
-    stringSpacingMm,
-    strings,
-  };
-}
-
-function calculateInterpolatedGaugeMm({
-  targetStringIndex,
-  targetStringCount,
-  sourceStrings,
-}: {
-  targetStringIndex: number;
-  targetStringCount: number;
-  sourceStrings: SetupString[];
-}): number {
-  if (targetStringCount === 1 || sourceStrings.length === 1) return sourceStrings[0].gaugeMm;
-  const sourcePosition = targetStringIndex * (sourceStrings.length - 1) / (targetStringCount - 1);
-  const lowerIndex = Math.floor(sourcePosition);
-  const upperIndex = Math.ceil(sourcePosition);
-  const progress = sourcePosition - lowerIndex;
-  return sourceStrings[lowerIndex].gaugeMm
-    + (sourceStrings[upperIndex].gaugeMm - sourceStrings[lowerIndex].gaugeMm) * progress;
-}
-
-function calculateSourceStringIndex({
-  targetStringIndex,
-  targetStringCount,
-  sourceStringCount,
-}: {
-  targetStringIndex: number;
-  targetStringCount: number;
-  sourceStringCount: number;
-}): number {
-  if (targetStringCount === 1 || sourceStringCount === 1) return 0;
-  const targetProgress = targetStringIndex / (targetStringCount - 1);
-  return Math.round(targetProgress * (sourceStringCount - 1));
-}
-
-function createRadiusProfileFromInstrumentProfile(profile: InstrumentProfile): RadiusProfile {
-  if (profile.radius.kind === "none") {
-    return { kind: "simple", radiusMm: Infinity };
-  }
-  if (profile.radius.kind === "simple") {
-    return { kind: "simple", radiusMm: profile.radius.nutRadiusMm! };
-  }
-  return {
-    kind: "compound",
-    nutRadiusMm: profile.radius.nutRadiusMm!,
-    bridgeRadiusMm: profile.radius.bridgeRadiusMm!,
-  };
-}
-
-function calculateBenchActionProfile({
-  string,
-  sharedSetup,
-  scaleLengthMm,
-}: {
-  string: SetupString;
-  sharedSetup: Setup;
-  scaleLengthMm: number;
-}): ActionPoint[] {
-  const firstString = sharedSetup.strings[0];
-  const lastString = sharedSetup.strings[sharedSetup.strings.length - 1];
-  const actionAtMeasurementWithCapoMm = calculateActionFromTopOfStringEnvelopeMm({
-    stringIndex: string.stringIndex,
-    stringCount: sharedSetup.strings.length,
-    stringDiameterMm: string.gaugeMm,
-    firstStringActionMm:
-      sharedSetup.benchActionTargets.actionAtMeasurementWithCapoMm.firstStringMm,
-    firstStringDiameterMm: firstString.gaugeMm,
-    lastStringActionMm:
-      sharedSetup.benchActionTargets.actionAtMeasurementWithCapoMm.lastStringMm,
-    lastStringDiameterMm: lastString.gaugeMm,
-  });
-  const nutActionAtFirstFretMm = calculateActionFromTopOfStringEnvelopeMm({
-    stringIndex: string.stringIndex,
-    stringCount: sharedSetup.strings.length,
-    stringDiameterMm: string.gaugeMm,
-    firstStringActionMm:
-      sharedSetup.benchActionTargets.nutActionAtFirstFretMm.firstStringMm,
-    firstStringDiameterMm: firstString.gaugeMm,
-    lastStringActionMm:
-      sharedSetup.benchActionTargets.nutActionAtFirstFretMm.lastStringMm,
-    lastStringDiameterMm: lastString.gaugeMm,
-  });
-  const calculatedProfile = calculateActionProfileFromBenchMeasurements({
-    scaleLengthMm,
-    capoFretNumber: sharedSetup.benchActionTargets.capoFretNumber,
-    heldFretNumber: sharedSetup.fretCount,
-    reliefFretNumber: sharedSetup.reliefPeakFret,
-    reliefMm: sharedSetup.reliefAmountMm,
-    actionMeasurementFretNumber:
-      sharedSetup.benchActionTargets.actionMeasurementFretNumber,
-    actionAtMeasurementWithCapoMm,
-    nutActionAtFirstFretMm,
-  });
-  const lateralPositionMm = calculateStringLateralPositionMm({
-    stringIndex: string.stringIndex,
-    stringCount: sharedSetup.strings.length,
-    stringSpacingMm: sharedSetup.stringSpacingMm,
-  });
-  return calculatedProfile.map((point) => {
-    const normalizedPosition = point.positionMm / scaleLengthMm;
-    const fingerboardRadiusMm = calculateRadiusAtFretMm({
-      radiusProfile: sharedSetup.radiusProfile,
-      normalizedFretPosition: normalizedPosition,
-    });
-    return {
-      fretNumber: point.fretNumber,
-      positionMm: point.positionMm,
-      normalizedPosition,
-      clearanceAboveFretMm: point.clearanceAboveFretMm,
-      baseClearanceAboveFretMm: point.clearanceAboveFretMm,
-      radiusClearanceAdjustmentMm: 0,
-      fingerboardRadiusMm,
-      lateralPositionMm,
-      stringTopHeightMm: calculateStringTopHeightMm({
-        clearanceAboveFretMm: point.clearanceAboveFretMm,
-        stringDiameterMm: string.gaugeMm,
-        fingerboardRadiusMm,
-        lateralPositionMm,
-      }),
-    };
-  });
-}
-
-function requireFinite(value: number, name: string): void {
-  if (!Number.isFinite(value)) throw new RangeError(`${name} must be finite`);
-}
-
-function requirePositive(value: number, name: string): void {
-  requireFinite(value, name);
-  if (value <= 0) throw new RangeError(`${name} must be positive`);
-}
-
-function requirePositiveOrInfinity(value: number, name: string): void {
-  if (value !== Infinity) requirePositive(value, name);
-}
-
-function requireNonNegative(value: number, name: string): void {
-  requireFinite(value, name);
-  if (value < 0) throw new RangeError(`${name} must not be negative`);
-}
-
-function requirePositiveInteger(value: number, name: string): void {
-  requirePositive(value, name);
-  if (!Number.isInteger(value)) throw new RangeError(`${name} must be an integer`);
-}
-
-function requireNonNegativeInteger(value: number, name: string): void {
-  requireNonNegative(value, name);
-  if (!Number.isInteger(value)) throw new RangeError(`${name} must be an integer`);
-}
-
-function requireUnitInterval(value: number, name: string): void {
-  requireFinite(value, name);
-  if (value < 0 || value > 1) throw new RangeError(`${name} must be between 0 and 1`);
 }

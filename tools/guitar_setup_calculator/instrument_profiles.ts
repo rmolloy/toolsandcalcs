@@ -1,5 +1,6 @@
 export type InstrumentProfileId =
   | "steel_string"
+  | "electric"
   | "tenor_ukulele"
   | "twelve_string"
   | "four_string_bass"
@@ -72,6 +73,27 @@ export const INSTRUMENT_PROFILES: readonly InstrumentProfile[] = [
     actionAtFret12WithCapo1Mm: { firstStringMm: 1.8, lastStringMm: 2.2 },
     nutActionAtFret1Mm: { firstStringMm: 0.22, lastStringMm: 0.32 },
     tensionSet: { manufacturer: "D'Addario", setCode: "EJ16" },
+  },
+  {
+    id: "electric",
+    label: "Electric guitar",
+    description: "Six single courses · D'Addario EXL110 gauges",
+    courseCount: 6,
+    strings: createStrings({
+      names: ["High E", "B", "G", "D", "A", "Low E"],
+      midiNotes: STEEL_STRING_NOTES,
+      gaugesIn: [0.01, 0.013, 0.017, 0.026, 0.036, 0.046],
+      woundFromIndex: 3,
+    }),
+    scaleLengthMm: 647.7,
+    outerStringSpreadMm: 35,
+    fretCount: 22,
+    radius: { kind: "compound", nutRadiusMm: 241.3, bridgeRadiusMm: 355.6 },
+    reliefMm: 0.2,
+    reliefFretNumber: 7,
+    actionAtFret12WithCapo1Mm: { firstStringMm: 1.6, lastStringMm: 2 },
+    nutActionAtFret1Mm: { firstStringMm: 0.38, lastStringMm: 0.48 },
+    tensionSet: { manufacturer: "D'Addario", setCode: "EXL110" },
   },
   {
     id: "tenor_ukulele",

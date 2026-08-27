@@ -153,7 +153,7 @@ export function findTensionSourceRecord(catalog, criteria) {
 
 export function applyTensionSourceRecord(string, record) {
   if (!record) {
-    const { tensionSource, ...withoutTensionSource } = string;
+    const { tensionSource: unusedTensionSource, ...withoutTensionSource } = string;
     return withoutTensionSource;
   }
   return {

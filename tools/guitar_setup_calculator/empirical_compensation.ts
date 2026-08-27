@@ -23,6 +23,28 @@ export interface EmpiricalCompensationResult {
   totalAbsoluteResidualCents: number;
 }
 
+export interface EmpiricalIntonationReading {
+  fretNumber: number;
+  measuredErrorCents: number;
+}
+
+export interface EmpiricalReadingResidual {
+  fretNumber: number;
+  residualCents: number;
+}
+
+/**
+ * Adjustments are deltas from the instrument's CURRENT geometry as measured —
+ * "move the nut/saddle by this much" — never absolute cut positions. Measured
+ * cents errors already include whatever compensation the instrument has today.
+ */
+export interface EmpiricalAdjustmentResult {
+  nutAdjustmentMm: number;
+  saddleAdjustmentMm: number;
+  residualCentsByReading: readonly EmpiricalReadingResidual[];
+  totalAbsoluteResidualCents: number;
+}
+
 interface EmpiricalCompensationCandidate {
   geometry: EmpiricalCompensationGeometry;
   totalAbsoluteResidualCents: number;
@@ -113,6 +135,29 @@ export function calculateTotalAbsoluteResidualCents(
   );
 }
 
+export function calculateTotalAbsoluteResidualCentsForReadings(
+  readings: readonly EmpiricalIntonationReading[],
+  geometry: EmpiricalCompensationGeometry,
+): number {
+  if (readings.length === 0) {
+    throw new RangeError("readings must include at least one measured fret");
+  }
+  return readings.reduce(
+    (total, { fretNumber, measuredErrorCents }) =>
+      total + Math.abs(calculateResidualTonalErrorCents(measuredErrorCents, geometry, fretNumber)),
+    0,
+  );
+}
+
+export function readingsFromDenseErrors(
+  measuredErrorsCentsByFret: readonly number[],
+): EmpiricalIntonationReading[] {
+  return measuredErrorsCentsByFret.map((measuredErrorCents, index) => ({
+    fretNumber: index + 1,
+    measuredErrorCents,
+  }));
+}
+
 export function optimizeEmpiricalCompensation({
   scaleLengthMm,
   measuredErrorsCentsByFret,
@@ -122,12 +167,39 @@ export function optimizeEmpiricalCompensation({
   measuredErrorsCentsByFret: readonly number[];
   search: EmpiricalCompensationSearch;
 }): EmpiricalCompensationResult {
-  validateEmpiricalCompensationSearch(scaleLengthMm, measuredErrorsCentsByFret, search);
+  validateEmpiricalFretErrors(measuredErrorsCentsByFret);
+  const adjustment = optimizeEmpiricalAdjustmentFromReadings({
+    scaleLengthMm,
+    readings: readingsFromDenseErrors(measuredErrorsCentsByFret),
+    search,
+  });
+  return {
+    geometry: {
+      scaleLengthMm,
+      nutCompensationMm: adjustment.nutAdjustmentMm,
+      saddleCompensationMm: adjustment.saddleAdjustmentMm,
+    },
+    residualCentsByFret: adjustment.residualCentsByReading.map(({ residualCents }) => residualCents),
+    totalAbsoluteResidualCents: adjustment.totalAbsoluteResidualCents,
+  };
+}
+
+export function optimizeEmpiricalAdjustmentFromReadings({
+  scaleLengthMm,
+  readings,
+  search,
+}: {
+  scaleLengthMm: number;
+  readings: readonly EmpiricalIntonationReading[];
+  search: EmpiricalCompensationSearch;
+}): EmpiricalAdjustmentResult {
+  validateEmpiricalReadings(readings);
+  validateEmpiricalCompensationSearch(scaleLengthMm, search);
 
   let window = search.bounds;
   let best = findBestEmpiricalCompensationInWindow(
     scaleLengthMm,
-    measuredErrorsCentsByFret,
+    readings,
     window,
     search.divisionsPerAxis,
   );
@@ -136,29 +208,32 @@ export function optimizeEmpiricalCompensation({
     window = refineEmpiricalCompensationWindow(window, best.geometry, search.divisionsPerAxis);
     best = findBestEmpiricalCompensationInWindow(
       scaleLengthMm,
-      measuredErrorsCentsByFret,
+      readings,
       window,
       search.divisionsPerAxis,
     );
   }
 
   return {
-    geometry: best.geometry,
-    residualCentsByFret: measuredErrorsCentsByFret.map((measuredErrorCents, index) =>
-      calculateResidualTonalErrorCents(measuredErrorCents, best.geometry, index + 1)),
+    nutAdjustmentMm: best.geometry.nutCompensationMm,
+    saddleAdjustmentMm: best.geometry.saddleCompensationMm,
+    residualCentsByReading: readings.map(({ fretNumber, measuredErrorCents }) => ({
+      fretNumber,
+      residualCents: calculateResidualTonalErrorCents(measuredErrorCents, best.geometry, fretNumber),
+    })),
     totalAbsoluteResidualCents: best.totalAbsoluteResidualCents,
   };
 }
 
 function findBestEmpiricalCompensationInWindow(
   scaleLengthMm: number,
-  measuredErrorsCentsByFret: readonly number[],
+  readings: readonly EmpiricalIntonationReading[],
   bounds: EmpiricalCompensationBounds,
   divisionsPerAxis: number,
 ): EmpiricalCompensationCandidate {
   const candidates = createEmpiricalCompensationCandidates(
     scaleLengthMm,
-    measuredErrorsCentsByFret,
+    readings,
     bounds,
     divisionsPerAxis,
   );
@@ -168,7 +243,7 @@ function findBestEmpiricalCompensationInWindow(
 
 function createEmpiricalCompensationCandidates(
   scaleLengthMm: number,
-  measuredErrorsCentsByFret: readonly number[],
+  readings: readonly EmpiricalIntonationReading[],
   bounds: EmpiricalCompensationBounds,
   divisionsPerAxis: number,
 ): EmpiricalCompensationCandidate[] {
@@ -181,7 +256,7 @@ function createEmpiricalCompensationCandidates(
   return nutValues.flatMap((nutCompensationMm) =>
     saddleValues.map((saddleCompensationMm) => createEmpiricalCompensationCandidate(
       scaleLengthMm,
-      measuredErrorsCentsByFret,
+      readings,
       nutCompensationMm,
       saddleCompensationMm,
     )));
@@ -189,15 +264,15 @@ function createEmpiricalCompensationCandidates(
 
 function createEmpiricalCompensationCandidate(
   scaleLengthMm: number,
-  measuredErrorsCentsByFret: readonly number[],
+  readings: readonly EmpiricalIntonationReading[],
   nutCompensationMm: number,
   saddleCompensationMm: number,
 ): EmpiricalCompensationCandidate {
   const geometry = { scaleLengthMm, nutCompensationMm, saddleCompensationMm };
   return {
     geometry,
-    totalAbsoluteResidualCents: calculateTotalAbsoluteResidualCents(
-      measuredErrorsCentsByFret,
+    totalAbsoluteResidualCents: calculateTotalAbsoluteResidualCentsForReadings(
+      readings,
       geometry,
     ),
   };
@@ -249,13 +324,30 @@ function refineEmpiricalCompensationWindow(
 
 function validateEmpiricalCompensationSearch(
   scaleLengthMm: number,
-  measuredErrorsCentsByFret: readonly number[],
   search: EmpiricalCompensationSearch,
 ): void {
   validateEmpiricalScaleLength(scaleLengthMm);
-  validateEmpiricalFretErrors(measuredErrorsCentsByFret);
   validateEmpiricalCompensationBounds(scaleLengthMm, search.bounds);
   validateEmpiricalSearchResolution(search);
+}
+
+function validateEmpiricalReadings(readings: readonly EmpiricalIntonationReading[]): void {
+  if (readings.length === 0) {
+    throw new RangeError("readings must include at least one measured fret");
+  }
+  const seenFretNumbers = new Set<number>();
+  for (const reading of readings) {
+    if (!Number.isInteger(reading.fretNumber) || reading.fretNumber < 1) {
+      throw new RangeError("reading fretNumber must be a positive integer");
+    }
+    if (!Number.isFinite(reading.measuredErrorCents)) {
+      throw new RangeError("reading measuredErrorCents must be finite");
+    }
+    if (seenFretNumbers.has(reading.fretNumber)) {
+      throw new RangeError("readings must not repeat a fret");
+    }
+    seenFretNumbers.add(reading.fretNumber);
+  }
 }
 
 function validateEmpiricalScaleLength(scaleLengthMm: number): void {
