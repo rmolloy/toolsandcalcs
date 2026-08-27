@@ -9,6 +9,17 @@
       overlayEnabled: Boolean(source.overlayEnabled),
       fitInputs: { ...(source.fitInputs || {}) },
       solveOptions: { ...(source.solveOptions || {}) },
+      simpleSources: readDofSimpleSources(source.simpleSources),
+    };
+  }
+
+  function readDofSimpleSources(value) {
+    if (!value || typeof value !== "object") return null;
+    return {
+      enabled: Boolean(value.enabled),
+      sources: Array.isArray(value.sources) ? value.sources.map(function (source) {
+        return { ...source };
+      }) : [],
     };
   }
 

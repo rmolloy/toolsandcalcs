@@ -31,6 +31,7 @@ import { sampleDofSeriesAtFrequency } from "./dof_series_sampling";
 import {
   readDofPlotAxes,
   readDofPointerFrequency,
+  readDofPointerLevel,
 } from "./dof_plot_pointer";
 import { applyDofPlotResize } from "./dof_plot_resize";
 import {
@@ -57,6 +58,18 @@ import {
   isDofUncommittedDecimalInput as isUncommittedDecimalInput,
   readDofParamsFromSearch,
 } from "./dof_parameter_input_policy";
+import {
+  simpleSourcesCombinedResponseSeries,
+  type DofSimpleSource,
+} from "./dof_simple_sources";
+import {
+  calloutBuild,
+  calloutDragDispatch,
+  calloutTextApply,
+  calloutTextBuild,
+  type CalloutDragBehavior,
+  type CalloutElements,
+} from "./dof_plot_callouts";
 
 type DofParams = {
   [key: string]: number;
@@ -64,13 +77,11 @@ type DofParams = {
 
 type ModeKey = "air" | "top" | "back";
 type TaskMode = "edit" | "fit" | "solve";
-type ThumbElements = {
-  root: HTMLDivElement;
-  label: HTMLDivElement;
-  stem: HTMLDivElement;
-  dot: HTMLDivElement;
-  halo: HTMLDivElement;
+type DofSimpleSourcesState = {
+  enabled: boolean;
+  sources: DofSimpleSource[];
 };
+type ThumbElements = CalloutElements;
 
 type ModeCardElements = {
   root: HTMLDivElement;
@@ -341,17 +352,24 @@ const FIT_BOUNDS: Record<string, { min: number; max: number }> = {
 };
 
 const SOLVE_TWEAK_IDS = ["stiffness_top", "stiffness_back", "volume_air", "area_hole"] as const;
+const SIMPLE_SOURCE_COLORS = ["var(--orange)", "var(--yellow)", "var(--purple)", "var(--blue)", "var(--green)"];
 
 let currentParams: DofParams = { ...DEFAULT_PARAMS };
 let currentOrder = 4;
 let currentTaskMode: TaskMode = "edit";
+let currentSimpleSources: DofSimpleSourcesState = {
+  enabled: false,
+  sources: [],
+};
 const dofPerTabSession = dofPerTabSessionRead();
 let plotlyRef: typeof Plotly | null = null;
 let pendingRender: number | null = null;
 let lastResponse: any = null;
+let lastDisplayedResponse: Array<{ x: number; y: number }> | null = null;
 let plotListenersBound = false;
 let plotResizeObserver: ResizeObserver | null = null;
 const thumbEls: Partial<Record<ModeKey, ThumbElements>> = {};
+const simpleSourceThumbEls: Record<string, ThumbElements> = {};
 const modeCardEls: Partial<Record<ModeKey, ModeCardElements>> = {};
 const paramInputs: Partial<Record<keyof typeof DEFAULT_PARAMS, HTMLInputElement>> = {};
 const paramSliders: Partial<Record<keyof typeof DEFAULT_PARAMS, HTMLInputElement>> = {};
@@ -367,6 +385,17 @@ const dragState: { mode: ModeKey | null; freq: number | null; pointerId: number 
   mode: null,
   freq: null,
   pointerId: null,
+};
+const simpleSourceDragState: {
+  amplitude: number | null;
+  level: number | null;
+  pointerId: number | null;
+  sourceId: string | null;
+} = {
+  amplitude: null,
+  level: null,
+  pointerId: null,
+  sourceId: null,
 };
 let pendingDragSolve: number | null = null;
 let pendingDragMode: ModeKey | null = null;
@@ -391,6 +420,258 @@ function dofParamsFromLocation(): Partial<DofParams> | null {
     window.location.search,
     Object.keys(DEFAULT_PARAMS),
   ) as Partial<DofParams> | null;
+}
+
+function dofCardsRead() {
+  return document.getElementById("dof_cards") as HTMLDivElement | null;
+}
+
+function simpleSourceAddButtonRead() {
+  return document.getElementById("add_simple_source") as HTMLButtonElement | null;
+}
+
+function simpleSourcesPanelAvailable() {
+  return currentTaskMode === "edit" && currentOrder === 4;
+}
+
+function simpleSourcesClone(sources: readonly DofSimpleSource[]) {
+  return sources.map((source) => ({ ...source }));
+}
+
+function simpleSourceNameRead(source: Partial<DofSimpleSource>, index: number) {
+  const name = String(source.name || "").trim();
+  return name || `Peak ${index + 1}`;
+}
+
+const SIMPLE_SOURCE_DEFAULT_SEMITONE_OFFSET = 3;
+const SIMPLE_SOURCE_FALLBACK_FREQUENCY_HZ = 200;
+
+function simpleSourceDefaultFrequencyRead() {
+  const peaks = lastResponse ? modelPeaksFromResponse(lastResponse) : null;
+  const candidates = [
+    peaks?.air,
+    peaks?.top,
+    peaks?.back,
+    ...currentSimpleSources.sources.map((source) => source.frequencyHz),
+  ].filter((frequency): frequency is number => Number.isFinite(frequency ?? NaN));
+  const highest = candidates.length
+    ? Math.max(...candidates)
+    : SIMPLE_SOURCE_FALLBACK_FREQUENCY_HZ;
+  return simpleSourceValueRound(
+    highest * Math.pow(2, SIMPLE_SOURCE_DEFAULT_SEMITONE_OFFSET / 12),
+  );
+}
+
+function simpleSourceDefaultRead(index: number): DofSimpleSource {
+  return {
+    id: `source_${index + 1}`,
+    name: `Peak ${index + 1}`,
+    frequencyHz: simpleSourceDefaultFrequencyRead(),
+    q: 30,
+    amplitudeCm2PerG: 1,
+  };
+}
+
+function simpleSourceColorRead(sourceId: string) {
+  const index = currentSimpleSources.sources.findIndex((source) => source.id === sourceId);
+  return SIMPLE_SOURCE_COLORS[Math.max(index, 0) % SIMPLE_SOURCE_COLORS.length];
+}
+
+function simpleSourcesStateNormalize(value: unknown): DofSimpleSourcesState {
+  const sourceState = value && typeof value === "object" ? value as Partial<DofSimpleSourcesState> : {};
+  const sources = Array.isArray(sourceState.sources) ? sourceState.sources : [];
+  return {
+    enabled: Boolean(sourceState.enabled) && sources.length > 0,
+    sources: sources.map((candidate, index) => {
+      const defaultSource = simpleSourceDefaultRead(index);
+      const valueFor = (key: "frequencyHz" | "q" | "amplitudeCm2PerG") => {
+        const value = Number((candidate as Record<string, unknown>)[key]);
+        return Number.isFinite(value) ? value : defaultSource[key];
+      };
+      return {
+        id: String((candidate as Partial<DofSimpleSource>)?.id || defaultSource.id),
+        name: simpleSourceNameRead(candidate as Partial<DofSimpleSource>, index),
+        frequencyHz: valueFor("frequencyHz"),
+        q: valueFor("q"),
+        amplitudeCm2PerG: valueFor("amplitudeCm2PerG"),
+      };
+    }),
+  };
+}
+
+function simpleSourceInputBuild(source: DofSimpleSource, field: keyof DofSimpleSource, label: string, type = "number") {
+  const input = document.createElement("input");
+  input.type = type;
+  input.className = field === "name" ? "dof-simple-source-name" : "param-number";
+  input.value = String(source[field]);
+  input.dataset.simpleSourceId = source.id;
+  input.dataset.simpleSourceField = field;
+  input.setAttribute("aria-label", `${source.name} ${label}`);
+  if (type === "number") {
+    input.inputMode = "decimal";
+    input.step = "0.1";
+    input.min = field === "q" ? "1" : field === "frequencyHz" ? "20" : "-20";
+    input.max = field === "q" ? "200" : field === "frequencyHz" ? "1000" : "20";
+  }
+  input.addEventListener("input", () => simpleSourcesInputApply(input));
+  input.addEventListener("change", () => simpleSourcesInputApply(input));
+  return input;
+}
+
+function simpleSourceSliderFillSync(slider: HTMLInputElement) {
+  const minimum = Number(slider.min);
+  const maximum = Number(slider.max);
+  const value = Number(slider.value);
+  if (!Number.isFinite(minimum) || !Number.isFinite(maximum) || maximum <= minimum || !Number.isFinite(value)) return;
+  sliderPresentationSync(slider, 0, 0, ((value - minimum) / (maximum - minimum)) * 100, 0);
+}
+
+function simpleSourceNumericFieldBuild(source: DofSimpleSource, label: string, field: "frequencyHz" | "q" | "amplitudeCm2PerG") {
+  const row = document.createElement("div");
+  row.className = "param-row";
+  const caption = document.createElement("div");
+  caption.className = "param-label";
+  caption.textContent = label;
+  const input = simpleSourceInputBuild(source, field, label);
+  const slider = simpleSourceInputBuild(source, field, label);
+  slider.type = "range";
+  slider.className = "param-slider";
+  slider.value = input.value;
+  slider.addEventListener("input", () => {
+    input.value = slider.value;
+    simpleSourcesInputApply(slider);
+    simpleSourceSliderFillSync(slider);
+  });
+  input.addEventListener("input", () => {
+    if (isUncommittedDecimalInput(input.value)) return;
+    slider.value = input.value;
+    simpleSourceSliderFillSync(slider);
+  });
+  const sliderStack = document.createElement("div");
+  sliderStack.className = "param-slider-stack";
+  sliderStack.append(slider);
+  simpleSourceSliderFillSync(slider);
+  row.append(caption, input, sliderStack);
+  return row;
+}
+
+function simpleSourceCardBuild(source: DofSimpleSource) {
+  const card = document.createElement("article");
+  card.className = "mode-card dof-simple-source-card";
+  card.dataset.degree = "4";
+  card.style.setProperty("--peak-color", simpleSourceColorRead(source.id));
+  card.style.setProperty("--mode-dot", simpleSourceColorRead(source.id));
+
+  const header = document.createElement("div");
+  header.className = "dof-card-title";
+  const title = document.createElement("div");
+  title.className = "mode-label dof-simple-source-title";
+  const swatch = document.createElement("span");
+  swatch.className = "dof-simple-source-swatch";
+  const nameInput = simpleSourceInputBuild(source, "name", "name", "text");
+  title.append(swatch, nameInput);
+
+  const badge = document.createElement("span");
+  badge.className = "badge";
+  badge.textContent = "Peak";
+  badge.style.background = simpleSourceColorRead(source.id);
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "ghost-btn btn-small dof-simple-source-remove";
+  remove.textContent = "Remove";
+  remove.addEventListener("click", () => simpleSourceRemove(source.id));
+  header.append(title, badge, remove);
+
+  const fields = document.createElement("div");
+  fields.className = "param-grid";
+  ([
+    ["Frequency", "frequencyHz"],
+    ["Q", "q"],
+    ["Amplitude", "amplitudeCm2PerG"],
+  ] as Array<[string, "frequencyHz" | "q" | "amplitudeCm2PerG"]>).forEach(([label, field]) => {
+    fields.appendChild(simpleSourceNumericFieldBuild(source, label, field));
+  });
+  card.append(header, fields);
+  return card;
+}
+
+function simpleSourceCardsAppend(container: HTMLElement) {
+  if (!simpleSourcesPanelAvailable()) return;
+  currentSimpleSources.sources.forEach((source) => container.appendChild(simpleSourceCardBuild(source)));
+}
+
+function simpleSourceCardsSync() {
+  document.querySelectorAll(".dof-simple-source-card").forEach((card) => card.remove());
+  const cards = dofCardsRead();
+  if (cards) simpleSourceCardsAppend(cards);
+}
+
+function simpleSourcesInputApply(input: HTMLInputElement) {
+  const source = currentSimpleSources.sources.find((candidate) => candidate.id === input.dataset.simpleSourceId);
+  const field = input.dataset.simpleSourceField as keyof DofSimpleSource | undefined;
+  if (!source || !field || field === "id") return;
+  if (field === "name") {
+    source.name = input.value;
+    scheduleRender();
+    return;
+  }
+  if (isUncommittedDecimalInput(input.value)) return;
+  const value = Number(input.value);
+  if (!Number.isFinite(value)) return;
+  (source as Record<string, number | string>)[field] = value;
+  scheduleRender();
+}
+
+function simpleSourceCardsInputSync(source: DofSimpleSource) {
+  document.querySelectorAll<HTMLInputElement>(`[data-simple-source-id="${source.id}"]`).forEach((input) => {
+    const field = input.dataset.simpleSourceField as keyof DofSimpleSource | undefined;
+    if (!field || field === "id") return;
+    input.value = String(source[field]);
+    if (input.type === "range") simpleSourceSliderFillSync(input);
+  });
+}
+
+function simpleSourceAdd() {
+  if (currentOrder !== 4) return;
+  if (currentTaskMode !== "edit") setTaskMode("edit");
+  currentSimpleSources.sources.push(simpleSourceDefaultRead(currentSimpleSources.sources.length));
+  currentSimpleSources.enabled = true;
+  buildCards();
+  scheduleRender();
+}
+
+function simpleSourceRemove(sourceId: string) {
+  currentSimpleSources.sources = currentSimpleSources.sources.filter((source) => source.id !== sourceId);
+  currentSimpleSources.enabled = currentSimpleSources.sources.length > 0;
+  buildCards();
+  scheduleRender();
+}
+
+function simpleSourcesPanelSync() {
+  const addButton = simpleSourceAddButtonRead();
+  if (addButton) addButton.disabled = currentOrder !== 4;
+  simpleSourceCardsSync();
+}
+
+function simpleSourcesBind() {
+  simpleSourceAddButtonRead()?.addEventListener("click", simpleSourceAdd);
+  simpleSourcesPanelSync();
+}
+
+function simpleSourcesStateRead(): DofSimpleSourcesState {
+  return {
+    enabled: currentSimpleSources.enabled,
+    sources: simpleSourcesClone(currentSimpleSources.sources),
+  };
+}
+
+function simpleSourcesStateApply(value: unknown) {
+  currentSimpleSources = simpleSourcesStateNormalize(value);
+  simpleSourcesPanelSync();
+}
+
+function simpleSourcesActive() {
+  return simpleSourcesPanelAvailable() && currentSimpleSources.enabled && currentSimpleSources.sources.length > 0;
 }
 
 function getPlotly(): typeof Plotly | null {
@@ -498,7 +779,7 @@ function sliderPresentationSync(
 }
 
 function buildCards() {
-  const container = document.getElementById("dof_cards");
+  const container = dofCardsRead();
   if (!container) return;
   restoreDofFitTaskControls(
     document,
@@ -695,6 +976,7 @@ function buildCards() {
     cardEl.appendChild(grid);
     container.appendChild(cardEl);
   });
+  simpleSourceCardsAppend(container);
   applyCardVisibility();
 }
 
@@ -901,6 +1183,7 @@ function setOrder(order: number) {
     btn.classList.toggle("tab-btn-active", isActive);
   });
   applyCardVisibility();
+  simpleSourcesPanelSync();
   scheduleRender();
 }
 
@@ -926,12 +1209,13 @@ function solvePanelSection() {
 
 function setTaskMode(mode: TaskMode) {
   currentTaskMode = mode;
-  document.querySelectorAll(".task-tab-btn").forEach((btn) => {
+  document.querySelectorAll("[data-task-mode]").forEach((btn) => {
     const isActive = String((btn as HTMLElement).dataset.taskMode || "") === mode;
     btn.classList.toggle("task-tab-btn-active", isActive);
   });
   taskModeCopyApply(mode);
   buildCards();
+  simpleSourcesPanelSync();
 }
 
 function scheduleRender() {
@@ -1004,6 +1288,47 @@ function adaptParamsToSolver(raw: DofParams): Record<string, any> {
   return adaptParamsToSolverLegacy(raw);
 }
 
+function simpleSourcesCombinedResponseRead(
+  solverParams: Record<string, any>,
+  frequencyStartHz: number,
+  frequencyEndHz: number,
+) {
+  const solverCore = (window as any).SolverCore;
+  const pressureAtFrequency = solverCore?.computeFourDofPressuresAtFrequency;
+  if (typeof pressureAtFrequency !== "function") return null;
+  return simpleSourcesCombinedResponseSeries(
+    currentSimpleSources.sources,
+    (frequencyHz) => pressureAtFrequency(solverParams, frequencyHz).total,
+    {
+      airDensityKgPerM3: solverParams.air_density,
+      driveForceN: solverParams.driving_force,
+      frequencyStartHz,
+      frequencyEndHz,
+      pressureReferencePa: solverCore.constants?.pref,
+      stepHz: 0.1,
+    },
+  );
+}
+
+function simpleSourceResponseRead(
+  source: DofSimpleSource,
+  solverParams: Record<string, any>,
+  frequencyStartHz: number,
+  frequencyEndHz: number,
+) {
+  const solverCore = (window as any).SolverCore;
+  const pressureAtFrequency = solverCore?.computeFourDofPressuresAtFrequency;
+  if (typeof pressureAtFrequency !== "function") return null;
+  return simpleSourcesCombinedResponseSeries([source], (frequencyHz) => pressureAtFrequency(solverParams, frequencyHz).total, {
+    airDensityKgPerM3: solverParams.air_density,
+    driveForceN: solverParams.driving_force,
+    frequencyStartHz,
+    frequencyEndHz,
+    pressureReferencePa: solverCore.constants?.pref,
+    stepHz: 0.1,
+  });
+}
+
 function sharedSeriesSamplerRead() {
   const sampler = (window as any).series_sampling;
   const sample = sampler?.seriesValueSampleAtFrequency;
@@ -1053,29 +1378,96 @@ function buildTargetOverlayTraces(points: Array<{ x: number; y: number }>, color
   );
 }
 
+function simpleSourceCalloutTextRead(source: DofSimpleSource) {
+  return calloutTextBuild(
+    simpleSourceNameRead(source, 0),
+    source.frequencyHz,
+    `Q ${source.q.toFixed(0)}, Amplitude ${formatDofSigned(source.amplitudeCm2PerG)}`,
+  );
+}
+
+function ensureSimpleSourceThumb(source: DofSimpleSource) {
+  if (simpleSourceThumbEls[source.id]) return simpleSourceThumbEls[source.id];
+  const overlay = document.getElementById("plot_overlay");
+  if (!overlay) return null;
+  const entry = calloutBuild(overlay, {
+    color: simpleSourceColorRead(source.id),
+    dataset: { sourceId: source.id },
+    extraClassName: "dof-simple-source-thumb",
+    onPointerDown: handleSimpleSourceThumbPointerDown,
+  });
+  simpleSourceThumbEls[source.id] = entry;
+  return entry;
+}
+
+function simpleSourceThumbsUpdate(series: Array<{ x: number; y: number }>, axes: { xaxis: any; yaxis: any }) {
+  const sources = simpleSourcesActive() ? currentSimpleSources.sources : [];
+  const activeSourceIds = new Set(sources.map((source) => source.id));
+  Object.entries(simpleSourceThumbEls).forEach(([sourceId, thumb]) => {
+    thumb.root.classList.toggle("thumb-hidden", !activeSourceIds.has(sourceId));
+  });
+  sources.forEach((source) => {
+    const thumb = ensureSimpleSourceThumb(source);
+    if (!thumb) return;
+    positionThumb(thumb, source.frequencyHz, sampleSeriesAtFreq(series, source.frequencyHz), axes);
+    thumb.root.style.setProperty("--thumb-color", simpleSourceColorRead(source.id));
+    calloutTextApply(thumb, simpleSourceCalloutTextRead(source));
+  });
+}
+
+function simpleSourcesTraceBuild(series: Array<{ x: number; y: number }>): Partial<Plotly.PlotData> | null {
+  if (!simpleSourcesActive() || series.length === 0) return null;
+  const sources = currentSimpleSources.sources;
+  return {
+    x: sources.map((source) => source.frequencyHz),
+    y: sources.map((source) => sampleSeriesAtFreq(series, source.frequencyHz)),
+    mode: "markers",
+    name: "Simple sources",
+    showlegend: false,
+    marker: {
+      color: sources.map((source) => simpleSourceColorRead(source.id)),
+      size: 11,
+      line: { color: "rgba(255,255,255,0.72)", width: 1 },
+    },
+    customdata: sources.map((source) => [
+      simpleSourceNameRead(source, 0),
+      source.q.toFixed(0),
+      formatDofSigned(source.amplitudeCm2PerG),
+    ]),
+    hovertemplate: "%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} · Amplitude %{customdata[2]}<extra>Response peak</extra>",
+  };
+}
+
+function simpleSourceComponentTracesRead(
+  solverParams: Record<string, any>,
+  frequencyStartHz: number,
+  frequencyEndHz: number,
+) {
+  if (!simpleSourcesActive()) return [];
+  return currentSimpleSources.sources.flatMap((source) => {
+    const response = simpleSourceResponseRead(source, solverParams, frequencyStartHz, frequencyEndHz);
+    if (!response) return [];
+    const trace = buildDofTrace(
+      response,
+      simpleSourceNameRead(source, 0),
+      simpleSourceColorRead(source.id),
+      { width: 1.25, dash: "dot" },
+    );
+    if (!trace) return [];
+    trace.showlegend = false;
+    return [trace];
+  });
+}
+
 function ensureThumb(mode: ModeKey) {
   if (thumbEls[mode]) return thumbEls[mode] as ThumbElements;
   const overlay = document.getElementById("plot_overlay");
   if (!overlay) return null;
-  const root = document.createElement("div");
-  root.className = "dof-thumb";
-  root.dataset.mode = mode;
-  root.style.setProperty("--thumb-color", MODE_META[mode].color);
-
-  const label = document.createElement("div");
-  label.className = "dof-thumb-label";
-  const stem = document.createElement("div");
-  stem.className = "dof-thumb-stem";
-  const halo = document.createElement("div");
-  halo.className = "dof-thumb-halo";
-  const dot = document.createElement("div");
-  dot.className = "dof-thumb-dot";
-
-  root.append(label, stem, halo, dot);
-  root.addEventListener("pointerdown", handleThumbPointerDown);
-  overlay.appendChild(root);
-
-  const entry = { root, label, stem, dot, halo };
+  const entry = calloutBuild(overlay, {
+    color: MODE_META[mode].color,
+    dataset: { mode },
+    onPointerDown: handleThumbPointerDown,
+  });
   thumbEls[mode] = entry;
   return entry;
 }
@@ -1108,6 +1500,7 @@ function updateThumbs(response = lastResponse) {
     Object.values(thumbEls).forEach((thumb) => {
       if (thumb) thumb.root.classList.add("thumb-hidden");
     });
+    Object.values(simpleSourceThumbEls).forEach((thumb) => thumb.root.classList.add("thumb-hidden"));
     updateModeCards(response, lastWhatIfResponse);
     return;
   }
@@ -1126,9 +1519,10 @@ function updateThumbs(response = lastResponse) {
     }
     const db = sampleSeriesAtFreq(activeResponse.total, freq as number);
     positionThumb(thumb, freq as number, db as number, axes);
-    thumb.label.innerHTML = `${MODE_META[mode].label}<br><span>${(freq as number).toFixed(1)} Hz</span>`;
+    calloutTextApply(thumb, calloutTextBuild(MODE_META[mode].label, freq as number));
     thumb.root.classList.toggle("dragging", dragState.mode === mode);
   });
+  simpleSourceThumbsUpdate(lastDisplayedResponse || activeResponse.total, axes);
   updateModeCards(response, lastWhatIfResponse);
 }
 
@@ -1369,19 +1763,80 @@ function handleThumbPointerDown(event: PointerEvent) {
   updateThumbs();
 }
 
-function handleThumbPointerMove(event: PointerEvent) {
-  if (!dragState.mode || dragState.pointerId !== event.pointerId) return;
+function simpleSourceAmplitudeFromLevelShift(amplitude: number, levelShiftDb: number) {
+  const sign = amplitude < 0 ? -1 : 1;
+  const magnitude = Math.max(0.01, Math.abs(amplitude)) * Math.pow(10, levelShiftDb / 20);
+  return simpleSourceValueRound(sign * Math.max(0.01, Math.min(20, magnitude)));
+}
+
+function simpleSourceValueRound(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function simpleSourceDragStart(event: PointerEvent, source: DofSimpleSource) {
   const plotEl = document.getElementById("plot_dof") as HTMLElement | null;
   if (!plotEl) return;
+  const level = readDofPointerLevel(event, plotEl);
+  event.preventDefault();
+  simpleSourceDragState.sourceId = source.id;
+  simpleSourceDragState.pointerId = event.pointerId;
+  simpleSourceDragState.level = Number.isFinite(level) ? level : null;
+  simpleSourceDragState.amplitude = source.amplitudeCm2PerG;
+  (event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId);
+  updateThumbs();
+}
+
+function handleSimpleSourceThumbPointerDown(event: PointerEvent) {
+  const sourceId = (event.currentTarget as HTMLElement | null)?.dataset.sourceId;
+  const source = currentSimpleSources.sources.find((candidate) => candidate.id === sourceId);
+  if (!source) return;
+  simpleSourceDragStart(event, source);
+}
+
+function simpleSourceDragApply(event: PointerEvent) {
+  if (!simpleSourceDragState.sourceId || simpleSourceDragState.pointerId !== event.pointerId) return false;
+  const plotEl = document.getElementById("plot_dof") as HTMLElement | null;
+  const source = currentSimpleSources.sources.find((candidate) => candidate.id === simpleSourceDragState.sourceId);
+  if (!plotEl || !source) return false;
+  const frequency = readDofPointerFrequency(event, plotEl);
+  const level = readDofPointerLevel(event, plotEl);
+  if (Number.isFinite(frequency)) source.frequencyHz = simpleSourceValueRound(frequency as number);
+  if (Number.isFinite(level) && Number.isFinite(simpleSourceDragState.level) && Number.isFinite(simpleSourceDragState.amplitude)) {
+    source.amplitudeCm2PerG = simpleSourceAmplitudeFromLevelShift(
+      simpleSourceDragState.amplitude as number,
+      (level as number) - (simpleSourceDragState.level as number),
+    );
+  }
+  simpleSourceCardsInputSync(source);
+  updateThumbs();
+  scheduleRender();
+  return true;
+}
+
+function simpleSourceDragEnd(event: PointerEvent) {
+  if (!simpleSourceDragState.sourceId || simpleSourceDragState.pointerId !== event.pointerId) return false;
+  simpleSourceDragState.sourceId = null;
+  simpleSourceDragState.pointerId = null;
+  simpleSourceDragState.level = null;
+  simpleSourceDragState.amplitude = null;
+  updateThumbs();
+  return true;
+}
+
+function modeDragApply(event: PointerEvent) {
+  if (!dragState.mode || dragState.pointerId !== event.pointerId) return false;
+  const plotEl = document.getElementById("plot_dof") as HTMLElement | null;
+  if (!plotEl) return true;
   const freq = readDofPointerFrequency(event, plotEl);
-  if (!Number.isFinite(freq)) return;
+  if (!Number.isFinite(freq)) return true;
   dragState.freq = freq as number;
   updateThumbs();
   scheduleDragSolve(dragState.mode, dragState.freq);
+  return true;
 }
 
-function handleThumbPointerUp(event: PointerEvent) {
-  if (!dragState.mode || dragState.pointerId !== event.pointerId) return;
+function modeDragEnd(event: PointerEvent) {
+  if (!dragState.mode || dragState.pointerId !== event.pointerId) return false;
   const mode = dragState.mode;
   const freq = dragState.freq;
   dragState.mode = null;
@@ -1401,6 +1856,20 @@ function handleThumbPointerUp(event: PointerEvent) {
   }
   dragLockedTargets = null;
   dragUseWhatIf = false;
+  return true;
+}
+
+const calloutDragBehaviors: readonly CalloutDragBehavior[] = [
+  { move: simpleSourceDragApply, end: simpleSourceDragEnd },
+  { move: modeDragApply, end: modeDragEnd },
+];
+
+function handleThumbPointerMove(event: PointerEvent) {
+  calloutDragDispatch(calloutDragBehaviors, "move", event);
+}
+
+function handleThumbPointerUp(event: PointerEvent) {
+  calloutDragDispatch(calloutDragBehaviors, "end", event);
 }
 
 function bindPlotInteractions(plotEl: HTMLElement) {
@@ -1425,6 +1894,7 @@ function readCurrentDofSaveSnapshot() {
     overlayEnabled: isWhatIfEnabled(),
     fitInputs: readCurrentDofFitInputs(),
     solveOptions: readCurrentDofSolveOptions(),
+    simpleSources: simpleSourcesStateRead(),
   };
 }
 
@@ -1470,6 +1940,7 @@ function applyLoadedDofSnapshot(snapshot: Record<string, any>) {
     modelOrder: 4,
   });
   currentParams = { ...plan.params };
+  simpleSourcesStateApply(plan.simpleSources);
   DOF_FIT_FIELD_IDS.forEach((id) => writeDofInputValue(id, plan.fitInputs?.[id]));
   const solveToggle = document.getElementById("fit_restrict_simple") as HTMLInputElement | null;
   if (solveToggle) solveToggle.checked = Boolean(plan.solveOptions?.fit_restrict_simple);
@@ -1598,16 +2069,44 @@ function renderPlot() {
   updateModeCards(response, whatIfResponse);
   if (!response || !Array.isArray(response.total)) {
     (plotEl as HTMLElement).innerHTML = `<div class="muted small">Model response unavailable.</div>`;
+    lastDisplayedResponse = null;
     updateThumbs(null);
     return;
   }
   const colors = plotThemeColors();
+  const xRange = simpleSourcesActive() ? [50, 800] : [50, 300];
+  const composedResponse = simpleSourcesActive()
+    ? simpleSourcesCombinedResponseRead(solverParams, xRange[0], xRange[1])
+    : null;
+  const composedWhatIfResponse = simpleSourcesActive() && whatIfParams
+    ? simpleSourcesCombinedResponseRead(adaptParamsToSolver(whatIfParams), xRange[0], xRange[1])
+    : null;
+  const displayedResponse = composedResponse?.length ? composedResponse : response.total;
+  lastDisplayedResponse = displayedResponse;
   const traces: Array<Partial<Plotly.PlotData>> = [];
-  const totalTrace = buildDofTrace(response.total, "Current", colors.current, { width: 3 });
+  const totalTrace = buildDofTrace(
+    displayedResponse,
+    composedResponse?.length ? "4DOF + Sources" : "Current",
+    colors.current,
+    { width: 3 },
+  );
   applyDofTraceVisibility(totalTrace, "Current", traceVisibilityState);
   if (totalTrace) traces.push(totalTrace);
+  if (composedResponse?.length) {
+    const baseTrace = buildDofTrace(response.total, "4DOF base", colorWithAlpha(colors.ink, 0.55), {
+      width: 1.25,
+      dash: "dot",
+    });
+    if (baseTrace) traces.push(baseTrace);
+  }
+  const sourceTrace = simpleSourcesTraceBuild(displayedResponse);
+  if (sourceTrace) traces.push(sourceTrace);
+  simpleSourceComponentTracesRead(solverParams, xRange[0], xRange[1]).forEach((trace) => traces.push(trace));
   if (whatIfResponse?.total?.length) {
-    const targetTraces = buildTargetOverlayTraces(whatIfResponse.total, colors.whatIf);
+    const targetTraces = buildTargetOverlayTraces(
+      composedWhatIfResponse?.length ? composedWhatIfResponse : whatIfResponse.total,
+      colors.whatIf,
+    );
     targetTraces.forEach((trace) => {
       applyDofTraceVisibility(trace, "Target", traceVisibilityState);
       traces.push(trace);
@@ -1622,7 +2121,6 @@ function renderPlot() {
   applyDofTraceVisibility(backTrace, "Back", traceVisibilityState);
   applyDofTraceVisibility(sidesTrace, "Sides", traceVisibilityState);
   [topTrace, airTrace, backTrace, sidesTrace].forEach((t)=>{ if(t) traces.push(t); });
-  const xRange = [50, 300];
   const layout: Partial<Plotly.Layout> = {
     margin: { l: 40, r: 20, t: 20, b: 50 },
     paper_bgcolor: "transparent",
@@ -1642,7 +2140,7 @@ function renderPlot() {
     },
     showlegend: true,
   };
-  const yRange = computeDofYRange(response.total, 6, xRange[0], xRange[1]);
+  const yRange = computeDofYRange(displayedResponse, 6, xRange[0], xRange[1]);
   if (yRange) layout.yaxis = { ...layout.yaxis, range: yRange };
   const plotly = getPlotly();
   if (!plotly) return;
@@ -1667,7 +2165,7 @@ function bindTabs() {
 }
 
 function bindTaskModeTabs() {
-  document.querySelectorAll<HTMLButtonElement>(".task-tab-btn").forEach((btn) => {
+  document.querySelectorAll<HTMLButtonElement>("[data-task-mode]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const mode = String(btn.dataset.taskMode || "edit") as TaskMode;
       setTaskMode(mode);
@@ -1768,6 +2266,7 @@ function init() {
   const fromUrl = dofParamsFromLocation();
   bindTabs();
   bindTaskModeTabs();
+  simpleSourcesBind();
   bindFitMyGuitarActions();
   fitAltitudeControlBind();
   bindSolveRecipeActions();

@@ -41,3 +41,22 @@ export function readDofPointerFrequency(
   const [minimum, maximum] = readDofAxisRange(axes.xaxis);
   return Math.max(minimum, Math.min(maximum, frequency));
 }
+
+export function readDofPointerLevel(
+  event: PointerEvent,
+  plotElement: HTMLElement,
+) {
+  const axes = readDofPlotAxes(plotElement);
+  if (!axes || typeof axes.yaxis.p2l !== "function") return null;
+  const rect = plotElement.getBoundingClientRect();
+  const localY = event.clientY - rect.top;
+  const plotY = localY - (axes.yaxis._offset || 0);
+  const clampedPlotY = Math.max(
+    0,
+    Math.min(axes.yaxis._length || 0, plotY),
+  );
+  const level = axes.yaxis.p2l(clampedPlotY);
+  if (!Number.isFinite(level)) return null;
+  const [minimum, maximum] = readDofAxisRange(axes.yaxis);
+  return Math.max(minimum, Math.min(maximum, level));
+}

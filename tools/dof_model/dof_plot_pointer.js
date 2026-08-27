@@ -12,6 +12,7 @@
     exports.readDofPlotAxes = readDofPlotAxes;
     exports.readDofAxisRange = readDofAxisRange;
     exports.readDofPointerFrequency = readDofPointerFrequency;
+    exports.readDofPointerLevel = readDofPointerLevel;
     function readDofPlotAxes(plotElement) {
         const layout = plotElement._fullLayout;
         const xaxis = layout === null || layout === void 0 ? void 0 : layout.xaxis;
@@ -46,5 +47,19 @@
             return null;
         const [minimum, maximum] = readDofAxisRange(axes.xaxis);
         return Math.max(minimum, Math.min(maximum, frequency));
+    }
+    function readDofPointerLevel(event, plotElement) {
+        const axes = readDofPlotAxes(plotElement);
+        if (!axes || typeof axes.yaxis.p2l !== "function")
+            return null;
+        const rect = plotElement.getBoundingClientRect();
+        const localY = event.clientY - rect.top;
+        const plotY = localY - (axes.yaxis._offset || 0);
+        const clampedPlotY = Math.max(0, Math.min(axes.yaxis._length || 0, plotY));
+        const level = axes.yaxis.p2l(clampedPlotY);
+        if (!Number.isFinite(level))
+            return null;
+        const [minimum, maximum] = readDofAxisRange(axes.yaxis);
+        return Math.max(minimum, Math.min(maximum, level));
     }
 });
