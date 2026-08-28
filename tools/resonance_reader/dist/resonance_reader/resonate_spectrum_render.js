@@ -627,20 +627,52 @@ function bindFftOverlayToggleSyncAndRerender(toggle) {
         pipelineOverlayClassSync(Boolean(toggle.checked));
     });
 }
+function toneFollowContextRead(plot) {
+    return plot.__toneFollowContext ?? { toneTraceIndex: -1, mags: [] };
+}
 function bindFftToneHoverFollow(plot, toneTraceIndex, mags) {
     const plotAny = plot;
+    // Each render replaces the trace list, so listeners must read the current
+    // context instead of closing over one render's trace index and magnitudes.
+    plotAny.__toneFollowContext = { toneTraceIndex, mags };
     if (!plotAny?.on || toneHoverBound)
         return;
     toneHoverBound = true;
-    plot.addEventListener("mousemove", (event) => {
-        toneHoverApplyFromPointer(event, plot, toneTraceIndex, mags);
-    }, true);
+    // Plotly.newPlot rebuilds the event emitter, so plotly_hover re-attaches per render.
     plotAny.on("plotly_hover", (evt) => {
-        toneHoverApplyFromEvent(evt, plot, toneTraceIndex, mags);
+        const context = toneFollowContextRead(plot);
+        toneHoverApplyFromEvent(evt, plot, context.toneTraceIndex, context.mags);
     });
+    // The plot element survives re-renders; its DOM listeners bind exactly once.
+    if (plotAny.__toneFollowDomBound)
+        return;
+    plotAny.__toneFollowDomBound = true;
+    plot.addEventListener("mousemove", (event) => {
+        const context = toneFollowContextRead(plot);
+        toneHoverApplyFromPointer(event, plot, context.toneTraceIndex, context.mags);
+    }, true);
     plot.addEventListener("mouseleave", () => {
-        toneHoverClear(plot, toneTraceIndex);
+        toneHoverClear(plot, toneFollowContextRead(plot).toneTraceIndex);
     });
+    bindFftToneTouchSweep(plot);
+}
+function bindFftToneTouchSweep(plot) {
+    const sweepFromTouch = (event) => {
+        const state = window.FFTState;
+        if (!state?.toneEnabled)
+            return;
+        const touch = event.touches[0];
+        if (!touch)
+            return;
+        // Claim the gesture while the tone is on: no page scroll, no Plotly pan/zoom.
+        event.preventDefault();
+        event.stopPropagation();
+        const context = toneFollowContextRead(plot);
+        toneHoverApplyFrequency(toneFrequencyHzResolveFromPointer(plot, touch), plot, context.toneTraceIndex, context.mags);
+    };
+    plot.addEventListener("touchstart", sweepFromTouch, { capture: true, passive: false });
+    plot.addEventListener("touchmove", sweepFromTouch, { capture: true, passive: false });
+    // Lifting the finger holds the last swept frequency; the tone stops when Tone is toggled off.
 }
 function toneHoverApplyFromPointer(event, plot, toneTraceIndex, mags) {
     const freqHz = toneFrequencyHzResolveFromPointer(plot, event);
@@ -864,16 +896,21 @@ function toneSpikeCeilingDbResolve(mags) {
     return Math.max(...finiteMags);
 }
 function toneSpikeTraceUpdate(plot, toneTraceIndex, freqHz, mags) {
-    if (!Number.isFinite(freqHz) || toneTraceIndex < 0)
+    if (!Number.isFinite(freqHz) || !toneTraceIndexIsRenderable(plot, toneTraceIndex))
         return;
     const yBottom = toneSpikeFloorDbResolve(mags);
     const yTop = toneSpikeCeilingDbResolve(mags);
     window.Plotly?.restyle?.(plot, { x: [[freqHz, freqHz]], y: [[yBottom, yTop]], visible: true }, toneTraceIndex);
 }
 function toneSpikeTraceVisibilitySet(plot, toneTraceIndex, visible) {
-    if (toneTraceIndex < 0)
+    if (!toneTraceIndexIsRenderable(plot, toneTraceIndex))
         return;
     window.Plotly?.restyle?.(plot, { visible }, toneTraceIndex);
+}
+function toneTraceIndexIsRenderable(plot, toneTraceIndex) {
+    // A redraw can be in flight when a pointer event lands; skip the restyle
+    // rather than let Plotly throw on a trace index the plot does not hold yet.
+    return toneTraceIndex >= 0 && toneTraceIndex < (plot.data?.length ?? 0);
 }
 function modeOverrideLabelBind(plot, modeAnnotationKeys, modeAnnotationAnchorX) {
     const plotAny = plot;
