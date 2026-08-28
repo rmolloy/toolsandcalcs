@@ -468,7 +468,7 @@ function simpleSourceDefaultRead(index: number): DofSimpleSource {
     name: `Peak ${index + 1}`,
     frequencyHz: simpleSourceDefaultFrequencyRead(),
     q: 30,
-    amplitudeCm2PerG: 1,
+    amplitudeM2PerKg: 0.1,
   };
 }
 
@@ -484,16 +484,24 @@ function simpleSourcesStateNormalize(value: unknown): DofSimpleSourcesState {
     enabled: Boolean(sourceState.enabled) && sources.length > 0,
     sources: sources.map((candidate, index) => {
       const defaultSource = simpleSourceDefaultRead(index);
-      const valueFor = (key: "frequencyHz" | "q" | "amplitudeCm2PerG") => {
+      const valueFor = (key: "frequencyHz" | "q" | "amplitudeM2PerKg") => {
         const value = Number((candidate as Record<string, unknown>)[key]);
         return Number.isFinite(value) ? value : defaultSource[key];
+      };
+      const amplitudeM2PerKgRead = () => {
+        const value = Number((candidate as Record<string, unknown>).amplitudeM2PerKg);
+        if (Number.isFinite(value)) return value;
+        // Legacy saved sources stored amplitude in cm²/g (1 cm²/g = 0.1 m²/kg).
+        const legacy = Number((candidate as Record<string, unknown>).amplitudeCm2PerG);
+        if (Number.isFinite(legacy)) return Math.round(legacy * 100) / 1000;
+        return defaultSource.amplitudeM2PerKg;
       };
       return {
         id: String((candidate as Partial<DofSimpleSource>)?.id || defaultSource.id),
         name: simpleSourceNameRead(candidate as Partial<DofSimpleSource>, index),
         frequencyHz: valueFor("frequencyHz"),
         q: valueFor("q"),
-        amplitudeCm2PerG: valueFor("amplitudeCm2PerG"),
+        amplitudeM2PerKg: amplitudeM2PerKgRead(),
       };
     }),
   };
@@ -509,9 +517,9 @@ function simpleSourceInputBuild(source: DofSimpleSource, field: keyof DofSimpleS
   input.setAttribute("aria-label", `${source.name} ${label}`);
   if (type === "number") {
     input.inputMode = "decimal";
-    input.step = "0.1";
-    input.min = field === "q" ? "1" : field === "frequencyHz" ? "20" : "-20";
-    input.max = field === "q" ? "200" : field === "frequencyHz" ? "1000" : "20";
+    input.step = field === "amplitudeM2PerKg" ? "0.01" : "0.1";
+    input.min = field === "q" ? "1" : field === "frequencyHz" ? "20" : "-2";
+    input.max = field === "q" ? "200" : field === "frequencyHz" ? "1000" : "2";
   }
   input.addEventListener("input", () => simpleSourcesInputApply(input));
   input.addEventListener("change", () => simpleSourcesInputApply(input));
@@ -526,7 +534,7 @@ function simpleSourceSliderFillSync(slider: HTMLInputElement) {
   sliderPresentationSync(slider, 0, 0, ((value - minimum) / (maximum - minimum)) * 100, 0);
 }
 
-function simpleSourceNumericFieldBuild(source: DofSimpleSource, label: string, field: "frequencyHz" | "q" | "amplitudeCm2PerG") {
+function simpleSourceNumericFieldBuild(source: DofSimpleSource, label: string, field: "frequencyHz" | "q" | "amplitudeM2PerKg") {
   const row = document.createElement("div");
   row.className = "param-row";
   const caption = document.createElement("div");
@@ -585,10 +593,10 @@ function simpleSourceCardBuild(source: DofSimpleSource) {
   const fields = document.createElement("div");
   fields.className = "param-grid";
   ([
-    ["Frequency", "frequencyHz"],
+    ["Frequency (Hz)", "frequencyHz"],
     ["Q", "q"],
-    ["Amplitude", "amplitudeCm2PerG"],
-  ] as Array<[string, "frequencyHz" | "q" | "amplitudeCm2PerG"]>).forEach(([label, field]) => {
+    ["Amplitude (m²/kg)", "amplitudeM2PerKg"],
+  ] as Array<[string, "frequencyHz" | "q" | "amplitudeM2PerKg"]>).forEach(([label, field]) => {
     fields.appendChild(simpleSourceNumericFieldBuild(source, label, field));
   });
   card.append(header, fields);
@@ -1382,7 +1390,7 @@ function simpleSourceCalloutTextRead(source: DofSimpleSource) {
   return calloutTextBuild(
     simpleSourceNameRead(source, 0),
     source.frequencyHz,
-    `Q ${source.q.toFixed(0)}, Amplitude ${formatDofSigned(source.amplitudeCm2PerG)}`,
+    `Q ${source.q.toFixed(0)}, Amplitude ${formatDofSigned(source.amplitudeM2PerKg, 2)} m²/kg`,
   );
 }
 
@@ -1432,9 +1440,9 @@ function simpleSourcesTraceBuild(series: Array<{ x: number; y: number }>): Parti
     customdata: sources.map((source) => [
       simpleSourceNameRead(source, 0),
       source.q.toFixed(0),
-      formatDofSigned(source.amplitudeCm2PerG),
+      formatDofSigned(source.amplitudeM2PerKg, 2),
     ]),
-    hovertemplate: "%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} · Amplitude %{customdata[2]}<extra>Response peak</extra>",
+    hovertemplate: "%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} · Amplitude %{customdata[2]} m²/kg<extra>Response peak</extra>",
   };
 }
 
@@ -1765,8 +1773,12 @@ function handleThumbPointerDown(event: PointerEvent) {
 
 function simpleSourceAmplitudeFromLevelShift(amplitude: number, levelShiftDb: number) {
   const sign = amplitude < 0 ? -1 : 1;
-  const magnitude = Math.max(0.01, Math.abs(amplitude)) * Math.pow(10, levelShiftDb / 20);
-  return simpleSourceValueRound(sign * Math.max(0.01, Math.min(20, magnitude)));
+  const magnitude = Math.max(0.001, Math.abs(amplitude)) * Math.pow(10, levelShiftDb / 20);
+  return simpleSourceAmplitudeRound(sign * Math.max(0.001, Math.min(2, magnitude)));
+}
+
+function simpleSourceAmplitudeRound(value: number) {
+  return Math.round(value * 100) / 100;
 }
 
 function simpleSourceValueRound(value: number) {
@@ -1781,7 +1793,7 @@ function simpleSourceDragStart(event: PointerEvent, source: DofSimpleSource) {
   simpleSourceDragState.sourceId = source.id;
   simpleSourceDragState.pointerId = event.pointerId;
   simpleSourceDragState.level = Number.isFinite(level) ? level : null;
-  simpleSourceDragState.amplitude = source.amplitudeCm2PerG;
+  simpleSourceDragState.amplitude = source.amplitudeM2PerKg;
   (event.currentTarget as HTMLElement | null)?.setPointerCapture?.(event.pointerId);
   updateThumbs();
 }
@@ -1802,7 +1814,7 @@ function simpleSourceDragApply(event: PointerEvent) {
   const level = readDofPointerLevel(event, plotEl);
   if (Number.isFinite(frequency)) source.frequencyHz = simpleSourceValueRound(frequency as number);
   if (Number.isFinite(level) && Number.isFinite(simpleSourceDragState.level) && Number.isFinite(simpleSourceDragState.amplitude)) {
-    source.amplitudeCm2PerG = simpleSourceAmplitudeFromLevelShift(
+    source.amplitudeM2PerKg = simpleSourceAmplitudeFromLevelShift(
       simpleSourceDragState.amplitude as number,
       (level as number) - (simpleSourceDragState.level as number),
     );

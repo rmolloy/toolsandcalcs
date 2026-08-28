@@ -1,5 +1,5 @@
 export type DofSimpleSource = {
-  amplitudeCm2PerG: number;
+  amplitudeM2PerKg: number;
   frequencyHz: number;
   id: string;
   name: string;
@@ -26,7 +26,6 @@ export type DofSimpleSourceResponseOptions = {
   stepHz?: number;
 };
 
-const CM2_PER_G_TO_M2_PER_KG = 0.1;
 const DEFAULT_AIR_DENSITY_KG_PER_M3 = 1.205;
 const DEFAULT_DISTANCE_M = 1;
 const DEFAULT_DRIVE_FORCE_N = 1;
@@ -36,9 +35,9 @@ const DEFAULT_PRESSURE_REFERENCE_PA = 0.00002;
 const DEFAULT_STEP_HZ = 1;
 
 export const CHRISTENSEN_FIGURE_THREE_SOURCES: readonly DofSimpleSource[] = [
-  { id: "source_1", name: "Peak 1", frequencyHz: 200, q: 30, amplitudeCm2PerG: 6 },
-  { id: "source_2", name: "Peak 2", frequencyHz: 400, q: 30, amplitudeCm2PerG: 1 },
-  { id: "source_3", name: "Peak 3", frequencyHz: 600, q: 30, amplitudeCm2PerG: 1 },
+  { id: "source_1", name: "Peak 1", frequencyHz: 200, q: 30, amplitudeM2PerKg: 0.6 },
+  { id: "source_2", name: "Peak 2", frequencyHz: 400, q: 30, amplitudeM2PerKg: 0.1 },
+  { id: "source_3", name: "Peak 3", frequencyHz: 600, q: 30, amplitudeM2PerKg: 0.1 },
 ];
 
 export const CHRISTENSEN_FIGURE_THREE_SIGN_PRESETS = {
@@ -50,10 +49,6 @@ export const CHRISTENSEN_FIGURE_THREE_SIGN_PRESETS = {
 
 function radiansPerSecond(frequencyHz: number) {
   return 2 * Math.PI * frequencyHz;
-}
-
-function sourceAmplitudeM2PerKg(source: DofSimpleSource) {
-  return source.amplitudeCm2PerG * CM2_PER_G_TO_M2_PER_KG;
 }
 
 function responseOptionsResolve(options: DofSimpleSourceResponseOptions) {
@@ -81,7 +76,7 @@ export function simpleSourcePressureAtFrequency(
   const denominatorIm = dampingRate * omega;
   const denominatorMagnitudeSquared = denominatorRe * denominatorRe + denominatorIm * denominatorIm;
   const numerator = resolved.driveForceN
-    * sourceAmplitudeM2PerKg(source)
+    * source.amplitudeM2PerKg
     * resolved.airDensityKgPerM3
     * omega
     * omega
@@ -173,6 +168,6 @@ export function simpleSourcesWithSigns(
 ) {
   return sources.map((source, index) => ({
     ...source,
-    amplitudeCm2PerG: source.amplitudeCm2PerG * (signs[index] ?? 1),
+    amplitudeM2PerKg: source.amplitudeM2PerKg * (signs[index] ?? 1),
   }));
 }

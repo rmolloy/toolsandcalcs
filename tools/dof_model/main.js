@@ -341,7 +341,7 @@
             name: `Peak ${index + 1}`,
             frequencyHz: simpleSourceDefaultFrequencyRead(),
             q: 30,
-            amplitudeCm2PerG: 1,
+            amplitudeM2PerKg: 0.1,
         };
     }
     function simpleSourceColorRead(sourceId) {
@@ -359,12 +359,22 @@
                     const value = Number(candidate[key]);
                     return Number.isFinite(value) ? value : defaultSource[key];
                 };
+                const amplitudeM2PerKgRead = () => {
+                    const value = Number(candidate.amplitudeM2PerKg);
+                    if (Number.isFinite(value))
+                        return value;
+                    // Legacy saved sources stored amplitude in cm²/g (1 cm²/g = 0.1 m²/kg).
+                    const legacy = Number(candidate.amplitudeCm2PerG);
+                    if (Number.isFinite(legacy))
+                        return Math.round(legacy * 100) / 1000;
+                    return defaultSource.amplitudeM2PerKg;
+                };
                 return {
                     id: String((candidate === null || candidate === void 0 ? void 0 : candidate.id) || defaultSource.id),
                     name: simpleSourceNameRead(candidate, index),
                     frequencyHz: valueFor("frequencyHz"),
                     q: valueFor("q"),
-                    amplitudeCm2PerG: valueFor("amplitudeCm2PerG"),
+                    amplitudeM2PerKg: amplitudeM2PerKgRead(),
                 };
             }),
         };
@@ -379,9 +389,9 @@
         input.setAttribute("aria-label", `${source.name} ${label}`);
         if (type === "number") {
             input.inputMode = "decimal";
-            input.step = "0.1";
-            input.min = field === "q" ? "1" : field === "frequencyHz" ? "20" : "-20";
-            input.max = field === "q" ? "200" : field === "frequencyHz" ? "1000" : "20";
+            input.step = field === "amplitudeM2PerKg" ? "0.01" : "0.1";
+            input.min = field === "q" ? "1" : field === "frequencyHz" ? "20" : "-2";
+            input.max = field === "q" ? "200" : field === "frequencyHz" ? "1000" : "2";
         }
         input.addEventListener("input", () => simpleSourcesInputApply(input));
         input.addEventListener("change", () => simpleSourcesInputApply(input));
@@ -451,9 +461,9 @@
         const fields = document.createElement("div");
         fields.className = "param-grid";
         [
-            ["Frequency", "frequencyHz"],
+            ["Frequency (Hz)", "frequencyHz"],
             ["Q", "q"],
-            ["Amplitude", "amplitudeCm2PerG"],
+            ["Amplitude (m²/kg)", "amplitudeM2PerKg"],
         ].forEach(([label, field]) => {
             fields.appendChild(simpleSourceNumericFieldBuild(source, label, field));
         });
@@ -1158,7 +1168,7 @@
         return (0, dof_plot_data_1.buildDofTargetOverlayTraces)(points, color, TARGET_OVERLAY, dof_display_format_1.colorWithAlpha, targetOverlaySharedBuilderRead());
     }
     function simpleSourceCalloutTextRead(source) {
-        return (0, dof_plot_callouts_1.calloutTextBuild)(simpleSourceNameRead(source, 0), source.frequencyHz, `Q ${source.q.toFixed(0)}, Amplitude ${(0, dof_mode_card_presentation_1.formatDofSigned)(source.amplitudeCm2PerG)}`);
+        return (0, dof_plot_callouts_1.calloutTextBuild)(simpleSourceNameRead(source, 0), source.frequencyHz, `Q ${source.q.toFixed(0)}, Amplitude ${(0, dof_mode_card_presentation_1.formatDofSigned)(source.amplitudeM2PerKg, 2)} m²/kg`);
     }
     function ensureSimpleSourceThumb(source) {
         if (simpleSourceThumbEls[source.id])
@@ -1208,9 +1218,9 @@
             customdata: sources.map((source) => [
                 simpleSourceNameRead(source, 0),
                 source.q.toFixed(0),
-                (0, dof_mode_card_presentation_1.formatDofSigned)(source.amplitudeCm2PerG),
+                (0, dof_mode_card_presentation_1.formatDofSigned)(source.amplitudeM2PerKg, 2),
             ]),
-            hovertemplate: "%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} · Amplitude %{customdata[2]}<extra>Response peak</extra>",
+            hovertemplate: "%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} · Amplitude %{customdata[2]} m²/kg<extra>Response peak</extra>",
         };
     }
     function simpleSourceComponentTracesRead(solverParams, frequencyStartHz, frequencyEndHz) {
@@ -1531,8 +1541,11 @@
     }
     function simpleSourceAmplitudeFromLevelShift(amplitude, levelShiftDb) {
         const sign = amplitude < 0 ? -1 : 1;
-        const magnitude = Math.max(0.01, Math.abs(amplitude)) * Math.pow(10, levelShiftDb / 20);
-        return simpleSourceValueRound(sign * Math.max(0.01, Math.min(20, magnitude)));
+        const magnitude = Math.max(0.001, Math.abs(amplitude)) * Math.pow(10, levelShiftDb / 20);
+        return simpleSourceAmplitudeRound(sign * Math.max(0.001, Math.min(2, magnitude)));
+    }
+    function simpleSourceAmplitudeRound(value) {
+        return Math.round(value * 100) / 100;
     }
     function simpleSourceValueRound(value) {
         return Math.round(value * 10) / 10;
@@ -1547,7 +1560,7 @@
         simpleSourceDragState.sourceId = source.id;
         simpleSourceDragState.pointerId = event.pointerId;
         simpleSourceDragState.level = Number.isFinite(level) ? level : null;
-        simpleSourceDragState.amplitude = source.amplitudeCm2PerG;
+        simpleSourceDragState.amplitude = source.amplitudeM2PerKg;
         (_b = (_a = event.currentTarget) === null || _a === void 0 ? void 0 : _a.setPointerCapture) === null || _b === void 0 ? void 0 : _b.call(_a, event.pointerId);
         updateThumbs();
     }
@@ -1571,7 +1584,7 @@
         if (Number.isFinite(frequency))
             source.frequencyHz = simpleSourceValueRound(frequency);
         if (Number.isFinite(level) && Number.isFinite(simpleSourceDragState.level) && Number.isFinite(simpleSourceDragState.amplitude)) {
-            source.amplitudeCm2PerG = simpleSourceAmplitudeFromLevelShift(simpleSourceDragState.amplitude, level - simpleSourceDragState.level);
+            source.amplitudeM2PerKg = simpleSourceAmplitudeFromLevelShift(simpleSourceDragState.amplitude, level - simpleSourceDragState.level);
         }
         simpleSourceCardsInputSync(source);
         updateThumbs();

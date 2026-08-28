@@ -957,7 +957,6 @@
   }
 
   // tools/dof_model/dof_simple_sources.ts
-  var CM2_PER_G_TO_M2_PER_KG = 0.1;
   var DEFAULT_AIR_DENSITY_KG_PER_M3 = 1.205;
   var DEFAULT_DISTANCE_M = 1;
   var DEFAULT_DRIVE_FORCE_N = 1;
@@ -967,9 +966,6 @@
   var DEFAULT_STEP_HZ = 1;
   function radiansPerSecond(frequencyHz) {
     return 2 * Math.PI * frequencyHz;
-  }
-  function sourceAmplitudeM2PerKg(source) {
-    return source.amplitudeCm2PerG * CM2_PER_G_TO_M2_PER_KG;
   }
   function responseOptionsResolve(options) {
     return {
@@ -990,7 +986,7 @@
     const denominatorRe = omegaZero * omegaZero - omega * omega;
     const denominatorIm = dampingRate * omega;
     const denominatorMagnitudeSquared = denominatorRe * denominatorRe + denominatorIm * denominatorIm;
-    const numerator = resolved.driveForceN * sourceAmplitudeM2PerKg(source) * resolved.airDensityKgPerM3 * omega * omega / (4 * Math.PI * resolved.distanceM);
+    const numerator = resolved.driveForceN * source.amplitudeM2PerKg * resolved.airDensityKgPerM3 * omega * omega / (4 * Math.PI * resolved.distanceM);
     return {
       re: numerator * denominatorRe / denominatorMagnitudeSquared,
       im: -numerator * denominatorIm / denominatorMagnitudeSquared
@@ -1387,7 +1383,7 @@
       name: `Peak ${index + 1}`,
       frequencyHz: simpleSourceDefaultFrequencyRead(),
       q: 30,
-      amplitudeCm2PerG: 1
+      amplitudeM2PerKg: 0.1
     };
   }
   function simpleSourceColorRead(sourceId) {
@@ -1405,12 +1401,19 @@
           const value2 = Number(candidate[key]);
           return Number.isFinite(value2) ? value2 : defaultSource[key];
         };
+        const amplitudeM2PerKgRead = () => {
+          const value2 = Number(candidate.amplitudeM2PerKg);
+          if (Number.isFinite(value2)) return value2;
+          const legacy = Number(candidate.amplitudeCm2PerG);
+          if (Number.isFinite(legacy)) return Math.round(legacy * 100) / 1e3;
+          return defaultSource.amplitudeM2PerKg;
+        };
         return {
           id: String(candidate?.id || defaultSource.id),
           name: simpleSourceNameRead(candidate, index),
           frequencyHz: valueFor("frequencyHz"),
           q: valueFor("q"),
-          amplitudeCm2PerG: valueFor("amplitudeCm2PerG")
+          amplitudeM2PerKg: amplitudeM2PerKgRead()
         };
       })
     };
@@ -1425,9 +1428,9 @@
     input.setAttribute("aria-label", `${source.name} ${label}`);
     if (type === "number") {
       input.inputMode = "decimal";
-      input.step = "0.1";
-      input.min = field === "q" ? "1" : field === "frequencyHz" ? "20" : "-20";
-      input.max = field === "q" ? "200" : field === "frequencyHz" ? "1000" : "20";
+      input.step = field === "amplitudeM2PerKg" ? "0.01" : "0.1";
+      input.min = field === "q" ? "1" : field === "frequencyHz" ? "20" : "-2";
+      input.max = field === "q" ? "200" : field === "frequencyHz" ? "1000" : "2";
     }
     input.addEventListener("input", () => simpleSourcesInputApply(input));
     input.addEventListener("change", () => simpleSourcesInputApply(input));
@@ -1495,9 +1498,9 @@
     const fields = document.createElement("div");
     fields.className = "param-grid";
     [
-      ["Frequency", "frequencyHz"],
+      ["Frequency (Hz)", "frequencyHz"],
       ["Q", "q"],
-      ["Amplitude", "amplitudeCm2PerG"]
+      ["Amplitude (m\xB2/kg)", "amplitudeM2PerKg"]
     ].forEach(([label, field]) => {
       fields.appendChild(simpleSourceNumericFieldBuild(source, label, field));
     });
@@ -2169,7 +2172,7 @@
     return calloutTextBuild(
       simpleSourceNameRead(source, 0),
       source.frequencyHz,
-      `Q ${source.q.toFixed(0)}, Amplitude ${formatDofSigned(source.amplitudeCm2PerG)}`
+      `Q ${source.q.toFixed(0)}, Amplitude ${formatDofSigned(source.amplitudeM2PerKg, 2)} m\xB2/kg`
     );
   }
   function ensureSimpleSourceThumb(source) {
@@ -2216,9 +2219,9 @@
       customdata: sources.map((source) => [
         simpleSourceNameRead(source, 0),
         source.q.toFixed(0),
-        formatDofSigned(source.amplitudeCm2PerG)
+        formatDofSigned(source.amplitudeM2PerKg, 2)
       ]),
-      hovertemplate: "%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} \xB7 Amplitude %{customdata[2]}<extra>Response peak</extra>"
+      hovertemplate: "%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} \xB7 Amplitude %{customdata[2]} m\xB2/kg<extra>Response peak</extra>"
     };
   }
   function simpleSourceComponentTracesRead(solverParams, frequencyStartHz, frequencyEndHz) {
@@ -2513,8 +2516,11 @@
   }
   function simpleSourceAmplitudeFromLevelShift(amplitude, levelShiftDb) {
     const sign = amplitude < 0 ? -1 : 1;
-    const magnitude = Math.max(0.01, Math.abs(amplitude)) * Math.pow(10, levelShiftDb / 20);
-    return simpleSourceValueRound(sign * Math.max(0.01, Math.min(20, magnitude)));
+    const magnitude = Math.max(1e-3, Math.abs(amplitude)) * Math.pow(10, levelShiftDb / 20);
+    return simpleSourceAmplitudeRound(sign * Math.max(1e-3, Math.min(2, magnitude)));
+  }
+  function simpleSourceAmplitudeRound(value) {
+    return Math.round(value * 100) / 100;
   }
   function simpleSourceValueRound(value) {
     return Math.round(value * 10) / 10;
@@ -2527,7 +2533,7 @@
     simpleSourceDragState.sourceId = source.id;
     simpleSourceDragState.pointerId = event.pointerId;
     simpleSourceDragState.level = Number.isFinite(level) ? level : null;
-    simpleSourceDragState.amplitude = source.amplitudeCm2PerG;
+    simpleSourceDragState.amplitude = source.amplitudeM2PerKg;
     event.currentTarget?.setPointerCapture?.(event.pointerId);
     updateThumbs();
   }
@@ -2546,7 +2552,7 @@
     const level = readDofPointerLevel(event, plotEl);
     if (Number.isFinite(frequency)) source.frequencyHz = simpleSourceValueRound(frequency);
     if (Number.isFinite(level) && Number.isFinite(simpleSourceDragState.level) && Number.isFinite(simpleSourceDragState.amplitude)) {
-      source.amplitudeCm2PerG = simpleSourceAmplitudeFromLevelShift(
+      source.amplitudeM2PerKg = simpleSourceAmplitudeFromLevelShift(
         simpleSourceDragState.amplitude,
         level - simpleSourceDragState.level
       );
