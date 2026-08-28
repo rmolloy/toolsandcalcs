@@ -860,11 +860,13 @@ function toneHoverApplyFrequency(freqHz: number | null, plot: HTMLElement, toneT
     tone.toneFrequencySetHz(nextFreqHz);
   }
   toneSpikeTraceUpdate(plot, toneTraceIndex, nextFreqHz, mags);
+  toneReadoutShow(plot, nextFreqHz);
 }
 
 function toneHoverClear(plot: HTMLElement, toneTraceIndex: number) {
   const state = (window as any).FFTState as Record<string, any> | undefined;
   if (!state?.toneEnabled) return;
+  toneReadoutHide(plot);
   if (!Number.isFinite(state.toneFreqHz)) {
     toneSpikeTraceVisibilitySet(plot, toneTraceIndex, false);
     return;
@@ -873,6 +875,41 @@ function toneHoverClear(plot: HTMLElement, toneTraceIndex: number) {
   const tone = toneControllerCreateFromWindow(window);
   tone.toneStop();
   toneSpikeTraceVisibilitySet(plot, toneTraceIndex, false);
+}
+
+const TONE_READOUT_CLASS = "resonate-tone-readout";
+
+export function toneReadoutTextBuild(freqHz: number) {
+  const frequencyText = `${freqHz.toFixed(1)} Hz`;
+  const out = noteAndCentsFromFreq(freqHz);
+  if (!out.note || !Number.isFinite(out.cents)) return frequencyText;
+  const cents = Math.round(out.cents as number);
+  const sign = cents >= 0 ? "+" : "";
+  return `${frequencyText} · ${out.note} ${sign}${cents}¢`;
+}
+
+function toneReadoutShow(plot: HTMLElement, freqHz: number) {
+  // Plotly.newPlot empties the plot div, so the readout is recreated lazily.
+  let readout = plot.querySelector<HTMLElement>(`.${TONE_READOUT_CLASS}`);
+  if (!readout) {
+    readout = document.createElement("div");
+    readout.className = TONE_READOUT_CLASS;
+    readout.setAttribute("aria-live", "polite");
+    plot.appendChild(readout);
+  }
+  readout.textContent = toneReadoutTextBuild(freqHz);
+  readout.classList.add("is-visible");
+}
+
+function toneReadoutHide(plot: HTMLElement) {
+  plot.querySelector(`.${TONE_READOUT_CLASS}`)?.classList.remove("is-visible");
+}
+
+export function spectrumTonePresentationClear() {
+  const plot = spectrumPlotElementSelect();
+  if (!plot) return;
+  toneReadoutHide(plot);
+  toneSpikeTraceVisibilitySet(plot, toneFollowContextRead(plot).toneTraceIndex, false);
 }
 
 export function toneFrequencyUpdateRequired(lastFreqHz: unknown, nextFreqHz: unknown) {

@@ -1,4 +1,5 @@
 import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js";
+import { spectrumTonePresentationClear } from "./resonate_spectrum_render.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
 import { consumeResonanceNotebookConnectDraft, restoreResonanceNotebookConnectDraftState, } from "./resonate_notebook_connect_draft.js";
 import { restoreResonanceNotebookEventIntoState } from "./resonate_notebook_restore.js";
@@ -555,8 +556,10 @@ function bindToneControl(state) {
         if (next)
             toneFrequencyStateReset(state);
         tone.toneEnableSet(next);
-        if (!next)
+        if (!next) {
             tone.toneStop();
+            spectrumTonePresentationClear();
+        }
         toneButtonRenderFromState(btnTone, next);
     });
 }
