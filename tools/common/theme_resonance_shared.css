@@ -452,15 +452,33 @@ body::after {
   background: var(--tl-surface-soft, color-mix(in srgb, var(--panel) 78%, var(--bg)));
 }
 
-.tl-accordion summary {
+.tl-accordion > summary {
+  position: relative;
+  padding-inline-end: 24px;
   cursor: pointer;
   font-weight: 600;
   color: var(--ink);
   list-style: none;
 }
 
-.tl-accordion summary::-webkit-details-marker {
+.tl-accordion > summary::-webkit-details-marker {
   display: none;
+}
+
+.tl-accordion > summary::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 2px;
+  top: 0.35em;
+  width: 8px;
+  height: 8px;
+  border: solid var(--muted);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.tl-accordion[open] > summary::after {
+  transform: rotate(225deg);
 }
 
 .tl-accordion[open] {
