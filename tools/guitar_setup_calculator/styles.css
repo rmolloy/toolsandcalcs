@@ -444,7 +444,7 @@ tbody th { color: var(--ink); font-weight: 600; }
   .setup-page[data-setup-mode="specs"] .setup-measurement-rail dl { grid-template-columns: 1fr; }
 }
 @media (max-width: 650px) {
-  .hero-actions { display: none; }
+  .hero-actions .status { display: none; }
   .setup-geometry-layout { grid-template-columns: 1fr; }
   .geometry-desktop-diagram { display: none !important; }
   .geometry-mobile-diagrams { display: grid; gap: 1px; }
