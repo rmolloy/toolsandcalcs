@@ -69,6 +69,7 @@ body { padding: 28px; }
 .hero-row {
   flex-wrap: nowrap;
 }
+
 .hero-controls-left {
   min-width: 0;
   flex: 1 1 auto;
@@ -768,6 +769,7 @@ body { padding: 28px; }
   justify-content: start;
   gap: 12px;
 }
+.mode-grid[hidden] { display: none; }
 
 .analysis-surface {
   display: flex;
@@ -789,6 +791,12 @@ body { padding: 28px; }
 }
 .card-surface[data-measure-mode="peak_analysis"] .mode-grid {
   order: 4;
+}
+.card-surface[data-measure-mode="peak_analysis"] .stock-measurements {
+  order: 4;
+}
+@media (max-width: 640px) {
+  .card-surface[data-measure-mode="peak_analysis"] .stock-measurements { order: 1; }
 }
 .card-surface[data-measure-mode="peak_analysis"] .measure-action-row {
   order: 5;
@@ -1051,6 +1059,30 @@ body { padding: 28px; }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.stock-measurements-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.stock-measurements-dialog .save-modal__panel {
+  width: 100%;
+  box-sizing: border-box;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+
+.stock-measurements-dialog [hidden] { display: none; }
+
+.stock-measurements-dialog p { margin: 0; }
+
+.stock-measurements { padding: 8px 0; border-top: 1px solid var(--border-soft); }
+.stock-measurements[hidden] { display: none; }
+.stock-measurements-properties { flex-basis: 100%; font-size: var(--type-caption-size); }
+.stock-measurements-properties p { margin: 6px 0 0; }
+
+@media (max-width: 440px) {
+  .stock-measurements-dialog .plate-transfer-grid { grid-template-columns: 1fr; }
 }
 
 .brace-stock-details-results {
