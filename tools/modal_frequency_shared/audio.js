@@ -164,12 +164,35 @@
             audio.deviceId = { exact: deviceId };
         return { audio };
     }
+    let recordingRequestSerial = 0;
+    let recordingPending = false;
+    async function recordingStreamRequest() {
+        const requestSerial = ++recordingRequestSerial;
+        recordingPending = true;
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getUserMedia(audioInputConstraintsBuild());
+        }
+        finally {
+            if (requestSerial === recordingRequestSerial)
+                recordingPending = false;
+        }
+        if (requestSerial === recordingRequestSerial)
+            return stream;
+        recordingStreamRelease(stream);
+        return null;
+    }
+    function recordingStreamRelease(stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
     async function startRecording(callbacksInput) {
         var _a;
         const callbacks = recordingCallbacksNormalize(callbacksInput);
         if (!((_a = navigator.mediaDevices) === null || _a === void 0 ? void 0 : _a.getUserMedia))
             return;
-        const stream = await navigator.mediaDevices.getUserMedia(audioInputConstraintsBuild());
+        const stream = await recordingStreamRequest();
+        if (!stream)
+            return;
         const livePreview = livePreviewEmitterCreate({ stream, onPreview: callbacks.onPreview });
         state.recordedChunks = [];
         state.mediaRecorder = new MediaRecorder(stream);
@@ -180,6 +203,7 @@
         };
         state.mediaRecorder.onstop = async () => {
             livePreview === null || livePreview === void 0 ? void 0 : livePreview.stop();
+            recordingStreamRelease(stream);
             const blob = new Blob(state.recordedChunks, { type: "audio/webm" });
             const arrayBuffer = await blob.arrayBuffer();
             const audioCtx = createAudioCtx();
@@ -201,6 +225,8 @@
         state.mediaRecorder.start();
     }
     function stopRecording() {
+        recordingRequestSerial += 1;
+        recordingPending = false;
         if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
             state.mediaRecorder.stop();
             state.recordingActive = false;
@@ -316,6 +342,7 @@
         stopPlayback,
         stopAll,
         isRecordingActive: () => state.recordingActive,
+        isRecordingPending: () => recordingPending,
         isPlaybackActive: () => state.playbackActive,
         setToneEnabled,
         updateToneFreq,

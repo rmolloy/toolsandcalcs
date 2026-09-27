@@ -191,10 +191,29 @@
     return { audio };
   }
 
+  let recordingRequestSerial = 0;
+  let recordingPending = false;
+
+  async function recordingStreamRequest(): Promise<MediaStream | null> {
+    const requestSerial = ++recordingRequestSerial;
+    recordingPending = true;
+    let stream: MediaStream;
+    try { stream = await navigator.mediaDevices.getUserMedia(audioInputConstraintsBuild()); }
+    finally { if (requestSerial === recordingRequestSerial) recordingPending = false; }
+    if (requestSerial === recordingRequestSerial) return stream;
+    recordingStreamRelease(stream);
+    return null;
+  }
+
+  function recordingStreamRelease(stream: MediaStream): void {
+    stream.getTracks().forEach(track => track.stop());
+  }
+
   async function startRecording(callbacksInput?: (() => void) | RecordingCallbacks): Promise<void> {
     const callbacks = recordingCallbacksNormalize(callbacksInput);
     if (!navigator.mediaDevices?.getUserMedia) return;
-    const stream = await navigator.mediaDevices.getUserMedia(audioInputConstraintsBuild());
+    const stream = await recordingStreamRequest();
+    if (!stream) return;
     const livePreview = livePreviewEmitterCreate({ stream, onPreview: callbacks.onPreview });
     state.recordedChunks = [];
     state.mediaRecorder = new MediaRecorder(stream);
@@ -204,6 +223,7 @@
     };
     state.mediaRecorder.onstop = async () => {
       livePreview?.stop();
+      recordingStreamRelease(stream);
       const blob = new Blob(state.recordedChunks, { type: "audio/webm" });
       const arrayBuffer = await blob.arrayBuffer();
       const audioCtx = createAudioCtx();
@@ -225,6 +245,8 @@
   }
 
   function stopRecording(): void {
+    recordingRequestSerial += 1;
+    recordingPending = false;
     if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
       state.mediaRecorder.stop();
       state.recordingActive = false;
@@ -332,6 +354,7 @@
     stopPlayback,
     stopAll,
     isRecordingActive: () => state.recordingActive,
+    isRecordingPending: () => recordingPending,
     isPlaybackActive: () => state.playbackActive,
     setToneEnabled,
     updateToneFreq,
