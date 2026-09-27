@@ -594,5 +594,5 @@
         };
     }
     const scope = (typeof window !== "undefined" ? window : globalThis);
-    scope.ModalRingdown = { analyzeRingdown, analyzeModeRingdown, fitDampedSinusoid };
+    scope.ModalRingdown = { analyzeRingdown, analyzeModeRingdown, fitDampedSinusoid, transformComplex: fftRadix2 };
 })();

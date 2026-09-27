@@ -181,10 +181,14 @@
     return state.selectedAudioInputDeviceId || null;
   }
 
-  function audioInputConstraintsBuild(): MediaStreamConstraints {
-    const deviceId = getAudioInputDeviceId();
-    if (!deviceId) return { audio: true };
-    return { audio: { deviceId: { exact: deviceId } } };
+  function audioInputConstraintsBuild(deviceId = getAudioInputDeviceId()): MediaStreamConstraints {
+    const audio: MediaTrackConstraints = {
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+    };
+    if (deviceId) audio.deviceId = { exact: deviceId };
+    return { audio };
   }
 
   async function startRecording(callbacksInput?: (() => void) | RecordingCallbacks): Promise<void> {

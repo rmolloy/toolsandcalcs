@@ -154,11 +154,15 @@
     function getAudioInputDeviceId() {
         return state.selectedAudioInputDeviceId || null;
     }
-    function audioInputConstraintsBuild() {
-        const deviceId = getAudioInputDeviceId();
-        if (!deviceId)
-            return { audio: true };
-        return { audio: { deviceId: { exact: deviceId } } };
+    function audioInputConstraintsBuild(deviceId = getAudioInputDeviceId()) {
+        const audio = {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+        };
+        if (deviceId)
+            audio.deviceId = { exact: deviceId };
+        return { audio };
     }
     async function startRecording(callbacksInput) {
         var _a;

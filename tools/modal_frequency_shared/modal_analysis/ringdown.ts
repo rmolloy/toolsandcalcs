@@ -824,10 +824,11 @@
     analyzeRingdown: typeof analyzeRingdown;
     analyzeModeRingdown: typeof analyzeModeRingdown;
     fitDampedSinusoid: typeof fitDampedSinusoid;
+    transformComplex: typeof fftRadix2;
   };
   const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
     ModalRingdown?: ModalRingdownApi;
   };
 
-  scope.ModalRingdown = { analyzeRingdown, analyzeModeRingdown, fitDampedSinusoid };
+  scope.ModalRingdown = { analyzeRingdown, analyzeModeRingdown, fitDampedSinusoid, transformComplex: fftRadix2 };
 })();
