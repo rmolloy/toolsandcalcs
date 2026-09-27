@@ -121,7 +121,9 @@ body::after {
   gap: 10px;
 }
 
-.hero-help-link {
+.hero-help-link,
+.hero-actions .hero-icon-button,
+.fit-actions .hero-icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -139,14 +141,63 @@ body::after {
 
 .hero-help-link:hover,
 .hero-help-link:focus-visible,
+.hero-icon-button:hover,
+.hero-icon-button:focus-visible,
 .hero-menu-trigger:hover,
 .hero-menu-trigger:focus-visible {
   filter: brightness(1.08);
 }
 
+.hero-actions .hero-icon-button,
+.fit-actions .hero-icon-button {
+  padding: 0;
+  flex: 0 0 var(--hero-control-height);
+  cursor: pointer;
+}
+
+.hero-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hero-icon-button [hidden] {
+  display: none;
+}
+
 .hero-menu {
   position: relative;
   z-index: 60;
+}
+
+html:fullscreen .hero-menu {
+  display: block !important;
+}
+
+.tool-fullscreen-frames {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  background: var(--bg);
+}
+
+body[data-tool-frame-active] > :not(.tool-fullscreen-frames) {
+  display: none !important;
+}
+
+body[data-tool-frame-active] > .tool-fullscreen-frames {
+  display: block;
+}
+
+.tool-fullscreen-frames > iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.tool-fullscreen-frames > iframe[hidden] {
+  display: none;
 }
 
 .hero-menu summary {
