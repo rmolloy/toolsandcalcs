@@ -8,14 +8,8 @@ import {
   resonanceTapAveragingEnabled,
 } from "./resonate_debug_flags.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
-import {
-  braceStockEstimatePanelInitialize,
-  braceStockEstimatePanelRenderFromState,
-} from "./resonate_brace_stock_estimate_panel.js";
-import {
-  flexuralRigidityBaseHrefResolve,
-  flexuralRigidityOpenFromBraceStock,
-} from "./resonate_flexural_rigidity_link.js";
+import { stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js";
+import { stockPeakLabelsForSpecimen } from "./resonate_stock_peak_context.js";
 
 type SpectrumLike = {
   freqs?: number[];
@@ -102,13 +96,6 @@ type PeakAnalysisCandidate = ModeCard & {
 
 export function peakAnalysisPanelInitialize(state: Record<string, any>) {
   peakAnalysisActionListenersAttach(state);
-  braceStockEstimatePanelInitialize(state, {
-    selectedPeakResolve: () => peakAnalysisSelectionSyncFromState(state),
-    render: () => peakAnalysisPanelRenderFromState(state),
-    transfer: () => {
-      flexuralRigidityOpenFromBraceStock(flexuralRigidityBaseHrefResolve(), state);
-    },
-  });
   peakAnalysisSelectionSyncFromState(state);
   peakAnalysisPanelRenderFromState(state);
 }
@@ -118,7 +105,7 @@ export function peakAnalysisPanelRenderFromState(state: Record<string, any>) {
   const ringdownData = peakAnalysisRingdownDataBuild(state, selectedMode);
   peakAnalysisPlotRender(state, selectedMode);
   peakAnalysisRingdownRender(ringdownData);
-  braceStockEstimatePanelRenderFromState(state, selectedMode
+  stockMeasurementsPanelRender(state, selectedMode
     ? { key: selectedMode.key, freq: selectedMode.freq }
     : null);
   peakAnalysisActionsRender(state, selectedMode, ringdownData);
@@ -329,11 +316,11 @@ export function peakAnalysisCandidatesBuild(
 }
 
 function peakAnalysisCandidatesReadFromState(state: Record<string, any>) {
-  return peakAnalysisCandidatesBuild(
+  return stockPeakLabelsForSpecimen(state, peakAnalysisCandidatesBuild(
     peakAnalysisSpectrumReadFromState(state),
     peakAnalysisCardsReadFromState(state),
     state.analysisBoundary?.estimateQFromDb || null,
-  );
+  ));
 }
 
 function peakAnalysisSpectrumPointsBuild(spectrum: SpectrumLike | null | undefined) {

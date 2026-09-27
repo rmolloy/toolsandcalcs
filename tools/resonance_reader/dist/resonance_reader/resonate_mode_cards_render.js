@@ -1,4 +1,5 @@
 import { overlayToggleShouldRender } from "./resonate_overlay_gate.js";
+import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
 export function modeCardsHtmlBuild(modes, deps, editingKey) {
     const formatters = modeCardFormattersBuild();
     const modeCardsHtml = modes.map((m) => modeCardHtmlBuildFromMode(m, deps, editingKey, formatters)).join("");
@@ -123,7 +124,8 @@ function escapeHtmlAttr(text) {
 function modeTitleHtmlBuildFromMode(m, deps) {
     if (m.kind === "custom")
         return modeTitleHtmlBuildFromCustomMode(m);
-    const currentLabel = deps.modeMeta[m.key]?.label || m.label;
+    const stockLongLabel = modeCardStockLongLabelBuild(m, deps.state);
+    const currentLabel = stockLongLabel || deps.modeMeta[m.key]?.label || m.label;
     const tooltip = escapeHtmlAttr(deps.modeMeta[m.key]?.tooltip || currentLabel);
     const aliasHtml = deps.modeMeta[m.key]?.aliasHtml || "";
     return `
@@ -131,10 +133,18 @@ function modeTitleHtmlBuildFromMode(m, deps) {
       <span class="mode-title" tabindex="0" data-tooltip="${tooltip}">
         <span class="mode-dot"></span>
         <span>${currentLabel}</span>
-        <span class="mode-alias">${aliasHtml}</span>
+        ${stockLongLabel ? "" : `<span class="mode-alias">${aliasHtml}</span>`}
       </span>
     </h3>
   `;
+}
+function modeCardStockLongLabelBuild(mode, state) {
+    if (mode.key !== "long" || peakAnalysisSourceMeasureModeResolve(state) !== "brace_stock")
+        return null;
+    const confirmedFrequency = state.braceStockConfirmedLongMode?.frequencyHz;
+    if (!Number.isFinite(confirmedFrequency) || !Number.isFinite(mode.freq))
+        return "Suggested Long";
+    return Math.abs(confirmedFrequency - Number(mode.freq)) < 0.05 ? "Confirmed Long" : "Suggested Long";
 }
 function modeTitleHtmlBuildFromCustomMode(m) {
     return `

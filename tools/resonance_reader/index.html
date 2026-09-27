@@ -19,7 +19,7 @@
         <div class="hero-controls-left">
           <details class="hero-menu">
             <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
-            <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="tonelab"></nav>
+            <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="lutherieacademy"></nav>
           </details>
           <h1>Resonance Reader</h1>
           <div class="measure-select hero-control" id="measure_chip">
@@ -94,9 +94,6 @@
             </section>
           </div>
           <div class="peak-analysis-provenance" id="peak_analysis_provenance"></div>
-          <section class="brace-stock-estimate" id="brace_stock_estimate" aria-label="Brace stock estimate" hidden>
-            <div class="brace-stock-estimate__content" id="brace_stock_estimate_content"></div>
-          </section>
           <div class="peak-analysis-actions" id="peak_analysis_actions" aria-label="Peak/Q actions">
             <div class="peak-analysis-stepper" role="group" aria-label="Peak navigation">
               <span class="peak-analysis-position" id="peak_analysis_position">Peak -</span>
@@ -104,7 +101,6 @@
               <button class="ghost-btn btn-small icon-btn" id="peak_analysis_next" type="button" aria-label="Next peak" title="Next peak"><span aria-hidden="true">&rarr;</span></button>
             </div>
             <button class="ghost-btn btn-small" id="peak_analysis_export_data" type="button">Export peak data</button>
-            <a class="link peak-analysis-model-link" id="peak_analysis_open_model" href="../dof_model/">Open in 4-DOF model</a>
           </div>
         </section>
 
@@ -153,6 +149,10 @@
       <div class="mode-grid" id="mode_grid">
         <!-- Mode cards populated by script -->
       </div>
+
+      <section class="stock-measurements" id="stock_measurements" aria-label="Stock measurements" hidden>
+        <div class="brace-stock-estimate__content" id="stock_measurements_content"></div>
+      </section>
 
       <section class="measure-action-row" aria-label="Measurement actions">
         <div class="wave-transport-inline">
@@ -216,7 +216,7 @@
 
         <h3 id="reader_help_start">Getting started</h3>
         <ol class="tl-steps">
-          <li><strong>Choose what you are measuring.</strong> Use Instrument for body resonances, Plate Stock for a top or back plate, Brace Stock for a rectangular stock sample, or Played Note for a plucked string. Choose the instrument or stock context before switching to Peak / Q.</li>
+          <li><strong>Choose what you are measuring.</strong> Use Instrument for body resonances, Plate Stock for a top or back plate, Brace Stock for a rectangular stock sample, or Played Note for a plucked string. Peak / Q can inspect a peak from any of these views; Add measurements identifies a stock specimen without changing the analysis view.</li>
           <li><strong>Record or import.</strong> Choose Record to use your microphone, or Import to open an audio file. WAV is a useful starting format. Leave a quiet gap before the first tap and enough space between taps for each response to fade.</li>
           <li><strong>Select the useful part.</strong> The yellow waveform region controls the FFT selection. In Played Note, the green region selects the note segment. Drag an edge to resize a region or its bottom grip to move it.</li>
           <li><strong>Check the suggested peaks.</strong> Automatic labels are starting points. Confirm that a peak belongs to the physical mode you intended to measure before using it in another calculation.</li>
@@ -281,7 +281,7 @@
           <h4>Set a target without changing the measurement</h4>
           <p>In Instrument with 4DOF Model enabled, <strong>Set target</strong> enters a frequency for a modeled what-if comparison. Type the target and press Enter or leave the field to apply it. Press Escape to cancel an edit. To remove a target, empty its field and press Enter. None of these actions reassigns the measured peak.</p>
           <h4>Inspect a different peak in Peak / Q</h4>
-          <p>Select the intended tap, then click a peak dot or use the previous and next peak arrows. This changes the peak being inspected; it does not relabel Air, Top or Back. For brace stock, it also leaves a confirmed Long assignment unchanged. To replace that confirmation, select the correct peak and use <strong>Use selected as Long</strong> in the measurements dialog. <strong>Clear Long</strong> removes the confirmation.</p>
+          <p>Select the intended tap, then click a peak dot or use the previous and next peak arrows. This changes the peak being inspected; it does not relabel Air, Top or Back. For plate or brace stock, it also leaves a confirmed Long assignment unchanged. To replace that confirmation, select the correct peak and choose <strong>Use … Hz as Long</strong> beside the stock summary. <strong>Clear Long</strong> removes the confirmation.</p>
           <p>If the peak you expect is not visible, check the frequency range, selected tap, support and tap position. A manual assignment cannot recover a resonance that the recording did not capture clearly.</p>
         </details>
         <details class="tl-accordion">
@@ -336,7 +336,7 @@
             <li>Record or import the plate taps.</li>
             <li>Inspect Long, Cross and Transverse. Long is long-grain bending, Cross is cross-grain bending, and Transverse is the twisting mode used by the plate calculation.</li>
             <li>Confirm the assignments from the physical test, not just the order or height of the peaks.</li>
-            <li>Enter dimensions and mass under Material Properties. For a plate, Height is its thickness.</li>
+            <li>Choose Add measurements and enter the sample length, width, thickness and mass. Apply keeps them with this take; Edit measurements reopens the same editor.</li>
             <li>Open the Plate Thickness calculator to carry the measurements into the calculation.</li>
           </ol>
           <p>Measure the actual sample. A wrong thickness or mode assignment can produce a plausible but wrong material estimate. A shaped, braced or assembled top can have useful resonances to inspect, but is not equivalent to the rectangular sample used by the stock calculation.</p>
@@ -347,15 +347,15 @@
           <ol class="tl-steps">
             <li>Record or import the taps. The initial display extends to 500 Hz; the automatic Long search is between 100 and 500 Hz, not a rule for every sample.</li>
             <li>Check the suggested Long peak. A strong, narrow peak is a candidate, not physical confirmation.</li>
-            <li>Switch to Peak / Q and select a clean tap and the correct peak.</li>
-            <li>Choose Set measurements and enter length, width, height and mass. Confirm with Use selected as Long.</li>
+            <li>Choose Add measurements and enter sample length, width, height in the bending direction and mass.</li>
+            <li>Choose Use … Hz as Long beside the stock summary to confirm the suggested frequency. For closer inspection, switch to Peak / Q, select a clean tap and a peak, then confirm there.</li>
             <li>Review density, long-grain modulus and sound speed. Match in Flexural Rigidity continues with the braces you intend to make.</li>
           </ol>
           <p>You can edit measurements, clear the confirmed Long assignment, or confirm a different peak. Do not keep an assignment just because it produced a reasonable modulus. This estimate needs one longitudinal bending mode, not the three plate frequencies. It does not establish the strength or long-term safety of a finished brace.</p>
         </details>
         <details class="tl-accordion" id="reader_help_peak">
           <summary>Peak / Q</summary>
-          <p>Use Peak / Q to examine one resonance and how confidently its width and decay can be measured. Choose Instrument, Plate Stock or Brace Stock first so the material context is correct, then switch to Peak / Q.</p>
+          <p>Use Peak / Q to examine one resonance and how confidently its width and decay can be measured. Enter from any analysis view. For stock characterization, Add measurements identifies the specimen here; there is no need to switch through Plate Stock or Brace Stock first.</p>
           <ol class="tl-steps">
             <li>Select a clean tap in the waveform navigator, with room after it to observe the response.</li>
             <li>Select a peak dot, or use the previous and next peak controls.</li>
@@ -371,8 +371,9 @@
           <p>The decay analysis looks for a usable decline after the envelope maximum, estimates background noise from suitable quiet regions, and avoids fitting the tail too close to that noise. It checks nearby peaks and sensitivity to isolation bandwidth. Without a suitable quiet reference the fit is provisional; a short, contaminated or unstable response may not support a trustworthy estimate.</p>
           <p>Leave more space between taps, reduce background noise and check another tap rather than forcing an answer. Export peak data retains the selected peak and available evidence, including decay-derived Q and fit diagnostics. Disagreement between spectral Q and decay Q is something to investigate, not a reason to choose the more attractive number.</p>
           <h4>Characterized stock</h4>
-          <p>With Brace Stock context, the material bar combines sample dimensions and mass with a confirmed Long bending mode. It estimates density, dynamic long-grain Young's modulus and longitudinal sound speed. Q is not an input to those estimates; a selected peak and its Q alone are not enough.</p>
-          <p>For plates, use the Plate Thickness calculator with the confirmed Long, Cross and Twisting frequencies, dimensions and mass. The Peak / Q material bar currently belongs to Brace Stock, not plates. Do not apply its stock formula to an arbitrary plate peak.</p>
+          <p>Add measurements opens the same editor used in Plate Stock and Brace Stock, even when you came here from Instrument. Identify the specimen as Plate or Brace stock and enter its dimensions and mass. Change lets you correct an existing specimen type; Apply clears an incompatible Long confirmation. Cancel leaves the saved measurements and confirmation unchanged. Neither action changes the analysis view.</p>
+          <p>Confirm the specimen's first Long bending mode with <strong>Use … Hz as Long</strong>. The summary shows calculated longitudinal sound speed and dynamic long-grain Young's modulus. Expand it for density and, for brace stock, specimen EI. Q is not an input to those estimates; a selected peak and its Q alone are not enough.</p>
+          <p>The plate estimate uses the Plate Thickness calculator's free-free rectangular plate model, with length along the grain. Long alone supports its longitudinal estimate; Cross and Twisting are still needed for the full thickness calculation. Finished guitar dimensions or an arbitrary body peak do not characterize the wood. Use a suitable stock specimen and physically check the mode.</p>
         </details>
 
         <h3 id="reader_help_connections">Use the measurements in other tools</h3>
@@ -383,12 +384,12 @@
           <p>Confirm Air, Top and Back, then enable 4DOF Model to fit the simplified coupled model. <strong>Open in 4-DOF model</strong> carries the available fitted parameters into the dedicated tool. A solved what-if target model takes priority over the baseline fit, so check which scenario you intend to transfer. Without a fit, the link opens the tool without fitted parameters.</p>
           <p>A fit lets you explore modeled changes. It does not independently measure the instrument's masses and stiffnesses.</p>
           <h4>Plate Stock to Plate Thickness</h4>
-          <p><strong>Open in Plate Thickness calculator</strong> presents the available Long, Cross and Twisting frequencies and sample measurements. Continue with length, width, thickness and mass, or use Skip for now to send available frequencies alone. Defaults at the destination are not measurements of your plate.</p>
+          <p><strong>Open in Plate Thickness calculator</strong> sends confirmed Long when available, other compatible plate frequencies, and the sample measurements you applied. Body resonances are not relabeled as Cross or Twisting. Without measurements, it sends available frequencies alone. Defaults at the destination are not measurements of your plate.</p>
           <p>The calculator estimates density, long- and cross-grain moduli, their ratio and the shear modulus used by its plate model. You supply the intended body dimensions and target frequency to calculate thickness and projected mass. The transfer does not choose the right target for your instrument.</p>
           <h4>Brace Stock to Brace Calculator</h4>
-          <p><strong>Open in Brace Calculator</strong> lets you enter stock dimensions and mass. A valid Long frequency supplies density and long-grain modulus estimates. Enter the geometry of the brace you intend to cut at the destination; the tested stock dimensions are not silently used as finished-brace dimensions.</p>
-          <h4>Peak / Q to Flexural Rigidity</h4>
-          <p>In Brace Stock context, enter sample measurements and confirm <strong>Use selected as Long</strong>. <strong>Match in Flexural Rigidity</strong> carries that confirmed frequency, specimen dimensions and mass, source label, and calculated density, modulus and sound speed.</p>
+          <p><strong>Open in Brace Calculator</strong> uses the measurements already entered here. With a confirmed Long mode and valid measurements, it carries the calculated density and long-grain modulus. Otherwise it sends available frequencies alone. Enter the geometry of the brace you intend to cut at the destination; the tested stock dimensions are not silently used as finished-brace dimensions.</p>
+          <h4>Characterized brace stock to Flexural Rigidity</h4>
+          <p>In Brace Stock or Peak / Q, enter sample measurements and confirm <strong>Use … Hz as Long</strong>. <strong>Match in Flexural Rigidity</strong> carries that confirmed frequency, specimen dimensions and mass, source label, and calculated density, modulus and sound speed.</p>
           <p>Match compares the plan with that material and explores width and height adjustments. Review the proposal before applying it. The destination calculates EI from material modulus and designed geometry; the stock's own EI is not the EI of every brace cut from it. Inspecting a different peak does not silently replace your confirmed Long assignment.</p>
         </details>
 
@@ -620,6 +621,7 @@
 
   <script src="../vendor/plotly/plotly-basic.min.js?rev=20260324a" defer></script>
   <script src="../common/atmosphere.js?rev=20260324a" defer></script>
+  <script src="../plate_thickness/calculator.js?rev=20260927a" defer></script>
   <script src="../common/solver_core.js?rev=20260324a" defer></script>
   <script src="../modal_frequency_shared/state.js?rev=20260324a" defer></script>
   <script src="../modal_frequency_shared/utils.js?rev=20260324a" defer></script>
@@ -631,6 +633,8 @@
   <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=20260324a" defer></script>
   <script src="../common/4dof/model_core.js?rev=20260324a" defer></script>
   <script src="../common/per_tab_tool_session.js?rev=20260723a" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
   <script src="../common/site_menu_loader.js?rev=20260324a" defer></script>
   <script src="../common/tool_footer_loader.js?rev=20260324a" defer></script>
   <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=20260324a"></script>

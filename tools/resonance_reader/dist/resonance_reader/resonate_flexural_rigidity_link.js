@@ -1,4 +1,5 @@
 import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js";
+import { resonanceToolNavigate } from "./resonate_tool_navigation.js";
 export function flexuralRigidityBaseHrefResolve(runtimeHref = typeof window !== "undefined" ? window.location.href : "http://localhost/") {
     return new URL(runtimeHref).protocol === "file:"
         ? "../flexural_rigidity/index.html"
@@ -23,7 +24,7 @@ export function flexuralRigidityHrefBuildFromBraceStock(baseHref, state) {
     url.searchParams.set("stock_sound_speed", estimate.material.longitudinalSoundSpeedMps.toFixed(3));
     return url.toString();
 }
-export function flexuralRigidityOpenFromBraceStock(baseHref, state, navigate = (href) => window.location.assign(href)) {
+export function flexuralRigidityOpenFromBraceStock(baseHref, state, navigate = resonanceToolNavigate) {
     const href = flexuralRigidityHrefBuildFromBraceStock(baseHref, state);
     if (!href)
         return false;

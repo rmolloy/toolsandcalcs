@@ -16,14 +16,17 @@ import { resonanceReaderBootstrap } from "./resonate_bootstrap_entry.js";
 import { customMeasurementModeMetaBuildFromState } from "./resonate_custom_measurements.js";
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
 import { braceCalculatorHrefBuildFromModes } from "./resonate_brace_calculator_link.js";
-import { braceTransferPromptOpen } from "./resonate_brace_transfer_prompt.js";
-import { plateMaterialMeasurementsResolveFromState, plateMaterialPanelInitialize, plateMaterialPanelRenderFromState, } from "./resonate_plate_material_panel.js";
+import { stockKindResolve } from "./resonate_stock_measurements.js";
+import { stockMeasurementsPanelInitialize, stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js";
+import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js";
+import { flexuralRigidityBaseHrefResolve, flexuralRigidityOpenFromBraceStock } from "./resonate_flexural_rigidity_link.js";
 import { analysisTabsInitialize, analysisTabsRenderFromState } from "./resonate_analysis_tabs.js";
-import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState } from "./resonate_peak_analysis_panel.js";
+import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState, peakAnalysisSelectionSyncFromState } from "./resonate_peak_analysis_panel.js";
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
-import { plateTransferPromptOpen } from "./resonate_plate_transfer_prompt.js";
+import { plateStockTransferModesBuild } from "./resonate_plate_stock_transfer.js";
 import { takeOverlayCurrentPayloadBuild } from "./resonate_take_overlays.js";
 import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js";
+import { resonanceToolNavigate } from "./resonate_tool_navigation.js";
 const state = window.FFTState;
 const resonatePipelineTriggerRun = pipelineRunCoalescedTriggerBuild(async (trigger) => {
     const runner = window.ResonatePipelineRunner;
@@ -199,6 +202,9 @@ function viewModelDestinationApplyToUi(link) {
     analysisSurfaceRenderFromState();
 }
 function viewModelDestinationMeasureModeResolve(measureMode) {
+    if (["plate_stock", "brace_stock", "peak_analysis"].includes(String(measureMode))) {
+        return stockKindResolve(state) || peakAnalysisSourceMeasureModeResolve(state);
+    }
     return measureMode === "peak_analysis" ? peakAnalysisSourceMeasureModeResolve(state) : measureMode;
 }
 function viewModelLinkAttach() {
@@ -211,12 +217,12 @@ function viewModelLinkAttach() {
         const destination = externalModelDestinationResolveFromMeasureMode(viewModelDestinationMeasureModeResolve(viewModelMeasureModeResolve()));
         if (destination.kind === "plate-thickness") {
             e.preventDefault();
-            await plateThicknessTransferPromptOpen(link.href);
+            await plateThicknessTransferOpen(link.href);
             return;
         }
         if (destination.kind === "brace-calculator") {
             e.preventDefault();
-            await braceCalculatorTransferPromptOpen(link.href);
+            await braceCalculatorTransferOpen(link.href);
             return;
         }
         const href = viewModelHrefBuildFromState(link.href);
@@ -224,7 +230,7 @@ function viewModelLinkAttach() {
             return;
         e.preventDefault();
         await perTabStatePersistBeforeNavigation();
-        window.location.href = href;
+        resonanceToolNavigate(href);
     });
 }
 async function perTabStatePersistBeforeNavigation() {
@@ -233,46 +239,27 @@ async function perTabStatePersistBeforeNavigation() {
         return;
     await persist();
 }
-async function braceCalculatorTransferPromptOpen(baseHref) {
+async function braceCalculatorTransferOpen(baseHref) {
     const modesDetected = transferModesDetectedFromState();
-    const result = await braceTransferPromptOpen(transferModeSummariesBuild(modesDetected));
-    if (result === null)
-        return;
-    const measurements = result.action === "continue" ? result.measurements : undefined;
+    const estimate = braceStockEstimateResolveFromState(state);
+    const measurements = estimate.status === "ready" ? estimate.measurements : undefined;
+    const modes = estimate.status === "ready"
+        ? [{ mode: "long", peakFreq: estimate.confirmation.frequencyHz }]
+        : modesDetected;
     await perTabStatePersistBeforeNavigation();
-    window.location.href = braceCalculatorHrefBuildFromModes(baseHref, modesDetected, measurements);
+    resonanceToolNavigate(braceCalculatorHrefBuildFromModes(baseHref, modes, measurements));
 }
-async function plateThicknessTransferPromptOpen(baseHref) {
-    const defaults = plateMaterialMeasurementsResolveFromState(state);
-    const modesDetected = transferModesDetectedFromState();
-    const result = await plateTransferPromptOpen(defaults, transferModeSummariesBuild(modesDetected));
-    if (result === null)
-        return;
-    if (result.action === "continue" && result.measurements) {
-        state.plateMaterialMeasurements = result.measurements;
-    }
-    const measurements = result.action === "continue" ? result.measurements : undefined;
+async function plateThicknessTransferOpen(baseHref) {
+    const modesDetected = plateStockTransferModesBuild(state, transferModesDetectedFromState());
+    const measurements = state.stockMeasurementKind === "plate_stock" ? state.plateMaterialMeasurements : undefined;
     await perTabStatePersistBeforeNavigation();
-    window.location.href = plateThicknessHrefBuildFromModes(baseHref, modesDetected, measurements);
+    resonanceToolNavigate(plateThicknessHrefBuildFromModes(baseHref, modesDetected, measurements));
 }
 function transferModesDetectedFromState() {
+    const kind = stockKindResolve(state);
+    if (kind && kind !== peakAnalysisSourceMeasureModeResolve(state))
+        return [];
     return Array.isArray(state.lastModesDetected) ? state.lastModesDetected : [];
-}
-function transferModeSummariesBuild(modesDetected) {
-    return [
-        transferModeSummaryBuild(modesDetected, "long", "Long Mode"),
-        transferModeSummaryBuild(modesDetected, "cross", "Cross Mode"),
-        transferModeSummaryBuild(modesDetected, "transverse", "Twisting Mode"),
-    ];
-}
-function transferModeSummaryBuild(modesDetected, modeKey, label) {
-    const mode = modesDetected.find((entry) => entry.mode === modeKey);
-    const frequencyHz = mode?.peakFreq;
-    return {
-        key: modeKey,
-        label,
-        frequencyHz: Number.isFinite(frequencyHz) && frequencyHz > 0 ? frequencyHz : null,
-    };
 }
 function viewModelHrefBuildFromState(baseHref) {
     const params = viewModelParamsBuildFromState();
@@ -304,7 +291,22 @@ export function resonanceReaderRuntimeStart() {
     const boundaries = boundariesResolveFromState();
     resonanceStatusExpose(setStatus);
     resonanceUiExpose();
-    plateMaterialPanelInitialize(state);
+    stockMeasurementsPanelInitialize(state, {
+        selectedPeak: () => state.measureMode === "peak_analysis" ? peakAnalysisSelectionSyncFromState(state) : null,
+        render: () => {
+            renderModesFromState(state.lastModeCards || [], renderModesConfigBuild());
+            const link = document.querySelector('a[data-view-model]');
+            if (link)
+                viewModelDestinationApplyToUi(link);
+            else
+                analysisSurfaceRenderFromState();
+        },
+        transfer: () => {
+            void perTabStatePersistBeforeNavigation().then(() => {
+                flexuralRigidityOpenFromBraceStock(flexuralRigidityBaseHrefResolve(), state);
+            });
+        },
+    });
     peakAnalysisPanelInitialize(state);
     analysisTabsInitialize(state);
     viewModelLinkAttach();
@@ -314,7 +316,8 @@ function analysisSurfaceRenderFromState() {
     if (peakAnalysisShouldRender()) {
         peakAnalysisPanelRenderFromState(state);
     }
-    plateMaterialPanelRenderFromState(state);
+    if (state.measureMode !== "peak_analysis")
+        stockMeasurementsPanelRender(state);
     analysisTabsRenderFromState(state);
 }
 function peakAnalysisShouldRender() {

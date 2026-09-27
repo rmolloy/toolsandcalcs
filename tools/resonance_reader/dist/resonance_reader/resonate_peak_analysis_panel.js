@@ -3,8 +3,8 @@ import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js"
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
 import { resonanceSpectrumSmoothingEnabled, resonanceSpectrumLineWidthResolve, resonanceTapAveragingEnabled, } from "./resonate_debug_flags.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
-import { braceStockEstimatePanelInitialize, braceStockEstimatePanelRenderFromState, } from "./resonate_brace_stock_estimate_panel.js";
-import { flexuralRigidityBaseHrefResolve, flexuralRigidityOpenFromBraceStock, } from "./resonate_flexural_rigidity_link.js";
+import { stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js";
+import { stockPeakLabelsForSpecimen } from "./resonate_stock_peak_context.js";
 const PEAK_RINGDOWN_DEFAULT_WINDOW_MS = 1200;
 const PEAK_RINGDOWN_MIN_WINDOW_MS = PEAK_RINGDOWN_DEFAULT_WINDOW_MS;
 const PEAK_RINGDOWN_MAX_WINDOW_MS = 3000;
@@ -22,13 +22,6 @@ const PEAK_ANALYSIS_WAVEFORM_COLOR = resolveColorHexFromRole("peakAnalysisWavefo
 const PEAK_ANALYSIS_PROJECTION_COLOR = resolveColorHexFromRole("peakAnalysisProjection");
 export function peakAnalysisPanelInitialize(state) {
     peakAnalysisActionListenersAttach(state);
-    braceStockEstimatePanelInitialize(state, {
-        selectedPeakResolve: () => peakAnalysisSelectionSyncFromState(state),
-        render: () => peakAnalysisPanelRenderFromState(state),
-        transfer: () => {
-            flexuralRigidityOpenFromBraceStock(flexuralRigidityBaseHrefResolve(), state);
-        },
-    });
     peakAnalysisSelectionSyncFromState(state);
     peakAnalysisPanelRenderFromState(state);
 }
@@ -37,7 +30,7 @@ export function peakAnalysisPanelRenderFromState(state) {
     const ringdownData = peakAnalysisRingdownDataBuild(state, selectedMode);
     peakAnalysisPlotRender(state, selectedMode);
     peakAnalysisRingdownRender(ringdownData);
-    braceStockEstimatePanelRenderFromState(state, selectedMode
+    stockMeasurementsPanelRender(state, selectedMode
         ? { key: selectedMode.key, freq: selectedMode.freq }
         : null);
     peakAnalysisActionsRender(state, selectedMode, ringdownData);
@@ -237,7 +230,7 @@ export function peakAnalysisCandidatesBuild(spectrum, modeCards, estimateQ = nul
     return peakAnalysisModeCandidatesBuild(modeCards, resolved).sort((left, right) => (left.freq || 0) - (right.freq || 0));
 }
 function peakAnalysisCandidatesReadFromState(state) {
-    return peakAnalysisCandidatesBuild(peakAnalysisSpectrumReadFromState(state), peakAnalysisCardsReadFromState(state), state.analysisBoundary?.estimateQFromDb || null);
+    return stockPeakLabelsForSpecimen(state, peakAnalysisCandidatesBuild(peakAnalysisSpectrumReadFromState(state), peakAnalysisCardsReadFromState(state), state.analysisBoundary?.estimateQFromDb || null));
 }
 function peakAnalysisSpectrumPointsBuild(spectrum) {
     const freqs = Array.isArray(spectrum?.freqs) ? spectrum.freqs : [];

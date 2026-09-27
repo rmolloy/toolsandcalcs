@@ -1,5 +1,6 @@
 import { renderPayloadBuildFromState } from "./resonate_render_events.js";
 import { buildToolDocumentHeader } from "../common/tool_document.js";
+import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js";
 export async function resonanceCapturePackageZipBlobBuild(args) {
     const [stateBlob, wavBlob, plotBlob] = await Promise.all([
         resonanceCaptureStateBlobBuild(args),
@@ -31,6 +32,7 @@ export function resonanceCaptureStateJsonBuild(args) {
         renderPayload: renderPayloadBuildFromState(args.state),
         currentWave: buildResonanceCaptureStoredWave(resonanceCaptureWaveResolve(args.state)),
         plateMaterialMeasurements: resonanceCapturePlainValueClone(args.state.plateMaterialMeasurements ?? null),
+        ...resonanceCapturePlainValueClone(stockMeasurementsEvidenceBuild(args.state)),
         selection: {
             viewRangeMs: resonanceCaptureRangeClone(args.state.viewRangeMs),
             noteSelectionRangeMs: resonanceCaptureRangeClone(args.state.noteSelectionRangeMs),

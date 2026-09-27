@@ -1,4 +1,5 @@
 import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js";
+import { resonanceToolNavigate } from "./resonate_tool_navigation.js";
 
 export function flexuralRigidityBaseHrefResolve(
   runtimeHref: string = typeof window !== "undefined" ? window.location.href : "http://localhost/",
@@ -33,7 +34,7 @@ export function flexuralRigidityHrefBuildFromBraceStock(
 export function flexuralRigidityOpenFromBraceStock(
   baseHref: string,
   state: Record<string, any>,
-  navigate: (href: string) => void = (href) => window.location.assign(href),
+  navigate: (href: string) => void = resonanceToolNavigate,
 ) {
   const href = flexuralRigidityHrefBuildFromBraceStock(baseHref, state);
   if (!href) return false;

@@ -617,6 +617,8 @@ function bindWaveTransport(deps: UiBindingsDeps) {
     btnStop.addEventListener("click", () => {
       const FFTAudio = (window as any).FFTAudio;
       FFTAudio?.stopAll?.();
+      deps.state.__livePreviewDispatch?.stop?.();
+      deps.state.__livePreviewActive = false;
       updateWaveTransportLabels();
       deps.setStatus("Stopped.");
     });
@@ -685,6 +687,7 @@ export function uiBindingsAttach(deps: UiBindingsDeps) {
     bindSaveAudio(deps);
     bindRecord(deps);
     bindWaveTransport(deps);
+    resonanceToolVisibilityBind();
     bindTakeOverlayControls(deps);
     takeOverlayControlsRender(deps);
     settingsModalBind(deps);
@@ -941,3 +944,4 @@ function bindMeasureMode(deps: UiBindingsDeps) {
   if (!select) return;
   select.addEventListener("change", () => measureModeChangeHandle(deps));
 }
+import { resonanceToolVisibilityBind } from "./resonate_tool_visibility.js";

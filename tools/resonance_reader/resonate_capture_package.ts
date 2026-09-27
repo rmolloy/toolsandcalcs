@@ -1,5 +1,6 @@
 import { renderPayloadBuildFromState } from "./resonate_render_events.js";
 import { buildToolDocumentHeader } from "../common/tool_document.js";
+import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js";
 
 type ResonanceCaptureState = Record<string, any>;
 
@@ -55,6 +56,7 @@ export function resonanceCaptureStateJsonBuild(args: ResonanceCaptureStateJsonAr
     renderPayload: renderPayloadBuildFromState(args.state),
     currentWave: buildResonanceCaptureStoredWave(resonanceCaptureWaveResolve(args.state)),
     plateMaterialMeasurements: resonanceCapturePlainValueClone(args.state.plateMaterialMeasurements ?? null),
+    ...resonanceCapturePlainValueClone(stockMeasurementsEvidenceBuild(args.state)),
     selection: {
       viewRangeMs: resonanceCaptureRangeClone(args.state.viewRangeMs),
       noteSelectionRangeMs: resonanceCaptureRangeClone(args.state.noteSelectionRangeMs),

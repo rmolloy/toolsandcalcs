@@ -41,7 +41,10 @@ export function takeOverlayPrepareNewCurrentState(state) {
     state.modePeakOverrides = {};
     state.peakAnalysisSelectedTapIndex = null;
     state.braceStockConfirmedLongMode = null;
+    state.plateStockConfirmedLongMode = null;
     state.braceStockMeasurements = null;
+    state.plateMaterialMeasurements = null;
+    state.stockMeasurementKind = null;
     state.lastFitTargetKey = null;
     state.lastFittedParams = null;
     state.whatIfTargetKey = null;
@@ -92,7 +95,10 @@ function takeOverlaySnapshotStateBuild(state, freqs, mags) {
         peakAnalysisSelectedTapIndex: takeOverlayValueClone(state.peakAnalysisSelectedTapIndex),
         modePeakOverrides: takeOverlayValueClone(state.modePeakOverrides || {}),
         braceStockConfirmedLongMode: takeOverlayValueClone(state.braceStockConfirmedLongMode ?? null),
+        plateStockConfirmedLongMode: takeOverlayValueClone(state.plateStockConfirmedLongMode ?? null),
         braceStockMeasurements: takeOverlayValueClone(state.braceStockMeasurements ?? null),
+        plateMaterialMeasurements: takeOverlayValueClone(state.plateMaterialMeasurements ?? null),
+        stockMeasurementKind: state.stockMeasurementKind ?? null,
     };
 }
 function takeOverlaySnapshotRestoreIntoState(state, take) {
@@ -112,7 +118,10 @@ function takeOverlaySnapshotRestoreIntoState(state, take) {
     state.peakAnalysisSelectedTapIndex = takeOverlayValueClone(snapshot.peakAnalysisSelectedTapIndex ?? null);
     state.modePeakOverrides = takeOverlayValueClone(snapshot.modePeakOverrides || {});
     state.braceStockConfirmedLongMode = takeOverlayValueClone(snapshot.braceStockConfirmedLongMode ?? null);
+    state.plateStockConfirmedLongMode = takeOverlayValueClone(snapshot.plateStockConfirmedLongMode ?? null);
     state.braceStockMeasurements = takeOverlayValueClone(snapshot.braceStockMeasurements ?? null);
+    state.plateMaterialMeasurements = takeOverlayValueClone(snapshot.plateMaterialMeasurements ?? null);
+    state.stockMeasurementKind = snapshot.stockMeasurementKind ?? null;
 }
 function takeOverlayLabelResolve(state) {
     const label = String(state.recordingLabel || "").trim();

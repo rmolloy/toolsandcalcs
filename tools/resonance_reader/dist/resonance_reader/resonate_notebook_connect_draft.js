@@ -1,4 +1,5 @@
 import { renderPayloadBuildFromState } from "./resonate_render_events.js";
+import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js";
 const RESONANCE_NOTEBOOK_CONNECT_DRAFT_KEY = "resonanceNotebookConnectDraft";
 export function persistResonanceNotebookConnectDraft(runtime, state, recordingLabel) {
     const storage = readResonanceNotebookConnectDraftStorage(runtime);
@@ -32,6 +33,11 @@ export function restoreResonanceNotebookConnectDraftState(state, draft) {
     state.measureMode = draft.measureMode;
     state.recordingLabel = draft.recordingLabel;
     state.plateMaterialMeasurements = cloneResonanceNotebookConnectDraftValue(draft.plateMaterialMeasurements);
+    state.stockMeasurementKind = draft.stockMeasurementKind ?? null;
+    state.braceStockMeasurements = cloneResonanceNotebookConnectDraftValue(draft.braceStockMeasurements ?? null);
+    state.braceStockConfirmedLongMode = cloneResonanceNotebookConnectDraftValue(draft.braceStockConfirmedLongMode ?? null);
+    state.plateStockConfirmedLongMode = cloneResonanceNotebookConnectDraftValue(draft.plateStockConfirmedLongMode ?? null);
+    state.peakAnalysisSourceMeasureMode = draft.peakAnalysisSourceMeasureMode ?? null;
     state.customMeasurements = cloneResonanceNotebookConnectDraftValue(draft.customMeasurements) || [];
     state.viewRangeMs = cloneResonanceNotebookConnectDraftRange(draft.selection.viewRangeMs);
     state.noteSelectionRangeMs = cloneResonanceNotebookConnectDraftRange(draft.selection.noteSelectionRangeMs);
@@ -53,6 +59,7 @@ function buildResonanceNotebookConnectDraft(runtime, state, recordingLabel) {
         measureMode: String(state.measureMode || "").trim(),
         renderPayload: cloneResonanceNotebookConnectDraftValue(renderPayloadBuildFromState(state)),
         plateMaterialMeasurements: cloneResonanceNotebookConnectDraftValue(state.plateMaterialMeasurements ?? null),
+        ...cloneResonanceNotebookConnectDraftValue(stockMeasurementsEvidenceBuild(state)),
         customMeasurements: cloneResonanceNotebookConnectDraftValue(state.customMeasurements ?? []),
         selection: {
             viewRangeMs: cloneResonanceNotebookConnectDraftRange(state.viewRangeMs),
@@ -69,6 +76,7 @@ function buildResonanceNotebookConnectDraftFromSavedDocument(savedDocument) {
         measureMode: String(savedDocument.measureMode || "").trim(),
         renderPayload: cloneResonanceNotebookConnectDraftValue(savedDocument.renderPayload),
         plateMaterialMeasurements: cloneResonanceNotebookConnectDraftValue(savedDocument.plateMaterialMeasurements ?? null),
+        ...cloneResonanceNotebookConnectDraftValue(stockMeasurementsEvidenceBuild(savedDocument)),
         customMeasurements: cloneResonanceNotebookConnectDraftValue(savedDocument.customMeasurements ?? []),
         selection: {
             viewRangeMs: cloneResonanceNotebookConnectDraftRange(savedDocument.selection?.viewRangeMs),
