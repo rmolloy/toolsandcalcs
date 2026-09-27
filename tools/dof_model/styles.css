@@ -12,15 +12,21 @@
 
 .hero-controls-left {
   min-width: 0;
-  flex: 1 1 auto;
+  max-width: 100%;
+  flex: 1 0 auto;
   flex-wrap: nowrap;
+}
+
+.hero-row {
+  flex-wrap: wrap;
 }
 
 .hero-actions {
   gap: 10px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   min-width: 0;
-  flex: 0 0 auto;
+  max-width: 100%;
+  flex: 0 1 auto;
   margin-left: 12px;
 }
 
@@ -797,6 +803,7 @@ body.whatif-mode .param-whatif-row {
   .mode-tabs {
     width: 100%;
     flex-wrap: wrap;
+    height: auto;
   }
 
   .mode-tabs .tab-btn {
@@ -1014,4 +1021,3 @@ body.whatif-mode .param-whatif-row {
 .dof-simple-source-thumb .dof-thumb-label {
   font-size: 0.6875rem;
 }
-
