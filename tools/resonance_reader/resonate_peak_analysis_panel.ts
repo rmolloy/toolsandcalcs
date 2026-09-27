@@ -1,4 +1,5 @@
 import type { ModeCard } from "./resonate_types.js";
+import { analyzeAdaptiveRingdown, type RingdownMath } from "./resonate_ringdown_adaptive.js";
 import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
 import {
@@ -28,7 +29,7 @@ type PlotlyLike = {
   Plots?: { resize?: (element: HTMLElement) => unknown };
 };
 
-type RingdownApi = {
+type RingdownApi = Partial<RingdownMath> & {
   analyzeModeRingdown: (args: {
     buffer: ArrayLike<number>;
     sampleRate: number;
@@ -59,6 +60,7 @@ type PeakAnalysisRingdownResult = {
   smoothWindowMs: number;
   fitMethod?: "envelope" | "damped_sinusoid";
   isolationBandwidthHz?: number | null;
+  evidence?: ReturnType<typeof analyzeAdaptiveRingdown>["evidence"];
 };
 
 type PeakAnalysisRingdownData = {
@@ -176,9 +178,11 @@ export function peakAnalysisWidthHzResolveFromMode(mode: Pick<ModeCard, "freq" |
 
 export function peakAnalysisRingdownDataBuild(state: Record<string, any>, selectedMode: ModeCard | null): PeakAnalysisRingdownData | null {
   const api = peakAnalysisRingdownApiResolve();
-  const input = peakAnalysisRingdownInputBuild(state, selectedMode);
+  const adaptive = new URLSearchParams(String(globalThis.window?.location?.search || "")).get("ringdownMethod") !== "legacy";
+  const input = peakAnalysisRingdownInputBuild(state, selectedMode, adaptive);
   if (!api || !input) return null;
   try {
+    if (adaptive) return peakAnalysisAdaptiveDataBuild(state, selectedMode!, input, api);
     return {
       result: api.analyzeModeRingdown({
         buffer: input.buffer,
@@ -197,17 +201,34 @@ export function peakAnalysisRingdownDataBuild(state: Record<string, any>, select
   }
 }
 
-function peakAnalysisRingdownInputBuild(state: Record<string, any>, selectedMode: ModeCard | null) {
+function peakAnalysisAdaptiveDataBuild(
+  state: Record<string, any>, selectedMode: ModeCard,
+  input: NonNullable<ReturnType<typeof peakAnalysisRingdownInputBuild>>, api: RingdownApi,
+): PeakAnalysisRingdownData | null {
+  if (!api.transformComplex || !api.fitDampedSinusoid) return null;
+  const result = analyzeAdaptiveRingdown({
+    buffer: input.buffer, wave: input.wave, sampleRate: input.provenance.sampleRate,
+    targetFrequencyHz: selectedMode.freq as number, spectralWidthHz: input.provenance.bandwidthHz,
+    neighborFrequencies: peakAnalysisCandidatesReadFromState(state).map((candidate) => candidate.freq as number),
+    taps: state.tapSegments || [], selectedStart: input.selectedStart, onsetSec: input.onsetSec,
+  }, api as RingdownMath);
+  return { result, provenance: input.provenance };
+}
+
+function peakAnalysisRingdownInputBuild(state: Record<string, any>, selectedMode: ModeCard | null, adaptive = false) {
   if (!Number.isFinite(selectedMode?.freq)) return null;
   const wave = peakAnalysisWaveReadFromState(state);
   const sampleRate = Number(state.currentWave?.sampleRate);
   if (!wave?.length || !Number.isFinite(sampleRate) || sampleRate <= 0) return null;
   const tap = peakAnalysisTapWindowResolve(state, sampleRate);
-  const expectedWindowMs = peakAnalysisRingdownExpectedWindowMsResolve(selectedMode);
+  const expectedWindowMs = adaptive ? PEAK_RINGDOWN_MAX_WINDOW_MS : peakAnalysisRingdownExpectedWindowMsResolve(selectedMode);
   const sampleWindow = peakAnalysisRingdownSampleWindowBuild(wave, sampleRate, tap?.start ?? 0, tap?.nextStart ?? null, expectedWindowMs);
   if (!sampleWindow.buffer.length) return null;
   return {
     buffer: sampleWindow.buffer,
+    wave,
+    selectedStart: tap?.start ?? 0,
+    onsetSec: Math.min((tap?.start ?? 0) / sampleRate, PEAK_RINGDOWN_PRE_ONSET_MS / 1000),
     provenance: {
       tapCount: Array.isArray(state.tapSegments) ? state.tapSegments.length : 0,
       tapIndex: tap?.index ?? null,
@@ -597,6 +618,7 @@ function peakAnalysisEvidencePayloadBuild(
       fitStartSec: data.result.fitStartSec ?? null,
       fitEndSec: data.result.fitEndSec ?? null,
       flags: data.result.flags,
+      evidence: data.result.evidence,
     },
   };
 }
@@ -639,6 +661,8 @@ function peakAnalysisStatusSet(text: string) {
 }
 
 function peakAnalysisRingdownConfidenceLabelBuild(result: PeakAnalysisRingdownResult) {
+  if (result.evidence?.rejected) return "unavailable";
+  if (result.evidence && result.flags.length) return "provisional";
   if (!Number.isFinite(result.envelopeR2) || !Number.isFinite(result.Q)) return "weak";
   if ((result.envelopeR2 as number) >= 0.92) return "strong";
   if ((result.envelopeR2 as number) >= 0.85) return "usable";
@@ -661,7 +685,18 @@ function peakAnalysisProvenanceTextBuild(
   const bandwidth = [spectralBandwidth, isolationBandwidth].filter(Boolean).join(" · ");
   const limit = provenance.limit === "next_tap" ? " (next tap)" : provenance.limit === "recording_end" ? " (recording ends)" : "";
   const window = `Tap window: ${(provenance.windowMs / 1000).toFixed(2)} seconds${limit}`;
-  return `Ring-down source: ${tapLabel} · ${window} · ${provenance.preOnsetMs} ms pre-onset · ${bandwidth} · ${provenance.sampleRate.toLocaleString()} Hz`;
+  return `Ring-down source: ${tapLabel} · ${window} · ${provenance.preOnsetMs} ms pre-onset · ${bandwidth} · ${provenance.sampleRate.toLocaleString()} Hz${peakAnalysisAdaptiveStatusText(result)}`;
+}
+
+function peakAnalysisAdaptiveStatusText(result: PeakAnalysisRingdownResult) {
+  if (!result.evidence) return "";
+  const labels: Record<string, string> = {
+    insufficient_decay: "too little decay", non_decaying: "no consistent decay",
+    overlapping_modes: "overlapping peaks", filter_sensitive: "filter-sensitive", unstable_decay: "poor fit",
+  };
+  const reasons = result.flags.map((flag) => labels[flag]).filter(Boolean);
+  const fit = result.evidence.rejected ? `Decay fit unavailable: ${reasons.join(", ")}` : "Adaptive decay fit";
+  return ` · ${fit} · noise ${result.evidence.noise.status}`;
 }
 
 function peakAnalysisRingdownPlotRender(plot: HTMLElement | null, data: PeakAnalysisRingdownData) {

@@ -4,6 +4,7 @@ import { measureModeNormalize } from "./resonate_mode_config.js";
 import { consumeResonanceNotebookConnectDraft, restoreResonanceNotebookConnectDraftState, } from "./resonate_notebook_connect_draft.js";
 import { restoreResonanceNotebookEventIntoState } from "./resonate_notebook_restore.js";
 import { resonanceSaveRunnerCreate } from "./resonate_save_target.js";
+import { renderResonanceSaveHelp } from "./resonate_save_help.js";
 import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js";
 import { settingsModalBind } from "./resonate_settings_modal.js";
 import { takeOverlayCaptureCurrentFromState, takeOverlayClearAll, takeOverlayListRead, takeOverlayPrepareNewCurrentState, takeOverlaySelectAsCurrent, } from "./resonate_take_overlays.js";
@@ -471,6 +472,7 @@ async function runResonanceSaveActionAndRenderCleanState(deps, saveRunner) {
 async function refreshResonanceSaveSurfaceAndRender(state, saveRunner, setStatus) {
     const saveSurface = await saveRunner.readResonanceSaveSurface();
     saveSurfaceModeWrite(state, saveSurface.mode);
+    renderResonanceSaveHelp(saveSurface.mode, document.getElementById("reader_save_help"));
     saveSurfaceHintWrite(state, readResonanceSaveSurfaceHint(saveSurface));
     saveButtonRenderFromState(state);
     renderResonanceIdleStatusWhenAppropriate(state, setStatus);

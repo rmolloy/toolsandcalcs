@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../common/tool_footer.css?rev=20260324a">
   <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=20260324a">
   <link rel="stylesheet" href="styles.css?rev=20260324a">
+  <link rel="stylesheet" href="../common/tool_guide.css?rev=20260927b">
   <link rel="stylesheet" href="../common/theme_profile.css">
 </head>
 
@@ -34,7 +35,8 @@
           <input class="sr-only" type="file" id="file_input" accept="audio/*" tabindex="-1" aria-hidden="true">
         </div>
         <div class="hero-actions">
-</div>
+          <a class="hero-help-link" href="#resonance_reader_help" aria-label="Read the Resonance Reader guide" title="Resonance Reader guide">?</a>
+        </div>
       </div>
     </section>
 
@@ -196,6 +198,231 @@
 
       <div class="section-divider"></div>
 
+    </section>
+
+    <section class="tl-tool-guide" id="resonance_reader_help" aria-labelledby="reader_help_title">
+      <div class="tl-tool-guide__body">
+        <h2 id="reader_help_title">Using Resonance Reader</h2>
+        <p>Resonance Reader is a browser-based FFT audio analyzer for modal testing and tuning of instrument materials and acoustic instruments. It was built to make the measurement and modal-tuning techniques in Trevor Gore's books easier to put into practice. It helps luthiers build and fine-tune their instruments, and helps players understand the response they hear and feel.</p>
+        <p>Record a tap or import an audio file to locate resonances in a top or back plate, a piece of brace stock, or an assembled instrument. Inspect their frequencies and decay, then compare measurements before and after a change.</p>
+        <p>When you tap a guitar or plate, you excite several resonances at once. When you play a note on a string, the string and the instrument's resonances interact, shaping how the note starts, develops and fades. Resonance Reader lets you examine both.</p>
+        <nav aria-label="Resonance Reader guide sections">
+          <a href="#reader_help_start">Getting started</a>
+          <a href="#reader_help_controls">Controls</a>
+          <a href="#reader_help_modes">Modes</a>
+          <a href="#reader_help_connections">Other tools</a>
+          <a href="#reader_help_reference">Interpreting results</a>
+        </nav>
+
+        <h3 id="reader_help_start">Getting started</h3>
+        <ol class="tl-steps">
+          <li><strong>Choose what you are measuring.</strong> Use Instrument for body resonances, Plate Stock for a top or back plate, Brace Stock for a rectangular stock sample, or Played Note for a plucked string. Choose the instrument or stock context before switching to Peak / Q.</li>
+          <li><strong>Record or import.</strong> Choose Record to use your microphone, or Import to open an audio file. WAV is a useful starting format. Leave a quiet gap before the first tap and enough space between taps for each response to fade.</li>
+          <li><strong>Select the useful part.</strong> The yellow waveform region controls the FFT selection. In Played Note, the green region selects the note segment. Drag an edge to resize a region or its bottom grip to move it.</li>
+          <li><strong>Check the suggested peaks.</strong> Automatic labels are starting points. Confirm that a peak belongs to the physical mode you intended to measure before using it in another calculation.</li>
+          <li><strong>Repeat and compare.</strong> Keep support, tap position, microphone position and input gain consistent. A result that repeats is more useful than a precise-looking number from one uncertain tap.</li>
+        </ol>
+        <p>Start with the Default FFT profile. For instrument body tests, damp the strings so their ringing does not obscure the body response. Use a clean tap that does not overload the recording; reduce the input level or tap more lightly if the waveform is visibly flattened at its largest excursions.</p>
+
+        <details class="tl-accordion" id="reader_help_fft">
+          <summary>Modal resonances and the FFT</summary>
+          <p>A mode is a particular pattern of vibration. A plate can bend mainly along the grain, bend across it, or twist. Each pattern has a natural frequency and a rate at which its vibration dies away. When the structure responds strongly near one of those natural frequencies, you are seeing a modal resonance.</p>
+          <p>In an assembled guitar, the top, back and enclosed air interact. Air, Top and Back describe the main character of a response; they do not mean the other parts have stopped moving. Modal tuning uses those resonances to guide and check structural changes. It is different from tuning the strings, and it does not mean every instrument should have the same frequencies.</p>
+          <p>FFT means <strong>Fast Fourier Transform</strong>. It separates a section of recorded audio into frequency components. The waveform tells you what happened over time; the spectrum tells you which frequencies are present in that section.</p>
+          <ul class="tl-list">
+            <li><strong>Frequency, Hz:</strong> cycles per second. A peak near 200 Hz represents a component vibrating about 200 times each second.</li>
+            <li><strong>Signal level, dB:</strong> recorded spectrum level on the chosen display scale, not calibrated sound pressure. A taller peak is stronger in this recording, not automatically a better resonance.</li>
+            <li><strong>Peak position:</strong> where a strong frequency component appears. A peak alone does not identify its vibration pattern; support, tap position and physical observations help establish that.</li>
+            <li><strong>Peak width:</strong> how concentrated the response is around its peak. An isolated, sufficiently resolved peak can support a bandwidth estimate of Q.</li>
+          </ul>
+          <p>With a played note, many peaks belong to the string's fundamental and partials, often near two, three or more times its fundamental frequency. They are not automatically separate body modes.</p>
+          <p>Although the graph is called Frequency Response, a microphone-only tap spectrum is not a force-normalized frequency response function. Without measuring the input force, it cannot tell you the structure's absolute mobility. Peak height also depends on the tap and recording setup.</p>
+        </details>
+
+        <h3 id="reader_help_controls">Common controls</h3>
+        <details class="tl-accordion">
+          <summary>Recording, playback and takes</summary>
+          <dl>
+            <dt>Measuring</dt><dd>Selects the analysis workflow, not a different recording. Physical vibration modes are the resonances identified within that workflow.</dd>
+            <dt>Record / Import</dt><dd>Record starts microphone capture. Allow microphone access if asked. Press it again to finish the take. Import opens an existing audio file.</dd>
+            <dt>Play / Stop</dt><dd>Play starts the current recording from its beginning, not just the selected yellow or green region. Press it again to stop. Stop ends recording or audio playback. Turn Tone off separately.</dd>
+            <dt>Filename dropdown</dt><dd>Shows the current recording. Select another take's row to make it current and close the menu. Each take retains its analysis selections; visibility controls show or hide comparison traces.</dd>
+            <dt>Save</dt><dd>Saves the current take, not the entire take list. See <a href="#reader_help_save">Saving measurements</a> for what is retained.</dd>
+            <dt>Clear takes</dt><dd>Removes stored comparison takes while keeping the current take. It does not delete files already saved to your computer.</dd>
+          </dl>
+          <p>Recording or importing another take keeps the preceding take available for comparison, within the take limit. Keep capture conditions and display scaling comparable. A taller trace does not by itself mean better wood or a more responsive instrument.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>Waveform navigator, graph and mode assignments</summary>
+          <ul class="tl-list">
+            <li><strong>Yellow region:</strong> the FFT selection. Drag either edge to resize it, or its bottom grip to move it. Input Scope must be Selection for the FFT to follow this region rather than the full recording.</li>
+            <li><strong>Green region:</strong> the note segment in Played Note. The Energy Transfer graph starts its time axis at the beginning of this selection.</li>
+            <li><strong>Peak / Q:</strong> select a detected tap in the navigator to inspect its ring-down. Check which tap is selected before comparing decay estimates.</li>
+          </ul>
+          <p>Moving a selection changes the analysis, not the saved audio. When tap averaging is enabled, the spectrum can combine accepted taps instead of displaying one raw FFT of the highlighted region.</p>
+          <p>Hover over the spectrum to read frequency and level. The plot toolbar provides zoom, pan, reset axes and image download controls. Zoom changes what you see, not the navigator's analysis region.</p>
+          <p>Mode cards and markers identify assigned physical modes. See <a href="#reader_help_correct_peaks">Correcting a peak or mode assignment</a> for the drag and reset steps. A <strong>target</strong> is a frequency you want to explore, not one measured in the recording.</p>
+          <p>The <strong>4DOF Model</strong> toggle adds a modeled response in Instrument mode. It does not turn that curve into measured data. Stock workflows provide their corresponding calculator actions instead.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_correct_peaks">
+          <summary>Correcting a peak or mode assignment</summary>
+          <p>An automatic label can land on the wrong peak. Correcting its assignment tells the tool which part of the measured spectrum to use; it does not move the actual resonance or alter your recording.</p>
+          <h4>Move a measured mode</h4>
+          <ol class="tl-steps">
+            <li><strong>Check the take and selection.</strong> Choose the intended recording and a clean waveform region. Use Instrument, Plate Stock or Brace Stock to see the named mode callouts on the main spectrum.</li>
+            <li><strong>Find the callout to correct.</strong> Match its name, such as Top or Long, to the mode card below the graph. Zoom in if nearby peaks are difficult to separate.</li>
+            <li><strong>Drag the pointer near the peak.</strong> Grab the short connector beside the colored peak dot, not the text box. Move it left or right toward the intended peak, then release.</li>
+            <li><strong>Check the new frequency.</strong> The callout and card update. The pointer snaps to a nearby local maximum when available; otherwise it uses a nearby spectrum sample. Check that it landed on the peak you intended.</li>
+          </ol>
+          <p>Dragging the text box only moves the label for readability; it does not change the assigned frequency. You do not need to enable 4DOF to drag a measured-mode pointer. Clicking the card, including its pencil symbol, selects it for inspection rather than opening a measured-frequency entry field. Choose Peak / Q in Measuring to show that inspection view.</p>
+          <h4>Return to automatic detection</h4>
+          <p>In Instrument, choose the small <strong>reset</strong> link on the corrected mode card. If it is hidden, turn on <strong>4DOF Model</strong> to expose it; you can turn the model off again afterward. This removes that mode's manual assignment and returns it to the current automatic result. It keeps the recording and does not clear a separate target.</p>
+          <p>The card reset is currently not exposed in Plate Stock or Brace Stock. You can correct those assignments by dragging their pointers. Reset in the Settings dialog restores FFT settings; it is not the mode-assignment reset.</p>
+          <h4>Set a target without changing the measurement</h4>
+          <p>In Instrument with 4DOF Model enabled, <strong>Set target</strong> enters a frequency for a modeled what-if comparison. Type the target and press Enter or leave the field to apply it. Press Escape to cancel an edit. To remove a target, empty its field and press Enter. None of these actions reassigns the measured peak.</p>
+          <h4>Inspect a different peak in Peak / Q</h4>
+          <p>Select the intended tap, then click a peak dot or use the previous and next peak arrows. This changes the peak being inspected; it does not relabel Air, Top or Back. For brace stock, it also leaves a confirmed Long assignment unchanged. To replace that confirmation, select the correct peak and use <strong>Use selected as Long</strong> in the measurements dialog. <strong>Clear Long</strong> removes the confirmation.</p>
+          <p>If the peak you expect is not visible, check the frequency range, selected tap, support and tap position. A manual assignment cannot recover a resonance that the recording did not capture clearly.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>Microphone and FFT settings</summary>
+          <p>Open Settings from the spectrum toolbar. Start with Default and change one setting at a time when investigating a measurement.</p>
+          <dl>
+            <dt>Audio Input / Refresh</dt><dd>Choose the microphone; refresh the list after connecting another input. New recordings request echo cancellation, noise suppression and automatic gain control off. A browser or device may ignore an unsupported setting, so use consistent input gain and recording conditions.</dd>
+            <dt>Input Scope</dt><dd>Analyze the selected FFT region or the full recording.</dd>
+            <dt>Window / Resolution</dt><dd>Set the weighting and FFT length. A finer frequency grid is not a substitute for a long enough, clean recording.</dd>
+            <dt>Tap Averaging / Averaging</dt><dd>Tap Averaging combines detected tap spectra. Averaging combines repeated FFT refreshes. They are separate settings.</dd>
+            <dt>Smoothing</dt><dd>Smooths the displayed spectrum. Leave it off when inspecting closely spaced peaks so their appearance is not blended.</dd>
+            <dt>Display and axis settings</dt><dd>Control the graph's span and scaling. Keep them consistent when comparing traces.</dd>
+            <dt>Reset / Done</dt><dd>Reset restores FFT defaults, not an empty recording. Done closes Settings.</dd>
+          </dl>
+        </details>
+        <details class="tl-accordion" id="reader_help_tone">
+          <summary>Tone generator and Chladni patterns</summary>
+          <p>Turn <strong>Tone</strong> on, then move the pointer across the main spectrum to hear a sine tone at that frequency. On a touch screen, move your finger across the spectrum; lifting it holds the last frequency. While Tone is on, a touch sweep controls frequency rather than panning. Turn Tone off when finished.</p>
+          <p>For Chladni-pattern work, pair a suitable Bluetooth speaker with your device and select it as the audio output. It needs enough output at the frequency being tested to excite the plate. An amplifier and exciter can also be used. The app supplies the tone; the physical pattern forms on the plate, not on the screen.</p>
+          <p>In a Chladni test, a light sprinkling of dried herbs, glitter or fine sand moves away from strongly vibrating areas and collects near the nodal lines, where the plate moves least. This makes the vibration pattern visible. Choose a material that will not scratch or stain the surface, especially when testing a finished instrument.</p>
+          <p>Support and excitation matter: attaching a driver or adding mass can change the response. Start with low output volume. Hearing the tone is not itself confirmation of a mode; observe the physical response. Keep tone playback out of tap recordings unless it is deliberately part of the test. See <a href="https://newt.phys.unsw.edu.au/music/guitar/guitarchladni.html">UNSW's explanation of guitar-plate Chladni patterns</a>.</p>
+        </details>
+
+        <h3 id="reader_help_modes">Using each mode</h3>
+        <details class="tl-accordion" id="reader_help_instrument">
+          <summary>Instrument</summary>
+          <p>Use Instrument to locate the main body resonances and compare how they change. Record separated taps with the strings damped, keeping support and microphone position consistent.</p>
+          <ol class="tl-steps">
+            <li>Inspect the suggested Air, Top and Back frequencies against the visible peaks and your knowledge of the instrument.</li>
+            <li><a href="#reader_help_correct_peaks">Correct an assignment using its graph pointer</a> when needed. Real modes are coupled; a strong peak is not necessarily the one you expected.</li>
+            <li>Use Tone with suitable excitation equipment to investigate a frequency. Observe the physical response rather than relying on the tone alone.</li>
+            <li>Compare repeated taps or another take before drawing a conclusion.</li>
+          </ol>
+          <p>The optional 4DOF Model fits a simplified coupled model to the assigned frequencies. Targets explore a proposed change; they are not measurements or instructions to remove material. Ask whether an intervention moved the intended resonance, and what else moved with it.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_played_note">
+          <summary>Played Note</summary>
+          <p>Use Played Note to examine how a note develops and decays, especially when something you hear is not clear in a tap spectrum. Record a clean note with room for its decay. Keep plucking position and attack similar; damp the other strings for a controlled comparison.</p>
+          <ol class="tl-steps">
+            <li>Place the green region around the note you want to inspect.</li>
+            <li>Check the detected note and correct its label if the fundamental was identified incorrectly.</li>
+            <li>Read Energy Transfer alongside playback. It shows the fundamental, second and third partials, together with available body-frequency traces.</li>
+            <li>Use the legend to hide traces that do not help the comparison. Moving the green selection preserves those visibility choices.</li>
+          </ol>
+          <p>The time axis and hover readings show elapsed time from the start of the green selection. Look for beating, a partial that fades abruptly, or decay that differs from neighboring notes. Repeat the recording to check whether the behavior persists.</p>
+          <p>Despite its name, Energy Transfer does not directly measure energy flowing from the string into a body mode. It tracks signal near selected frequencies. A nearby string partial and body resonance can overlap; use the view to investigate, not to declare a cause from one trace.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_plate">
+          <summary>Plate Stock</summary>
+          <p>Use Plate Stock to identify bending modes in a top or back plate before a material or thickness calculation. Support and excite the sample so the mode of interest can move; holding it where that mode moves strongly can suppress its response.</p>
+          <ol class="tl-steps">
+            <li>Record or import the plate taps.</li>
+            <li>Inspect Long, Cross and Transverse. Long is long-grain bending, Cross is cross-grain bending, and Transverse is the twisting mode used by the plate calculation.</li>
+            <li>Confirm the assignments from the physical test, not just the order or height of the peaks.</li>
+            <li>Enter dimensions and mass under Material Properties. For a plate, Height is its thickness.</li>
+            <li>Open the Plate Thickness calculator to carry the measurements into the calculation.</li>
+          </ol>
+          <p>Measure the actual sample. A wrong thickness or mode assignment can produce a plausible but wrong material estimate. A shaped, braced or assembled top can have useful resonances to inspect, but is not equivalent to the rectangular sample used by the stock calculation.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_brace">
+          <summary>Brace Stock</summary>
+          <p>Use Brace Stock to characterize the wood you will cut braces from, not to set finished-brace dimensions. Start with a reasonably uniform rectangular sample and let it bend freely enough to reveal the longitudinal bending mode.</p>
+          <ol class="tl-steps">
+            <li>Record or import the taps. The initial display extends to 500 Hz; the automatic Long search is between 100 and 500 Hz, not a rule for every sample.</li>
+            <li>Check the suggested Long peak. A strong, narrow peak is a candidate, not physical confirmation.</li>
+            <li>Switch to Peak / Q and select a clean tap and the correct peak.</li>
+            <li>Choose Set measurements and enter length, width, height and mass. Confirm with Use selected as Long.</li>
+            <li>Review density, long-grain modulus and sound speed. Match in Flexural Rigidity continues with the braces you intend to make.</li>
+          </ol>
+          <p>You can edit measurements, clear the confirmed Long assignment, or confirm a different peak. Do not keep an assignment just because it produced a reasonable modulus. This estimate needs one longitudinal bending mode, not the three plate frequencies. It does not establish the strength or long-term safety of a finished brace.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_peak">
+          <summary>Peak / Q</summary>
+          <p>Use Peak / Q to examine one resonance and how confidently its width and decay can be measured. Choose Instrument, Plate Stock or Brace Stock first so the material context is correct, then switch to Peak / Q.</p>
+          <ol class="tl-steps">
+            <li>Select a clean tap in the waveform navigator, with room after it to observe the response.</li>
+            <li>Select a peak dot, or use the previous and next peak controls.</li>
+            <li>Read frequency, bandwidth and spectral Q on the left.</li>
+            <li>Inspect the isolated response and decay fit on the right, then repeat on another tap.</li>
+          </ol>
+          <h4>Read the two graphs together</h4>
+          <p>Bandwidth is the resonance width at 3 dB below its peak. Spectral Q is peak frequency divided by that bandwidth. A narrower peak has higher Q, provided the peak and both bandwidth crossings are resolved.</p>
+          <p>On the right, the blue trace is the selected tap filtered around the selected resonance, not the full-frequency WAV. Solid gold is its amplitude envelope. Dashed gold is an exponential decay fitted to a usable portion of that response. Vertical markers identify the fitting interval when a fit is available.</p>
+          <p>The amplitude scale is relative, not physical displacement or calibrated sound pressure. A fit extending beyond the observed response is a projection, not more recorded data. Depending on settings, the spectrum may average accepted taps; the ring-down belongs to the selected tap.</p>
+          <h4>What the result means</h4>
+          <p>At the same frequency, higher Q generally means slower decay. It is not a wood-quality score or a direct prediction of every played note's sustain. For a builder, the useful comparison is whether a particular resonance became more or less damped after a change, and whether that repeats.</p>
+          <p>The decay analysis looks for a usable decline after the envelope maximum, estimates background noise from suitable quiet regions, and avoids fitting the tail too close to that noise. It checks nearby peaks and sensitivity to isolation bandwidth. Without a suitable quiet reference the fit is provisional; a short, contaminated or unstable response may not support a trustworthy estimate.</p>
+          <p>Leave more space between taps, reduce background noise and check another tap rather than forcing an answer. Export peak data retains the selected peak and available evidence, including decay-derived Q and fit diagnostics. Disagreement between spectral Q and decay Q is something to investigate, not a reason to choose the more attractive number.</p>
+          <h4>Characterized stock</h4>
+          <p>With Brace Stock context, the material bar combines sample dimensions and mass with a confirmed Long bending mode. It estimates density, dynamic long-grain Young's modulus and longitudinal sound speed. Q is not an input to those estimates; a selected peak and its Q alone are not enough.</p>
+          <p>For plates, use the Plate Thickness calculator with the confirmed Long, Cross and Twisting frequencies, dimensions and mass. The Peak / Q material bar currently belongs to Brace Stock, not plates. Do not apply its stock formula to an arbitrary plate peak.</p>
+        </details>
+
+        <h3 id="reader_help_connections">Use the measurements in other tools</h3>
+        <details class="tl-accordion">
+          <summary>What each calculator handoff carries</summary>
+          <p>Use the calculator action for the current workflow, then review the transferred inputs. A handoff supplies inputs, not an ongoing link that keeps two tools synchronized. It does not include the audio recording.</p>
+          <h4>Instrument to the 4DOF Model</h4>
+          <p>Confirm Air, Top and Back, then enable 4DOF Model to fit the simplified coupled model. <strong>Open in 4-DOF model</strong> carries the available fitted parameters into the dedicated tool. A solved what-if target model takes priority over the baseline fit, so check which scenario you intend to transfer. Without a fit, the link opens the tool without fitted parameters.</p>
+          <p>A fit lets you explore modeled changes. It does not independently measure the instrument's masses and stiffnesses.</p>
+          <h4>Plate Stock to Plate Thickness</h4>
+          <p><strong>Open in Plate Thickness calculator</strong> presents the available Long, Cross and Twisting frequencies and sample measurements. Continue with length, width, thickness and mass, or use Skip for now to send available frequencies alone. Defaults at the destination are not measurements of your plate.</p>
+          <p>The calculator estimates density, long- and cross-grain moduli, their ratio and the shear modulus used by its plate model. You supply the intended body dimensions and target frequency to calculate thickness and projected mass. The transfer does not choose the right target for your instrument.</p>
+          <h4>Brace Stock to Brace Calculator</h4>
+          <p><strong>Open in Brace Calculator</strong> lets you enter stock dimensions and mass. A valid Long frequency supplies density and long-grain modulus estimates. Enter the geometry of the brace you intend to cut at the destination; the tested stock dimensions are not silently used as finished-brace dimensions.</p>
+          <h4>Peak / Q to Flexural Rigidity</h4>
+          <p>In Brace Stock context, enter sample measurements and confirm <strong>Use selected as Long</strong>. <strong>Match in Flexural Rigidity</strong> carries that confirmed frequency, specimen dimensions and mass, source label, and calculated density, modulus and sound speed.</p>
+          <p>Match compares the plan with that material and explores width and height adjustments. Review the proposal before applying it. The destination calculates EI from material modulus and designed geometry; the stock's own EI is not the EI of every brace cut from it. Inspecting a different peak does not silently replace your confirmed Long assignment.</p>
+        </details>
+
+        <h3 id="reader_help_reference">Interpreting and keeping results</h3>
+        <details class="tl-accordion" id="reader_help_save">
+          <summary>Saving measurements</summary>
+          <p>Save applies to the <strong>current take</strong>, not the entire list of comparison takes.</p>
+          <p id="reader_save_help">Check the available Save action before closing the page. Save your source audio as well as any analysis results you need.</p>
+          <p>Export peak data is a separate analysis export, not a replacement for saving the source audio. Remembered browser state is convenient for moving between tools, but should not be your only copy of a measurement. Save the recordings you need before clearing takes.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>If a result does not look right</summary>
+          <dl>
+            <dt>A mode appears to be missing</dt><dd>Check the visible frequency range, tap position and sample support. An automatic label is not a complete inventory of physical modes.</dd>
+            <dt>Taps were missed or combined</dt><dd>Inspect the waveform and selected region. Closely spaced impacts, weak taps and background events can confuse detection. Use clean, separated events and repeat.</dd>
+            <dt>Frequency changes between recordings</dt><dd>Check that you selected the same resonance, then check support, sample state and analysis selection before attributing the difference to the instrument.</dd>
+            <dt>Q changes much more than frequency</dt><dd>Check that the peak is isolated and the recording is long enough to resolve its width and decay. Nearby modes, noise, support damping and settings can affect Q while frequency remains stable.</dd>
+            <dt>A curve changes after adjusting settings</dt><dd>Return to Default. Smoothing and display scaling change what is easy to see without representing a change in the instrument.</dd>
+          </dl>
+        </details>
+        <details class="tl-accordion">
+          <summary>How the numbers are calculated</summary>
+          <p>The FFT describes the selected signal's frequency content. Tap averaging combines accepted spectra in the power domain. The default tap-spectrum analysis uses a 400 ms window with 100 ms of pre-onset context. Those are analysis settings, not a claim that the response lasts 400 ms.</p>
+          <p>A finer FFT grid can help locate a peak between widely spaced bins. Padding does not create more recorded decay or separate modes the available signal cannot resolve.</p>
+          <ul class="tl-list">
+            <li><strong>Spectral Q:</strong> peak frequency divided by the -3 dB bandwidth.</li>
+            <li><strong>Decay Q:</strong> pi &times; frequency &times; amplitude time constant, for an exponential decay. The time constant is the time to fall to about 37% of the fitted starting amplitude, not the time until sound stops.</li>
+            <li><strong>Stock density:</strong> sample mass divided by rectangular volume, with consistent units.</li>
+            <li><strong>Longitudinal sound speed:</strong> square root of modulus divided by density, using modulus in pascals and density in kg/m&sup3;. This is an estimated material wave speed, not the speed of sound in air or a direct travel-time measurement.</li>
+          </ul>
+          <p>Spectral and decay Q use different features of the response, but both depend on analysis choices. Frequency isolation changes the signal used for the fit, so agreement is a useful cross-check, not fully independent proof. An exponential approaches zero; it never reaches an exact stopping point.</p>
+          <p>Dimensions, mass, mode identity, geometry and support conditions must suit the material model. A clean frequency reading cannot compensate for a wrong thickness or a wrong mode.</p>
+        </details>
+      </div>
     </section>
 
     <footer class="tl-footer" data-tool-footer></footer>
