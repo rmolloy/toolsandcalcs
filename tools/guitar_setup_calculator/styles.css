@@ -427,7 +427,9 @@ thead th { color: var(--muted); font-size: 11px; letter-spacing: .05em; text-tra
 tbody th { color: var(--ink); font-weight: 600; }
 
 @media (max-width: 1100px) {
-  .setup-tool-surface { grid-template-columns: minmax(0, 1fr); }
+  .setup-tool-surface,
+  .setup-page[data-setup-mode="specs"] .setup-tool-surface,
+  .setup-page[data-setup-mode="measure"] .setup-tool-surface { grid-template-columns: minmax(0, 1fr); }
   .setup-profile-control,
   .setup-inputs,
   .setup-geometry-card,
