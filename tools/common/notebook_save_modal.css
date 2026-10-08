@@ -1,0 +1,472 @@
+/* Save to Notebook dialog, shared by every tool that saves a capture.
+   Rendered by tools/common/notebook_save_modal.js as the notebook entry the
+   builder is about to write: subject, title, what was heard, the numbers,
+   the files, then Cancel and Save.
+
+   Other prompts (Match Plan, the Reader's transfer and stock prompts) reuse
+   the plain .save-modal, .save-modal__panel, __footer, __form, __section and
+   __backdrop class names and take their layout from the tool theme sheets.
+   Every selector here therefore starts with the .save-modal--entry modifier
+   the dialog's root carries, so this sheet only ever styles the dialog. */
+
+.save-modal.save-modal--entry {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+}
+
+.save-modal--entry .save-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 7, 12, 0.68);
+  backdrop-filter: blur(8px);
+}
+
+.save-modal--entry .save-modal__panel {
+  gap: 0;
+  position: relative;
+  z-index: 1;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--panel, #151922) 92%, rgba(8, 10, 16, 0.98));
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42);
+}
+
+.save-modal--entry .save-modal__entry {
+  padding: 18px 22px 0;
+  overflow: auto;
+}
+
+.save-modal--entry .save-modal__entry > * + * {
+  margin-top: 12px;
+}
+
+.save-modal--entry .save-modal__kicker {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted, #9aa4b2);
+}
+
+.save-modal--entry .save-modal__kicker-when {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* The dialog draws its own controls. Tool themes style `button` broadly
+   (monopole: button:not(.mode-btn), reader: .hero-row button), so every rule
+   below carries two classes and names each state, so a theme's hover rule
+   cannot outrank the resting one. */
+
+.save-modal--entry button.save-modal__subject-name,
+.save-modal--entry button.save-modal__subject-name:hover,
+.save-modal--entry button.save-modal__subject-name:focus,
+.save-modal--entry button.save-modal__subject-name:focus-visible,
+.save-modal--entry button.save-modal__subject-name:active {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.3;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.22);
+  padding: 2px 4px 2px 0;
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.save-modal--entry button.save-modal__subject-name:hover,
+.save-modal--entry button.save-modal__subject-name:focus-visible {
+  border-bottom-color: var(--accent, #56B4E9);
+  outline: none;
+}
+
+.save-modal--entry button.save-modal__pill,
+.save-modal--entry button.save-modal__pill:hover,
+.save-modal--entry button.save-modal__pill:focus,
+.save-modal--entry button.save-modal__pill:focus-visible,
+.save-modal--entry button.save-modal__pill:active {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.3;
+  color: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 0.84rem;
+  color: var(--muted, #9aa4b2);
+}
+
+.save-modal--entry button.save-modal__pill:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  color: inherit;
+}
+
+.save-modal--entry button.save-modal__pill[aria-pressed="true"],
+.save-modal--entry button.save-modal__pill[aria-pressed="true"]:hover,
+.save-modal--entry button.save-modal__pill[aria-pressed="true"]:focus,
+.save-modal--entry button.save-modal__pill[aria-pressed="true"]:focus-visible,
+.save-modal--entry button.save-modal__pill[aria-pressed="true"]:active {
+  border-color: var(--accent, #56B4E9);
+  color: var(--accent, #56B4E9);
+  background: color-mix(in srgb, var(--accent, #56B4E9) 12%, transparent);
+}
+
+.save-modal--entry button.save-modal__pill:focus-visible {
+  outline: 2px solid var(--accent, #56B4E9);
+  outline-offset: 2px;
+}
+
+.save-modal--entry button.save-modal__option,
+.save-modal--entry button.save-modal__option:hover,
+.save-modal--entry button.save-modal__option:focus,
+.save-modal--entry button.save-modal__option:focus-visible,
+.save-modal--entry button.save-modal__option:active {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.3;
+  color: inherit;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  border-radius: 6px;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.save-modal--entry button.save-modal__option:hover,
+.save-modal--entry button.save-modal__option:focus-visible {
+  background: color-mix(in srgb, var(--accent, #56B4E9) 16%, transparent);
+  outline: none;
+}
+
+.save-modal--entry button.save-modal__option--create,
+.save-modal--entry button.save-modal__option--create:hover,
+.save-modal--entry button.save-modal__option--create:focus,
+.save-modal--entry button.save-modal__option--create:focus-visible,
+.save-modal--entry button.save-modal__option--create:active {
+  color: var(--accent, #56B4E9);
+}
+
+.save-modal--entry .save-modal__footer button[data-save-modal-close],
+.save-modal--entry .save-modal__footer button[data-save-modal-close]:hover,
+.save-modal--entry .save-modal__footer button[data-save-modal-close]:focus,
+.save-modal--entry .save-modal__footer button[data-save-modal-close]:focus-visible,
+.save-modal--entry .save-modal__footer button[data-save-modal-close]:active {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.3;
+  color: inherit;
+  cursor: pointer;
+  padding: 8px 4px;
+  color: var(--muted, #9aa4b2);
+}
+
+.save-modal--entry .save-modal__footer button[data-save-modal-close]:hover,
+.save-modal--entry .save-modal__footer button[data-save-modal-close]:focus-visible {
+  color: inherit;
+  outline: none;
+  text-decoration: underline;
+}
+
+/* subject: a heading that opens a picker */
+
+.save-modal--entry .save-modal__subject {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.save-modal--entry .save-modal__subject-kind {
+  font-size: 0.82rem;
+  color: var(--muted, #9aa4b2);
+}
+
+.save-modal--entry .save-modal__menu {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel, #151922) 70%, #2a313c);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+}
+
+.save-modal--entry .save-modal__menu[hidden] {
+  display: none;
+}
+
+.save-modal--entry .save-modal__menu input[type="search"] {
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.save-modal--entry .save-modal__options {
+  max-height: 240px;
+  overflow: auto;
+}
+
+.save-modal--entry .save-modal__group[hidden],
+.save-modal--entry .save-modal__option[hidden],
+.save-modal--entry .save-modal__create[hidden] {
+  display: none;
+}
+
+.save-modal--entry .save-modal__group-label {
+  padding: 8px 8px 3px;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted, #9aa4b2);
+}
+
+.save-modal--entry .save-modal__create {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 4px;
+}
+
+.save-modal--entry .save-modal__create button.save-modal__option--create {
+  width: auto;
+  flex: 1;
+}
+
+.save-modal--entry .save-modal__create select {
+  width: auto;
+}
+
+.save-modal--entry .save-modal__create-kind {
+  font-size: 0.82rem;
+  color: var(--muted, #9aa4b2);
+}
+
+/* title, heard line, pills */
+
+.save-modal--entry .save-modal__title {
+  width: 100%;
+  background: none;
+  border: 0;
+  border-bottom: 1px dashed transparent;
+  border-radius: 0;
+  padding: 2px 0;
+  font: inherit;
+  font-size: 1.05rem;
+  color: inherit;
+}
+
+.save-modal--entry .save-modal__title:hover,
+.save-modal--entry .save-modal__title:focus {
+  border-bottom-color: rgba(255, 255, 255, 0.22);
+  outline: none;
+}
+
+.save-modal--entry .save-modal__listening {
+  display: grid;
+  gap: 8px;
+}
+
+.save-modal--entry .save-modal__heard {
+  flex-direction: row;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: inherit;
+}
+
+.save-modal--entry .save-modal__heard-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent, #56B4E9);
+}
+
+.save-modal--entry .save-modal__heard input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  font-style: italic;
+}
+
+.save-modal--entry .save-modal__heard input::placeholder {
+  font-style: italic;
+}
+
+.save-modal--entry .save-modal__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* the numbers, as they will appear in the notebook */
+
+.save-modal--entry .save-modal__summary {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 0;
+}
+
+.save-modal--entry .save-modal__summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  column-gap: 12px;
+  align-items: baseline;
+}
+
+.save-modal--entry .save-modal__summary-row dt {
+  color: var(--muted, #9aa4b2);
+}
+
+.save-modal--entry .save-modal__summary-row dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.save-modal--entry .save-modal__provenance {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted, #9aa4b2);
+}
+
+.save-modal--entry .save-modal__provenance--default {
+  color: #f0c27b;
+}
+
+.save-modal--entry .save-modal__files {
+  margin: 12px 0 0;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--muted, #9aa4b2);
+}
+
+.save-modal--entry .save-modal__error {
+  margin: 0;
+  color: #f0c27b;
+}
+
+.save-modal--entry .save-modal__footer {
+  flex-direction: row;
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 16px -22px 0;
+  padding: 12px 22px 16px;
+  background: color-mix(in srgb, var(--panel, #151922) 92%, rgba(8, 10, 16, 0.98));
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.save-modal--entry .save-modal__footer .primary-btn {
+  width: auto;
+  border-radius: 999px;
+  padding-inline: 22px;
+}
+
+@media (max-width: 520px) {
+  .save-modal--entry .save-modal__panel {
+    width: calc(100vw - 16px);
+    max-height: calc(100vh - 16px);
+  }
+
+  .save-modal--entry .save-modal__entry {
+    padding: 14px 16px 0;
+  }
+
+  .save-modal--entry button.save-modal__subject-name {
+    font-size: 1.25rem;
+  }
+
+  .save-modal--entry .save-modal__footer {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+
+  .save-modal--entry .save-modal__footer .primary-btn {
+    flex: 1;
+  }
+}

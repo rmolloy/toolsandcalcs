@@ -88,8 +88,13 @@ body::after {
   backdrop-filter: blur(10px);
 }
 
+/* The header must never overflow or cover its title, at any width. The title
+   wraps at word boundaries and never shrinks below its longest word. When the
+   action buttons are too wide to share the row with the title (Flexural's
+   Load/Download JSON on a phone), the row wraps and they sit on their own line. */
 .hero-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -99,8 +104,10 @@ body::after {
 
 .hero-controls-left {
   display: flex;
+  flex: 1 1 0;
   align-items: center;
   gap: 12px;
+  min-width: min-content;
 }
 
 .hero h1 {
@@ -108,17 +115,19 @@ body::after {
   font-size: var(--type-title-size);
   line-height: var(--type-title-line);
   font-weight: var(--type-title-weight);
-  white-space: nowrap;
-  height: var(--hero-control-height);
+  white-space: normal;
+  min-height: var(--hero-control-height);
   display: inline-flex;
   align-items: center;
 }
 
 .hero-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
+  margin-left: auto;
 }
 
 .hero-help-link,
