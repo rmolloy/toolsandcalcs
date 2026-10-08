@@ -1,38 +1,22 @@
 (function (globalScope) {
-  async function listNotebookSubjectsForFlexuralSave(workbookId) {
-    var response = await callFlexuralNotebookRpc("listSubjects", {
-      workbookId: workbookId,
-    });
-    return Array.isArray(response) ? response : [];
+  function listNotebookSubjectsForFlexuralSave(workbookId) {
+    return readSharedNotebookRpcClient().listNotebookSubjects(workbookId);
   }
 
-  async function saveNotebookFlexuralCapture(args) {
-    return await callFlexuralNotebookRpc("saveFlexuralRigidityCapture", {
-      workbookId: args.workbookId,
-      payload: {
-        subject: args.subject,
-        event: args.event,
-        package: {
-          stateJson: String(args.package && args.package.stateJson || ""),
-        },
-      },
-    });
+  function saveNotebookFlexuralCapture(args) {
+    return readSharedNotebookRpcClient().saveNotebookStateCapture("saveFlexuralRigidityCapture", args || {});
   }
 
-  async function callFlexuralNotebookRpc(method, request) {
-    var response = await globalScope.fetch("/notebook-api/rpc.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(Object.assign({ method: method }, request || {})),
-    });
-    var payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(String(payload && payload.message || "Notebook save failed."));
+  function readSharedNotebookRpcClient() {
+    if (globalScope.CommonNotebookRpcClient) {
+      return globalScope.CommonNotebookRpcClient;
     }
 
-    return payload;
+    if (typeof require === "function") {
+      return require("../common/notebook_rpc_client.js");
+    }
+
+    throw new Error("Common notebook rpc client is unavailable.");
   }
 
   var api = {

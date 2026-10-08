@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../common/styles.css">
   <link rel="stylesheet" href="../common/theme_resonance_shared.css">
   <link rel="stylesheet" href="../common/layout.css">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
   <style>
     :root {
       --card-bg: #0d1116;
@@ -29,17 +30,6 @@
       max-width: 960px;
       margin: 32px auto 16px;
       color: var(--text-body);
-    }
-
-    .hero-controls-left {
-      min-width: 0;
-    }
-
-    .hero h1 {
-      min-width: 0;
-      height: auto;
-      min-height: var(--hero-control-height);
-      white-space: normal;
     }
 
     .brace-app {
@@ -1381,11 +1371,13 @@
 <script src="../common/tool_document_file.js"></script>
 <script src="../common/per_tab_tool_session.js"></script>
 <script src="../common/offline_save_surface.js"></script>
+<script src="../common/notebook_rpc_client.js" data-feature="notebook"></script>
 <script src="./brace_calc/brace_notebook_connection_client.js" data-feature="notebook"></script>
 <script src="./brace_calc/brace_notebook_save_client.js" data-feature="notebook"></script>
 <script src="./brace_calc/brace_notebook_restore_client.js" data-feature="notebook"></script>
 <script src="./brace_calc/brace_notebook_restore.js" data-feature="notebook"></script>
 <script src="./brace_calc/brace_save_surface.js"></script>
+<script src="../common/notebook_save_modal.js" data-feature="notebook"></script>
 <script src="./brace_calc/brace_save_modal.js" data-feature="notebook"></script>
 <script src="./brace_calc/brace_save_target.js"></script>
 <script src="./flexural_notebook_connection_client.js" data-feature="notebook"></script>
