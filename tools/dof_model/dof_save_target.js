@@ -38,6 +38,7 @@
       notebookName: surface.notebookName,
       subjects: subjects,
       defaultDisplayName: readDofDefaultDisplayName(snapshot),
+      summary: readSaveSummary(request),
     });
 
     if (!selection) {
@@ -55,6 +56,10 @@
     });
     request.setStatus("Saved to " + (surface.notebookName || "Notebook") + ".");
     return true;
+  }
+
+  function readSaveSummary(request) {
+    return typeof request.readSummary === "function" ? request.readSummary() : [];
   }
 
   async function runOfflineDofSaveAction(request) {

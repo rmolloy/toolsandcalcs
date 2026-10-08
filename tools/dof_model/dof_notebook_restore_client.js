@@ -1,34 +1,21 @@
 (function (globalScope) {
-  async function readNotebookRestorePayloadForDof(workbookId, eventId, fetchImpl) {
-    var response = await readDofFetch(fetchImpl)("/notebook-api/rpc.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify({
-        method: "readToolRestorePayload",
-        workbookId: workbookId,
-        payload: { eventId: eventId },
-      }),
+  function readNotebookRestorePayloadForDof(workbookId, eventId, fetchImpl) {
+    return readSharedNotebookRpcClient().readNotebookRestorePayload(workbookId, eventId, {
+      fetchImpl: fetchImpl,
+      fetchUnavailableMessage: "DOF notebook restore fetch is unavailable.",
     });
-    var payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(String(payload && payload.message || "Notebook restore failed."));
-    }
-
-    return payload || {};
   }
 
-  function readDofFetch(fetchImpl) {
-    if (typeof fetchImpl === "function") {
-      return fetchImpl;
+  function readSharedNotebookRpcClient() {
+    if (globalScope.CommonNotebookRpcClient) {
+      return globalScope.CommonNotebookRpcClient;
     }
 
-    if (typeof globalScope.fetch === "function") {
-      return globalScope.fetch.bind(globalScope);
+    if (typeof require === "function") {
+      return require("../common/notebook_rpc_client.js");
     }
 
-    throw new Error("DOF notebook restore fetch is unavailable.");
+    throw new Error("Common notebook rpc client is unavailable.");
   }
 
   var api = {

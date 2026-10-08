@@ -5,13 +5,14 @@
         if (v !== undefined) module.exports = v;
     }
     else if (typeof define === "function" && define.amd) {
-        define(["require", "exports", "./dof_display_format", "./dof_peak_detection", "./dof_plot_data", "./dof_target_fit", "./dof_task_cards", "./dof_legacy_solver", "./dof_series_sampling", "./dof_plot_pointer", "./dof_plot_resize", "./dof_trace_visibility", "./dof_fit_input_policy", "./dof_mode_card_presentation", "./dof_parameter_input_policy", "./dof_simple_sources", "./dof_plot_callouts"], factory);
+        define(["require", "exports", "./dof_display_format", "./dof_peak_detection", "./dof_save_summary", "./dof_plot_data", "./dof_target_fit", "./dof_task_cards", "./dof_legacy_solver", "./dof_series_sampling", "./dof_plot_pointer", "./dof_plot_resize", "./dof_trace_visibility", "./dof_fit_input_policy", "./dof_mode_card_presentation", "./dof_parameter_input_policy", "./dof_simple_sources", "./dof_plot_callouts"], factory);
     }
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     const dof_display_format_1 = require("./dof_display_format");
     const dof_peak_detection_1 = require("./dof_peak_detection");
+    const dof_save_summary_1 = require("./dof_save_summary");
     const dof_plot_data_1 = require("./dof_plot_data");
     const dof_target_fit_1 = require("./dof_target_fit");
     const dof_task_cards_1 = require("./dof_task_cards");
@@ -1663,6 +1664,13 @@
         window.addEventListener("pointerup", handleThumbPointerUp);
         window.addEventListener("pointercancel", handleThumbPointerUp);
     }
+    function readCurrentDofSaveSummary() {
+        return (0, dof_save_summary_1.dofSaveSummaryBuild)({
+            peaks: lastResponse ? (0, dof_peak_detection_1.modelPeaksFromResponse)(lastResponse) : null,
+            modelOrder: currentOrder,
+            taskMode: currentTaskMode,
+        });
+    }
     function readCurrentDofSaveSnapshot() {
         return {
             params: { ...currentParams },
@@ -1751,6 +1759,7 @@
     async function saveResults() {
         await readDofSaveRunner().runDofSaveAction({
             readSnapshot: readCurrentDofSaveSnapshot,
+            readSummary: readCurrentDofSaveSummary,
             setStatus: fitStatusSet,
         });
     }

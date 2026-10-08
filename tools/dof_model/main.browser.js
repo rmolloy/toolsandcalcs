@@ -227,6 +227,31 @@
     return assignPeaksToModes(totalPeaks, targets);
   }
 
+  // tools/dof_model/dof_save_summary.ts
+  var MODE_ROWS = [
+    { key: "air", label: "Air T(1,1)\u2081" },
+    { key: "top", label: "Top T(1,1)\u2082" },
+    { key: "back", label: "Back T(1,1)\u2083" }
+  ];
+  function dofSaveSummaryBuild(args) {
+    return [modelRow(args.modelOrder, args.taskMode), ...peakRows(args.peaks)];
+  }
+  function modelRow(modelOrder, taskMode) {
+    const order = Number.isFinite(Number(modelOrder)) && Number(modelOrder) > 0 ? Number(modelOrder) : 4;
+    return { label: "Model", value: `${order}-DOF${taskModeSuffix(taskMode)}` };
+  }
+  function taskModeSuffix(taskMode) {
+    return String(taskMode || "") === "fit" ? " \xB7 fitted to targets" : "";
+  }
+  function peakRows(peaks) {
+    if (!peaks) return [];
+    return MODE_ROWS.filter((row) => Number.isFinite(Number(peaks[row.key])) && Number(peaks[row.key]) > 0).map((row) => ({
+      label: row.label,
+      value: `${Number(peaks[row.key]).toFixed(1)} Hz`,
+      provenance: "modeled"
+    }));
+  }
+
   // tools/dof_model/dof_plot_data.ts
   function buildDofTrace(points, name, color, lineOptions = {}) {
     if (!Array.isArray(points) || points.length === 0) return null;
@@ -2628,6 +2653,13 @@
     window.addEventListener("pointerup", handleThumbPointerUp);
     window.addEventListener("pointercancel", handleThumbPointerUp);
   }
+  function readCurrentDofSaveSummary() {
+    return dofSaveSummaryBuild({
+      peaks: lastResponse ? modelPeaksFromResponse(lastResponse) : null,
+      modelOrder: currentOrder,
+      taskMode: currentTaskMode
+    });
+  }
   function readCurrentDofSaveSnapshot() {
     return {
       params: { ...currentParams },
@@ -2705,6 +2737,7 @@
   async function saveResults() {
     await readDofSaveRunner().runDofSaveAction({
       readSnapshot: readCurrentDofSaveSnapshot,
+      readSummary: readCurrentDofSaveSummary,
       setStatus: fitStatusSet
     });
   }

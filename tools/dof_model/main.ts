@@ -8,6 +8,7 @@ import {
   DOF_MODE_BANDS as MODE_BANDS,
   modelPeaksFromResponse,
 } from "./dof_peak_detection";
+import { dofSaveSummaryBuild } from "./dof_save_summary";
 import {
   buildDofTargetOverlayTraces,
   buildDofTrace,
@@ -1898,6 +1899,14 @@ function bindPlotInteractions(plotEl: HTMLElement) {
   window.addEventListener("pointercancel", handleThumbPointerUp);
 }
 
+function readCurrentDofSaveSummary() {
+  return dofSaveSummaryBuild({
+    peaks: lastResponse ? modelPeaksFromResponse(lastResponse) : null,
+    modelOrder: currentOrder,
+    taskMode: currentTaskMode,
+  });
+}
+
 function readCurrentDofSaveSnapshot() {
   return {
     params: { ...currentParams },
@@ -1988,6 +1997,7 @@ async function loadResults() {
 async function saveResults() {
   await readDofSaveRunner().runDofSaveAction({
     readSnapshot: readCurrentDofSaveSnapshot,
+    readSummary: readCurrentDofSaveSummary,
     setStatus: fitStatusSet,
   });
 }
@@ -2007,6 +2017,7 @@ function readDofSaveRunner() {
     },
     runDofSaveAction(request: {
       readSnapshot: () => ReturnType<typeof readCurrentDofSaveSnapshot>;
+      readSummary?: () => ReturnType<typeof readCurrentDofSaveSummary>;
       setStatus: (message: string) => void;
     }) {
       const savePackage = (window as any).DofSaveSurface.buildDofSavePackage(
