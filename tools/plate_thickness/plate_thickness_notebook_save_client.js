@@ -1,38 +1,22 @@
 (function (globalScope) {
-  async function listNotebookSubjectsForPlateThicknessSave(workbookId) {
-    var response = await callPlateThicknessNotebookRpc("listSubjects", {
-      workbookId: workbookId,
-    });
-    return Array.isArray(response) ? response : [];
+  function listNotebookSubjectsForPlateThicknessSave(workbookId) {
+    return readSharedNotebookRpcClient().listNotebookSubjects(workbookId);
   }
 
-  async function saveNotebookPlateThicknessCapture(args) {
-    return await callPlateThicknessNotebookRpc("savePlateThicknessCapture", {
-      workbookId: args.workbookId,
-      payload: {
-        subject: args.subject,
-        event: args.event,
-        package: {
-          stateJson: String(args.package && args.package.stateJson || ""),
-        },
-      },
-    });
+  function saveNotebookPlateThicknessCapture(args) {
+    return readSharedNotebookRpcClient().saveNotebookStateCapture("savePlateThicknessCapture", args || {});
   }
 
-  async function callPlateThicknessNotebookRpc(method, request) {
-    var response = await globalScope.fetch("/notebook-api/rpc.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(Object.assign({ method: method }, request || {})),
-    });
-    var payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(String(payload && payload.message || "Notebook save failed."));
+  function readSharedNotebookRpcClient() {
+    if (globalScope.CommonNotebookRpcClient) {
+      return globalScope.CommonNotebookRpcClient;
     }
 
-    return payload;
+    if (typeof require === "function") {
+      return require("../common/notebook_rpc_client.js");
+    }
+
+    throw new Error("Common notebook rpc client is unavailable.");
   }
 
   var api = {
