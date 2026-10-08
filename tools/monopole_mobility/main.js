@@ -391,6 +391,7 @@ function copyResults() {
 async function saveResults() {
   const saved = await saveRunner.runMonopoleSaveAction({
     readSnapshot: readCurrentMonopoleSaveSnapshot,
+    readSummary: readCurrentMonopoleSaveSummary,
     setStatus(text) {
       outputs.status.textContent = text;
     },
@@ -446,6 +447,32 @@ function buildCopyResultLines() {
   );
 
   return payload;
+}
+
+function readCurrentMonopoleSaveSummary() {
+  const summaryApi = window.MonopoleSaveSummary;
+  if (!summaryApi) return [];
+  return summaryApi.buildMonopoleSaveSummary({
+    mode: currentMode,
+    inputs: readCurrentMonopoleSaveInputs(),
+    outputs: readCurrentMonopoleSaveOutputs(),
+    defaultsMatch: readCurrentMonopoleDefaultsMatch(),
+  });
+}
+
+function readCurrentMonopoleDefaultsMatch() {
+  if (currentMode === modes.STATIC) {
+    return matchesStaticDefaults({
+      freq: parseFloat(fields.freq.value),
+      deflection: parseFloat(fields.deflection.value),
+      mass: parseFloat(fields.mass.value),
+    });
+  }
+  return matchesDynamicDefaults({
+    f0: parseFloat(dynamicFields.f0.value),
+    f1: parseFloat(dynamicFields.f1.value),
+    addedMass: parseFloat(dynamicFields.mass.value),
+  });
 }
 
 function readCurrentMonopoleSaveSnapshot() {

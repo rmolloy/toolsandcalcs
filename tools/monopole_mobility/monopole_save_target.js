@@ -31,6 +31,10 @@
     return await runOfflineMonopoleSaveAction(request);
   }
 
+  function readSaveSummary(request) {
+    return typeof request.readSummary === "function" ? request.readSummary() : [];
+  }
+
   async function readNotebookConnectionForMonopoleSave() {
     if (!canRunConnectedMonopoleSave()) {
       return null;
@@ -54,6 +58,7 @@
       notebookName: surface.notebookName,
       subjects: subjects,
       defaultDisplayName: snapshot.name,
+      summary: readSaveSummary(request),
     });
 
     if (!selection) {

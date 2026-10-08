@@ -1,38 +1,22 @@
 (function (globalScope) {
-  async function listNotebookSubjectsForMonopoleSave(workbookId) {
-    var response = await callMonopoleNotebookRpc("listSubjects", {
-      workbookId: workbookId,
-    });
-    return Array.isArray(response) ? response : [];
+  function listNotebookSubjectsForMonopoleSave(workbookId) {
+    return readSharedNotebookRpcClient().listNotebookSubjects(workbookId);
   }
 
-  async function saveNotebookMonopoleCapture(args) {
-    return await callMonopoleNotebookRpc("saveMonopoleMobilityCapture", {
-      workbookId: args.workbookId,
-      payload: {
-        subject: args.subject,
-        event: args.event,
-        package: {
-          stateJson: String(args.package && args.package.stateJson || ""),
-        },
-      },
-    });
+  function saveNotebookMonopoleCapture(args) {
+    return readSharedNotebookRpcClient().saveNotebookStateCapture("saveMonopoleMobilityCapture", args || {});
   }
 
-  async function callMonopoleNotebookRpc(method, request) {
-    var response = await globalScope.fetch("/notebook-api/rpc.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
-      body: JSON.stringify(Object.assign({ method: method }, request || {})),
-    });
-    var payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(String(payload && payload.message || "Notebook save failed."));
+  function readSharedNotebookRpcClient() {
+    if (globalScope.CommonNotebookRpcClient) {
+      return globalScope.CommonNotebookRpcClient;
     }
 
-    return payload;
+    if (typeof require === "function") {
+      return require("../common/notebook_rpc_client.js");
+    }
+
+    throw new Error("Common notebook rpc client is unavailable.");
   }
 
   var api = {
