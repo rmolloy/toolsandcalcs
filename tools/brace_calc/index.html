@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="../common/styles.css">
   <link rel="stylesheet" href="../common/theme_resonance_shared.css">
   <link rel="stylesheet" href="../common/layout.css">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
   <style>
     :root {
       --card-bg: #0d1116;
@@ -451,12 +452,14 @@
 </script>
 <script data-feature="notebook">
   window.BraceNotebookAssetSources = [
+    "../common/notebook_rpc_client.js",
     "brace_notebook_connection_client.js",
     "brace_notebook_save_client.js",
     "brace_notebook_restore_client.js",
     "brace_notebook_restore.js"
   ];
   window.BraceNotebookModalSources = [
+    "../common/notebook_save_modal.js",
     "brace_save_modal.js"
   ];
 </script>
