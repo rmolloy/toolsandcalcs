@@ -1,9 +1,12 @@
+import "../common/notebook_rpc_client.js";
 export async function listNotebookSubjectsForResonanceSave(workbookId) {
-    const response = await resonanceNotebookRpcCall("listSubjects", { workbookId });
-    return Array.isArray(response) ? response : [];
+    return await readSharedNotebookRpcClient().listNotebookSubjects(workbookId);
 }
+// The reader's capture carries the recording and the plot as base64 beside the
+// state document, so it builds its own package and posts through the shared
+// client rather than the state-only save every other tool uses.
 export async function saveNotebookResonanceCapture(args) {
-    return await resonanceNotebookRpcCall("saveResonanceReaderCapture", {
+    return await readSharedNotebookRpcClient().callNotebookRpc("saveResonanceReaderCapture", {
         workbookId: args.workbookId,
         payload: {
             subject: args.subject,
@@ -15,20 +18,14 @@ export async function saveNotebookResonanceCapture(args) {
                 plotPngBase64: await resonanceBlobBase64Build(args.package.plotPngBlob),
             },
         },
-    });
+    }, { failureMessage: "Notebook save failed." });
 }
-async function resonanceNotebookRpcCall(method, request) {
-    const response = await fetch("/notebook-api/rpc.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ method, ...request }),
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-        throw new Error(String(payload?.message || "Notebook save failed."));
+function readSharedNotebookRpcClient() {
+    const shared = globalThis.CommonNotebookRpcClient;
+    if (!shared) {
+        throw new Error("Common notebook rpc client is unavailable.");
     }
-    return payload;
+    return shared;
 }
 async function resonanceBlobBase64Build(blob) {
     const bytes = new Uint8Array(await blob.arrayBuffer());

@@ -1,8 +1,17 @@
+import "../common/notebook_rpc_client.js";
+
+type SharedNotebookRpcClient = {
+  listNotebookSubjects: (workbookId: string) => Promise<any[]>;
+  callNotebookRpc: (method: string, request?: Record<string, unknown>, options?: { failureMessage?: string }) => Promise<any>;
+};
+
 export async function listNotebookSubjectsForResonanceSave(workbookId: string): Promise<any[]> {
-  const response = await resonanceNotebookRpcCall("listSubjects", { workbookId });
-  return Array.isArray(response) ? response : [];
+  return await readSharedNotebookRpcClient().listNotebookSubjects(workbookId);
 }
 
+// The reader's capture carries the recording and the plot as base64 beside the
+// state document, so it builds its own package and posts through the shared
+// client rather than the state-only save every other tool uses.
 export async function saveNotebookResonanceCapture(args: {
   workbookId: string;
   subject: Record<string, any>;
@@ -14,7 +23,7 @@ export async function saveNotebookResonanceCapture(args: {
     plotPngBlob: Blob;
   };
 }): Promise<any> {
-  return await resonanceNotebookRpcCall("saveResonanceReaderCapture", {
+  return await readSharedNotebookRpcClient().callNotebookRpc("saveResonanceReaderCapture", {
     workbookId: args.workbookId,
     payload: {
       subject: args.subject,
@@ -26,21 +35,15 @@ export async function saveNotebookResonanceCapture(args: {
         plotPngBase64: await resonanceBlobBase64Build(args.package.plotPngBlob),
       },
     },
-  });
+  }, { failureMessage: "Notebook save failed." });
 }
 
-async function resonanceNotebookRpcCall(method: string, request: Record<string, any>): Promise<any> {
-  const response = await fetch("/notebook-api/rpc.php", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "same-origin",
-    body: JSON.stringify({ method, ...request }),
-  });
-  const payload = await response.json();
-  if (!response.ok) {
-    throw new Error(String(payload?.message || "Notebook save failed."));
+function readSharedNotebookRpcClient(): SharedNotebookRpcClient {
+  const shared = (globalThis as any).CommonNotebookRpcClient as SharedNotebookRpcClient | undefined;
+  if (!shared) {
+    throw new Error("Common notebook rpc client is unavailable.");
   }
-  return payload;
+  return shared;
 }
 
 async function resonanceBlobBase64Build(blob: Blob): Promise<string> {

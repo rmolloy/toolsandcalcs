@@ -5,6 +5,7 @@ import { listNotebookSubjectsForResonanceSave, saveNotebookResonanceCapture } fr
 import { downloadResonanceCapturePackage } from "./resonate_save_package_download.js";
 import { openConnectedResonanceSaveModal } from "./resonate_save_modal.js";
 import { openResonanceSaveMenu } from "./resonate_save_menu.js";
+import { resonanceSaveSummaryBuild } from "./resonate_save_summary.js";
 export function resonanceSaveRunnerCreate() {
     return {
         readResonanceSaveSurface,
@@ -46,15 +47,16 @@ async function resonanceSaveActionForSurface(saveSurfacePromise, request) {
 }
 async function resonanceConnectedSaveActionRun(saveSurface, request) {
     const subjects = await listNotebookSubjectsForResonanceSave(saveSurface.workbookId);
+    const recordingLabel = resonanceCaptureRecordingLabelRead(request.state);
     const selection = await openConnectedResonanceSaveModal({
         measureMode: request.state.measureMode,
         notebookName: saveSurface.notebookName,
         subjects,
+        summary: resonanceSaveSummaryBuild(request.state, recordingLabel),
     });
     if (!selection) {
         return false;
     }
-    const recordingLabel = resonanceCaptureRecordingLabelRead(request.state);
     const stateJson = JSON.stringify(resonanceCaptureStateJsonBuild({
         toolVersion: resonanceReaderToolVersionRead(),
         savedAtIso: new Date().toISOString(),

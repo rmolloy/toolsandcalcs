@@ -1,17 +1,14 @@
-export async function readNotebookRestorePayloadForResonance(workbookId, eventId, fetchImpl = fetch) {
-    const response = await fetchImpl("/notebook-api/rpc.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-            method: "readToolRestorePayload",
-            workbookId,
-            payload: { eventId },
-        }),
+import "../common/notebook_rpc_client.js";
+export async function readNotebookRestorePayloadForResonance(workbookId, eventId, fetchImpl) {
+    return await readSharedNotebookRpcClient().readNotebookRestorePayload(workbookId, eventId, {
+        fetchImpl: fetchImpl || null,
+        fetchUnavailableMessage: "Resonance notebook restore fetch is unavailable.",
     });
-    const payload = await response.json();
-    if (!response.ok) {
-        throw new Error(String(payload?.message || "Notebook restore failed."));
+}
+function readSharedNotebookRpcClient() {
+    const shared = globalThis.CommonNotebookRpcClient;
+    if (!shared) {
+        throw new Error("Common notebook rpc client is unavailable.");
     }
-    return payload || {};
+    return shared;
 }
