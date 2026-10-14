@@ -1,5 +1,13 @@
 (function (globalScope) {
   var latestBraceState = [];
+  // localized-runtime-messages:start
+  var flexuralSaveMessages = Object.freeze({
+    loadFileHint: "Load a saved flexural state JSON file.",
+    loadFailure: "Unable to load Flexural Rigidity save.",
+    notebookEventRestored: "Notebook event restored.",
+    jsonPackageDownloaded: "JSON package downloaded."
+  });
+  // localized-runtime-messages:end
 
   globalScope.addEventListener("braceLayoutChanged", function (event) {
     latestBraceState = readBraceStateFromDetail(event && event.detail);
@@ -21,7 +29,7 @@
     }
 
     void initializeFlexuralSaveSurface(saveButton);
-    loadButton.title = "Load a saved flexural state JSON file.";
+    loadButton.title = flexuralSaveMessages.loadFileHint;
 
     saveButton.addEventListener("click", function () {
       void saveCurrentFlexuralState();
@@ -64,7 +72,7 @@
       );
     } catch (error) {
       console.error("[FlexuralRigidity] Failed to load save", error);
-      window.alert("Unable to load Flexural Rigidity save.");
+      window.alert(flexuralSaveMessages.loadFailure);
     } finally {
       loadFileInput.value = "";
     }
@@ -94,7 +102,7 @@
     });
 
     if (restored) {
-      writeFlexuralSaveStatus("Notebook event restored.");
+      writeFlexuralSaveStatus(flexuralSaveMessages.notebookEventRestored);
     }
 
     return restored;
@@ -189,7 +197,7 @@
       runFlexuralSaveAction: function (request) {
         var savePackage = readFlexuralSaveSurfaceApi().buildFlexuralSavePackage(request.readSnapshot());
         readFlexuralSaveSurfaceApi().downloadFlexuralSavePackage({ document: document, URL: URL }, savePackage);
-        request.setStatus("JSON package downloaded.");
+        request.setStatus(flexuralSaveMessages.jsonPackageDownloaded);
         return Promise.resolve(true);
       },
     };

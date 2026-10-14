@@ -53,8 +53,15 @@
         stateJson: savePackage.text,
       },
     });
-    request.setStatus("Saved to " + (surface.notebookName || "Notebook") + ".");
+    request.setStatus(formatBraceSavedStatus(surface.notebookName));
     return true;
+  }
+
+  function formatBraceSavedStatus(notebookName) {
+    return "Saved to {notebookName}.".replace(
+      "{notebookName}",
+      notebookName || "Notebook"
+    );
   }
 
   async function runOfflineBraceSaveAction(request) {

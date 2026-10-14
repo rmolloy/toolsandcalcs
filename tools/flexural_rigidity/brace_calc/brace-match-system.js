@@ -100,7 +100,10 @@
         if (unchangedCount === 0) {
             return "Actual top held fixed; all brace heights adjusted to match the plan system rigidity.";
         }
-        return `Actual top and ${unchangedCount} ${unchangedCount === 1 ? "brace" : "braces"} held unchanged; remaining brace heights adjusted to match the plan system rigidity.`;
+        if (unchangedCount === 1) {
+            return `Actual top and ${unchangedCount} brace held unchanged; remaining brace heights adjusted to match the plan system rigidity.`;
+        }
+        return `Actual top and ${unchangedCount} braces held unchanged; remaining brace heights adjusted to match the plan system rigidity.`;
     }
     function braceMatchSystemSegmentsScaleHeight(segments, heightScale) {
         return segments.map((segment) => ({

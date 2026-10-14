@@ -3,6 +3,14 @@
   const calc = window.FlexuralRigidity;
   if (!calc) return;
 
+  // localized-runtime-messages:start
+  const flexuralResultsMessages = Object.freeze({
+    awaitingBraceLayout: "Awaiting brace layout.",
+    errorTemplate: "Error: {message}",
+    liveComputedFromInputs: "Live: computed from current inputs."
+  });
+  // localized-runtime-messages:end
+
   const spanInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_span_input"));
   const thicknessInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_thickness_input"));
   const modulusInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_modulus_input"));
@@ -82,7 +90,7 @@
       const modulusTop = (Number(modulusInput.value) || DEFAULT_MODULUS) * 1000;
       const braces = buildBraceSpecs();
       if (!braces.length) {
-        statusEl.textContent = "Awaiting brace layout.";
+        statusEl.textContent = flexuralResultsMessages.awaitingBraceLayout;
         writeResultValues("—", "—", "—", "—");
         return;
       }
@@ -99,11 +107,11 @@
         `${format(slice.centroid, 2)} mm`,
         firstBrace ? `${format(firstBrace.height, 1)} mm` : "—"
       );
-      statusEl.textContent = "Live: computed from current inputs.";
+      statusEl.textContent = flexuralResultsMessages.liveComputedFromInputs;
     } catch (error) {
       writeResultValues("—", "—", "—", "—");
       const message = error instanceof Error ? error.message : String(error);
-      statusEl.textContent = `Error: ${message}`;
+      statusEl.textContent = flexuralResultsMessages.errorTemplate.replace("{message}", message);
     }
   }
 

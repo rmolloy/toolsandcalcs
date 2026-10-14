@@ -1,4 +1,12 @@
 (function (globalScope) {
+  // localized-runtime-messages:start
+  var flexuralSaveSurfaceMessages = Object.freeze({
+    downloadJson: "Download JSON",
+    offlineSaveHint: "Notebook saving is not available here. Download the flexural state instead.",
+    invalidSaveFile: "This file is not a Flexural Rigidity save."
+  });
+  // localized-runtime-messages:end
+
   function readSharedOfflineSaveSurface() {
     if (globalScope.CommonOfflineSaveSurface) {
       return globalScope.CommonOfflineSaveSurface;
@@ -37,8 +45,8 @@
 
   function readFlexuralSaveSurface() {
     return readSharedOfflineSaveSurface().readOfflineDownloadSaveSurface({
-      label: "Download JSON",
-      hint: "Notebook saving is not available here. Download the flexural state instead.",
+      label: flexuralSaveSurfaceMessages.downloadJson,
+      hint: flexuralSaveSurfaceMessages.offlineSaveHint,
     });
   }
 
@@ -86,7 +94,7 @@
       };
     }
 
-    throw new Error("This file is not a Flexural Rigidity save.");
+    throw new Error(flexuralSaveSurfaceMessages.invalidSaveFile);
   }
 
   function buildFlexuralSavePayload(snapshot, exportedAt) {

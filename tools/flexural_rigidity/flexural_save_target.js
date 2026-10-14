@@ -1,4 +1,14 @@
 (function (globalScope) {
+  // localized-runtime-messages:start
+  var flexuralSaveTargetMessages = Object.freeze({
+    save: "Save",
+    notebook: "Notebook",
+    savedToTemplate: "Saved to {notebookName}.",
+    jsonPackageDownloaded: "JSON package downloaded.",
+    defaultDisplayName: "Top Plate"
+  });
+  // localized-runtime-messages:end
+
   function flexuralSaveRunnerCreate() {
     return {
       readFlexuralSaveSurface: readFlexuralSaveSurface,
@@ -12,7 +22,7 @@
     if (connection) {
       return {
         mode: "lab-connected",
-        label: "Save",
+        label: flexuralSaveTargetMessages.save,
         workbookId: connection.workbookId,
         notebookName: connection.notebookName,
       };
@@ -53,14 +63,21 @@
         stateJson: savePackage.text,
       },
     });
-    request.setStatus("Saved to " + (surface.notebookName || "Notebook") + ".");
+    request.setStatus(formatSavedToStatus(surface.notebookName));
     return true;
+  }
+
+  function formatSavedToStatus(notebookName) {
+    return flexuralSaveTargetMessages.savedToTemplate.replace(
+      "{notebookName}",
+      notebookName || flexuralSaveTargetMessages.notebook
+    );
   }
 
   async function runOfflineFlexuralSaveAction(request) {
     var savePackage = readFlexuralSaveSurfaceApi().buildFlexuralSavePackage(request.readSnapshot());
     readFlexuralSaveSurfaceApi().downloadFlexuralSavePackage({ document: globalScope.document, URL: globalScope.URL }, savePackage);
-    request.setStatus("JSON package downloaded.");
+    request.setStatus(flexuralSaveTargetMessages.jsonPackageDownloaded);
     return Promise.resolve(true);
   }
 
@@ -81,7 +98,7 @@
   }
 
   function readFlexuralDefaultDisplayName(_snapshot) {
-    return "Top Plate";
+    return flexuralSaveTargetMessages.defaultDisplayName;
   }
 
   function readFlexuralSaveSurfaceApi() {

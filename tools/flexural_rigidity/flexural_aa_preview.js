@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // localized-runtime-messages:start
+  const flexuralAaPreviewMessages = Object.freeze({
+    summaryTemplate: "Span: {span} mm · Top thickness: {thickness} mm · Braces: {braceCount}"
+  });
+  // localized-runtime-messages:end
   const spanInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_span_input"));
   const thicknessInput = /** @type {HTMLInputElement|null} */ (document.getElementById("top_thickness_input"));
   const previewTargets = [
@@ -169,7 +174,14 @@ document.addEventListener("DOMContentLoaded", () => {
     target.centroidLine.setAttribute("x2", (offsetX + spanDraw).toString());
     target.centroidLine.setAttribute("y1", centroidY.toString());
     target.centroidLine.setAttribute("y2", centroidY.toString());
-    target.status.textContent = `Span: ${span.toFixed(0)} mm · Top thickness: ${topHeight.toFixed(1)} mm · Braces: ${braces.length}`;
+    target.status.textContent = formatPreviewStatus(span, topHeight, braces.length);
+  }
+
+  function formatPreviewStatus(span, thickness, braceCount) {
+    return flexuralAaPreviewMessages.summaryTemplate
+      .replace("{span}", span.toFixed(0))
+      .replace("{thickness}", thickness.toFixed(1))
+      .replace("{braceCount}", String(braceCount));
   }
 
   spanInput.addEventListener("input", renderAaPreview);
@@ -195,4 +207,3 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   renderAaPreview();
 });
-

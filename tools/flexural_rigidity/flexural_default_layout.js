@@ -8,7 +8,7 @@
     },
     braces: [
       {
-        name: "Brace 1",
+        name: `Brace ${1}`,
         segments: [
           {
             label: "Base",
@@ -21,7 +21,7 @@
         ]
       },
       {
-        name: "Brace 2",
+        name: `Brace ${2}`,
         segments: [
           {
             label: "Base",
@@ -42,7 +42,7 @@
         ]
       },
       {
-        name: "Brace 3",
+        name: `Brace ${3}`,
         segments: [
           {
             label: "Base",
@@ -63,7 +63,7 @@
         ]
       },
       {
-        name: "Brace 4",
+        name: `Brace ${4}`,
         segments: [
           {
             label: "Base",

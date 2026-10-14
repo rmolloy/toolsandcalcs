@@ -1,16 +1,24 @@
 (function (globalScope) {
+  // localized-runtime-messages:start
+  var flexuralSaveModalMessages = Object.freeze({
+    dialogLabel: "Save Flexural Rigidity",
+    defaultTitle: "Flexural rigidity",
+    defaultDisplayName: "Top Plate"
+  });
+  // localized-runtime-messages:end
+
   function openConnectedFlexuralSaveModal(args) {
     var settings = args || {};
     return readSharedNotebookSaveModal().openNotebookSaveModal({
-      dialogLabel: "Save Flexural Rigidity",
-      title: settings.title || "Flexural rigidity",
+      dialogLabel: flexuralSaveModalMessages.dialogLabel,
+      title: settings.title || flexuralSaveModalMessages.defaultTitle,
       notebookName: settings.notebookName,
       subjects: settings.subjects,
       packageFiles: ["state.json"],
       newSubject: {
         typeKey: "MATERIAL",
         subtypeKey: "PLATE_STOCK",
-        displayNamePlaceholder: settings.defaultDisplayName || "Top Plate",
+        displayNamePlaceholder: settings.defaultDisplayName || flexuralSaveModalMessages.defaultDisplayName,
       },
     });
   }
