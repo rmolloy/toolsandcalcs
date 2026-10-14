@@ -1170,7 +1170,7 @@
     saveSummaryModelLabel: "Model",
     saveSummaryModeledProvenance: "modeled",
     saveSummaryTopModeLabel: "Top T(1,1)\u2082",
-    saveDownloadLabel: "Download JSON",
+    saveDownloadLabel: "Save",
     saveDownloadHint: "Notebook saving is not available here. Download the model instead.",
     saveSavedToNotebookTemplate: "Saved to {notebookName}.",
     sidesAreaLabel: "Sides Area (m\xB2)",
