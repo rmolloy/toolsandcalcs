@@ -119,13 +119,14 @@ export function computeBraceGeometry(defaultBreadth: number, segments: BraceSegm
 
   for (const segment of segments) {
     const { shape, height } = segment;
-    assertPositive(height, `${segment.label || "Segment"} height`);
+    const segmentLabel = segment.label || "Segment";
+    assertPositive(height, `${segmentLabel} height`);
     const segBreadth = segment.breadth ?? defaultBreadth;
-    assertPositive(segBreadth, `${segment.label || "Segment"} breadth`);
+    assertPositive(segBreadth, `${segmentLabel} breadth`);
     const density = segment.density ?? DEFAULT_DENSITY;
-    assertPositive(density, `${segment.label || "Segment"} density`);
+    assertPositive(density, `${segmentLabel} density`);
     const modulus = segment.modulus ?? DEFAULT_MODULUS;
-    assertPositive(modulus, `${segment.label || "Segment"} modulus`);
+    assertPositive(modulus, `${segmentLabel} modulus`);
     const props = shapeProperties(shape, segBreadth, height);
     const centroidAbs = runningBase + props.centroid;
     areaSum += props.area;

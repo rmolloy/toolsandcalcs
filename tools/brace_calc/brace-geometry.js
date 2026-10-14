@@ -47,13 +47,14 @@
         const rawSegments = [];
         for (const segment of segments) {
             const { shape, height } = segment;
-            assertPositive(height, `${segment.label || "Segment"} height`);
+            const segmentLabel = segment.label || "Segment";
+            assertPositive(height, `${segmentLabel} height`);
             const segBreadth = (_a = segment.breadth) !== null && _a !== void 0 ? _a : defaultBreadth;
-            assertPositive(segBreadth, `${segment.label || "Segment"} breadth`);
+            assertPositive(segBreadth, `${segmentLabel} breadth`);
             const density = (_b = segment.density) !== null && _b !== void 0 ? _b : DEFAULT_DENSITY;
-            assertPositive(density, `${segment.label || "Segment"} density`);
+            assertPositive(density, `${segmentLabel} density`);
             const modulus = (_c = segment.modulus) !== null && _c !== void 0 ? _c : DEFAULT_MODULUS;
-            assertPositive(modulus, `${segment.label || "Segment"} modulus`);
+            assertPositive(modulus, `${segmentLabel} modulus`);
             const props = shapeProperties(shape, segBreadth, height);
             const centroidAbs = runningBase + props.centroid;
             areaSum += props.area;

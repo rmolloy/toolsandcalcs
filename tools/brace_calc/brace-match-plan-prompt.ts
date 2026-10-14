@@ -572,13 +572,20 @@ function braceMatchPlanApplyLabelWrite(
   count: number,
   systemMatch: boolean,
 ) {
-  if (!systemMatch) {
-    button.textContent = `Apply to ${count} ${count === 1 ? "brace" : "braces"}`;
-    return;
-  }
-  button.textContent = count === 0
-    ? "Apply top only"
-    : `Apply ${count} ${count === 1 ? "change" : "changes"}`;
+  button.textContent = systemMatch
+    ? braceMatchPlanSystemApplyLabelFormat(count)
+    : braceMatchPlanBraceApplyLabelFormat(count);
+}
+
+function braceMatchPlanBraceApplyLabelFormat(count: number) {
+  if (count === 1) return `Apply to ${count} brace`;
+  return `Apply to ${count} braces`;
+}
+
+function braceMatchPlanSystemApplyLabelFormat(count: number) {
+  if (count === 0) return "Apply top only";
+  if (count === 1) return `Apply ${count} change`;
+  return `Apply ${count} changes`;
 }
 
 function braceMatchPlanRowsRender(
