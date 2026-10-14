@@ -1,6 +1,6 @@
-import { BASE_PARAMS, FIT_BOUNDS } from "./resonate_fit_defaults.js?rev=1d50c39bd456";
-import { modeBands } from "./resonate_mode_config.js?rev=1d50c39bd456";
-import { adaptParamsToSolver as adaptParamsToSolverShared, computeResponseSafe as computeResponseSafeShared, } from "../common/dof_solver_adapter.js?rev=1d50c39bd456";
+import { BASE_PARAMS, FIT_BOUNDS } from "./resonate_fit_defaults.js?rev=88a3838e0e5a";
+import { modeBands } from "./resonate_mode_config.js?rev=88a3838e0e5a";
+import { adaptParamsToSolver as adaptParamsToSolverShared, computeResponseSafe as computeResponseSafeShared, } from "../common/dof_solver_adapter.js?rev=88a3838e0e5a";
 function clampToBounds(id, value) {
     const b = FIT_BOUNDS[id];
     if (!b || !Number.isFinite(value))

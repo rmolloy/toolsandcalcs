@@ -1,12 +1,12 @@
-import { resonanceCapturePlotPngBlobBuild, resonanceCaptureStateJsonBuild, resonanceCaptureWaveBlobBuild, } from "./resonate_capture_package.js?rev=1d50c39bd456";
-import { persistResonanceNotebookConnectDraft } from "./resonate_notebook_connect_draft.js?rev=1d50c39bd456";
-import { readNotebookConnectionForResonanceSave } from "./resonate_notebook_connection_client.js?rev=1d50c39bd456";
-import { listNotebookSubjectsForResonanceSave, saveNotebookResonanceCapture } from "./resonate_notebook_save_client.js?rev=1d50c39bd456";
-import { downloadResonanceCapturePackage } from "./resonate_save_package_download.js?rev=1d50c39bd456";
-import { openConnectedResonanceSaveModal } from "./resonate_save_modal.js?rev=1d50c39bd456";
-import { openResonanceSaveMenu } from "./resonate_save_menu.js?rev=1d50c39bd456";
-import { resonanceSaveSummaryBuild } from "./resonate_save_summary.js?rev=1d50c39bd456";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=1d50c39bd456";
+import { resonanceCapturePlotPngBlobBuild, resonanceCaptureStateJsonBuild, resonanceCaptureWaveBlobBuild, } from "./resonate_capture_package.js?rev=88a3838e0e5a";
+import { persistResonanceNotebookConnectDraft } from "./resonate_notebook_connect_draft.js?rev=88a3838e0e5a";
+import { readNotebookConnectionForResonanceSave } from "./resonate_notebook_connection_client.js?rev=88a3838e0e5a";
+import { listNotebookSubjectsForResonanceSave, saveNotebookResonanceCapture } from "./resonate_notebook_save_client.js?rev=88a3838e0e5a";
+import { downloadResonanceCapturePackage } from "./resonate_save_package_download.js?rev=88a3838e0e5a";
+import { openConnectedResonanceSaveModal } from "./resonate_save_modal.js?rev=88a3838e0e5a";
+import { openResonanceSaveMenu } from "./resonate_save_menu.js?rev=88a3838e0e5a";
+import { resonanceSaveSummaryBuild } from "./resonate_save_summary.js?rev=88a3838e0e5a";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=88a3838e0e5a";
 export function resonanceSaveRunnerCreate() {
     return {
         readResonanceSaveSurface,

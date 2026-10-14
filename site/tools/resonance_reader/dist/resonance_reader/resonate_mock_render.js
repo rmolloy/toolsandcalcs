@@ -1,4 +1,4 @@
-import { measureModeNormalize, modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js?rev=1d50c39bd456";
+import { measureModeNormalize, modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js?rev=88a3838e0e5a";
 export function renderMock(deps) {
     const measureMode = measureModeNormalize(window.FFTState?.measureMode);
     const mockModes = mockModesBuildFromMeasureMode(measureMode);
