@@ -7,7 +7,7 @@
     }
 
     var payload = await readRestorePayload(args, request);
-    var snapshot = readMonopoleNotebookRestoreSnapshot(payload.stateDocument);
+    var snapshot = readMonopoleNotebookRestoreSnapshot(payload.stateDocument, args.messages);
 
     if (String(payload.toolId || "").trim() !== "monopole_mobility" || !snapshot) {
       return false;
@@ -35,12 +35,12 @@
       .readNotebookRestorePayloadForMonopole(request.workbookId, request.eventId, args.fetchImpl);
   }
 
-  function readMonopoleNotebookRestoreSnapshot(stateDocument) {
+  function readMonopoleNotebookRestoreSnapshot(stateDocument, messages) {
     if (!stateDocument) {
       return null;
     }
 
-    return readMonopoleSaveSurface().readMonopoleSavePackageDocument(stateDocument);
+    return readMonopoleSaveSurface().readMonopoleSavePackageDocument(stateDocument, messages);
   }
 
   function clearMonopoleNotebookRestoreRequest(runtime) {

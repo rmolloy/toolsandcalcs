@@ -35,10 +35,11 @@
     throw new Error("Common offline save surface is unavailable.");
   }
 
-  function readMonopoleSaveSurface() {
+  function readMonopoleSaveSurface(messages) {
+    var copy = messages || {};
     return readSharedOfflineSaveSurface().readOfflineDownloadSaveSurface({
-      label: "Download JSON",
-      hint: "Notebook saving is not available here. Download the export instead.",
+      label: copy.downloadJson || "Download JSON",
+      hint: copy.notebookSavingUnavailable || "Notebook saving is not available here. Download the export instead.",
     });
   }
 
@@ -58,22 +59,24 @@
     });
   }
 
-  async function readMonopoleSavePackageFile(file) {
+  async function readMonopoleSavePackageFile(file, messages) {
     return readMonopoleSavePackageDocument(
-      await readSharedToolDocumentFile().readJsonDocumentFromFile(file)
+      await readSharedToolDocumentFile().readJsonDocumentFromFile(file),
+      messages
     );
   }
 
-  function readMonopoleSavePackageDocument(value) {
+  function readMonopoleSavePackageDocument(value, messages) {
     var documentValue = value || {};
+    var copy = messages || {};
     var type = String(documentValue.toolDocumentType || documentValue.packageType || "").trim();
 
     if (!isMonopoleSaveDocumentType(type)) {
-      throw new Error("This file is not a Monopole Mobility save.");
+      throw new Error(copy.notMonopoleSave || "This file is not a Monopole Mobility save.");
     }
 
     return {
-      name: readMonopoleSaveInstrumentName(documentValue),
+      name: readMonopoleSaveInstrumentName(documentValue, copy),
       type: readMonopoleSaveInstrumentType(documentValue),
       mode: readMonopoleSaveMode(documentValue),
       inputs: readMonopoleSaveInputs(documentValue),
@@ -106,8 +109,9 @@
     return value === "MONOPOLE_MOBILITY_SAVE" || value === "MONOPOLE_MOBILITY_EXPORT";
   }
 
-  function readMonopoleSaveInstrumentName(value) {
-    return String(value.instrument && value.instrument.name || "Untitled sample").trim() || "Untitled sample";
+  function readMonopoleSaveInstrumentName(value, messages) {
+    var untitledSample = messages.untitledSample || "Untitled sample";
+    return String(value.instrument && value.instrument.name || untitledSample).trim() || untitledSample;
   }
 
   function readMonopoleSaveInstrumentType(value) {

@@ -13,6 +13,73 @@ const modes = {
 };
 let currentMode = modes.STATIC;
 
+// localized-runtime-messages:start
+const monopoleRuntimeMessages = Object.freeze({
+  addedMassGreaterThanZero: "Added mass must be greater than zero.",
+  clipboardCopyFailed: "Clipboard copy failed",
+  copiedResultsToClipboard: "Copied results to clipboard",
+  copyAddedMass: "Added mass (g): {value}",
+  copyDeflection: "Deflection (mm): {value}",
+  copyDynamicMode: "Dynamic (mass-loading)",
+  copyEffectiveMass: "M_eff (g): {value}",
+  copyLoadedFrequency: "f1 (Hz): {value}",
+  copyMass: "Mass (kg): {value}",
+  copyMobilityScore: "Mobility score: {value}",
+  copyMode: "Mode: {mode}",
+  copyStaticMode: "Static (Gore jig)",
+  copyStiffness: "K (N/m): {value}",
+  copyUncoupledFrequency: "f_u (Hz): {value}",
+  copyUnloadedFrequency: "f0 (Hz): {value}",
+  deflectionHighWarning: "Deflection is high. Reduce test mass to avoid overloading the top.",
+  deflectionSmallWarning: "Deflection is very small. Confirm gauge reading and load; may be outside normal jig range.",
+  downloadJson: "Download JSON",
+  dynamicAddedMassWarning: "Added mass is outside the usual 2–80 g range. Aim for a small, known load at the bridge.",
+  dynamicFrequencyWarning: "f₀ is outside 90–240 Hz. Confirm the unloaded monopole peak.",
+  dynamicMode: "Dynamic Mode",
+  frequencyShiftSmallWarning: "Frequency shift is very small. Ensure the added mass is secure and peaks are clean.",
+  invalidDenominator: "Frequencies produce an invalid denominator. Re-check f0 and f1.",
+  invalidEffectiveMass: "Inputs produce an invalid effective mass. Re-check values.",
+  liveCustomInput: "Live: custom input ({mode})",
+  liveDefaultCalculation: "Live: default calculation ({mode})",
+  loadedCalculation: "Loaded {name}",
+  loadedFrequencyMustBeLower: "Loaded frequency f1 must be lower than unloaded f0.",
+  locale: "en-US",
+  mobilityHighWarning: "{mode}: Mobility >40 suggests a very compliant top. Confirm mass and readings.",
+  mobilityLowWarning: "{mode}: Mobility <15 suggests a very stiff top. Confirm inputs and units.",
+  notebookEventRestored: "Notebook event restored.",
+  notebook: "Notebook",
+  notebookSavingUnavailable: "Notebook saving is not available here. Download the export instead.",
+  notMonopoleSave: "This file is not a Monopole Mobility save.",
+  jsonPackageDownloaded: "JSON package downloaded",
+  save: "Save",
+  savedToNotebook: "Saved to {notebookName}.",
+  saveMonopoleMobility: "Save Monopole Mobility",
+  monopoleMobility: "Monopole mobility",
+  benchOm: "Bench OM",
+  summaryAddedMass: "Added mass",
+  summaryDeflection: "Deflection",
+  summaryDynamicMassLoading: "Dynamic mass loading",
+  summaryEffectiveMass: "Effective mass",
+  summaryFrequency: "Frequency",
+  summaryLoadedFrequency: "Loaded frequency",
+  summaryMethod: "Method",
+  summaryMobilityScore: "Mobility score",
+  summaryStaticDeflection: "Static deflection",
+  summaryTestMass: "Test mass",
+  summaryTopStiffness: "Top stiffness K",
+  summaryUnloadedFrequency: "Unloaded frequency",
+  staticFrequencyWarning: "fₐ is outside 90–220 Hz. Re-check the sealed-soundhole peak.",
+  staticMode: "Static Mode",
+  testMassWarning: "Test mass is outside the usual 0.3–2.0 kg band. Typical jigs use 0.5–1.5 kg.",
+  typeClassical: "Classical",
+  typeOther: "Other",
+  typeSteelString: "Steel-string",
+  unableToLoadJsonPackage: "Unable to load JSON package",
+  untitledSample: "Untitled sample",
+  waitingForCompleteInputs: "Waiting for complete inputs…",
+});
+// localized-runtime-messages:end
+
 const defaults = {
   name: "Rick Molloy OM (10/25/2025)",
   type: "steel",
@@ -29,13 +96,20 @@ const defaults = {
 };
 
 const typeLabels = {
-  steel: "Steel-string",
-  classical: "Classical",
-  other: "Other",
+  steel: monopoleRuntimeMessages.typeSteelString,
+  classical: monopoleRuntimeMessages.typeClassical,
+  other: monopoleRuntimeMessages.typeOther,
 };
 
-const getTypeLabel = (value) => typeLabels[value] || "Other";
+const getTypeLabel = (value) => typeLabels[value] || monopoleRuntimeMessages.typeOther;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+function formatMonopoleMessage(template, values) {
+  return Object.entries(values).reduce(
+    (message, [key, value]) => message.replaceAll(`{${key}}`, String(value)),
+    template,
+  );
+}
 
 const sliders = {
   freq: document.getElementById("freq"),
@@ -102,7 +176,7 @@ const saveRunner = readMonopoleSaveRunner();
 const perTabSession = readMonopolePerTabSession();
 
 const formatter = (options = {}) =>
-  new Intl.NumberFormat("en-US", {
+  new Intl.NumberFormat(monopoleRuntimeMessages.locale, {
     maximumFractionDigits: options.max ?? 2,
     minimumFractionDigits: options.min ?? 0,
     notation: options.notation ?? "standard",
@@ -111,7 +185,7 @@ const formatter = (options = {}) =>
 const fmtMobility = formatter({ min: 1, max: 1 });
 
 function updateInstrumentLabel() {
-  const name = nameInput.value.trim() || "Untitled sample";
+  const name = nameInput.value.trim() || monopoleRuntimeMessages.untitledSample;
   const typeLabel = getTypeLabel(typeSelect.value);
   instrumentDisplay.textContent = `${name} • ${typeLabel}`;
 }
@@ -126,7 +200,7 @@ function computeStaticMobility(freq, deflection, mass) {
     mass > 0;
 
   if (!valid) {
-    return { ok: false, message: "Waiting for complete inputs…" };
+    return { ok: false, message: monopoleRuntimeMessages.waitingForCompleteInputs };
   }
 
   const defM = deflection / 1000;
@@ -152,27 +226,27 @@ function computeDynamicMobility(f0, f1, addedMassGrams) {
     f1 > 0;
 
   if (!valid) {
-    return { ok: false, message: "Waiting for complete inputs…" };
+    return { ok: false, message: monopoleRuntimeMessages.waitingForCompleteInputs };
   }
 
   if (addedMassGrams <= 0) {
-    return { ok: false, message: "Added mass must be greater than zero." };
+    return { ok: false, message: monopoleRuntimeMessages.addedMassGreaterThanZero };
   }
 
   if (f1 >= f0) {
-    return { ok: false, message: "Loaded frequency f1 must be lower than unloaded f0." };
+    return { ok: false, message: monopoleRuntimeMessages.loadedFrequencyMustBeLower };
   }
 
   const addedMassKg = addedMassGrams / 1000;
   const denom = Math.pow(f0, 2) - Math.pow(f1, 2);
 
   if (denom <= 0) {
-    return { ok: false, message: "Frequencies produce an invalid denominator. Re-check f0 and f1." };
+    return { ok: false, message: monopoleRuntimeMessages.invalidDenominator };
   }
 
   const meffKg = (Math.pow(f1, 2) * addedMassKg) / denom;
   if (!Number.isFinite(meffKg) || meffKg <= 0) {
-    return { ok: false, message: "Inputs produce an invalid effective mass. Re-check values." };
+    return { ok: false, message: monopoleRuntimeMessages.invalidEffectiveMass };
   }
 
   const stiffness = Math.pow(2 * Math.PI * f0, 2) * meffKg;
@@ -190,32 +264,32 @@ function computeDynamicMobility(f0, f1, addedMassGrams) {
 function getStaticWarnings({ freq, deflection, mass, mobilityScore }) {
   const notes = [];
   if (freq < 90 || freq > 220) {
-    notes.push("f\u2090 is outside 90–220 Hz. Re-check the sealed-soundhole peak.");
+    notes.push(monopoleRuntimeMessages.staticFrequencyWarning);
   }
   if (deflection < 0.05) {
-    notes.push("Deflection is very small. Confirm gauge reading and load; may be outside normal jig range.");
+    notes.push(monopoleRuntimeMessages.deflectionSmallWarning);
   } else if (deflection > 0.5) {
-    notes.push("Deflection is high. Reduce test mass to avoid overloading the top.");
+    notes.push(monopoleRuntimeMessages.deflectionHighWarning);
   }
   if (mass < 0.3 || mass > 2.0) {
-    notes.push("Test mass is outside the usual 0.3–2.0 kg band. Typical jigs use 0.5–1.5 kg.");
+    notes.push(monopoleRuntimeMessages.testMassWarning);
   }
-  appendMobilityNotes(mobilityScore, notes, "Static Mode");
+  appendMobilityNotes(mobilityScore, notes, monopoleRuntimeMessages.staticMode);
   return notes;
 }
 
 function getDynamicWarnings({ f0, f1, addedMass, mobilityScore }) {
   const notes = [];
   if (f0 < 90 || f0 > 240) {
-    notes.push("f\u2080 is outside 90–240 Hz. Confirm the unloaded monopole peak.");
+    notes.push(monopoleRuntimeMessages.dynamicFrequencyWarning);
   }
   if (addedMass < 2 || addedMass > 80) {
-    notes.push("Added mass is outside the usual 2–80 g range. Aim for a small, known load at the bridge.");
+    notes.push(monopoleRuntimeMessages.dynamicAddedMassWarning);
   }
   if (f0 - f1 < 2) {
-    notes.push("Frequency shift is very small. Ensure the added mass is secure and peaks are clean.");
+    notes.push(monopoleRuntimeMessages.frequencyShiftSmallWarning);
   }
-  appendMobilityNotes(mobilityScore, notes, "Dynamic Mode");
+  appendMobilityNotes(mobilityScore, notes, monopoleRuntimeMessages.dynamicMode);
   return notes;
 }
 
@@ -224,9 +298,9 @@ function appendMobilityNotes(mobilityScore, notes, contextLabel) {
     return;
   }
   if (mobilityScore < 15) {
-    notes.push(`${contextLabel}: Mobility <15 suggests a very stiff top. Confirm inputs and units.`);
+    notes.push(formatMonopoleMessage(monopoleRuntimeMessages.mobilityLowWarning, { mode: contextLabel }));
   } else if (mobilityScore > 40) {
-    notes.push(`${contextLabel}: Mobility >40 suggests a very compliant top. Confirm mass and readings.`);
+    notes.push(formatMonopoleMessage(monopoleRuntimeMessages.mobilityHighWarning, { mode: contextLabel }));
   }
 }
 
@@ -252,7 +326,7 @@ function compute() {
 
   if (!result.ok) {
     setOutputs("--");
-    outputs.status.textContent = result.message || "Waiting for complete inputs…";
+    outputs.status.textContent = result.message || monopoleRuntimeMessages.waitingForCompleteInputs;
     return;
   }
 
@@ -262,7 +336,9 @@ function compute() {
   outputs.mobilityScore.textContent = fmtMobility.format(result.mobilityScore);
   outputs.warnings.textContent = result.warnings.join(" ");
 
-  const modeLabel = currentMode === modes.STATIC ? "Static Mode" : "Dynamic Mode";
+  const modeLabel = currentMode === modes.STATIC
+    ? monopoleRuntimeMessages.staticMode
+    : monopoleRuntimeMessages.dynamicMode;
 
   const defaultsMatch =
     currentMode === modes.STATIC
@@ -270,9 +346,15 @@ function compute() {
       : matchesDynamicDefaults(dynamicInputs);
 
   if (defaultsMatch) {
-    outputs.status.textContent = `Live: default calculation (${modeLabel})`;
+    outputs.status.textContent = formatMonopoleMessage(
+      monopoleRuntimeMessages.liveDefaultCalculation,
+      { mode: modeLabel },
+    );
   } else {
-    outputs.status.textContent = `Live: custom input (${modeLabel})`;
+    outputs.status.textContent = formatMonopoleMessage(
+      monopoleRuntimeMessages.liveCustomInput,
+      { mode: modeLabel },
+    );
   }
 
   buttons.copy.disabled = false;
@@ -380,11 +462,11 @@ function copyResults() {
   navigator.clipboard
     .writeText(payload.join("\n"))
     .then(() => {
-      outputs.status.textContent = "Copied results to clipboard";
+      outputs.status.textContent = monopoleRuntimeMessages.copiedResultsToClipboard;
       setTimeout(compute, 1500);
     })
     .catch(() => {
-      outputs.status.textContent = "Clipboard copy failed";
+      outputs.status.textContent = monopoleRuntimeMessages.clipboardCopyFailed;
     });
 }
 
@@ -410,11 +492,14 @@ async function loadResults() {
 
   try {
     const saveApi = window.MonopoleSaveSurface;
-    const snapshot = await saveApi.readMonopoleSavePackageFile(file);
+    const snapshot = await saveApi.readMonopoleSavePackageFile(file, monopoleRuntimeMessages);
     applyLoadedMonopoleSnapshot(snapshot);
-    outputs.status.textContent = `Loaded ${snapshot.name}`;
+    outputs.status.textContent = formatMonopoleMessage(
+      monopoleRuntimeMessages.loadedCalculation,
+      { name: snapshot.name },
+    );
   } catch (_error) {
-    outputs.status.textContent = "Unable to load JSON package";
+    outputs.status.textContent = monopoleRuntimeMessages.unableToLoadJsonPackage;
   } finally {
     buttons.loadFile.value = "";
   }
@@ -423,27 +508,31 @@ async function loadResults() {
 function buildCopyResultLines() {
   const snapshot = readCurrentMonopoleSaveSnapshot();
   const payload = [
-    `Mode: ${snapshot.mode === modes.STATIC ? "Static (Gore jig)" : "Dynamic (mass-loading)"}`,
+    formatMonopoleMessage(monopoleRuntimeMessages.copyMode, {
+      mode: snapshot.mode === modes.STATIC
+        ? monopoleRuntimeMessages.copyStaticMode
+        : monopoleRuntimeMessages.copyDynamicMode,
+    }),
   ];
 
   if (snapshot.mode === modes.STATIC) {
     payload.push(
-      `f_u (Hz): ${snapshot.inputs.freqHz}`,
-      `Deflection (mm): ${snapshot.inputs.deflectionMm}`,
-      `Mass (kg): ${snapshot.inputs.testMassKg}`
+      formatMonopoleMessage(monopoleRuntimeMessages.copyUncoupledFrequency, { value: snapshot.inputs.freqHz }),
+      formatMonopoleMessage(monopoleRuntimeMessages.copyDeflection, { value: snapshot.inputs.deflectionMm }),
+      formatMonopoleMessage(monopoleRuntimeMessages.copyMass, { value: snapshot.inputs.testMassKg })
     );
   } else {
     payload.push(
-      `f0 (Hz): ${snapshot.inputs.unloadedFrequencyHz}`,
-      `f1 (Hz): ${snapshot.inputs.loadedFrequencyHz}`,
-      `Added mass (g): ${snapshot.inputs.addedMassG}`
+      formatMonopoleMessage(monopoleRuntimeMessages.copyUnloadedFrequency, { value: snapshot.inputs.unloadedFrequencyHz }),
+      formatMonopoleMessage(monopoleRuntimeMessages.copyLoadedFrequency, { value: snapshot.inputs.loadedFrequencyHz }),
+      formatMonopoleMessage(monopoleRuntimeMessages.copyAddedMass, { value: snapshot.inputs.addedMassG })
     );
   }
 
   payload.push(
-    `K (N/m): ${snapshot.outputs.stiffnessNPerM}`,
-    `M_eff (g): ${snapshot.outputs.effectiveMassG}`,
-    `Mobility score: ${snapshot.outputs.mobilityScore}`
+    formatMonopoleMessage(monopoleRuntimeMessages.copyStiffness, { value: snapshot.outputs.stiffnessNPerM }),
+    formatMonopoleMessage(monopoleRuntimeMessages.copyEffectiveMass, { value: snapshot.outputs.effectiveMassG }),
+    formatMonopoleMessage(monopoleRuntimeMessages.copyMobilityScore, { value: snapshot.outputs.mobilityScore })
   );
 
   return payload;
@@ -457,7 +546,25 @@ function readCurrentMonopoleSaveSummary() {
     inputs: readCurrentMonopoleSaveInputs(),
     outputs: readCurrentMonopoleSaveOutputs(),
     defaultsMatch: readCurrentMonopoleDefaultsMatch(),
+    messages: readMonopoleSaveSummaryMessages(),
   });
+}
+
+function readMonopoleSaveSummaryMessages() {
+  return {
+    addedMass: monopoleRuntimeMessages.summaryAddedMass,
+    deflection: monopoleRuntimeMessages.summaryDeflection,
+    dynamicMassLoading: monopoleRuntimeMessages.summaryDynamicMassLoading,
+    effectiveMass: monopoleRuntimeMessages.summaryEffectiveMass,
+    frequency: monopoleRuntimeMessages.summaryFrequency,
+    loadedFrequency: monopoleRuntimeMessages.summaryLoadedFrequency,
+    method: monopoleRuntimeMessages.summaryMethod,
+    mobilityScore: monopoleRuntimeMessages.summaryMobilityScore,
+    staticDeflection: monopoleRuntimeMessages.summaryStaticDeflection,
+    testMass: monopoleRuntimeMessages.summaryTestMass,
+    topStiffness: monopoleRuntimeMessages.summaryTopStiffness,
+    unloadedFrequency: monopoleRuntimeMessages.summaryUnloadedFrequency,
+  };
 }
 
 function readCurrentMonopoleDefaultsMatch() {
@@ -477,7 +584,7 @@ function readCurrentMonopoleDefaultsMatch() {
 
 function readCurrentMonopoleSaveSnapshot() {
   return {
-    name: nameInput.value.trim() || "Untitled sample",
+    name: nameInput.value.trim() || monopoleRuntimeMessages.untitledSample,
     type: typeSelect.value,
     mode: currentMode,
     inputs: readCurrentMonopoleSaveInputs(),
@@ -513,7 +620,9 @@ function readCurrentMonopoleSaveOutputs() {
 
 function readMonopoleSaveRunner() {
   if (window.MonopoleSaveTarget?.monopoleSaveRunnerCreate) {
-    return window.MonopoleSaveTarget.monopoleSaveRunnerCreate();
+    return window.MonopoleSaveTarget.monopoleSaveRunnerCreate({
+      messages: monopoleRuntimeMessages,
+    });
   }
 
   throw new Error("Monopole save target is unavailable.");
@@ -532,7 +641,7 @@ function applyMonopoleSaveSurface(button, surface) {
 
   document.body.dataset.monopoleSaveMode = surface.mode || "offline";
   applyMonopoleIdentitySurface(surface);
-  button.textContent = surface.label || "Download JSON";
+  button.textContent = surface.label || monopoleRuntimeMessages.downloadJson;
   button.title = surface.hint || "";
 }
 
@@ -544,7 +653,11 @@ function applyMonopoleIdentitySurface(surface) {
 }
 
 function applyLoadedMonopoleSnapshot(snapshot) {
-  const plan = window.MonopoleSaveSnapshot.buildMonopoleSnapshotApplyPlan(snapshot, defaults);
+  const plan = window.MonopoleSaveSnapshot.buildMonopoleSnapshotApplyPlan(
+    snapshot,
+    defaults,
+    monopoleRuntimeMessages,
+  );
   nameInput.value = plan.name;
   typeSelect.value = plan.type;
   applyMonopoleStaticSnapshotInputs(plan.staticInputs);
@@ -588,13 +701,14 @@ async function restoreNotebookEventIntoUi() {
 
   const restored = await restoreApi.restoreMonopoleNotebookEventIntoUi({
     runtime: window,
+    messages: monopoleRuntimeMessages,
     applySnapshot(snapshot) {
       applyLoadedMonopoleSnapshot(snapshot);
     },
   });
 
   if (restored) {
-    outputs.status.textContent = "Notebook event restored.";
+    outputs.status.textContent = monopoleRuntimeMessages.notebookEventRestored;
   }
 
   return restored;

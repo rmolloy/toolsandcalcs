@@ -1,9 +1,10 @@
 (function (globalScope) {
   function openConnectedMonopoleSaveModal(args) {
     var settings = args || {};
+    var messages = settings.messages || {};
     return readSharedNotebookSaveModal().openNotebookSaveModal({
-      dialogLabel: "Save Monopole Mobility",
-      title: settings.title || "Monopole mobility",
+      dialogLabel: messages.saveMonopoleMobility || "Save Monopole Mobility",
+      title: settings.title || messages.monopoleMobility || "Monopole mobility",
       summary: settings.summary,
       notebookName: settings.notebookName,
       subjects: settings.subjects,
@@ -11,7 +12,7 @@
       newSubject: {
         typeKey: "GUITAR",
         subtypeKey: "",
-        displayNamePlaceholder: settings.defaultDisplayName || "Bench OM",
+        displayNamePlaceholder: settings.defaultDisplayName || messages.benchOm || "Bench OM",
       },
     });
   }

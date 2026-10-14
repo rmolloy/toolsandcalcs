@@ -1,9 +1,9 @@
 (function (globalScope) {
-  function buildMonopoleSnapshotApplyPlan(snapshot, defaults) {
+  function buildMonopoleSnapshotApplyPlan(snapshot, defaults, messages) {
     var source = snapshot || {};
     var fallback = defaults || {};
     return {
-      name: readMonopoleSnapshotName(source, fallback),
+      name: readMonopoleSnapshotName(source, fallback, messages || {}),
       type: readMonopoleSnapshotType(source, fallback),
       mode: readMonopoleSnapshotMode(source),
       staticInputs: readMonopoleStaticSnapshotInputs(source, fallback),
@@ -11,8 +11,9 @@
     };
   }
 
-  function readMonopoleSnapshotName(source, fallback) {
-    return String(source.name || fallback.name || "Untitled sample").trim() || "Untitled sample";
+  function readMonopoleSnapshotName(source, fallback, messages) {
+    var untitledSample = messages.untitledSample || "Untitled sample";
+    return String(source.name || fallback.name || untitledSample).trim() || untitledSample;
   }
 
   function readMonopoleSnapshotType(source, fallback) {

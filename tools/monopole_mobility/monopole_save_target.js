@@ -1,34 +1,39 @@
 (function (globalScope) {
-  function monopoleSaveRunnerCreate() {
+  function monopoleSaveRunnerCreate(options) {
+    var messages = options && options.messages || {};
     return {
-      readMonopoleSaveSurface: readMonopoleSaveSurface,
-      runMonopoleSaveAction: runMonopoleSaveAction,
+      readMonopoleSaveSurface: function () {
+        return readMonopoleSaveSurface(messages);
+      },
+      runMonopoleSaveAction: function (request) {
+        return runMonopoleSaveAction(request, messages);
+      },
     };
   }
 
-  async function readMonopoleSaveSurface() {
+  async function readMonopoleSaveSurface(messages) {
     var connection = await readNotebookConnectionForMonopoleSave();
 
     if (connection) {
       return {
         mode: "lab-connected",
-        label: "Save",
+        label: messages.save || "Save",
         workbookId: connection.workbookId,
         notebookName: connection.notebookName,
       };
     }
 
-    return readMonopoleSaveSurfaceApi().readMonopoleSaveSurface();
+    return readMonopoleSaveSurfaceApi().readMonopoleSaveSurface(messages);
   }
 
-  async function runMonopoleSaveAction(request) {
-    var surface = await readMonopoleSaveSurface();
+  async function runMonopoleSaveAction(request, messages) {
+    var surface = await readMonopoleSaveSurface(messages);
 
     if (surface.mode === "lab-connected") {
-      return await runConnectedMonopoleSaveAction(surface, request);
+      return await runConnectedMonopoleSaveAction(surface, request, messages);
     }
 
-    return await runOfflineMonopoleSaveAction(request);
+    return await runOfflineMonopoleSaveAction(request, messages);
   }
 
   function readSaveSummary(request) {
@@ -51,13 +56,14 @@
     );
   }
 
-  async function runConnectedMonopoleSaveAction(surface, request) {
+  async function runConnectedMonopoleSaveAction(surface, request, messages) {
     var snapshot = request.readSnapshot();
     var subjects = await readNotebookSaveClient().listNotebookSubjectsForMonopoleSave(surface.workbookId);
     var selection = await readMonopoleSaveModalApi().openConnectedMonopoleSaveModal({
       notebookName: surface.notebookName,
       subjects: subjects,
       defaultDisplayName: snapshot.name,
+      messages: messages,
       summary: readSaveSummary(request),
     });
 
@@ -74,15 +80,20 @@
         stateJson: savePackage.text,
       },
     });
-    request.setStatus("Saved to " + (surface.notebookName || "Notebook") + ".");
+    request.setStatus(formatSavedToNotebook(messages, surface.notebookName));
     return true;
   }
 
-  async function runOfflineMonopoleSaveAction(request) {
+  async function runOfflineMonopoleSaveAction(request, messages) {
     var savePackage = readMonopoleSaveSurfaceApi().buildMonopoleSavePackage(request.readSnapshot());
     readMonopoleSaveSurfaceApi().downloadMonopoleSavePackage(globalScope, savePackage);
-    request.setStatus("JSON package downloaded");
+    request.setStatus(messages.jsonPackageDownloaded || "JSON package downloaded");
     return Promise.resolve(true);
+  }
+
+  function formatSavedToNotebook(messages, notebookName) {
+    var message = messages.savedToNotebook || "Saved to {notebookName}.";
+    return message.replace("{notebookName}", notebookName || messages.notebook || "Notebook");
   }
 
   function readMonopoleSaveSurfaceApi() {

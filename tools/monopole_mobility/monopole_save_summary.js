@@ -1,38 +1,47 @@
 (function (globalScope) {
-  var RESULT_ROWS = [
-    { key: "mobilityScore", label: "Mobility score", unit: "" },
-    { key: "stiffnessNPerM", label: "Top stiffness K", unit: " N/m" },
-    { key: "effectiveMassG", label: "Effective mass", unit: " g" },
-  ];
-
-  var STATIC_INPUT_ROWS = [
-    { key: "freqHz", label: "Frequency", unit: " Hz" },
-    { key: "deflectionMm", label: "Deflection", unit: " mm" },
-    { key: "testMassKg", label: "Test mass", unit: " kg" },
-  ];
-
-  var DYNAMIC_INPUT_ROWS = [
-    { key: "unloadedFrequencyHz", label: "Unloaded frequency", unit: " Hz" },
-    { key: "loadedFrequencyHz", label: "Loaded frequency", unit: " Hz" },
-    { key: "addedMassG", label: "Added mass", unit: " g" },
-  ];
-
   function buildMonopoleSaveSummary(args) {
     var settings = args || {};
-    return [methodRow(settings.mode)]
-      .concat(valueRows(RESULT_ROWS, settings.outputs, "calculated"))
-      .concat(valueRows(inputRowsForMode(settings.mode), settings.inputs, settings.defaultsMatch ? "default" : "measured"));
+    var messages = settings.messages || {};
+    return [methodRow(settings.mode, messages)]
+      .concat(valueRows(resultRows(messages), settings.outputs, "calculated"))
+      .concat(valueRows(inputRowsForMode(settings.mode, messages), settings.inputs, settings.defaultsMatch ? "default" : "measured"));
   }
 
-  function methodRow(mode) {
+  function methodRow(mode, messages) {
     return {
-      label: "Method",
-      value: mode === "dynamic" ? "Dynamic mass loading" : "Static deflection",
+      label: messages.method || "Method",
+      value: mode === "dynamic"
+        ? messages.dynamicMassLoading || "Dynamic mass loading"
+        : messages.staticDeflection || "Static deflection",
     };
   }
 
-  function inputRowsForMode(mode) {
-    return mode === "dynamic" ? DYNAMIC_INPUT_ROWS : STATIC_INPUT_ROWS;
+  function resultRows(messages) {
+    return [
+      { key: "mobilityScore", label: messages.mobilityScore || "Mobility score", unit: "" },
+      { key: "stiffnessNPerM", label: messages.topStiffness || "Top stiffness K", unit: " N/m" },
+      { key: "effectiveMassG", label: messages.effectiveMass || "Effective mass", unit: " g" },
+    ];
+  }
+
+  function inputRowsForMode(mode, messages) {
+    return mode === "dynamic" ? dynamicInputRows(messages) : staticInputRows(messages);
+  }
+
+  function staticInputRows(messages) {
+    return [
+      { key: "freqHz", label: messages.frequency || "Frequency", unit: " Hz" },
+      { key: "deflectionMm", label: messages.deflection || "Deflection", unit: " mm" },
+      { key: "testMassKg", label: messages.testMass || "Test mass", unit: " kg" },
+    ];
+  }
+
+  function dynamicInputRows(messages) {
+    return [
+      { key: "unloadedFrequencyHz", label: messages.unloadedFrequency || "Unloaded frequency", unit: " Hz" },
+      { key: "loadedFrequencyHz", label: messages.loadedFrequency || "Loaded frequency", unit: " Hz" },
+      { key: "addedMassG", label: messages.addedMass || "Added mass", unit: " g" },
+    ];
   }
 
   function valueRows(definitions, source, provenance) {
