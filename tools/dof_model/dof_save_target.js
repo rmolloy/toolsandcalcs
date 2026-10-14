@@ -1,43 +1,77 @@
 (function (globalScope) {
-  function dofSaveRunnerCreate() {
+  var DEFAULT_DOF_SAVE_MESSAGES = Object.freeze({
+    connectedLabel: "Save",
+    defaultDisplayName: "Instrument",
+    defaultNotebookName: "Notebook",
+    dialogLabel: "Save 4DOF Model",
+    modelTitle: "4-DOF model",
+    downloadHint: "Notebook saving is not available here. Download the model instead.",
+    downloadLabel: "Download JSON",
+    downloadedStatus: "JSON package downloaded.",
+    savedToNotebookTemplate: "Saved to {notebookName}.",
+  });
+
+  function dofSaveRunnerCreate(messageOverrides) {
+    var messages = readDofSaveMessages(messageOverrides);
     return {
-      readDofSaveSurface: readDofSaveSurface,
-      runDofSaveAction: runDofSaveAction,
+      readDofSaveSurface: function () {
+        return readDofSaveSurface(messages);
+      },
+      runDofSaveAction: function (request) {
+        return runDofSaveAction(request, messages);
+      },
     };
   }
 
-  async function readDofSaveSurface() {
+  function readDofSaveMessages(messageOverrides) {
+    var candidate = messageOverrides || {};
+    return Object.fromEntries(
+      Object.entries(DEFAULT_DOF_SAVE_MESSAGES).map(function (entry) {
+        var key = entry[0];
+        var fallback = entry[1];
+        var value = candidate[key];
+        return [key, typeof value === "string" && value.trim() ? value : fallback];
+      }),
+    );
+  }
+
+  async function readDofSaveSurface(messages) {
     var connection = await readNotebookConnectionForDofSave();
 
     if (connection) {
       return {
         mode: "lab-connected",
-        label: "Save",
+        label: messages.connectedLabel,
         workbookId: connection.workbookId,
         notebookName: connection.notebookName,
       };
     }
 
-    return readDofSaveSurfaceApi().readDofSaveSurface();
+    return readDofSaveSurfaceApi().readDofSaveSurface({
+      downloadHint: messages.downloadHint,
+      downloadLabel: messages.downloadLabel,
+    });
   }
 
-  async function runDofSaveAction(request) {
-    var surface = await readDofSaveSurface();
+  async function runDofSaveAction(request, messages) {
+    var surface = await readDofSaveSurface(messages);
 
     if (surface.mode === "lab-connected") {
-      return await runConnectedDofSaveAction(surface, request);
+      return await runConnectedDofSaveAction(surface, request, messages);
     }
 
-    return await runOfflineDofSaveAction(request);
+    return await runOfflineDofSaveAction(request, messages);
   }
 
-  async function runConnectedDofSaveAction(surface, request) {
+  async function runConnectedDofSaveAction(surface, request, messages) {
     var snapshot = request.readSnapshot();
     var subjects = await readNotebookSaveClient().listNotebookSubjectsForDofSave(surface.workbookId);
     var selection = await readDofSaveModalApi().openConnectedDofSaveModal({
+      dialogLabel: messages.dialogLabel,
+      title: messages.modelTitle,
       notebookName: surface.notebookName,
       subjects: subjects,
-      defaultDisplayName: readDofDefaultDisplayName(snapshot),
+      defaultDisplayName: readDofDefaultDisplayName(snapshot, messages),
       summary: readSaveSummary(request),
     });
 
@@ -54,7 +88,7 @@
         stateJson: savePackage.text,
       },
     });
-    request.setStatus("Saved to " + (surface.notebookName || "Notebook") + ".");
+    request.setStatus(readDofSavedStatus(surface, messages));
     return true;
   }
 
@@ -62,10 +96,10 @@
     return typeof request.readSummary === "function" ? request.readSummary() : [];
   }
 
-  async function runOfflineDofSaveAction(request) {
+  async function runOfflineDofSaveAction(request, messages) {
     var savePackage = readDofSaveSurfaceApi().buildDofSavePackage(request.readSnapshot());
     readDofSaveSurfaceApi().downloadDofSavePackage(globalScope, savePackage);
-    request.setStatus("JSON package downloaded.");
+    request.setStatus(messages.downloadedStatus);
     return Promise.resolve(true);
   }
 
@@ -85,8 +119,13 @@
     );
   }
 
-  function readDofDefaultDisplayName(_snapshot) {
-    return "Instrument";
+  function readDofDefaultDisplayName(_snapshot, messages) {
+    return messages.defaultDisplayName;
+  }
+
+  function readDofSavedStatus(surface, messages) {
+    var notebookName = surface.notebookName || messages.defaultNotebookName;
+    return messages.savedToNotebookTemplate.replace("{notebookName}", notebookName);
   }
 
   function readDofSaveSurfaceApi() {

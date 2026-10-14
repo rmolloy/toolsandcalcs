@@ -3,6 +3,7 @@ export type DofTraceName = "Current" | "Target" | "Top" | "Air" | "Back" | "Side
 export type DofTraceVisibilityState = Partial<Record<DofTraceName, boolean>>;
 
 export type DofVisibilityTrace = {
+  meta?: unknown;
   name?: unknown;
   visible?: unknown;
 };
@@ -39,6 +40,10 @@ export function applyDofTraceVisibility(
   state: DofTraceVisibilityState,
 ) {
   if (!trace) return;
+  trace.meta = {
+    ...dofTraceVisibilityMetadataRead(trace.meta),
+    visibilityKey: name,
+  };
   trace.visible = readDofTraceVisibleValue(name, state);
 }
 
@@ -51,8 +56,8 @@ export function syncDofTraceVisibilityStateFromPlot(
 
   const nextState: DofTraceVisibilityState = {};
   traces.forEach((trace: DofVisibilityTrace) => {
-    const name = trace?.name;
-    if (!isDofTraceName(name)) return;
+    const name = dofTraceVisibilityNameRead(trace);
+    if (!name) return;
     const isVisible = trace.visible === undefined || trace.visible === true;
     nextState[name] = (nextState[name] ?? false) || isVisible;
   });
@@ -61,4 +66,19 @@ export function syncDofTraceVisibilityStateFromPlot(
     if (!isDofTraceName(name)) return;
     state[name] = Boolean(nextState[name]);
   });
+}
+
+function dofTraceVisibilityNameRead(
+  trace: DofVisibilityTrace,
+): DofTraceName | null {
+  const metadata = dofTraceVisibilityMetadataRead(trace?.meta);
+  if (isDofTraceName(metadata.visibilityKey)) return metadata.visibilityKey;
+  return isDofTraceName(trace?.name) ? trace.name : null;
+}
+
+function dofTraceVisibilityMetadataRead(
+  value: unknown,
+): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
 }

@@ -33,6 +33,10 @@
     function applyDofTraceVisibility(trace, name, state) {
         if (!trace)
             return;
+        trace.meta = {
+            ...dofTraceVisibilityMetadataRead(trace.meta),
+            visibilityKey: name,
+        };
         trace.visible = readDofTraceVisibleValue(name, state);
     }
     function syncDofTraceVisibilityStateFromPlot(plot, state) {
@@ -42,8 +46,8 @@
         const nextState = {};
         traces.forEach((trace) => {
             var _a;
-            const name = trace === null || trace === void 0 ? void 0 : trace.name;
-            if (!isDofTraceName(name))
+            const name = dofTraceVisibilityNameRead(trace);
+            if (!name)
                 return;
             const isVisible = trace.visible === undefined || trace.visible === true;
             nextState[name] = ((_a = nextState[name]) !== null && _a !== void 0 ? _a : false) || isVisible;
@@ -53,5 +57,16 @@
                 return;
             state[name] = Boolean(nextState[name]);
         });
+    }
+    function dofTraceVisibilityNameRead(trace) {
+        const metadata = dofTraceVisibilityMetadataRead(trace === null || trace === void 0 ? void 0 : trace.meta);
+        if (isDofTraceName(metadata.visibilityKey))
+            return metadata.visibilityKey;
+        return isDofTraceName(trace === null || trace === void 0 ? void 0 : trace.name) ? trace.name : null;
+    }
+    function dofTraceVisibilityMetadataRead(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value))
+            return {};
+        return value;
     }
 });

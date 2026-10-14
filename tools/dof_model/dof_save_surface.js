@@ -17,11 +17,27 @@
     throw new Error("Common tool document file helpers are unavailable.");
   }
 
-  function readDofSaveSurface() {
+  function readDofSaveSurface(messageOverrides) {
+    var messages = readDofSaveSurfaceMessages(messageOverrides);
     return readSharedOfflineSaveSurface().readOfflineDownloadSaveSurface({
-      label: "Download JSON",
-      hint: "Notebook saving is not available here. Download the model instead.",
+      label: messages.downloadLabel,
+      hint: messages.downloadHint,
     });
+  }
+
+  function readDofSaveSurfaceMessages(messageOverrides) {
+    var candidate = messageOverrides || {};
+    return {
+      downloadLabel: readNonEmptyMessage(candidate.downloadLabel, "Download JSON"),
+      downloadHint: readNonEmptyMessage(
+        candidate.downloadHint,
+        "Notebook saving is not available here. Download the model instead.",
+      ),
+    };
+  }
+
+  function readNonEmptyMessage(value, fallback) {
+    return typeof value === "string" && value.trim() ? value : fallback;
   }
 
   function buildDofSavePackage(snapshot, now) {

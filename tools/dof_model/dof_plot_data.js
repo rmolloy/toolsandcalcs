@@ -76,13 +76,14 @@
         });
         return segments;
     }
-    function buildDofTargetOverlayTraces(points, color, config, colorWithAlpha, sharedBuilder) {
-        const segments = buildDofTargetOverlaySegments(points, config, sharedBuilder);
+    function buildDofTargetOverlayTraces(points, color, config, colorWithAlpha, options = {}) {
+        const traceLabel = options.traceLabel || "Target";
+        const segments = buildDofTargetOverlaySegments(points, config, options.segmentBuilder);
         return segments.map((segment, index) => ({
             x: segment.x,
             y: segment.y,
             mode: "lines",
-            name: "Target",
+            name: traceLabel,
             legendgroup: "target",
             showlegend: index === 0,
             line: {
@@ -90,7 +91,7 @@
                 width: segment.width,
                 dash: "dash",
             },
-            hovertemplate: "%{x:.1f} Hz · %{y:.1f} dB<extra>Target</extra>",
+            hovertemplate: `%{x:.1f} Hz · %{y:.1f} dB<extra>${traceLabel}</extra>`,
         }));
     }
     function computeDofYRange(series, pad = 6, minX, maxX) {

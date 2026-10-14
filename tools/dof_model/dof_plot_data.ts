@@ -31,6 +31,11 @@ type SharedOverlayBuilder = (
   config: DofTargetOverlayConfig,
 ) => DofOverlaySegment[];
 
+type DofTargetOverlayTraceOptions = {
+  segmentBuilder?: SharedOverlayBuilder;
+  traceLabel?: string;
+};
+
 export function buildDofTrace(
   points: DofPlotPoint[],
   name: string,
@@ -117,14 +122,19 @@ export function buildDofTargetOverlayTraces(
   color: string,
   config: DofTargetOverlayConfig,
   colorWithAlpha: (color: string, alpha: number) => string,
-  sharedBuilder?: SharedOverlayBuilder,
+  options: DofTargetOverlayTraceOptions = {},
 ) {
-  const segments = buildDofTargetOverlaySegments(points, config, sharedBuilder);
+  const traceLabel = options.traceLabel || "Target";
+  const segments = buildDofTargetOverlaySegments(
+    points,
+    config,
+    options.segmentBuilder,
+  );
   return segments.map((segment, index) => ({
     x: segment.x,
     y: segment.y,
     mode: "lines",
-    name: "Target",
+    name: traceLabel,
     legendgroup: "target",
     showlegend: index === 0,
     line: {
@@ -132,7 +142,7 @@ export function buildDofTargetOverlayTraces(
       width: segment.width,
       dash: "dash",
     },
-    hovertemplate: "%{x:.1f} Hz · %{y:.1f} dB<extra>Target</extra>",
+    hovertemplate: `%{x:.1f} Hz · %{y:.1f} dB<extra>${traceLabel}</extra>`,
   }));
 }
 

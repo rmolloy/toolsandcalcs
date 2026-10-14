@@ -545,8 +545,10 @@ body.whatif-mode .param-whatif-row {
 }
 
 .param-label {
+  min-width: 0;
   font-size: 0.82rem;
   color: color-mix(in srgb, var(--ink) 70%, transparent);
+  overflow-wrap: anywhere;
 }
 
 .mode-label-alias {

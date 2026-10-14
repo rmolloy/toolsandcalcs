@@ -229,27 +229,44 @@
 
   // tools/dof_model/dof_save_summary.ts
   var MODE_ROWS = [
-    { key: "air", label: "Air T(1,1)\u2081" },
-    { key: "top", label: "Top T(1,1)\u2082" },
-    { key: "back", label: "Back T(1,1)\u2083" }
+    { key: "air", label: "Air T(1,1)\u2081", messageKey: "airModeLabel" },
+    { key: "top", label: "Top T(1,1)\u2082", messageKey: "topModeLabel" },
+    { key: "back", label: "Back T(1,1)\u2083", messageKey: "backModeLabel" }
   ];
   function dofSaveSummaryBuild(args) {
-    return [modelRow(args.modelOrder, args.taskMode), ...peakRows(args.peaks)];
+    return [
+      modelRow(args.modelOrder, args.taskMode, args.messages),
+      ...peakRows(args.peaks, args.messages)
+    ];
   }
-  function modelRow(modelOrder, taskMode) {
+  function modelRow(modelOrder, taskMode, messages) {
     const order = Number.isFinite(Number(modelOrder)) && Number(modelOrder) > 0 ? Number(modelOrder) : 4;
-    return { label: "Model", value: `${order}-DOF${taskModeSuffix(taskMode)}` };
+    return {
+      label: messageValueRead(messages?.modelLabel, "Model"),
+      value: modelValueRead(order, taskMode, messages)
+    };
   }
-  function taskModeSuffix(taskMode) {
-    return String(taskMode || "") === "fit" ? " \xB7 fitted to targets" : "";
+  function messageValueRead(candidate, fallback) {
+    return typeof candidate === "string" && candidate.trim() ? candidate : fallback;
   }
-  function peakRows(peaks) {
+  function modelValueRead(order, taskMode, messages) {
+    if (String(taskMode || "") !== "fit") return `${order}-DOF`;
+    return messageValueRead(
+      messages?.fittedModelValueTemplate,
+      "{order}-DOF \xB7 fitted to targets"
+    ).replace("{order}", String(order));
+  }
+  function peakRows(peaks, messages) {
     if (!peaks) return [];
     return MODE_ROWS.filter((row) => Number.isFinite(Number(peaks[row.key])) && Number(peaks[row.key]) > 0).map((row) => ({
-      label: row.label,
+      label: peakRowLabelRead(row, messages),
       value: `${Number(peaks[row.key]).toFixed(1)} Hz`,
-      provenance: "modeled"
+      provenance: messageValueRead(messages?.modeledProvenance, "modeled")
     }));
+  }
+  function peakRowLabelRead(row, messages) {
+    if (!row.messageKey) return row.label;
+    return messageValueRead(messages?.[row.messageKey], row.label);
   }
 
   // tools/dof_model/dof_plot_data.ts
@@ -311,13 +328,18 @@
     });
     return segments;
   }
-  function buildDofTargetOverlayTraces(points, color, config, colorWithAlpha2, sharedBuilder) {
-    const segments = buildDofTargetOverlaySegments(points, config, sharedBuilder);
+  function buildDofTargetOverlayTraces(points, color, config, colorWithAlpha2, options = {}) {
+    const traceLabel = options.traceLabel || "Target";
+    const segments = buildDofTargetOverlaySegments(
+      points,
+      config,
+      options.segmentBuilder
+    );
     return segments.map((segment, index) => ({
       x: segment.x,
       y: segment.y,
       mode: "lines",
-      name: "Target",
+      name: traceLabel,
       legendgroup: "target",
       showlegend: index === 0,
       line: {
@@ -325,7 +347,7 @@
         width: segment.width,
         dash: "dash"
       },
-      hovertemplate: "%{x:.1f} Hz \xB7 %{y:.1f} dB<extra>Target</extra>"
+      hovertemplate: `%{x:.1f} Hz \xB7 %{y:.1f} dB<extra>${traceLabel}</extra>`
     }));
   }
   function computeDofYRange(series, pad = 6, minX, maxX) {
@@ -785,6 +807,10 @@
   }
   function applyDofTraceVisibility(trace, name, state) {
     if (!trace) return;
+    trace.meta = {
+      ...dofTraceVisibilityMetadataRead(trace.meta),
+      visibilityKey: name
+    };
     trace.visible = readDofTraceVisibleValue(name, state);
   }
   function syncDofTraceVisibilityStateFromPlot(plot, state) {
@@ -792,8 +818,8 @@
     if (!Array.isArray(traces)) return;
     const nextState = {};
     traces.forEach((trace) => {
-      const name = trace?.name;
-      if (!isDofTraceName(name)) return;
+      const name = dofTraceVisibilityNameRead(trace);
+      if (!name) return;
       const isVisible = trace.visible === void 0 || trace.visible === true;
       nextState[name] = (nextState[name] ?? false) || isVisible;
     });
@@ -801,6 +827,15 @@
       if (!isDofTraceName(name)) return;
       state[name] = Boolean(nextState[name]);
     });
+  }
+  function dofTraceVisibilityNameRead(trace) {
+    const metadata = dofTraceVisibilityMetadataRead(trace?.meta);
+    if (isDofTraceName(metadata.visibilityKey)) return metadata.visibilityKey;
+    return isDofTraceName(trace?.name) ? trace.name : null;
+  }
+  function dofTraceVisibilityMetadataRead(value) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+    return value;
   }
 
   // tools/dof_model/dof_fit_input_policy.ts
@@ -1087,6 +1122,120 @@
     return { root, label, stem, dot, halo };
   }
 
+  // tools/dof_model/dof_localized_messages.ts
+  var ENGLISH_DOF_MESSAGES = Object.freeze({
+    airDampingLabel: "Air Damping R\u2090",
+    airLabel: "Air",
+    altitudeLabel: "Altitude (m)",
+    alwaysBadge: "Always",
+    ambientTemperatureLabel: "Ambient Temp (\xB0C)",
+    backDampingLabel: "Damping R\u1D66",
+    backLabel: "Back",
+    backMassLabel: "Mass m\u1D66 (g)",
+    backRadiatingAreaLabel: "Radiating Area A\u1D66 (m\xB2)",
+    backStiffnessLabel: "Stiffness k\u1D66 (N/m)",
+    cavityVolumeLabel: "Cavity Volume (m\xB3)",
+    drivingForceLabel: "Driving Force F (N)",
+    editCardsTitle: "Current Model",
+    editCardsCopy: "Direct parameter editing for each degree of freedom.",
+    environmentLabel: "Environment",
+    externalAlias: "External",
+    fitAirAlias: "Measured mode + body",
+    fitAirCopy: "Match the air resonance from the measured mode and the body inputs you already know.",
+    fitBackCopy: "Anchor the back mode with the observed frequency and the effective back properties you trust.",
+    fitBadge: "Fit",
+    fitCardsTitle: "Fit by System",
+    fitCardsCopy: "Use measured modes and known inputs to infer the current model.",
+    fitEnvironmentAlias: "Atmosphere + actions",
+    fitEnvironmentCopy: "Set the measurement altitude, run the fitter, and clear the inputs when you want to start over.",
+    fitPlateAlias: "Measured mode + plate",
+    fitTopCopy: "Anchor the top mode with the observed frequency and the effective top properties you trust.",
+    inputsAlias: "Inputs",
+    movingAirMassLabel: "Moving Air Mass (g)",
+    plotBaseTraceLabel: "4DOF base",
+    plotComposedTraceLabel: "4DOF + Sources",
+    plotCurrentTraceLabel: "Current",
+    plotFrequencyAxisLabel: "Frequency (Hz)",
+    plotLevelAxisLabel: "Level (dB)",
+    plotResponseUnavailable: "Model response unavailable.",
+    plotTargetTraceLabel: "Target",
+    saveConnectedLabel: "Save",
+    saveDefaultDisplayName: "Instrument",
+    saveDefaultNotebookName: "Notebook",
+    saveDialogLabel: "Save 4DOF Model",
+    saveModelTitle: "4-DOF model",
+    saveSummaryAirModeLabel: "Air T(1,1)\u2081",
+    saveSummaryBackModeLabel: "Back T(1,1)\u2083",
+    saveSummaryFittedModelValueTemplate: "{order}-DOF \xB7 fitted to targets",
+    saveSummaryModelLabel: "Model",
+    saveSummaryModeledProvenance: "modeled",
+    saveSummaryTopModeLabel: "Top T(1,1)\u2082",
+    saveDownloadLabel: "Download JSON",
+    saveDownloadHint: "Notebook saving is not available here. Download the model instead.",
+    saveSavedToNotebookTemplate: "Saved to {notebookName}.",
+    sidesAreaLabel: "Sides Area (m\xB2)",
+    sidesDampingLabel: "Sides Damping",
+    sidesLabel: "Sides",
+    sidesMassLabel: "Sides Mass (g)",
+    sidesStiffnessLabel: "Sides Stiffness (N/m)",
+    simpleSourceAmplitudeLabel: "Amplitude (m\xB2/kg)",
+    simpleSourceAmplitudeTerm: "Amplitude",
+    simpleSourceFrequencyLabel: "Frequency (Hz)",
+    simpleSourceNameLabel: "name",
+    simpleSourcePeakLabel: "Peak",
+    simpleSourceRemoveLabel: "Remove",
+    simpleSourceResponsePeakLabel: "Response peak",
+    simpleSourcesTraceLabel: "Simple sources",
+    solveAirAlias: "Target mode + body",
+    solveAirCopy: "Set the air goal first, then shape the body inputs that most directly move it.",
+    solveBackCopy: "Set the back target and the effective back properties you want the solver to respect.",
+    solveBadge: "Solve",
+    solveCardsTitle: "Solve by System",
+    solveCardsCopy: "Set goals and constraints, then review the suggested moves.",
+    solveEnvironmentAlias: "Recipe actions",
+    solveEnvironmentCopy: "Constrain the recipe, solve the what-if, and review the suggested structural moves.",
+    solvePlateAlias: "Target mode + plate",
+    solveTopCopy: "Set the top target and the effective top properties that define the move you want.",
+    soundholeAreaLabel: "Soundhole Area (m\xB2)",
+    statusCompareUnavailable: "Compare mode is unavailable.",
+    statusComparisonReset: "What-If comparison reset.",
+    statusEnterTargetFrequency: "Enter at least one target frequency.",
+    statusFitApplied: "Fit applied.",
+    statusNotebookEventRestored: "Notebook event restored.",
+    statusPackageLoaded: "Loaded JSON package.",
+    statusPackageLoadFailed: "Unable to load JSON package.",
+    statusPackageDownloaded: "JSON package downloaded.",
+    statusSolveApplied: "Solve Targets applied as a What-If recipe.",
+    topDampingLabel: "Damping R\u209C",
+    topLabel: "Top",
+    topMassLabel: "Mass m\u209C (g)",
+    topRadiatingAreaLabel: "Radiating Area A\u209C (m\xB2)",
+    topStiffnessLabel: "Stiffness k\u209C (N/m)",
+    whatIfEmptyMessage: "Run Solve Targets to see suggested adjustments.",
+    whatIfDecreaseTemplate: "Decrease {field} by {amount} {unit}",
+    whatIfBackPlateMassLabel: "back plate mass",
+    whatIfBackPlateStiffnessLabel: "back plate stiffness",
+    whatIfCavityVolumeLabel: "cavity volume",
+    whatIfIncreaseTemplate: "Increase {field} by {amount} {unit}",
+    whatIfSoundholeAreaDeltaTemplate: " ({sign}{area} m\xB2)",
+    whatIfSoundholeDiameterLabel: "soundhole diameter",
+    whatIfTargetLabel: "Target",
+    whatIfTopPlateMassLabel: "top plate mass",
+    whatIfTopPlateStiffnessLabel: "top plate stiffness"
+  });
+  function resolveDofLocalizedMessages(candidate) {
+    return Object.freeze({
+      ...ENGLISH_DOF_MESSAGES,
+      ...nonEmptyMessagesRead(candidate)
+    });
+  }
+  function nonEmptyMessagesRead(candidate) {
+    if (!candidate) return {};
+    return Object.fromEntries(
+      Object.entries(candidate).filter(([, value]) => typeof value === "string" && value.trim().length > 0)
+    );
+  }
+
   // tools/dof_model/main.ts
   var DEFAULT_PARAMS = {
     model_order: 4,
@@ -1112,108 +1261,111 @@
     damping_sides: 10,
     area_sides: 0.025
   };
+  var localizedMessages = resolveDofLocalizedMessages(
+    window.ToneLabDofMessages
+  );
   var CARD_DEFS = [
     {
       key: "air",
-      label: "Air",
+      label: localizedMessages.airLabel,
       alias: "T(1,1)1",
       degree: 1,
       color: "var(--purple)",
       badgeText: "DOF 1",
       fields: [
-        { label: "Soundhole Area (m\xB2)", param: "area_hole", step: 1e-4, min: 3e-3, max: 0.01 },
-        { label: "Cavity Volume (m\xB3)", param: "volume_air", step: 5e-4, min: 0.01, max: 0.025 },
-        { label: "Moving Air Mass (g)", param: "mass_air", step: 0.01, min: 0.1, max: 2 },
-        { label: "Air Damping R\u2090", param: "damping_air", step: 5e-4, min: 1e-3, max: 0.02 }
+        { label: localizedMessages.soundholeAreaLabel, param: "area_hole", step: 1e-4, min: 3e-3, max: 0.01 },
+        { label: localizedMessages.cavityVolumeLabel, param: "volume_air", step: 5e-4, min: 0.01, max: 0.025 },
+        { label: localizedMessages.movingAirMassLabel, param: "mass_air", step: 0.01, min: 0.1, max: 2 },
+        { label: localizedMessages.airDampingLabel, param: "damping_air", step: 5e-4, min: 1e-3, max: 0.02 }
       ]
     },
     {
       key: "top",
-      label: "Top",
+      label: localizedMessages.topLabel,
       alias: "T(1,1)2",
       degree: 2,
       color: "var(--blue)",
       badgeText: "DOF 2",
       fields: [
-        { label: "Mass m\u209C (g)", param: "mass_top", step: 0.1, min: 5, max: 120 },
-        { label: "Stiffness k\u209C (N/m)", param: "stiffness_top", step: 100, min: 1e4, max: 15e4 },
-        { label: "Damping R\u209C", param: "damping_top", step: 0.1, min: 0.5, max: 6 },
-        { label: "Radiating Area A\u209C (m\xB2)", param: "area_top", step: 5e-4, min: 0.02, max: 0.06 }
+        { label: localizedMessages.topMassLabel, param: "mass_top", step: 0.1, min: 5, max: 120 },
+        { label: localizedMessages.topStiffnessLabel, param: "stiffness_top", step: 100, min: 1e4, max: 15e4 },
+        { label: localizedMessages.topDampingLabel, param: "damping_top", step: 0.1, min: 0.5, max: 6 },
+        { label: localizedMessages.topRadiatingAreaLabel, param: "area_top", step: 5e-4, min: 0.02, max: 0.06 }
       ]
     },
     {
       key: "back",
-      label: "Back",
+      label: localizedMessages.backLabel,
       alias: "T(1,1)3",
       degree: 3,
       color: "var(--green)",
       badgeText: "DOF 3",
       fields: [
-        { label: "Mass m\u1D66 (g)", param: "mass_back", step: 0.5, min: 40, max: 220 },
-        { label: "Stiffness k\u1D66 (N/m)", param: "stiffness_back", step: 200, min: 8e4, max: 4e5 },
-        { label: "Damping R\u1D66", param: "damping_back", step: 0.1, min: 1, max: 15 },
-        { label: "Radiating Area A\u1D66 (m\xB2)", param: "area_back", step: 5e-4, min: 0.02, max: 0.06 }
+        { label: localizedMessages.backMassLabel, param: "mass_back", step: 0.5, min: 40, max: 220 },
+        { label: localizedMessages.backStiffnessLabel, param: "stiffness_back", step: 200, min: 8e4, max: 4e5 },
+        { label: localizedMessages.backDampingLabel, param: "damping_back", step: 0.1, min: 1, max: 15 },
+        { label: localizedMessages.backRadiatingAreaLabel, param: "area_back", step: 5e-4, min: 0.02, max: 0.06 }
       ]
     },
     {
       key: "sides",
-      label: "Sides",
-      alias: "External",
+      label: localizedMessages.sidesLabel,
+      alias: localizedMessages.externalAlias,
       degree: 4,
       color: "var(--yellow)",
       badgeText: "DOF 4",
       fields: [
-        { label: "Sides Mass (g)", param: "mass_sides", step: 5, min: 300, max: 1500 },
-        { label: "Sides Stiffness (N/m)", param: "stiffness_sides", step: 500, min: 5e5, max: 3e6 },
-        { label: "Sides Damping", param: "damping_sides", step: 0.1, min: 1, max: 30 },
-        { label: "Sides Area (m\xB2)", param: "area_sides", step: 5e-4, min: 0.01, max: 0.06 }
+        { label: localizedMessages.sidesMassLabel, param: "mass_sides", step: 5, min: 300, max: 1500 },
+        { label: localizedMessages.sidesStiffnessLabel, param: "stiffness_sides", step: 500, min: 5e5, max: 3e6 },
+        { label: localizedMessages.sidesDampingLabel, param: "damping_sides", step: 0.1, min: 1, max: 30 },
+        { label: localizedMessages.sidesAreaLabel, param: "area_sides", step: 5e-4, min: 0.01, max: 0.06 }
       ]
     },
     {
       key: "environment",
-      label: "Environment",
-      alias: "Inputs",
+      label: localizedMessages.environmentLabel,
+      alias: localizedMessages.inputsAlias,
       degree: 0,
       color: "var(--muted)",
-      badgeText: "Always",
+      badgeText: localizedMessages.alwaysBadge,
       fields: [
-        { label: "Ambient Temp (\xB0C)", param: "ambient_temp", step: 0.5, min: -10, max: 40 },
-        { label: "Altitude (m)", param: "altitude", step: 10, min: 0, max: 3e3 },
-        { label: "Driving Force F (N)", param: "driving_force", step: 0.05, min: 0.05, max: 1 }
+        { label: localizedMessages.ambientTemperatureLabel, param: "ambient_temp", step: 0.5, min: -10, max: 40 },
+        { label: localizedMessages.altitudeLabel, param: "altitude", step: 10, min: 0, max: 3e3 },
+        { label: localizedMessages.drivingForceLabel, param: "driving_force", step: 0.05, min: 0.05, max: 1 }
       ]
     }
   ];
   var FIT_TASK_CARD_DEFS = [
     {
       key: "air",
-      label: "Air",
-      alias: "Measured mode + body",
-      badgeText: "Fit",
-      copy: "Match the air resonance from the measured mode and the body inputs you already know.",
+      label: localizedMessages.airLabel,
+      alias: localizedMessages.fitAirAlias,
+      badgeText: localizedMessages.fitBadge,
+      copy: localizedMessages.fitAirCopy,
       fieldIds: ["fit_target_air", "fit_target_volume_air", "fit_target_area_hole_diam"]
     },
     {
       key: "top",
-      label: "Top",
-      alias: "Measured mode + plate",
-      badgeText: "Fit",
-      copy: "Anchor the top mode with the observed frequency and the effective top properties you trust.",
+      label: localizedMessages.topLabel,
+      alias: localizedMessages.fitPlateAlias,
+      badgeText: localizedMessages.fitBadge,
+      copy: localizedMessages.fitTopCopy,
       fieldIds: ["fit_target_top", "fit_target_mass_top", "fit_target_stiffness_top"]
     },
     {
       key: "back",
-      label: "Back",
-      alias: "Measured mode + plate",
-      badgeText: "Fit",
-      copy: "Anchor the back mode with the observed frequency and the effective back properties you trust.",
+      label: localizedMessages.backLabel,
+      alias: localizedMessages.fitPlateAlias,
+      badgeText: localizedMessages.fitBadge,
+      copy: localizedMessages.fitBackCopy,
       fieldIds: ["fit_target_back", "fit_target_mass_back", "fit_target_stiffness_back"]
     },
     {
       key: "environment",
-      label: "Environment",
-      alias: "Atmosphere + actions",
-      badgeText: "Fit",
-      copy: "Set the measurement altitude, run the fitter, and clear the inputs when you want to start over.",
+      label: localizedMessages.environmentLabel,
+      alias: localizedMessages.fitEnvironmentAlias,
+      badgeText: localizedMessages.fitBadge,
+      copy: localizedMessages.fitEnvironmentCopy,
       fieldIds: ["fit_altitude"],
       actionIds: ["btn_fit_guitar", "btn_fit_clear"],
       statusId: "fit_status"
@@ -1222,34 +1374,34 @@
   var SOLVE_TASK_CARD_DEFS = [
     {
       key: "air",
-      label: "Air",
-      alias: "Target mode + body",
-      badgeText: "Solve",
-      copy: "Set the air goal first, then shape the body inputs that most directly move it.",
+      label: localizedMessages.airLabel,
+      alias: localizedMessages.solveAirAlias,
+      badgeText: localizedMessages.solveBadge,
+      copy: localizedMessages.solveAirCopy,
       fieldIds: ["fit_target_air", "fit_target_volume_air", "fit_target_area_hole_diam"]
     },
     {
       key: "top",
-      label: "Top",
-      alias: "Target mode + plate",
-      badgeText: "Solve",
-      copy: "Set the top target and the effective top properties that define the move you want.",
+      label: localizedMessages.topLabel,
+      alias: localizedMessages.solvePlateAlias,
+      badgeText: localizedMessages.solveBadge,
+      copy: localizedMessages.solveTopCopy,
       fieldIds: ["fit_target_top", "fit_target_mass_top", "fit_target_stiffness_top"]
     },
     {
       key: "back",
-      label: "Back",
-      alias: "Target mode + plate",
-      badgeText: "Solve",
-      copy: "Set the back target and the effective back properties you want the solver to respect.",
+      label: localizedMessages.backLabel,
+      alias: localizedMessages.solvePlateAlias,
+      badgeText: localizedMessages.solveBadge,
+      copy: localizedMessages.solveBackCopy,
       fieldIds: ["fit_target_back", "fit_target_mass_back", "fit_target_stiffness_back"]
     },
     {
       key: "environment",
-      label: "Environment",
-      alias: "Recipe actions",
-      badgeText: "Solve",
-      copy: "Constrain the recipe, solve the what-if, and review the suggested structural moves.",
+      label: localizedMessages.environmentLabel,
+      alias: localizedMessages.solveEnvironmentAlias,
+      badgeText: localizedMessages.solveBadge,
+      copy: localizedMessages.solveEnvironmentCopy,
       optionIds: ["fit_restrict_simple"],
       actionIds: ["btn_solve_targets", "btn_reset_whatif"],
       panelIds: ["whatif_summary"]
@@ -1257,16 +1409,16 @@
   ];
   var TASK_MODE_COPY = {
     edit: {
-      cardsTitle: "Current Model",
-      cardsCopy: "Direct parameter editing for each degree of freedom."
+      cardsTitle: localizedMessages.editCardsTitle,
+      cardsCopy: localizedMessages.editCardsCopy
     },
     fit: {
-      cardsTitle: "Fit by System",
-      cardsCopy: "Use measured modes and known inputs to infer the current model."
+      cardsTitle: localizedMessages.fitCardsTitle,
+      cardsCopy: localizedMessages.fitCardsCopy
     },
     solve: {
-      cardsTitle: "Solve by System",
-      cardsCopy: "Set goals and constraints, then review the suggested moves."
+      cardsTitle: localizedMessages.solveCardsTitle,
+      cardsCopy: localizedMessages.solveCardsCopy
     }
   };
   function cardDefsForTaskMode(taskMode) {
@@ -1289,9 +1441,9 @@
     );
   }
   var MODE_META = {
-    air: { label: "Air", color: "var(--purple)" },
-    top: { label: "Top", color: "var(--blue)" },
-    back: { label: "Back", color: "var(--green)" }
+    air: { label: localizedMessages.airLabel, color: "var(--purple)" },
+    top: { label: localizedMessages.topLabel, color: "var(--blue)" },
+    back: { label: localizedMessages.backLabel, color: "var(--green)" }
   };
   var MODE_KEYS = ["air", "top", "back"];
   var TARGET_OVERLAY = {
@@ -1383,9 +1535,12 @@
   function simpleSourcesClone(sources) {
     return sources.map((source) => ({ ...source }));
   }
+  function simpleSourceDefaultNameRead(index) {
+    return `${localizedMessages.simpleSourcePeakLabel} ${index + 1}`;
+  }
   function simpleSourceNameRead(source, index) {
     const name = String(source.name || "").trim();
-    return name || `Peak ${index + 1}`;
+    return name || simpleSourceDefaultNameRead(index);
   }
   var SIMPLE_SOURCE_DEFAULT_SEMITONE_OFFSET = 3;
   var SIMPLE_SOURCE_FALLBACK_FREQUENCY_HZ = 200;
@@ -1405,7 +1560,7 @@
   function simpleSourceDefaultRead(index) {
     return {
       id: `source_${index + 1}`,
-      name: `Peak ${index + 1}`,
+      name: simpleSourceDefaultNameRead(index),
       frequencyHz: simpleSourceDefaultFrequencyRead(),
       q: 30,
       amplitudeM2PerKg: 0.1
@@ -1508,24 +1663,29 @@
     title.className = "mode-label dof-simple-source-title";
     const swatch = document.createElement("span");
     swatch.className = "dof-simple-source-swatch";
-    const nameInput = simpleSourceInputBuild(source, "name", "name", "text");
+    const nameInput = simpleSourceInputBuild(
+      source,
+      "name",
+      localizedMessages.simpleSourceNameLabel,
+      "text"
+    );
     title.append(swatch, nameInput);
     const badge = document.createElement("span");
     badge.className = "badge";
-    badge.textContent = "Peak";
+    badge.textContent = localizedMessages.simpleSourcePeakLabel;
     badge.style.background = simpleSourceColorRead(source.id);
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "ghost-btn btn-small dof-simple-source-remove";
-    remove.textContent = "Remove";
+    remove.textContent = localizedMessages.simpleSourceRemoveLabel;
     remove.addEventListener("click", () => simpleSourceRemove(source.id));
     header.append(title, badge, remove);
     const fields = document.createElement("div");
     fields.className = "param-grid";
     [
-      ["Frequency (Hz)", "frequencyHz"],
+      [localizedMessages.simpleSourceFrequencyLabel, "frequencyHz"],
       ["Q", "q"],
-      ["Amplitude (m\xB2/kg)", "amplitudeM2PerKg"]
+      [localizedMessages.simpleSourceAmplitudeLabel, "amplitudeM2PerKg"]
     ].forEach(([label, field]) => {
       fields.appendChild(simpleSourceNumericFieldBuild(source, label, field));
     });
@@ -1732,7 +1892,7 @@
         whatIfRow.style.display = "none";
         const whatIfLabel = document.createElement("span");
         whatIfLabel.className = "mode-whatif-label";
-        whatIfLabel.textContent = "Target";
+        whatIfLabel.textContent = localizedMessages.whatIfTargetLabel;
         const whatIfValue = document.createElement("span");
         whatIfValue.className = "mode-whatif-value";
         whatIfValue.textContent = "--";
@@ -2190,14 +2350,17 @@
       color,
       TARGET_OVERLAY,
       colorWithAlpha,
-      targetOverlaySharedBuilderRead()
+      {
+        segmentBuilder: targetOverlaySharedBuilderRead(),
+        traceLabel: localizedMessages.plotTargetTraceLabel
+      }
     );
   }
   function simpleSourceCalloutTextRead(source) {
     return calloutTextBuild(
       simpleSourceNameRead(source, 0),
       source.frequencyHz,
-      `Q ${source.q.toFixed(0)}, Amplitude ${formatDofSigned(source.amplitudeM2PerKg, 2)} m\xB2/kg`
+      `Q ${source.q.toFixed(0)}, ${localizedMessages.simpleSourceAmplitudeTerm} ${formatDofSigned(source.amplitudeM2PerKg, 2)} m\xB2/kg`
     );
   }
   function ensureSimpleSourceThumb(source) {
@@ -2234,7 +2397,7 @@
       x: sources.map((source) => source.frequencyHz),
       y: sources.map((source) => sampleSeriesAtFreq(series, source.frequencyHz)),
       mode: "markers",
-      name: "Simple sources",
+      name: localizedMessages.simpleSourcesTraceLabel,
       showlegend: false,
       marker: {
         color: sources.map((source) => simpleSourceColorRead(source.id)),
@@ -2246,7 +2409,7 @@
         source.q.toFixed(0),
         formatDofSigned(source.amplitudeM2PerKg, 2)
       ]),
-      hovertemplate: "%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} \xB7 Amplitude %{customdata[2]} m\xB2/kg<extra>Response peak</extra>"
+      hovertemplate: `%{customdata[0]}<br><b>%{x:.1f} Hz</b><br>Q %{customdata[1]} \xB7 ${localizedMessages.simpleSourceAmplitudeTerm} %{customdata[2]} m\xB2/kg<extra>${localizedMessages.simpleSourceResponsePeakLabel}</extra>`
     };
   }
   function simpleSourceComponentTracesRead(solverParams, frequencyStartHz, frequencyEndHz) {
@@ -2388,10 +2551,20 @@
     const body = panel.querySelector(".delta-summary__body");
     if (!body) return;
     if (!lines || !lines.length) {
-      body.textContent = "Run Solve Targets to see suggested adjustments.";
+      body.textContent = localizedMessages.whatIfEmptyMessage;
       return;
     }
-    body.innerHTML = `<ul>${lines.map((line) => `<li>${line}</li>`).join("")}</ul>`;
+    whatIfSummaryListRender(body, lines);
+  }
+  function whatIfSummaryListRender(body, lines) {
+    const list = document.createElement("ul");
+    lines.forEach((line) => list.append(whatIfSummaryListItemBuild(line)));
+    body.replaceChildren(list);
+  }
+  function whatIfSummaryListItemBuild(line) {
+    const item = document.createElement("li");
+    item.textContent = line;
+    return item;
   }
   function whatIfToggleEnsureEnabled() {
     const toggle = document.getElementById("toggle_overlay");
@@ -2405,7 +2578,20 @@
     const recipeParams = getWhatIfParams();
     const lines = window.buildWhatIfRecipeSummaryLines?.(
       currentParams,
-      recipeParams
+      recipeParams,
+      {
+        decreaseTemplate: localizedMessages.whatIfDecreaseTemplate,
+        fieldLabels: {
+          mass_top: localizedMessages.whatIfTopPlateMassLabel,
+          stiffness_top: localizedMessages.whatIfTopPlateStiffnessLabel,
+          mass_back: localizedMessages.whatIfBackPlateMassLabel,
+          stiffness_back: localizedMessages.whatIfBackPlateStiffnessLabel,
+          volume_air: localizedMessages.whatIfCavityVolumeLabel,
+          area_hole: localizedMessages.whatIfSoundholeDiameterLabel
+        },
+        increaseTemplate: localizedMessages.whatIfIncreaseTemplate,
+        soundholeAreaDeltaTemplate: localizedMessages.whatIfSoundholeAreaDeltaTemplate
+      }
     ) ?? null;
     whatIfSummarySet(lines);
   }
@@ -2413,11 +2599,11 @@
     const targets = fitTargetsFromInputs();
     const hasTarget = fitTargetsHaveAnyValue(targets);
     if (!hasTarget) {
-      fitStatusSet("Enter at least one target frequency.");
+      fitStatusSet(localizedMessages.statusEnterTargetFrequency);
       return;
     }
     if (!whatIfToggleEnsureEnabled()) {
-      fitStatusSet("Compare mode is unavailable.");
+      fitStatusSet(localizedMessages.statusCompareUnavailable);
       return;
     }
     const restrictSimple = fitRecipeRestrictSimpleEnabled();
@@ -2427,7 +2613,7 @@
       factorAllowed: restrictSimple ? fitRecipeIncreaseOnlyFactorAllowed : void 0
     });
     whatIfSummaryRefreshFromCurrentRecipe();
-    fitStatusSet("Solve Targets applied as a What-If recipe.");
+    fitStatusSet(localizedMessages.statusSolveApplied);
   }
   function bindSolveRecipeActions() {
     const solveButton = document.getElementById("btn_solve_targets");
@@ -2438,7 +2624,7 @@
     });
     resetButton.addEventListener("click", () => {
       resetWhatIfComparison();
-      fitStatusSet("What-If comparison reset.");
+      fitStatusSet(localizedMessages.statusComparisonReset);
     });
   }
   function bindFitMyGuitarActions() {
@@ -2449,14 +2635,14 @@
       const targets = fitTargetsFromInputs();
       const hasTarget = fitTargetsHaveAnyValue(targets);
       if (!hasTarget) {
-        fitStatusSet("Enter at least one target frequency.");
+        fitStatusSet(localizedMessages.statusEnterTargetFrequency);
         return;
       }
       solveTargets(targets, {
         useWhatIf: isWhatIfEnabled(),
         tweakIds: fitSolveTweakIdsFromTargets(targets)
       });
-      fitStatusSet("Fit applied.");
+      fitStatusSet(localizedMessages.statusFitApplied);
     });
     clearButton.addEventListener("click", () => {
       [
@@ -2657,7 +2843,15 @@
     return dofSaveSummaryBuild({
       peaks: lastResponse ? modelPeaksFromResponse(lastResponse) : null,
       modelOrder: currentOrder,
-      taskMode: currentTaskMode
+      taskMode: currentTaskMode,
+      messages: {
+        airModeLabel: localizedMessages.saveSummaryAirModeLabel,
+        backModeLabel: localizedMessages.saveSummaryBackModeLabel,
+        fittedModelValueTemplate: localizedMessages.saveSummaryFittedModelValueTemplate,
+        modelLabel: localizedMessages.saveSummaryModelLabel,
+        modeledProvenance: localizedMessages.saveSummaryModeledProvenance,
+        topModeLabel: localizedMessages.saveSummaryTopModeLabel
+      }
     });
   }
   function readCurrentDofSaveSnapshot() {
@@ -2727,9 +2921,9 @@
     try {
       const snapshot = await window.DofSaveSurface.readDofSavePackageFile(file);
       applyLoadedDofSnapshot(snapshot);
-      fitStatusSet("Loaded JSON package.");
+      fitStatusSet(localizedMessages.statusPackageLoaded);
     } catch (_error) {
-      fitStatusSet("Unable to load JSON package.");
+      fitStatusSet(localizedMessages.statusPackageLoadFailed);
     } finally {
       if (loadFileInput) loadFileInput.value = "";
     }
@@ -2743,13 +2937,23 @@
   }
   function readDofSaveRunner() {
     if (window.DofSaveTarget?.dofSaveRunnerCreate) {
-      return window.DofSaveTarget.dofSaveRunnerCreate();
+      return window.DofSaveTarget.dofSaveRunnerCreate({
+        connectedLabel: localizedMessages.saveConnectedLabel,
+        defaultDisplayName: localizedMessages.saveDefaultDisplayName,
+        defaultNotebookName: localizedMessages.saveDefaultNotebookName,
+        dialogLabel: localizedMessages.saveDialogLabel,
+        modelTitle: localizedMessages.saveModelTitle,
+        downloadHint: localizedMessages.saveDownloadHint,
+        downloadLabel: localizedMessages.saveDownloadLabel,
+        downloadedStatus: localizedMessages.statusPackageDownloaded,
+        savedToNotebookTemplate: localizedMessages.saveSavedToNotebookTemplate
+      });
     }
     return {
       readDofSaveSurface() {
         return Promise.resolve({
           mode: "offline",
-          label: "Download JSON",
+          label: localizedMessages.saveDownloadLabel,
           hint: ""
         });
       },
@@ -2758,7 +2962,7 @@
           request.readSnapshot()
         );
         window.DofSaveSurface.downloadDofSavePackage(window, savePackage);
-        request.setStatus("JSON package downloaded.");
+        request.setStatus(localizedMessages.statusPackageDownloaded);
         return Promise.resolve(true);
       }
     };
@@ -2770,7 +2974,7 @@
     const saveButton = document.getElementById("save_model");
     const saveSurface = await readDofSaveRunner().readDofSaveSurface();
     if (!saveButton) return;
-    saveButton.textContent = saveSurface.label || "Download JSON";
+    saveButton.textContent = saveSurface.label || localizedMessages.saveDownloadLabel;
     saveButton.title = saveSurface.hint || "";
   }
   async function initializeDofSaveSurface() {
@@ -2787,7 +2991,7 @@
       }
     });
     if (restored) {
-      fitStatusSet("Notebook event restored.");
+      fitStatusSet(localizedMessages.statusNotebookEventRestored);
     }
     return restored;
   }
@@ -2802,6 +3006,12 @@
   function syncPlotWidthToContainer(plotEl) {
     Promise.resolve(applyDofPlotResize(getPlotly(), plotEl)).finally(() => updateThumbs());
   }
+  function modelResponseUnavailableRender(plotEl) {
+    const message = document.createElement("div");
+    message.className = "muted small";
+    message.textContent = localizedMessages.plotResponseUnavailable;
+    plotEl.replaceChildren(message);
+  }
   function renderPlot() {
     const plotEl = document.getElementById("plot_dof");
     if (!plotEl) return;
@@ -2813,7 +3023,7 @@
     lastWhatIfResponse = whatIfResponse;
     updateModeCards(response, whatIfResponse);
     if (!response || !Array.isArray(response.total)) {
-      plotEl.innerHTML = `<div class="muted small">Model response unavailable.</div>`;
+      modelResponseUnavailableRender(plotEl);
       lastDisplayedResponse = null;
       updateThumbs(null);
       return;
@@ -2827,17 +3037,19 @@
     const traces = [];
     const totalTrace = buildDofTrace(
       displayedResponse,
-      composedResponse?.length ? "4DOF + Sources" : "Current",
+      composedResponse?.length ? localizedMessages.plotComposedTraceLabel : localizedMessages.plotCurrentTraceLabel,
       colors.current,
       { width: 3 }
     );
     applyDofTraceVisibility(totalTrace, "Current", traceVisibilityState);
     if (totalTrace) traces.push(totalTrace);
     if (composedResponse?.length) {
-      const baseTrace = buildDofTrace(response.total, "4DOF base", colorWithAlpha(colors.ink, 0.55), {
-        width: 1.25,
-        dash: "dot"
-      });
+      const baseTrace = buildDofTrace(
+        response.total,
+        localizedMessages.plotBaseTraceLabel,
+        colorWithAlpha(colors.ink, 0.55),
+        { width: 1.25, dash: "dot" }
+      );
       if (baseTrace) traces.push(baseTrace);
     }
     const sourceTrace = simpleSourcesTraceBuild(displayedResponse);
@@ -2853,10 +3065,10 @@
         traces.push(trace);
       });
     }
-    const topTrace = buildDofTrace(response.top, "Top", colors.top, { width: 1.5, dash: "dot" });
-    const airTrace = buildDofTrace(response.air, "Air", colors.air, { width: 1.5, dash: "dot" });
-    const backTrace = buildDofTrace(response.back, "Back", colors.back, { width: 1.5, dash: "dot" });
-    const sidesTrace = buildDofTrace(response.sides, "Sides", colors.sides, { width: 1, dash: "dot" });
+    const topTrace = buildDofTrace(response.top, localizedMessages.topLabel, colors.top, { width: 1.5, dash: "dot" });
+    const airTrace = buildDofTrace(response.air, localizedMessages.airLabel, colors.air, { width: 1.5, dash: "dot" });
+    const backTrace = buildDofTrace(response.back, localizedMessages.backLabel, colors.back, { width: 1.5, dash: "dot" });
+    const sidesTrace = buildDofTrace(response.sides, localizedMessages.sidesLabel, colors.sides, { width: 1, dash: "dot" });
     applyDofTraceVisibility(topTrace, "Top", traceVisibilityState);
     applyDofTraceVisibility(airTrace, "Air", traceVisibilityState);
     applyDofTraceVisibility(backTrace, "Back", traceVisibilityState);
@@ -2870,13 +3082,13 @@
       plot_bgcolor: "transparent",
       font: { color: colors.ink },
       xaxis: {
-        title: "Frequency (Hz)",
+        title: localizedMessages.plotFrequencyAxisLabel,
         range: xRange,
         gridcolor: colors.grid,
         zeroline: false
       },
       yaxis: {
-        title: "Level (dB)",
+        title: localizedMessages.plotLevelAxisLabel,
         gridcolor: colors.grid,
         autorange: false,
         zeroline: false

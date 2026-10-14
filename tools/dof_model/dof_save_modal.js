@@ -2,7 +2,7 @@
   function openConnectedDofSaveModal(args) {
     var settings = args || {};
     return readSharedNotebookSaveModal().openNotebookSaveModal({
-      dialogLabel: "Save 4DOF Model",
+      dialogLabel: settings.dialogLabel || "Save 4DOF Model",
       title: settings.title || "4-DOF model",
       summary: settings.summary,
       notebookName: settings.notebookName,

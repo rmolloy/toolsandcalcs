@@ -11,29 +11,45 @@
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.dofSaveSummaryBuild = dofSaveSummaryBuild;
     const MODE_ROWS = [
-        { key: "air", label: "Air T(1,1)₁" },
-        { key: "top", label: "Top T(1,1)₂" },
-        { key: "back", label: "Back T(1,1)₃" },
+        { key: "air", label: "Air T(1,1)₁", messageKey: "airModeLabel" },
+        { key: "top", label: "Top T(1,1)₂", messageKey: "topModeLabel" },
+        { key: "back", label: "Back T(1,1)₃", messageKey: "backModeLabel" },
     ];
     function dofSaveSummaryBuild(args) {
-        return [modelRow(args.modelOrder, args.taskMode), ...peakRows(args.peaks)];
+        return [
+            modelRow(args.modelOrder, args.taskMode, args.messages),
+            ...peakRows(args.peaks, args.messages),
+        ];
     }
-    function modelRow(modelOrder, taskMode) {
+    function modelRow(modelOrder, taskMode, messages) {
         const order = Number.isFinite(Number(modelOrder)) && Number(modelOrder) > 0 ? Number(modelOrder) : 4;
-        return { label: "Model", value: `${order}-DOF${taskModeSuffix(taskMode)}` };
+        return {
+            label: messageValueRead(messages === null || messages === void 0 ? void 0 : messages.modelLabel, "Model"),
+            value: modelValueRead(order, taskMode, messages),
+        };
     }
-    function taskModeSuffix(taskMode) {
-        return String(taskMode || "") === "fit" ? " · fitted to targets" : "";
+    function messageValueRead(candidate, fallback) {
+        return typeof candidate === "string" && candidate.trim() ? candidate : fallback;
     }
-    function peakRows(peaks) {
+    function modelValueRead(order, taskMode, messages) {
+        if (String(taskMode || "") !== "fit")
+            return `${order}-DOF`;
+        return messageValueRead(messages === null || messages === void 0 ? void 0 : messages.fittedModelValueTemplate, "{order}-DOF · fitted to targets").replace("{order}", String(order));
+    }
+    function peakRows(peaks, messages) {
         if (!peaks)
             return [];
         return MODE_ROWS
             .filter((row) => Number.isFinite(Number(peaks[row.key])) && Number(peaks[row.key]) > 0)
             .map((row) => ({
-            label: row.label,
+            label: peakRowLabelRead(row, messages),
             value: `${Number(peaks[row.key]).toFixed(1)} Hz`,
-            provenance: "modeled",
+            provenance: messageValueRead(messages === null || messages === void 0 ? void 0 : messages.modeledProvenance, "modeled"),
         }));
+    }
+    function peakRowLabelRead(row, messages) {
+        if (!row.messageKey)
+            return row.label;
+        return messageValueRead(messages === null || messages === void 0 ? void 0 : messages[row.messageKey], row.label);
     }
 });
