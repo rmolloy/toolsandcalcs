@@ -130,6 +130,12 @@ body::after {
   margin-left: auto;
 }
 
+.hero .hero-actions button,
+.hero .hero-actions select,
+.hero .hero-actions .hero-help-link {
+  margin-block: 0;
+}
+
 .hero-help-link,
 .hero-actions .hero-icon-button,
 .fit-actions .hero-icon-button {

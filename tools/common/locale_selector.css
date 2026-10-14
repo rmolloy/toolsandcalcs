@@ -1,8 +1,25 @@
 .tool-locale-selector {
   display: inline-flex;
   align-items: center;
+  order: 80;
   margin: 0;
   color: inherit;
+}
+
+.hero-actions .hero-help-link,
+.fit-actions .hero-help-link {
+  order: 90;
+}
+
+.hero-actions #btn_fullscreen,
+.fit-actions #btn_fullscreen {
+  order: 100;
+  margin-inline-start: auto;
+}
+
+.hero-actions #fullscreen_status,
+.fit-actions #fullscreen_status {
+  order: 101;
 }
 
 .tool-locale-selector select {
