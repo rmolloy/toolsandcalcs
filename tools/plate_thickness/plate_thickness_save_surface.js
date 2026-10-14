@@ -35,10 +35,11 @@
     throw new Error("Common tool document file helpers are unavailable.");
   }
 
-  function readPlateThicknessSaveSurface() {
+  function readPlateThicknessSaveSurface(messages) {
+    var copy = messages || {};
     return readSharedOfflineSaveSurface().readOfflineDownloadSaveSurface({
-      label: "Download JSON",
-      hint: "Notebook saving is not available here. Download the export instead.",
+      label: copy.downloadJson || "Download JSON",
+      hint: copy.notebookSavingUnavailable || "Notebook saving is not available here. Download the export instead.",
     });
   }
 

@@ -251,6 +251,11 @@
     justify-content: flex-start;
   }
 
+  .plate-action-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   .plate-fit-controls {
     grid-template-columns: 1fr;
   }

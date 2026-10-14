@@ -1,43 +1,49 @@
 (function (globalScope) {
-  function plateThicknessSaveRunnerCreate() {
+  function plateThicknessSaveRunnerCreate(options) {
+    var messages = options && options.messages || {};
     return {
-      readPlateThicknessSaveSurface: readPlateThicknessSaveSurface,
-      runPlateThicknessSaveAction: runPlateThicknessSaveAction,
+      readPlateThicknessSaveSurface: function () {
+        return readPlateThicknessSaveSurface(messages);
+      },
+      runPlateThicknessSaveAction: function (request) {
+        return runPlateThicknessSaveAction(request, messages);
+      },
     };
   }
 
-  async function readPlateThicknessSaveSurface() {
+  async function readPlateThicknessSaveSurface(messages) {
     var connection = await readNotebookConnectionForPlateThicknessSave();
 
     if (connection) {
       return {
         mode: "lab-connected",
-        label: "Save",
+        label: messages.save || "Save",
         workbookId: connection.workbookId,
         notebookName: connection.notebookName,
       };
     }
 
-    return readPlateThicknessSaveSurfaceApi().readPlateThicknessSaveSurface();
+    return readPlateThicknessSaveSurfaceApi().readPlateThicknessSaveSurface(messages);
   }
 
-  async function runPlateThicknessSaveAction(request) {
-    var surface = await readPlateThicknessSaveSurface();
+  async function runPlateThicknessSaveAction(request, messages) {
+    var surface = await readPlateThicknessSaveSurface(messages);
 
     if (surface.mode === "lab-connected") {
-      return await runConnectedPlateThicknessSaveAction(surface, request);
+      return await runConnectedPlateThicknessSaveAction(surface, request, messages);
     }
 
-    return await runOfflinePlateThicknessSaveAction(request);
+    return await runOfflinePlateThicknessSaveAction(request, messages);
   }
 
-  async function runConnectedPlateThicknessSaveAction(surface, request) {
+  async function runConnectedPlateThicknessSaveAction(surface, request, messages) {
     var snapshot = request.readSnapshot();
     var subjects = await readNotebookSaveClient().listNotebookSubjectsForPlateThicknessSave(surface.workbookId);
     var selection = await readPlateThicknessSaveModalApi().openConnectedPlateThicknessSaveModal({
       notebookName: surface.notebookName,
       subjects: subjects,
-      defaultDisplayName: readPlateThicknessDefaultDisplayName(snapshot),
+      defaultDisplayName: messages.plateStock || "Plate Stock",
+      messages: messages,
     });
 
     if (!selection) {
@@ -53,14 +59,14 @@
         stateJson: savePackage.text,
       },
     });
-    request.setStatus("Saved to " + (surface.notebookName || "Notebook") + ".");
+    request.setStatus(formatSavedToNotebook(messages, surface.notebookName));
     return true;
   }
 
-  async function runOfflinePlateThicknessSaveAction(request) {
+  async function runOfflinePlateThicknessSaveAction(request, messages) {
     var savePackage = readPlateThicknessSaveSurfaceApi().buildPlateThicknessSavePackage(request.readSnapshot());
     readPlateThicknessSaveSurfaceApi().downloadPlateThicknessSavePackage(globalScope, savePackage);
-    request.setStatus("JSON package downloaded");
+    request.setStatus(messages.jsonPackageDownloaded || "JSON package downloaded");
     return Promise.resolve(true);
   }
 
@@ -80,8 +86,9 @@
     );
   }
 
-  function readPlateThicknessDefaultDisplayName(_snapshot) {
-    return "Plate Stock";
+  function formatSavedToNotebook(messages, notebookName) {
+    var message = messages.savedToNotebook || "Saved to {notebookName}.";
+    return message.replace("{notebookName}", notebookName || messages.notebook || "Notebook");
   }
 
   function readPlateThicknessSaveSurfaceApi() {

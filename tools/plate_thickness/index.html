@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-US">
 
 <head>
   <meta charset="utf-8">
@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="../common/layout.css">
   <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <meta name="description" content="Estimate a target top or back thickness from panel dimensions, mass, tap-tone frequencies, and the finished instrument’s target mode.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/lab/tools/plate_thickness/">
 </head>
 
 <body data-plate-default-preset="obrien_om_ss">
@@ -163,20 +165,11 @@
           <section class="tl-content tl-content-secondary">
     <header class="card pad tl-card tl-card-info">
       <h1>Target Panel Thickness Calculator</h1>
-      <p class="tl-card-desc">
-        Use this tool to estimate the thickness for a top or back panel using its dimensions, mass, and tap-tone frequencies, so
-        you can achieve consistent stiffness and a predictable acoustic response.
-      </p>
-      <p class="tl-card-desc">
-        This calculator is based on the Gore &amp; Gilet “Design” book (sections 4.5.2–4.5.3) and validated against their
-        reference tables.
-      </p>
+      <p class="tl-card-desc">Use this tool to estimate the thickness for a top or back panel using its dimensions, mass, and tap-tone frequencies, so you can achieve consistent stiffness and a predictable acoustic response.</p>
+      <p class="tl-card-desc">This calculator is based on the Gore &amp; Gilet “Design” book (sections 4.5.2–4.5.3) and validated against their reference tables.</p>
       <details class="tl-accordion">
         <summary>Overview &amp; Required Measurements</summary>
-        <p class="tl-card-desc">
-          Thickness isn’t the target, stiffness is. And one of the most straightforward ways to estimate stiffness in a
-          guitar panel is by measuring its modal frequencies.
-        </p>
+        <p class="tl-card-desc">Thickness isn’t the target, stiffness is. And one of the most straightforward ways to estimate stiffness in a guitar panel is by measuring its modal frequencies.</p>
         <div class="before-columns">
           <div class="before-card">
             <h3>How to use this tool</h3>
@@ -190,7 +183,7 @@
           <div class="before-card">
             <h3>Measurements required</h3>
             <ul class="tl-list">
-              <li>Guitar box length & lower-bout width (mm)</li>
+              <li>Guitar box length &amp; lower-bout width (mm)</li>
               <li>Panel length, width, and thickness (mm)</li>
               <li>Panel mass (g)</li>
               <li>Tap-tone frequencies: long, cross, twist (Hz)</li>
@@ -200,24 +193,14 @@
         </div>
         <div class="before-card">
           <h3>Accuracy &amp; troubleshooting</h3>
-          <p class="tl-card-desc">
-            Measure the fundamental of each mode (an FFT helps). Uneven thickness or coarse sanding can shift the tap
-            frequencies; planing or scraping gives the most reliable readings. </p>
-          <p class="tl-card-desc">
-            If the recommended thickness seems unusually thin, re-measure your tap frequencies and compare them to the
-            examples in the Gore &amp; Gilet book. They should be in the same ballpark. If they’re not, send your numbers
-            using the form below and we’ll take a look.
-          </p>
+          <p class="tl-card-desc">Measure the fundamental of each mode (an FFT helps). Uneven thickness or coarse sanding can shift the tap frequencies; planing or scraping gives the most reliable readings.</p>
+          <p class="tl-card-desc">If the recommended thickness seems unusually thin, re-measure your tap frequencies and compare them to the examples in the Gore &amp; Gilet book. They should be in the same ballpark. If they’re not, send your numbers using the form below and we’ll take a look.</p>
         </div>
       </details>
     </header>
     <section class="card pad tl-card tl-card-info">
       <h2>How the calculation works</h2>
-      <p class="tl-card-desc">
-        This calculator is based on Gore &amp; Gilet Vol. 1 (sections 4.5.2–4.5.3) and the example tables in the Design
-        book. It converts your panel’s geometry, mass, and tap-tone frequencies into stiffness properties, then
-        determines the thickness that corresponds to your target modal frequency.
-      </p>
+      <p class="tl-card-desc">This calculator is based on Gore &amp; Gilet Vol. 1 (sections 4.5.2–4.5.3) and the example tables in the Design book. It converts your panel’s geometry, mass, and tap-tone frequencies into stiffness properties, then determines the thickness that corresponds to your target modal frequency.</p>
 
       <div class="tl-eq-block">
         <h3>Density (ρ)</h3>
@@ -229,8 +212,7 @@
 
       <div class="tl-eq-block">
         <h3>Young’s moduli (E<sub>L</sub>, E<sub>C</sub>)</h3>
-        <p class="small muted">Stiffness along and across the grain, calculated from density, geometry, and tap
-          frequencies.</p>
+        <p class="small muted">Stiffness along and across the grain, calculated from density, geometry, and tap frequencies.</p>
         <div class="tl-equation">
           E = 0.94146 ·
           <span class="tl-eq-frac">
@@ -265,9 +247,20 @@
         </div>
       </div>
 
-      <p class="small muted">URL tip: append <code>?long=80&amp;cross=120&amp;twisting=45</code> to prefill the modal
-        taps when sharing results.</p>
+      <p class="small muted">URL tip: append <code>?long=80&amp;cross=120&amp;twisting=45</code> to prefill the modal taps when sharing results.</p>
     </section>
+    <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="en-US">
+  <h2>Plate Thickness</h2>
+  <p>Estimate the thickness for a top or back panel from its dimensions, mass, and tap-tone frequencies so you can work toward consistent stiffness and a predictable acoustic response.</p>
+  <p>This calculator converts panel geometry, mass, and long-grain, cross-grain, and twisting-mode frequencies into stiffness properties and a target thickness.</p>
+  <p>Thickness is only a proxy for stiffness. Measuring each panel lets you respond to the wood in front of you instead of copying one nominal dimension.</p>
+  <ul>
+    <li>Enter the panel length, width, thickness, mass, and three modal frequencies.</li>
+    <li>Enter the guitar body dimensions and the target main tap frequency for the finished plate.</li>
+  </ul>
+  <p>Use the solved thickness as a measured starting target, then confirm the panel’s response as material is removed.</p>
+  <p class="small muted">Created by Rick Molloy from the plate-property and target-thickness methods published by Trevor Gore and Gerard Gilet.</p>
+</section>
           </section>
         </main>
       </section>

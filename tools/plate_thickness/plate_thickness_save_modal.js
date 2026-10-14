@@ -1,16 +1,17 @@
 (function (globalScope) {
   function openConnectedPlateThicknessSaveModal(args) {
     var settings = args || {};
+    var messages = settings.messages || {};
     return readSharedNotebookSaveModal().openNotebookSaveModal({
-      dialogLabel: "Save Plate Thickness",
-      title: settings.title || "Plate thickness",
+      dialogLabel: messages.savePlateThickness || "Save Plate Thickness",
+      title: settings.title || messages.plateThickness || "Plate thickness",
       notebookName: settings.notebookName,
       subjects: settings.subjects,
       packageFiles: ["state.json"],
       newSubject: {
         typeKey: "MATERIAL",
         subtypeKey: "PLATE_STOCK",
-        displayNamePlaceholder: settings.defaultDisplayName || "Plate Stock",
+        displayNamePlaceholder: settings.defaultDisplayName || messages.plateStock || "Plate Stock",
       },
     });
   }

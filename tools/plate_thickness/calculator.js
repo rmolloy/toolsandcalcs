@@ -5,12 +5,20 @@
 Panel thickness calculator core math. Shared between the UI and Vitest.
 */
 (() => {
+    class PlateThicknessCalculationError extends Error {
+        constructor(code, message, field) {
+            super(message);
+            this.name = "PlateThicknessCalculationError";
+            this.code = code;
+            this.field = field;
+        }
+    }
     const YOUNGS_FACTOR = 0.94146;
     const SHEAR_FACTOR = 1.21585;
     const THICKNESS_FACTOR = 0.95977;
     function assertPositive(value, label) {
         if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-            throw new Error(`${label} must be a finite, positive number.`);
+            throw new PlateThicknessCalculationError("positive-number-required", `${label} must be a finite, positive number.`, label);
         }
     }
     function calculateDensity(massKg, heightM, lengthM, widthM) {
@@ -92,7 +100,7 @@ Panel thickness calculator core math. Shared between the UI and Vitest.
         const denominator = Math.sqrt(material.EL + coupling);
         const thickness = numerator / denominator;
         if (!Number.isFinite(thickness)) {
-            throw new Error("Unable to compute thickness with the provided inputs.");
+            throw new PlateThicknessCalculationError("thickness-computation-failed", "Unable to compute thickness with the provided inputs.");
         }
         const projectedMass = material.density * thickness * params.panelLength * params.panelWidth;
         return {

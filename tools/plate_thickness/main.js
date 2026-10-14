@@ -4,6 +4,36 @@
 
 Panel thickness calculator UI logic.
 */
+// localized-runtime-messages:start
+const plateThicknessRuntimeMessages = Object.freeze({
+    bodyLength: "bodyLength",
+    crossFreq: "crossFreq",
+    downloadJson: "Download JSON",
+    longFreq: "longFreq",
+    lowerBout: "lowerBout",
+    panelHeight: "panelHeight",
+    panelLength: "panelLength",
+    panelMass: "panelMass",
+    panelWidth: "panelWidth",
+    jsonPackageDownloaded: "JSON package downloaded",
+    liveComputedFromInputs: "Live: computed from current inputs",
+    loadedJsonPackage: "Loaded JSON package",
+    locale: "en-US",
+    notebook: "Notebook",
+    notebookEventRestored: "Notebook event restored.",
+    notebookSavingUnavailable: "Notebook saving is not available here. Download the export instead.",
+    plateStock: "Plate Stock",
+    plateThickness: "Plate thickness",
+    positiveNumberRequired: "{field} must be a finite, positive number.",
+    save: "Save",
+    savedToNotebook: "Saved to {notebookName}.",
+    savePlateThickness: "Save Plate Thickness",
+    targetFreq: "targetFreq",
+    twistFreq: "twistFreq",
+    unableToComputeThickness: "Unable to compute thickness with the provided inputs.",
+    unableToLoadJsonPackage: "Unable to load JSON package",
+});
+// localized-runtime-messages:end
 (function initPlateThicknessTool() {
     const calculator = (typeof window !== "undefined" && window.PlateThickness) ? window.PlateThickness : null;
     const queryParams = (typeof window !== "undefined" && window.PlateThicknessQueryParams)
@@ -59,7 +89,7 @@ Panel thickness calculator UI logic.
     function format(value, { digits = 2, notation = "standard" } = {}) {
         if (!Number.isFinite(value))
             return "—";
-        return new Intl.NumberFormat("en-US", {
+        return new Intl.NumberFormat(plateThicknessRuntimeMessages.locale, {
             minimumFractionDigits: digits,
             maximumFractionDigits: digits,
             notation
@@ -95,7 +125,7 @@ Panel thickness calculator UI logic.
         if (resultEls.shear)
             resultEls.shear.textContent = `${format(result.GLC / 1e9, { digits: 2 })} GPa`;
         if (resultEls.status)
-            resultEls.status.textContent = "Live: computed from current inputs";
+            resultEls.status.textContent = plateThicknessRuntimeMessages.liveComputedFromInputs;
     }
     function setError(message) {
         if (resultEls.thickness)
@@ -125,11 +155,11 @@ Panel thickness calculator UI logic.
             const snapshot = await window.PlateThicknessSaveSurface.readPlateThicknessSavePackageFile(file);
             applyLoadedPlateThicknessSnapshot(snapshot);
             if (resultEls.status)
-                resultEls.status.textContent = "Loaded JSON package";
+                resultEls.status.textContent = plateThicknessRuntimeMessages.loadedJsonPackage;
         }
         catch (_error) {
             if (resultEls.status)
-                resultEls.status.textContent = "Unable to load JSON package";
+                resultEls.status.textContent = plateThicknessRuntimeMessages.unableToLoadJsonPackage;
         }
         finally {
             if (loadFileInput)
@@ -157,7 +187,7 @@ Panel thickness calculator UI logic.
             setResults(result);
         }
         catch (error) {
-            setError(error.message);
+            setError(readCalculationErrorMessage(error));
         }
     }
     function reset(clearPerTabSession = false) {
@@ -262,7 +292,7 @@ Panel thickness calculator UI logic.
     async function applyPlateThicknessSaveSurface() {
         const saveSurface = await saveRunner.readPlateThicknessSaveSurface();
         if (saveButton) {
-            saveButton.textContent = saveSurface.label || "Download JSON";
+            saveButton.textContent = saveSurface.label || plateThicknessRuntimeMessages.downloadJson;
             saveButton.title = saveSurface.hint || "";
         }
     }
@@ -290,20 +320,22 @@ Panel thickness calculator UI logic.
     function readPlateThicknessSaveRunner() {
         var _a;
         if ((_a = window.PlateThicknessSaveTarget) === null || _a === void 0 ? void 0 : _a.plateThicknessSaveRunnerCreate) {
-            return window.PlateThicknessSaveTarget.plateThicknessSaveRunnerCreate();
+            return window.PlateThicknessSaveTarget.plateThicknessSaveRunnerCreate({
+                messages: plateThicknessRuntimeMessages,
+            });
         }
         return {
             readPlateThicknessSaveSurface() {
                 return Promise.resolve({
                     mode: "offline",
-                    label: "Download JSON",
+                    label: plateThicknessRuntimeMessages.downloadJson,
                     hint: "",
                 });
             },
             runPlateThicknessSaveAction(request) {
                 const savePackage = window.PlateThicknessSaveSurface.buildPlateThicknessSavePackage(request.readSnapshot());
                 window.PlateThicknessSaveSurface.downloadPlateThicknessSavePackage(window, savePackage);
-                request.setStatus("JSON package downloaded");
+                request.setStatus(plateThicknessRuntimeMessages.jsonPackageDownloaded);
                 return Promise.resolve(true);
             },
         };
@@ -312,6 +344,18 @@ Panel thickness calculator UI logic.
         if (resultEls.status) {
             resultEls.status.textContent = message;
         }
+    }
+    function readCalculationErrorMessage(error) {
+        const calculationError = error;
+        if (calculationError.code === "positive-number-required" && calculationError.field) {
+            const fieldName = plateThicknessRuntimeMessages[calculationError.field]
+                || calculationError.field;
+            return plateThicknessRuntimeMessages.positiveNumberRequired.replace("{field}", fieldName);
+        }
+        if (calculationError.code === "thickness-computation-failed") {
+            return plateThicknessRuntimeMessages.unableToComputeThickness;
+        }
+        return calculationError.message;
     }
     async function initializePlateThicknessToolSurface() {
         if (await restoreNotebookEventIntoUi()) {
@@ -331,7 +375,7 @@ Panel thickness calculator UI logic.
             },
         });
         if (restored && resultEls.status) {
-            resultEls.status.textContent = "Notebook event restored.";
+            resultEls.status.textContent = plateThicknessRuntimeMessages.notebookEventRestored;
         }
         return restored;
     }

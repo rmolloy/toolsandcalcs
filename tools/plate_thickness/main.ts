@@ -14,6 +14,37 @@ type PlateSolution = {
   GLC: number;
 };
 
+// localized-runtime-messages:start
+const plateThicknessRuntimeMessages = Object.freeze({
+  bodyLength: "bodyLength",
+  crossFreq: "crossFreq",
+  downloadJson: "Download JSON",
+  longFreq: "longFreq",
+  lowerBout: "lowerBout",
+  panelHeight: "panelHeight",
+  panelLength: "panelLength",
+  panelMass: "panelMass",
+  panelWidth: "panelWidth",
+  jsonPackageDownloaded: "JSON package downloaded",
+  liveComputedFromInputs: "Live: computed from current inputs",
+  loadedJsonPackage: "Loaded JSON package",
+  locale: "en-US",
+  notebook: "Notebook",
+  notebookEventRestored: "Notebook event restored.",
+  notebookSavingUnavailable: "Notebook saving is not available here. Download the export instead.",
+  plateStock: "Plate Stock",
+  plateThickness: "Plate thickness",
+  positiveNumberRequired: "{field} must be a finite, positive number.",
+  save: "Save",
+  savedToNotebook: "Saved to {notebookName}.",
+  savePlateThickness: "Save Plate Thickness",
+  targetFreq: "targetFreq",
+  twistFreq: "twistFreq",
+  unableToComputeThickness: "Unable to compute thickness with the provided inputs.",
+  unableToLoadJsonPackage: "Unable to load JSON package",
+});
+// localized-runtime-messages:end
+
 (function initPlateThicknessTool() {
   const calculator = (typeof window !== "undefined" && (window as any).PlateThickness) ? (window as any).PlateThickness : null;
   const queryParams = (typeof window !== "undefined" && (window as any).PlateThicknessQueryParams)
@@ -77,7 +108,7 @@ type PlateSolution = {
 
   function format(value: number, { digits = 2, notation = "standard" as Intl.NumberFormatOptions["notation"] } = {}) {
     if (!Number.isFinite(value)) return "—";
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(plateThicknessRuntimeMessages.locale, {
       minimumFractionDigits: digits,
       maximumFractionDigits: digits,
       notation
@@ -108,7 +139,7 @@ type PlateSolution = {
     if (resultEls.EC) resultEls.EC.textContent = `${format(result.EC / 1e9, { digits: 2 })} GPa`;
     if (resultEls.ratio) resultEls.ratio.textContent = format(result.ELoverEC, { digits: 2 });
     if (resultEls.shear) resultEls.shear.textContent = `${format(result.GLC / 1e9, { digits: 2 })} GPa`;
-    if (resultEls.status) resultEls.status.textContent = "Live: computed from current inputs";
+    if (resultEls.status) resultEls.status.textContent = plateThicknessRuntimeMessages.liveComputedFromInputs;
   }
 
   function setError(message: string) {
@@ -132,9 +163,9 @@ type PlateSolution = {
     try {
       const snapshot = await (window as any).PlateThicknessSaveSurface.readPlateThicknessSavePackageFile(file);
       applyLoadedPlateThicknessSnapshot(snapshot);
-      if (resultEls.status) resultEls.status.textContent = "Loaded JSON package";
+      if (resultEls.status) resultEls.status.textContent = plateThicknessRuntimeMessages.loadedJsonPackage;
     } catch (_error) {
-      if (resultEls.status) resultEls.status.textContent = "Unable to load JSON package";
+      if (resultEls.status) resultEls.status.textContent = plateThicknessRuntimeMessages.unableToLoadJsonPackage;
     } finally {
       if (loadFileInput) loadFileInput.value = "";
     }
@@ -160,7 +191,7 @@ type PlateSolution = {
       const result = calc.computePlateSolution(mapped);
       setResults(result);
     } catch (error) {
-      setError((error as Error).message);
+      setError(readCalculationErrorMessage(error));
     }
   }
 
@@ -277,7 +308,7 @@ type PlateSolution = {
   async function applyPlateThicknessSaveSurface() {
     const saveSurface = await saveRunner.readPlateThicknessSaveSurface();
     if (saveButton) {
-      saveButton.textContent = saveSurface.label || "Download JSON";
+      saveButton.textContent = saveSurface.label || plateThicknessRuntimeMessages.downloadJson;
       saveButton.title = saveSurface.hint || "";
     }
   }
@@ -308,14 +339,16 @@ type PlateSolution = {
 
   function readPlateThicknessSaveRunner() {
     if ((window as any).PlateThicknessSaveTarget?.plateThicknessSaveRunnerCreate) {
-      return (window as any).PlateThicknessSaveTarget.plateThicknessSaveRunnerCreate();
+      return (window as any).PlateThicknessSaveTarget.plateThicknessSaveRunnerCreate({
+        messages: plateThicknessRuntimeMessages,
+      });
     }
 
     return {
       readPlateThicknessSaveSurface() {
         return Promise.resolve({
           mode: "offline",
-          label: "Download JSON",
+          label: plateThicknessRuntimeMessages.downloadJson,
           hint: "",
         });
       },
@@ -327,7 +360,7 @@ type PlateSolution = {
           request.readSnapshot(),
         );
         (window as any).PlateThicknessSaveSurface.downloadPlateThicknessSavePackage(window, savePackage);
-        request.setStatus("JSON package downloaded");
+        request.setStatus(plateThicknessRuntimeMessages.jsonPackageDownloaded);
         return Promise.resolve(true);
       },
     };
@@ -337,6 +370,22 @@ type PlateSolution = {
     if (resultEls.status) {
       resultEls.status.textContent = message;
     }
+  }
+
+  function readCalculationErrorMessage(error: unknown) {
+    const calculationError = error as Error & { code?: string; field?: string };
+
+    if (calculationError.code === "positive-number-required" && calculationError.field) {
+      const fieldName = plateThicknessRuntimeMessages[calculationError.field as keyof typeof plateThicknessRuntimeMessages]
+        || calculationError.field;
+      return plateThicknessRuntimeMessages.positiveNumberRequired.replace("{field}", fieldName);
+    }
+
+    if (calculationError.code === "thickness-computation-failed") {
+      return plateThicknessRuntimeMessages.unableToComputeThickness;
+    }
+
+    return calculationError.message;
   }
 
   async function initializePlateThicknessToolSurface() {
@@ -362,7 +411,7 @@ type PlateSolution = {
     });
 
     if (restored && resultEls.status) {
-      resultEls.status.textContent = "Notebook event restored.";
+      resultEls.status.textContent = plateThicknessRuntimeMessages.notebookEventRestored;
     }
 
     return restored;
