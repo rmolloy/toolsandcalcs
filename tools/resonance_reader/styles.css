@@ -1731,16 +1731,17 @@ body { padding: 28px; }
 }
 
 .wave-transport-inline .transport-recording {
-  height: 35px;
-  width: clamp(12ch, 22vw, 30ch);
+  min-height: 35px;
+  height: auto;
+  width: max-content;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   border-radius: 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: left;
 }
 
 .wave-transport-inline .take-overlay-menu::after {
@@ -1752,7 +1753,7 @@ body { padding: 28px; }
   position: relative;
   display: inline-flex;
   align-items: center;
-  height: 35px;
+  min-height: 35px;
 }
 
 .take-overlay-clear {
@@ -1999,16 +2000,20 @@ body { padding: 28px; }
 @media (max-width: 560px) {
   .measure-action-row .wave-transport-inline {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, max-content));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-content: flex-start;
   }
   .take-overlay-controls {
     grid-column: 1 / -1;
-    width: min(100%, 34ch);
+    width: min(100%, 50ch);
   }
   .wave-transport-inline .transport-recording {
     grid-column: 1 / -1;
     width: 100%;
+  }
+  .take-overlay-clear {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
   .measure-action-row .dof-model-link {
     margin-left: 0;
