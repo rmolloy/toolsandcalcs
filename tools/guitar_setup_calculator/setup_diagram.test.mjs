@@ -7,7 +7,36 @@ import {
   createDefaultSetup,
   createSetupFromInstrumentProfile,
 } from "./setup_model.ts";
-import { calculateStringYPositions, renderSetupDiagram } from "./setup_diagram.mjs";
+import { calculateStringYPositions, renderSetupDiagram as renderSetupDiagramWithMessages } from "./setup_diagram.mjs";
+
+const diagramMessages = Object.freeze({
+  actionAtFret12Heading: "ACTION @ FRET 12 · CAPO 1",
+  courseAbbreviation: "C",
+  description: "A broken-scale top view of {stringCount} strings, with calculated nut and saddle compensation for every physical string. Unequal string lengths fan around fret {neutralFret}.",
+  first: "first",
+  fretOne: "FRET 1",
+  fretTwelve: "FRET 12",
+  fretTwelveToSaddle: "12TH FRET → SADDLE",
+  last: "last",
+  mobileNutLabel: "Calculated nut compensation and first-fret geometry",
+  mobileSaddleLabel: "Calculated saddle compensation and twelfth-fret geometry",
+  nut: "NUT",
+  nutActionHeading: "NUT ACTION @ FRET 1 · OPEN",
+  nutDirection: "+ toward fret 1 →",
+  nutInsertLabel: "5 millimetre nut insert",
+  nutToFretOne: "NUT → FRET 1",
+  saddle: "SADDLE",
+  saddleDirection: "+ lengthen →",
+  saddleInsertLabel: "6 millimetre saddle insert",
+  scaleContinues: "scale continues",
+  scalePerString: "{range} · neutral fret {neutralFret}",
+  scaleSingle: "{length} scale",
+  title: "Calculated nut and saddle geometry",
+});
+
+function renderSetupDiagram(options) {
+  return renderSetupDiagramWithMessages({ ...options, messages: diagramMessages });
+}
 
 test("diagram renders every physical string and calculated compensation", () => {
   const setup = createSetupFromInstrumentProfile("twelve_string");
@@ -39,6 +68,33 @@ test("diagram preserves the complete desktop view and names each mobile measurem
   assert.doesNotMatch(mobileDiagram, /scale continues|href="#setup-geometry-artwork"/);
   assert.doesNotMatch(nutDiagram, /SADDLE|FRET 12/);
   assert.doesNotMatch(saddleDiagram, /NUT|FRET 1(?!2)/);
+});
+
+test("diagram preserves visible and accessible setup geometry wording", () => {
+  const setup = createDefaultSetup();
+  const diagram = renderSetupDiagram({ setup, result: calculateSetup(setup) });
+
+  for (const wording of [
+    "Calculated nut and saddle geometry",
+    "A broken-scale top view of 6 strings, with calculated nut and saddle compensation for every physical string. Unequal string lengths fan around fret 7.",
+    "Calculated nut compensation and first-fret geometry",
+    "Calculated saddle compensation and twelfth-fret geometry",
+    "NUT → FRET 1",
+    "12TH FRET → SADDLE",
+    "scale continues",
+    'aria-label="5 millimetre nut insert"',
+    "+ toward fret 1 →",
+    'aria-label="6 millimetre saddle insert"',
+    "+ lengthen →",
+    "NUT ACTION @ FRET 1 · OPEN",
+    "ACTION @ FRET 12 · CAPO 1",
+    "first 0.22 mm · last 0.32 mm",
+    "first 1.80 mm · last 2.20 mm",
+    "NUT · 5 MM",
+    "SADDLE · 6 MM",
+  ]) {
+    assert.match(diagram, new RegExp(wording.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
 });
 
 test("diagram presents scale, inserts, and compensation in inches", () => {

@@ -1,8 +1,15 @@
 export function createSparseActionEditor({
   document,
+  emptyReadingsMessage,
   lengthUnits,
   escapeMarkup,
   clearInputError,
+  formatCourseStringLabel,
+  formatFretRangeError,
+  formatRemoveReadingLabel,
+  fretLabel,
+  readErrorMessage,
+  removeReadingTitle,
   showInputError,
   onMeasurementsChanged,
   onError,
@@ -47,7 +54,7 @@ export function createSparseActionEditor({
       setup.strings.length - 1,
     );
     stringSelect.innerHTML = setup.strings.map((string, stringIndex) => (
-      `<option value="${stringIndex}">C${string.courseIndex + 1} · ${escapeMarkup(string.name)}</option>`
+      `<option value="${stringIndex}">${escapeMarkup(formatCourseStringLabel(string.courseIndex + 1, string.name))}</option>`
     )).join("");
     stringSelect.value = String(selectedStringIndex);
     fretInput.max = String(setup.fretCount);
@@ -66,13 +73,13 @@ export function createSparseActionEditor({
       }))
     ));
     readings.innerHTML = actionReadings.length === 0
-      ? '<p class="step-note">No additional readings.</p>'
+      ? `<p class="step-note">${escapeMarkup(emptyReadingsMessage)}</p>`
       : actionReadings.map(({ string, stringIndex, measurement }) => `
         <div class="sparse-action-reading">
-          <span>C${string.courseIndex + 1} · ${escapeMarkup(string.name)}</span>
-          <span>Fret ${measurement.fretNumber}</span>
+          <span>${escapeMarkup(formatCourseStringLabel(string.courseIndex + 1, string.name))}</span>
+          <span>${escapeMarkup(fretLabel)} ${measurement.fretNumber}</span>
           <strong>${lengthUnits.format(measurement.clearanceAboveFretMm)}</strong>
-          <button type="button" data-remove-sparse-action="${stringIndex}:${measurement.fretNumber}" aria-label="Remove ${escapeMarkup(string.name)} fret ${measurement.fretNumber} reading" title="Remove reading">×</button>
+          <button type="button" data-remove-sparse-action="${stringIndex}:${measurement.fretNumber}" aria-label="${escapeMarkup(formatRemoveReadingLabel(string.name, measurement.fretNumber))}" title="${escapeMarkup(removeReadingTitle)}">×</button>
         </div>
       `).join("");
   }
@@ -95,7 +102,7 @@ export function createSparseActionEditor({
       render(setup);
       onMeasurementsChanged();
     } catch (error) {
-      showInputError(clearanceInput, error.message);
+      showInputError(clearanceInput, readErrorMessage(error));
       onError(error);
     }
   }
@@ -115,7 +122,7 @@ export function createSparseActionEditor({
       throw new RangeError("Choose a physical string");
     }
     if (!Number.isInteger(fretNumber) || fretNumber < 0 || fretNumber > setup.fretCount) {
-      throw new RangeError(`Fret must be a whole number from 0 to ${setup.fretCount}`);
+      throw new RangeError(formatFretRangeError(setup.fretCount));
     }
     if (!Number.isFinite(clearanceAboveFretMm) || clearanceAboveFretMm < 0) {
       throw new RangeError("Clearance must be zero or greater");

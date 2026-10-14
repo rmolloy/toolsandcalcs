@@ -3,6 +3,7 @@ export function createSetupResultPresenter({
   lengthUnits,
   calculateMaximumAbsoluteCentsError,
   escapeMarkup,
+  messages,
 }) {
   const resultRows = document.getElementById("result_rows");
   const mobileResultCards = document.getElementById("mobile_result_cards");
@@ -47,11 +48,11 @@ export function createSetupResultPresenter({
       (stringResult) => stringResult.intonation.saddleCompensationMm,
     );
 
-    railAction.textContent = `${setup.strings[0].name} ${lengthUnits.format(targetAction.firstStringMm)} · ${setup.strings.at(-1).name} ${lengthUnits.format(targetAction.lastStringMm)} · capo 1, fret 12`;
-    railNutAction.textContent = `${setup.strings[0].name} ${lengthUnits.format(nutAction.firstStringMm)} · ${setup.strings.at(-1).name} ${lengthUnits.format(nutAction.lastStringMm)} · open, fret 1`;
+    railAction.textContent = `${setup.strings[0].name} ${lengthUnits.format(targetAction.firstStringMm)} · ${setup.strings.at(-1).name} ${lengthUnits.format(targetAction.lastStringMm)} · ${messages.actionContext}`;
+    railNutAction.textContent = `${setup.strings[0].name} ${lengthUnits.format(nutAction.firstStringMm)} · ${setup.strings.at(-1).name} ${lengthUnits.format(nutAction.lastStringMm)} · ${messages.nutActionContext}`;
     railRelief.textContent = setup.reliefAmountMm === 0
-      ? "Off"
-      : `${lengthUnits.format(setup.reliefAmountMm)} @ fret ${setup.reliefPeakFret}`;
+      ? messages.reliefOff
+      : formatReliefAtFret(lengthUnits.format(setup.reliefAmountMm), setup.reliefPeakFret);
     railError.textContent = `${Math.max(...errors).toFixed(1)}¢`;
     railNutCompensation.textContent = lengthUnits.formatSignedRange(nutCompensations);
     railSaddleCompensation.textContent = lengthUnits.formatSignedRange(saddleCompensations);
@@ -75,7 +76,7 @@ export function createSetupResultPresenter({
       <td>${lengthUnits.format(result.intonation.nutCompensationMm)}</td>
       <td>${lengthUnits.format(result.intonation.saddleCompensationMm)}</td>
       <td>${peakErrorCents.toFixed(1)}¢</td>
-      <td>${escapeMarkup(result.string.tensionSource?.manufacturer || "Gauge estimate")}</td>
+      <td>${escapeMarkup(result.string.tensionSource?.manufacturer || messages.gaugeEstimate)}</td>
     </tr>`;
   }
 
@@ -88,7 +89,7 @@ export function createSetupResultPresenter({
     }
     return [...resultsByCourse.entries()].map(([courseIndex, courseResults]) => `
       <article class="mobile-result-course">
-        <header><strong>Course ${courseIndex + 1}</strong><small>${courseResults.length} ${courseResults.length === 1 ? "string" : "strings"}</small></header>
+        <header><strong>${formatCourseLabel(courseIndex + 1)}</strong><small>${courseResults.length === 1 ? messages.oneString : messages.twoStrings}</small></header>
         ${courseResults.map(renderMobileResultString).join("")}
       </article>
     `).join("");
@@ -100,17 +101,27 @@ export function createSetupResultPresenter({
     const peakErrorCents = calculateMaximumAbsoluteCentsError(
       result.intonation.centsErrorByFret,
     );
-    const source = result.string.tensionSource?.manufacturer || "Gauge estimate";
+    const source = result.string.tensionSource?.manufacturer || messages.gaugeEstimate;
     return `<section class="mobile-result-string">
       <header><strong>${escapeMarkup(result.string.name)}</strong><small>${lengthUnits.format(result.string.gaugeMm)} · ${lengthUnits.format(result.string.scaleLengthMm)} · ${escapeMarkup(source)}</small></header>
       <dl>
-        <div><dt>Nut comp.</dt><dd>${lengthUnits.formatSigned(result.intonation.nutCompensationMm)}</dd></div>
-        <div><dt>Saddle comp.</dt><dd>${lengthUnits.formatSigned(result.intonation.saddleCompensationMm)}</dd></div>
-        <div><dt>Peak error</dt><dd>${peakErrorCents.toFixed(1)}¢</dd></div>
-        <div><dt>Nut action</dt><dd>${lengthUnits.format(nutAction.clearanceAboveFretMm)}</dd></div>
-        <div><dt>Open @ 12</dt><dd>${lengthUnits.format(twelfthFret.clearanceAboveFretMm)}</dd></div>
+        <div><dt>${messages.nutCompensation}</dt><dd>${lengthUnits.formatSigned(result.intonation.nutCompensationMm)}</dd></div>
+        <div><dt>${messages.saddleCompensation}</dt><dd>${lengthUnits.formatSigned(result.intonation.saddleCompensationMm)}</dd></div>
+        <div><dt>${messages.peakError}</dt><dd>${peakErrorCents.toFixed(1)}¢</dd></div>
+        <div><dt>${messages.nutAction}</dt><dd>${lengthUnits.format(nutAction.clearanceAboveFretMm)}</dd></div>
+        <div><dt>${messages.openAtFret12}</dt><dd>${lengthUnits.format(twelfthFret.clearanceAboveFretMm)}</dd></div>
       </dl>
     </section>`;
+  }
+
+  function formatCourseLabel(courseNumber) {
+    return messages.courseLabel.replace("{courseNumber}", String(courseNumber));
+  }
+
+  function formatReliefAtFret(relief, fretNumber) {
+    return messages.reliefAtFret
+      .replace("{relief}", relief)
+      .replace("{fretNumber}", String(fretNumber));
   }
 
   return { clear, render };

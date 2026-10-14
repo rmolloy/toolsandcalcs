@@ -7,6 +7,15 @@ import {
   provenanceGroupForInput,
 } from "./setup_provenance.mjs";
 
+const provenanceMessages = Object.freeze({
+  calculatedFromMeasurements: "Calculated from your measured setup.",
+  measuredAtFrets: "Measured at frets",
+  mixedInputs: "Preview mixes {userMeasurementCount} user input groups with {profileDefaultCount} profile defaults.",
+  previewFromDefaults: "Preview from profile defaults. Enter your measurements before using the compensation pattern.",
+  profileDefault: "Profile default",
+  userEntry: "User entry",
+});
+
 test("string provenance keeps scale, mass, stiffness, and specification separate", () => {
   assert.equal(provenanceGroupForInput(stringInput("scaleLengthMm")), "scaleLength");
   assert.equal(provenanceGroupForInput(stringInput("gaugeMm")), "stringSpecification");
@@ -23,18 +32,24 @@ test("the fret-12 action anchor has its own provenance group", () => {
 });
 
 test("sparse action readings have stronger provenance without becoming a required input group", () => {
-  assert.equal(describeActionProvenance(new Set()), "Profile default");
-  assert.equal(describeActionProvenance(new Set(["bridgeAction"])), "User entry");
-  assert.equal(describeActionProvenance(new Set(["measuredAction"])), "Measured at frets");
+  assert.equal(describeActionProvenance(new Set(), provenanceMessages), "Profile default");
+  assert.equal(describeActionProvenance(new Set(["bridgeAction"]), provenanceMessages), "User entry");
+  assert.equal(describeActionProvenance(new Set(["measuredAction"]), provenanceMessages), "Measured at frets");
   assert.match(
-    describeCalculationBasis(new Set(["measuredAction"])),
+    describeCalculationBasis(new Set(["measuredAction"]), provenanceMessages),
     /profile defaults/,
   );
 });
 
 test("calculation basis distinguishes defaults, mixed inputs, and measured setups", () => {
-  assert.match(describeCalculationBasis(new Set()), /profile defaults/);
-  assert.match(describeCalculationBasis(new Set(["relief"])), /1 user input groups with 7 profile defaults/);
+  assert.equal(
+    describeCalculationBasis(new Set(), provenanceMessages),
+    "Preview from profile defaults. Enter your measurements before using the compensation pattern.",
+  );
+  assert.equal(
+    describeCalculationBasis(new Set(["relief"]), provenanceMessages),
+    "Preview mixes 1 user input groups with 7 profile defaults.",
+  );
   assert.equal(describeCalculationBasis(new Set([
     "scaleLength",
     "stringSpecification",
@@ -44,7 +59,7 @@ test("calculation basis distinguishes defaults, mixed inputs, and measured setup
     "relief",
     "nutAction",
     "bridgeAction",
-  ])), "Calculated from your measured setup.");
+  ]), provenanceMessages), "Calculated from your measured setup.");
 });
 
 function stringInput(stringField) {

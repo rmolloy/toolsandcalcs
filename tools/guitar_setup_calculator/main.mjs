@@ -15,13 +15,155 @@ import { createSetupResultPresenter } from "./setup_result_presenter.mjs";
 import { createSetupProfileEditor } from "./setup_profile_editor.mjs";
 import { createSetupFormController } from "./setup_form_controller.mjs";
 import { createStockSpecs } from "./stock_specs.mjs";
+import { readTensionCatalog } from "./tension_catalog_loader.mjs";
 import {
   describeActionProvenance,
   describeCalculationBasis,
   provenanceGroupForInput,
 } from "./setup_provenance.mjs";
 
-let setup = createDefaultSetup();
+// localized-runtime-messages:start
+const setupRuntimeMessages = Object.freeze({
+  axialStiffnessLabel: "Axial stiffness (N)",
+  buildLabel: "Build",
+  calculationData: "Calculation data",
+  calculationComplete: "Calculated from current inputs",
+  calculationPaused: "Calculation paused until the highlighted input is corrected.",
+  choosePhysicalString: "Choose a physical string",
+  clearanceMustBeNonNegative: "Clearance must be zero or greater",
+  courseLabel: "Course {courseNumber}",
+  courseStringLabel: "C{courseNumber} · {stringName}",
+  courseStringLegend: "Course {courseNumber} · {stringName}",
+  customProfileLabel: "Custom",
+  diagramMessages: Object.freeze({
+    actionAtFret12Heading: "ACTION @ FRET 12 · CAPO 1",
+    courseAbbreviation: "C",
+    description: "A broken-scale top view of {stringCount} strings, with calculated nut and saddle compensation for every physical string. Unequal string lengths fan around fret {neutralFret}.",
+    first: "first",
+    fretOne: "FRET 1",
+    fretTwelve: "FRET 12",
+    fretTwelveToSaddle: "12TH FRET → SADDLE",
+    last: "last",
+    mobileNutLabel: "Calculated nut compensation and first-fret geometry",
+    mobileSaddleLabel: "Calculated saddle compensation and twelfth-fret geometry",
+    nut: "NUT",
+    nutActionHeading: "NUT ACTION @ FRET 1 · OPEN",
+    nutDirection: "+ toward fret 1 →",
+    nutInsertLabel: "5 millimetre nut insert",
+    nutToFretOne: "NUT → FRET 1",
+    saddle: "SADDLE",
+    saddleDirection: "+ lengthen →",
+    saddleInsertLabel: "6 millimetre saddle insert",
+    scaleContinues: "scale continues",
+    scalePerString: "{range} · neutral fret {neutralFret}",
+    scaleSingle: "{length} scale",
+    title: "Calculated nut and saddle geometry",
+  }),
+  estimatedCoreLabel: "Estimated core",
+  firstNamedStringLabel: "First · {stringName} ({unit})",
+  fretRange: "Fret must be a whole number from 0 to {fretCount}",
+  fretLabel: "Fret",
+  gaugeEstimate: "Gauge estimate",
+  lastNamedStringLabel: "Last · {stringName} ({unit})",
+  manufacturer: "Manufacturer",
+  midiNoteLabel: "MIDI note",
+  nameLabel: "Name",
+  noAdditionalReadings: "No additional readings.",
+  oneStringLabel: "1 string",
+  plainConstructionLabel: "Plain",
+  woundConstructionLabel: "Wound",
+  profileDefault: "Profile default",
+  profileLabels: Object.freeze({
+    classical: "Classical guitar",
+    electric: "Electric guitar",
+    four_string_bass: "4-string bass",
+    mandolin: "Mandolin",
+    steel_string: "Steel-string guitar",
+    tenor_ukulele: "Tenor ukulele",
+    twelve_string: "12-string guitar",
+  }),
+  profileStringNames: Object.freeze({
+    highE: "High E",
+    lowE: "Low E",
+  }),
+  provenanceMessages: Object.freeze({
+    calculatedFromMeasurements: "Calculated from your measured setup.",
+    measuredAtFrets: "Measured at frets",
+    mixedInputs: "Preview mixes {userMeasurementCount} user input groups with {profileDefaultCount} profile defaults.",
+    previewFromDefaults: "Preview from profile defaults. Enter your measurements before using the compensation pattern.",
+    profileDefault: "Profile default",
+    userEntry: "User entry",
+  }),
+  reliefMustNotBeNegative: "reliefMm must not be negative",
+  removeReadingLabel: "Remove {stringName} fret {fretNumber} reading",
+  removeReadingTitle: "Remove reading",
+  resultMessages: Object.freeze({
+    actionContext: "capo 1, fret 12",
+    courseLabel: "Course {courseNumber}",
+    gaugeEstimate: "Gauge estimate",
+    nutAction: "Nut action",
+    nutActionContext: "open, fret 1",
+    nutCompensation: "Nut comp.",
+    oneString: "1 string",
+    openAtFret12: "Open @ 12",
+    peakError: "Peak error",
+    reliefAtFret: "{relief} @ fret {fretNumber}",
+    reliefOff: "Off",
+    saddleCompensation: "Saddle comp.",
+    twoStrings: "2 strings",
+  }),
+  stringGaugeLabel: "Gauge ({unit})",
+  stringLengthLabel: "Length ({unit})",
+  stockSpecMessages: Object.freeze({
+    actionAtFret12: "Action @ 12th fret",
+    actionAtNut: "Action at nut",
+    draft: "Draft — confirm",
+    families: {
+      classical: {
+        label: "Classical",
+        note: "Tie-block break angle matters as much as height.",
+        nutActionText: "higher — set by feel",
+        reliefText: "flat — usually no rod",
+      },
+      electric: {
+        label: "Electric",
+        note: "Balance the tremolo before setting action.",
+      },
+      four_string_bass: {
+        label: "Bass",
+        note: "Longer scale — relief reads farther up the neck.",
+      },
+      steel_string: {
+        label: "Steel-string",
+        note: "Slide or heavy attack: run the high side.",
+      },
+    },
+    relief: "Relief",
+    selected: "Selected",
+  }),
+  tensionCatalogLoading: "Loading manufacturer tension catalog...",
+  tensionCatalogUnavailable: "Manufacturer tension catalog is unavailable",
+  tensionEstimateFallback: "Using gauge estimates: manufacturer catalog unavailable",
+  twoStringsLabel: "2 strings",
+  unitMassLabel: "Unit mass (kg/m)",
+  userEntry: "User entry",
+});
+// localized-runtime-messages:end
+
+const setupErrorMessages = new Map([
+  ["Choose a physical string", setupRuntimeMessages.choosePhysicalString],
+  ["Clearance must be zero or greater", setupRuntimeMessages.clearanceMustBeNonNegative],
+  ["reliefMm must not be negative", setupRuntimeMessages.reliefMustNotBeNegative],
+]);
+const tensionSourceLabels = Object.freeze({
+  gaugeEstimate: setupRuntimeMessages.gaugeEstimate,
+  manufacturer: setupRuntimeMessages.manufacturer,
+});
+
+let setup = localizeProfileStringNames(
+  createDefaultSetup(),
+  setupRuntimeMessages.profileStringNames,
+);
 const lengthUnits = createLengthUnitController(document);
 const userEntryGroups = new Set();
 const tensionSourceOptions = {
@@ -39,6 +181,12 @@ const tensionSourceOptions = {
 const form = document.getElementById("setup_form");
 const setupPage = document.querySelector(".setup-page");
 const setupModeButtons = Array.from(document.querySelectorAll("[data-setup-mode-button]"));
+const setupModeMessages = new Map(
+  setupModeButtons.map((button) => [
+    button.dataset.setupModeButton,
+    button.textContent.trim(),
+  ]),
+);
 const setupViewStatus = document.getElementById("setup_view_status");
 const instrumentProfile = document.getElementById("instrument_profile");
 const customCourseCount = document.getElementById("custom_course_count");
@@ -50,25 +198,54 @@ const resultPresenter = createSetupResultPresenter({
   lengthUnits,
   calculateMaximumAbsoluteCentsError,
   escapeMarkup,
+  messages: setupRuntimeMessages.resultMessages,
 });
 const sparseActionEditor = createSparseActionEditor({
   document,
+  emptyReadingsMessage: setupRuntimeMessages.noAdditionalReadings,
   lengthUnits,
   escapeMarkup,
   clearInputError,
+  formatCourseStringLabel,
+  formatFretRangeError,
+  formatRemoveReadingLabel,
+  fretLabel: setupRuntimeMessages.fretLabel,
+  readErrorMessage: readSetupErrorMessage,
+  removeReadingTitle: setupRuntimeMessages.removeReadingTitle,
   showInputError,
   onMeasurementsChanged: handleSparseActionChange,
-  onError: (error) => { resultStatus.textContent = error.message; },
+  onError: (error) => { resultStatus.textContent = readSetupErrorMessage(error); },
 });
 const profileEditor = createSetupProfileEditor({
+  axialStiffnessLabel: setupRuntimeMessages.axialStiffnessLabel,
+  buildLabel: setupRuntimeMessages.buildLabel,
+  calculationDataLabel: setupRuntimeMessages.calculationData,
+  customProfileLabel: setupRuntimeMessages.customProfileLabel,
   document,
+  estimatedCoreLabel: setupRuntimeMessages.estimatedCoreLabel,
+  formatCourseStringLegend,
+  formatCustomCourseLabel,
+  formatFirstStringLabel,
+  formatLastStringLabel,
+  formatStringGaugeLabel,
+  formatStringLengthLabel,
   getSetup: () => setup,
+  instrumentProfileLabels: setupRuntimeMessages.profileLabels,
   instrumentProfiles: INSTRUMENT_PROFILES,
   lengthUnits,
+  midiNoteLabel: setupRuntimeMessages.midiNoteLabel,
+  nameLabel: setupRuntimeMessages.nameLabel,
+  oneStringLabel: setupRuntimeMessages.oneStringLabel,
+  plainConstructionLabel: setupRuntimeMessages.plainConstructionLabel,
+  tensionSourceLabels,
+  twoStringsLabel: setupRuntimeMessages.twoStringsLabel,
+  unitMassLabel: setupRuntimeMessages.unitMassLabel,
+  woundConstructionLabel: setupRuntimeMessages.woundConstructionLabel,
 });
 const stockSpecs = createStockSpecs({
   document,
   lengthUnits,
+  messages: setupRuntimeMessages.stockSpecMessages,
   onSelectProfile: (profileId) => selectInstrumentProfile(profileId),
   onMeasure: () => showSetupMode("measure"),
 });
@@ -82,6 +259,7 @@ const setupForm = createSetupFormController({
   profileEditor,
   setSetup: (nextSetup) => { setup = nextSetup; },
   sparseActionEditor,
+  tensionSourceLabels,
   tensionSourceOptions,
 });
 let hasRenderedResult = false;
@@ -126,11 +304,17 @@ function showSetupMode(mode) {
 
   setupPage.dataset.setupMode = isMeasureMode ? "measure" : "specs";
   form.hidden = !isMeasureMode;
-  setupViewStatus.textContent = isMeasureMode ? "Measure" : "Reference specs";
+  setupViewStatus.textContent = setupModeMessageRead(setupPage.dataset.setupMode);
 
   setupModeButtons.forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.setupModeButton === setupPage.dataset.setupMode));
   });
+}
+
+function setupModeMessageRead(mode) {
+  const message = setupModeMessages.get(mode);
+  if (!message) throw new Error(`Missing setup mode message: ${mode}`);
+  return message;
 }
 
 function handleSparseActionChange() {
@@ -166,10 +350,11 @@ function handleFormChange(event) {
     }
     const calculationError = render();
     if (input.id === "fret_count") sparseActionEditor.render(setup);
-    if (calculationError) showInputError(input, calculationError.message);
+    if (calculationError) showInputError(input, readSetupErrorMessage(calculationError));
   } catch (error) {
-    showInputError(input, error.message);
-    resultStatus.textContent = error.message;
+    const message = readSetupErrorMessage(error);
+    showInputError(input, message);
+    resultStatus.textContent = message;
   }
   setupForm.updateRadiusFields();
 }
@@ -177,19 +362,79 @@ function handleFormChange(event) {
 function render() {
   try {
     const result = calculateSetup(setup);
-    setupGeometrySvg.innerHTML = renderSetupDiagram({ setup, result, lengthUnit: lengthUnits.unit });
+    setupGeometrySvg.innerHTML = renderSetupDiagram({
+      setup,
+      result,
+      lengthUnit: lengthUnits.unit,
+      messages: setupRuntimeMessages.diagramMessages,
+    });
     resultPresenter.render({ setup, result });
     renderMeasurementProvenance();
-    calculationBasis.textContent = describeCalculationBasis(userEntryGroups);
-    resultStatus.textContent = "Calculated from current inputs";
+    calculationBasis.textContent = describeCalculationBasis(
+      userEntryGroups,
+      setupRuntimeMessages.provenanceMessages,
+    );
+    resultStatus.textContent = setupRuntimeMessages.calculationComplete;
     hasRenderedResult = true;
     return null;
   } catch (error) {
     if (!hasRenderedResult) clearCalculatedOutput();
-    calculationBasis.textContent = "Calculation paused until the highlighted input is corrected.";
-    resultStatus.textContent = error.message;
+    calculationBasis.textContent = setupRuntimeMessages.calculationPaused;
+    resultStatus.textContent = readSetupErrorMessage(error);
     return error;
   }
+}
+
+function readSetupErrorMessage(error) {
+  return setupErrorMessages.get(error.message) ?? error.message;
+}
+
+function formatFretRangeError(fretCount) {
+  return setupRuntimeMessages.fretRange.replace("{fretCount}", String(fretCount));
+}
+
+function formatCourseStringLabel(courseNumber, stringName) {
+  return setupRuntimeMessages.courseStringLabel
+    .replace("{courseNumber}", String(courseNumber))
+    .replace("{stringName}", stringName);
+}
+
+function formatCourseStringLegend(courseNumber, stringName) {
+  return setupRuntimeMessages.courseStringLegend
+    .replace("{courseNumber}", String(courseNumber))
+    .replace("{stringName}", stringName);
+}
+
+function formatCustomCourseLabel(courseNumber) {
+  return setupRuntimeMessages.courseLabel.replace("{courseNumber}", String(courseNumber));
+}
+
+function formatFirstStringLabel(stringName, unit) {
+  return formatNamedStringLabel(setupRuntimeMessages.firstNamedStringLabel, stringName, unit);
+}
+
+function formatLastStringLabel(stringName, unit) {
+  return formatNamedStringLabel(setupRuntimeMessages.lastNamedStringLabel, stringName, unit);
+}
+
+function formatNamedStringLabel(message, stringName, unit) {
+  return message
+    .replace("{stringName}", stringName)
+    .replace("{unit}", unit);
+}
+
+function formatRemoveReadingLabel(stringName, fretNumber) {
+  return setupRuntimeMessages.removeReadingLabel
+    .replace("{stringName}", stringName)
+    .replace("{fretNumber}", String(fretNumber));
+}
+
+function formatStringLengthLabel(unit) {
+  return setupRuntimeMessages.stringLengthLabel.replace("{unit}", unit);
+}
+
+function formatStringGaugeLabel(unit) {
+  return setupRuntimeMessages.stringGaugeLabel.replace("{unit}", unit);
 }
 
 function clearCalculatedOutput() {
@@ -225,7 +470,10 @@ function renderMeasurementProvenance() {
 
 function setActionProvenance() {
   const badge = document.getElementById("rail_action_source");
-  badge.textContent = describeActionProvenance(userEntryGroups);
+  badge.textContent = describeActionProvenance(
+    userEntryGroups,
+    setupRuntimeMessages.provenanceMessages,
+  );
   badge.classList.toggle(
     "user-entry",
     userEntryGroups.has("bridgeAction") || userEntryGroups.has("measuredAction"),
@@ -235,7 +483,9 @@ function setActionProvenance() {
 function setProvenance(elementId, group) {
   const badge = document.getElementById(elementId);
   const isUserEntry = userEntryGroups.has(group);
-  badge.textContent = isUserEntry ? "User entry" : "Profile default";
+  badge.textContent = isUserEntry
+    ? setupRuntimeMessages.userEntry
+    : setupRuntimeMessages.profileDefault;
   badge.classList.toggle("user-entry", isUserEntry);
 }
 
@@ -248,7 +498,10 @@ function continueToRadius() {
 
 function selectInstrumentProfile(profileId) {
   const catalog = setup.tensionCatalog;
-  setup = createSetupFromInstrumentProfile(profileId);
+  setup = localizeProfileStringNames(
+    createSetupFromInstrumentProfile(profileId),
+    setupRuntimeMessages.profileStringNames,
+  );
   userEntryGroups.clear();
   if (catalog) {
     setup = applyTensionCatalogToSetup(setup, catalog, setup.tensionDataSource);
@@ -258,6 +511,22 @@ function selectInstrumentProfile(profileId) {
   setupForm.writeSetupToForm();
   stockSpecs.render(setup.instrumentProfileId);
   render();
+}
+
+function localizeProfileStringNames(candidateSetup, stringNames) {
+  return {
+    ...candidateSetup,
+    strings: candidateSetup.strings.map((string) => ({
+      ...string,
+      name: localizedProfileStringName(string.name, stringNames),
+    })),
+  };
+}
+
+function localizedProfileStringName(name, stringNames) {
+  if (name === "High E") return stringNames.highE;
+  if (name === "Low E") return stringNames.lowE;
+  return name;
 }
 
 function buildCustomProfile() {
@@ -280,10 +549,12 @@ function escapeMarkup(value) {
 
 async function initializeTensionCatalog() {
   try {
-    resultStatus.textContent = "Loading manufacturer tension catalog...";
-    const response = await fetch("./tension_catalog.json");
-    if (!response.ok) throw new Error("Manufacturer tension catalog is unavailable");
-    const catalog = await response.json();
+    resultStatus.textContent = setupRuntimeMessages.tensionCatalogLoading;
+    const catalog = await readTensionCatalog({
+      embeddedCatalog: globalThis.__TONELAB_TENSION_CATALOG__ || null,
+      requestCatalog: () => fetch("./tension_catalog.json"),
+      unavailableMessage: setupRuntimeMessages.tensionCatalogUnavailable,
+    });
     setup = applyTensionCatalogToSetup(
       setup,
       catalog,
@@ -293,7 +564,7 @@ async function initializeTensionCatalog() {
     setupForm.writeSetupToForm();
     render();
   } catch (_error) {
-    resultStatus.textContent = "Using gauge estimates: manufacturer catalog unavailable";
+    resultStatus.textContent = setupRuntimeMessages.tensionEstimateFallback;
     render();
   }
 }

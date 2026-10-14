@@ -23,24 +23,26 @@ export function provenanceGroupForInput(input) {
   return null;
 }
 
-export function describeCalculationBasis(userEntryGroups) {
+export function describeCalculationBasis(userEntryGroups, messages) {
   const userMeasurementCount = SETUP_INPUT_GROUPS.filter((group) => (
     userEntryGroups.has(group)
   )).length;
   const profileDefaultCount = SETUP_INPUT_GROUPS.length - userMeasurementCount;
   if (userMeasurementCount === 0) {
-    return "Preview from profile defaults. Enter your measurements before using the compensation pattern.";
+    return messages.previewFromDefaults;
   }
   if (profileDefaultCount === 0) {
-    return "Calculated from your measured setup.";
+    return messages.calculatedFromMeasurements;
   }
-  return `Preview mixes ${userMeasurementCount} user input groups with ${profileDefaultCount} profile defaults.`;
+  return messages.mixedInputs
+    .replace("{userMeasurementCount}", String(userMeasurementCount))
+    .replace("{profileDefaultCount}", String(profileDefaultCount));
 }
 
-export function describeActionProvenance(userEntryGroups) {
-  if (userEntryGroups.has("measuredAction")) return "Measured at frets";
-  if (userEntryGroups.has("bridgeAction")) return "User entry";
-  return "Profile default";
+export function describeActionProvenance(userEntryGroups, messages) {
+  if (userEntryGroups.has("measuredAction")) return messages.measuredAtFrets;
+  if (userEntryGroups.has("bridgeAction")) return messages.userEntry;
+  return messages.profileDefault;
 }
 
 function provenanceGroupForStringField(field) {

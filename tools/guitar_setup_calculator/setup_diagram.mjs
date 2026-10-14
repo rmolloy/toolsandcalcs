@@ -12,7 +12,7 @@ const SADDLE_THEORETICAL_X = 835;
 const SADDLE_THICKNESS_PX = 36;
 const COMPENSATION_PX_PER_MM = 6;
 
-export function renderSetupDiagram({ setup, result, lengthUnit = lengthUnitPresentation.defaultUnit }) {
+export function renderSetupDiagram({ setup, result, lengthUnit = lengthUnitPresentation.defaultUnit, messages }) {
   const strings = result.strings;
   const layout = calculateDiagramLayout(strings);
   const yPositions = calculateStringYPositions(strings, layout);
@@ -26,9 +26,9 @@ export function renderSetupDiagram({ setup, result, lengthUnit = lengthUnitPrese
   const scaleMode = scaleOffsets.some((offset) => Math.abs(offset) > 0.01)
     ? "per-string"
     : "single-scale";
-  const artwork = renderDiagramArtwork({ setup, strings, geometry, layout, scaleMode, lengthUnit });
-  const mobileNutArtwork = renderMobileNutArtwork({ setup, strings, geometry, layout, lengthUnit });
-  const mobileSaddleArtwork = renderMobileSaddleArtwork({ setup, strings, geometry, layout, lengthUnit });
+  const artwork = renderDiagramArtwork({ setup, strings, geometry, layout, scaleMode, lengthUnit, messages });
+  const mobileNutArtwork = renderMobileNutArtwork({ setup, strings, geometry, layout, lengthUnit, messages });
+  const mobileSaddleArtwork = renderMobileSaddleArtwork({ setup, strings, geometry, layout, lengthUnit, messages });
 
   return `
     <div class="geometry-diagram-set" data-string-count="${strings.length}" data-scale-mode="${scaleMode}" data-neutral-fret="${setup.fanNeutralFret}">
@@ -37,57 +37,57 @@ export function renderSetupDiagram({ setup, result, lengthUnit = lengthUnitPrese
       </svg>
       <svg class="geometry-desktop-diagram" viewBox="0 0 ${SVG_WIDTH} ${layout.svgHeight}" role="img"
         aria-labelledby="geometry-svg-title geometry-svg-desc">
-        <title id="geometry-svg-title">Calculated nut and saddle geometry</title>
-        <desc id="geometry-svg-desc">A broken-scale top view of ${strings.length} strings, with calculated nut and saddle compensation for every physical string. Unequal string lengths fan around fret ${setup.fanNeutralFret}.</desc>
+        <title id="geometry-svg-title">${messages.title}</title>
+        <desc id="geometry-svg-desc">${formatDiagramDescription(messages.description, strings.length, setup.fanNeutralFret)}</desc>
         <use href="#setup-geometry-artwork" width="${SVG_WIDTH}" height="${layout.svgHeight}" />
       </svg>
       <div class="geometry-mobile-diagrams">
-        <svg viewBox="0 0 480 ${layout.svgHeight}" role="img" aria-label="Calculated nut compensation and first-fret geometry">
+        <svg viewBox="0 0 480 ${layout.svgHeight}" role="img" aria-label="${messages.mobileNutLabel}">
           ${mobileNutArtwork}
         </svg>
-        <svg viewBox="520 0 480 ${layout.svgHeight}" role="img" aria-label="Calculated saddle compensation and twelfth-fret geometry">
+        <svg viewBox="520 0 480 ${layout.svgHeight}" role="img" aria-label="${messages.mobileSaddleLabel}">
           ${mobileSaddleArtwork}
         </svg>
       </div>
     </div>`;
 }
 
-function renderDiagramArtwork({ setup, strings, geometry, layout, scaleMode, lengthUnit }) {
+function renderDiagramArtwork({ setup, strings, geometry, layout, scaleMode, lengthUnit, messages }) {
   return `
     <rect x="1" y="1" width="${SVG_WIDTH - 2}" height="${layout.svgHeight - 2}" rx="10" class="geometry-canvas" />
-    ${renderWindowLabels(setup, scaleMode, lengthUnit)}
+    ${renderWindowLabels(setup, scaleMode, lengthUnit, messages)}
     ${renderFingerboardWindows(layout)}
-    ${renderScaleBreak(layout)}
-    ${renderFretReferences(geometry, layout)}
-    ${renderNut(geometry, layout, true, lengthUnit)}
-    ${renderSaddle(geometry, layout, true, lengthUnit)}
-    ${renderStrings(strings, geometry)}
-    ${renderActionLabels(setup, layout, lengthUnit)}
-    ${renderInsertLabels(layout, lengthUnit)}`;
+    ${renderScaleBreak(layout, messages)}
+    ${renderFretReferences(geometry, layout, messages)}
+    ${renderNut(geometry, layout, true, lengthUnit, messages)}
+    ${renderSaddle(geometry, layout, true, lengthUnit, messages)}
+    ${renderStrings(strings, geometry, messages)}
+    ${renderActionLabels(setup, layout, lengthUnit, messages)}
+    ${renderInsertLabels(layout, lengthUnit, messages)}`;
 }
 
-function renderMobileNutArtwork({ setup, strings, geometry, layout, lengthUnit }) {
+function renderMobileNutArtwork({ setup, strings, geometry, layout, lengthUnit, messages }) {
   return `
     <rect x="1" y="1" width="478" height="${layout.svgHeight - 2}" rx="10" class="geometry-canvas" />
-    <text x="126" y="30" class="geometry-window-label">NUT → FRET 1</text>
+    <text x="126" y="30" class="geometry-window-label">${messages.nutToFretOne}</text>
     ${renderNutFingerboardWindow(layout)}
-    ${renderNutFretReference(geometry, layout)}
-    ${renderNut(geometry, layout, false, lengthUnit)}
-    ${renderNutStrings(strings, geometry)}
-    ${renderNutActionLabel(setup, layout, lengthUnit)}
-    ${renderNutInsertLabel(layout, lengthUnit)}`;
+    ${renderNutFretReference(geometry, layout, messages)}
+    ${renderNut(geometry, layout, false, lengthUnit, messages)}
+    ${renderNutStrings(strings, geometry, messages)}
+    ${renderNutActionLabel(setup, layout, lengthUnit, messages)}
+    ${renderNutInsertLabel(layout, lengthUnit, messages)}`;
 }
 
-function renderMobileSaddleArtwork({ setup, strings, geometry, layout, lengthUnit }) {
+function renderMobileSaddleArtwork({ setup, strings, geometry, layout, lengthUnit, messages }) {
   return `
     <rect x="521" y="1" width="478" height="${layout.svgHeight - 2}" rx="10" class="geometry-canvas" />
-    <text x="880" y="30" text-anchor="end" class="geometry-window-label">12TH FRET → SADDLE</text>
+    <text x="880" y="30" text-anchor="end" class="geometry-window-label">${messages.fretTwelveToSaddle}</text>
     ${renderSaddleFingerboardWindow(layout)}
-    ${renderSaddleFretReference(geometry, layout)}
-    ${renderSaddle(geometry, layout, false, lengthUnit)}
-    ${renderSaddleStrings(strings, geometry)}
-    ${renderSaddleActionLabel(setup, layout, lengthUnit)}
-    ${renderSaddleInsertLabel(layout, lengthUnit)}`;
+    ${renderSaddleFretReference(geometry, layout, messages)}
+    ${renderSaddle(geometry, layout, false, lengthUnit, messages)}
+    ${renderSaddleStrings(strings, geometry, messages)}
+    ${renderSaddleActionLabel(setup, layout, lengthUnit, messages)}
+    ${renderSaddleInsertLabel(layout, lengthUnit, messages)}`;
 }
 
 function renderNutFingerboardWindow(layout) {
@@ -100,18 +100,18 @@ function renderSaddleFingerboardWindow(layout) {
   return `<path d="M560 60 L824 60 L890 ${windowBottomY} L560 ${windowBottomY} Z" class="geometry-fingerboard" />`;
 }
 
-function renderNutFretReference(geometry, layout) {
+function renderNutFretReference(geometry, layout, messages) {
   const labelY = layout.stringBottomY + 45;
   return `
     <polyline points="${pointsFor(geometry, "fretOneX")}" class="geometry-fret-reference" />
-    <text x="421" y="${labelY}" text-anchor="middle" class="geometry-reference-label">FRET 1</text>`;
+    <text x="421" y="${labelY}" text-anchor="middle" class="geometry-reference-label">${messages.fretOne}</text>`;
 }
 
-function renderSaddleFretReference(geometry, layout) {
+function renderSaddleFretReference(geometry, layout, messages) {
   const labelY = layout.stringBottomY + 45;
   return `
     <polyline points="${pointsFor(geometry, "fretTwelveX")}" class="geometry-fret-reference" />
-    <text x="604" y="${labelY}" text-anchor="middle" class="geometry-reference-label">FRET 12</text>`;
+    <text x="604" y="${labelY}" text-anchor="middle" class="geometry-reference-label">${messages.fretTwelve}</text>`;
 }
 
 export function calculateStringYPositions(strings, layout = calculateDiagramLayout(strings)) {
@@ -184,14 +184,16 @@ function calculateNormalizedFretPosition(fretNumber) {
   return 1 - 2 ** (-fretNumber / 12);
 }
 
-function renderWindowLabels(setup, scaleMode, lengthUnit) {
+function renderWindowLabels(setup, scaleMode, lengthUnit, messages) {
   const scaleLengths = setup.strings.map(({ scaleLengthMm }) => scaleLengthMm);
   const scaleLabel = scaleMode === "per-string"
-    ? `${formatLengthRange(scaleLengths, lengthUnit)} · neutral fret ${setup.fanNeutralFret}`
-    : `${formatLength(scaleLengths[0], lengthUnit)} scale`;
+    ? messages.scalePerString
+      .replace("{range}", formatLengthRange(scaleLengths, lengthUnit))
+      .replace("{neutralFret}", String(setup.fanNeutralFret))
+    : messages.scaleSingle.replace("{length}", formatLength(scaleLengths[0], lengthUnit));
   return `
-    <text x="126" y="30" class="geometry-window-label">NUT → FRET 1</text>
-    <text x="880" y="30" text-anchor="end" class="geometry-window-label">12TH FRET → SADDLE</text>
+    <text x="126" y="30" class="geometry-window-label">${messages.nutToFretOne}</text>
+    <text x="880" y="30" text-anchor="end" class="geometry-window-label">${messages.fretTwelveToSaddle}</text>
     <text x="500" y="30" text-anchor="middle" class="geometry-scale-label">${scaleLabel}</text>`;
 }
 
@@ -202,24 +204,24 @@ function renderFingerboardWindows(layout) {
     <path d="M560 60 L824 60 L890 ${windowBottomY} L560 ${windowBottomY} Z" class="geometry-fingerboard" />`;
 }
 
-function renderScaleBreak(layout) {
+function renderScaleBreak(layout, messages) {
   const middleY = (layout.stringTopY + layout.stringBottomY) / 2;
   const topY = middleY - 43;
   return `
     <path d="M496 ${topY} l-16 18 16 18 -16 18 16 18 M522 ${topY} l-16 18 16 18 -16 18 16 18" class="geometry-break" />
-    <text x="501" y="${middleY + 57}" text-anchor="middle" class="geometry-scale-label">scale continues</text>`;
+    <text x="501" y="${middleY + 57}" text-anchor="middle" class="geometry-scale-label">${messages.scaleContinues}</text>`;
 }
 
-function renderFretReferences(geometry, layout) {
+function renderFretReferences(geometry, layout, messages) {
   const labelY = layout.stringBottomY + 45;
   return `
     <polyline points="${pointsFor(geometry, "fretOneX")}" class="geometry-fret-reference" />
     <polyline points="${pointsFor(geometry, "fretTwelveX")}" class="geometry-fret-reference" />
-    <text x="421" y="${labelY}" text-anchor="middle" class="geometry-reference-label">FRET 1</text>
-    <text x="604" y="${labelY}" text-anchor="middle" class="geometry-reference-label">FRET 12</text>`;
+    <text x="421" y="${labelY}" text-anchor="middle" class="geometry-reference-label">${messages.fretOne}</text>
+    <text x="604" y="${labelY}" text-anchor="middle" class="geometry-reference-label">${messages.fretTwelve}</text>`;
 }
 
-function renderNut(geometry, layout, includeDataAttributes = true, lengthUnit = "mm") {
+function renderNut(geometry, layout, includeDataAttributes = true, lengthUnit = "mm", messages) {
   const nutY = layout.stringTopY - 15;
   const nutHeight = layout.stringBottomY - layout.stringTopY + 30;
   const fittedCenter = fitLineToPoints(geometry.map(({ y, nutZeroX }) => ({ x: nutZeroX, y })));
@@ -234,11 +236,11 @@ function renderNut(geometry, layout, includeDataAttributes = true, lengthUnit = 
     `${bottomX - halfThickness},${bottomY}`,
   ].join(" ");
   return `
-    <g class="geometry-nut-model" aria-label="5 millimetre nut insert">
+    <g class="geometry-nut-model" aria-label="${messages.nutInsertLabel}">
       <polygon points="${insertPoints}" class="geometry-insert-surface" />
       <polyline points="${pointsFor(geometry, "nutZeroX")}" class="geometry-zero-reference" />
       <text x="${geometry[0].nutZeroX}" y="${nutY - 13}" text-anchor="middle" class="geometry-zero-label">0</text>
-      <text x="${geometry[0].nutZeroX + 12}" y="${nutY - 13}" class="geometry-direction-label">+ toward fret 1 →</text>
+      <text x="${geometry[0].nutZeroX + 12}" y="${nutY - 13}" class="geometry-direction-label">${messages.nutDirection}</text>
       ${geometry.map(({ y, nutZeroX, nutX: compensatedX, nutCompensationMm }, index) => `
         <line x1="${nutZeroX}" y1="${y}" x2="${compensatedX}" y2="${y}" class="geometry-compensation"${dataAttribute("nut-compensation", index, includeDataAttributes)} />
         <circle cx="${compensatedX}" cy="${y}" r="2.6" class="geometry-break-point" />
@@ -248,7 +250,7 @@ function renderNut(geometry, layout, includeDataAttributes = true, lengthUnit = 
     </g>`;
 }
 
-function renderSaddle(geometry, layout, includeDataAttributes = true, lengthUnit = "mm") {
+function renderSaddle(geometry, layout, includeDataAttributes = true, lengthUnit = "mm", messages) {
   const fittedCenter = fitLineToPoints(geometry.map(({ y, saddleX }) => ({ x: saddleX, y })));
   const topY = layout.stringTopY - 15;
   const bottomY = layout.stringBottomY + 15;
@@ -262,10 +264,10 @@ function renderSaddle(geometry, layout, includeDataAttributes = true, lengthUnit
     `${bottomX - halfThickness},${bottomY}`,
   ].join(" ");
   return `
-    <g class="geometry-saddle-model" aria-label="6 millimetre saddle insert">
+    <g class="geometry-saddle-model" aria-label="${messages.saddleInsertLabel}">
       <polygon points="${insertPoints}" class="geometry-insert-surface" />
       <polyline points="${pointsFor(geometry, "saddleTheoreticalX")}" class="geometry-zero-reference" />
-      <text x="${geometry[0].saddleTheoreticalX + 7}" y="${topY - 13}" class="geometry-direction-label">+ lengthen →</text>
+      <text x="${geometry[0].saddleTheoreticalX + 7}" y="${topY - 13}" class="geometry-direction-label">${messages.saddleDirection}</text>
       ${geometry.map(({ y, saddleTheoreticalX, saddleX, saddleCompensationMm }, index) => `
         <line x1="${saddleTheoreticalX}" y1="${y}" x2="${saddleX}" y2="${y}" class="geometry-compensation"${dataAttribute("saddle-compensation", index, includeDataAttributes)} />
         <circle cx="${saddleX}" cy="${y}" r="2.6" class="geometry-break-point" />
@@ -275,14 +277,14 @@ function renderSaddle(geometry, layout, includeDataAttributes = true, lengthUnit
     </g>`;
 }
 
-function renderStrings(strings, geometry) {
+function renderStrings(strings, geometry, messages) {
   return `<g class="geometry-strings">${strings.map((stringResult, index) => {
     const stringGeometry = geometry[index];
     return `
       <g data-string-index="${index}" data-course-index="${stringResult.string.courseIndex}">
-        <text x="22" y="${stringGeometry.y + 3.5}" class="geometry-course-label">C${stringResult.string.courseIndex + 1}</text>
+        <text x="22" y="${stringGeometry.y + 3.5}" class="geometry-course-label">${messages.courseAbbreviation}${stringResult.string.courseIndex + 1}</text>
         <text x="49" y="${stringGeometry.y + 3.5}" class="geometry-string-label">${escapeMarkup(stringResult.string.name)}</text>
-        <text x="528" y="${stringGeometry.y + 3.5}" class="geometry-mobile-only geometry-course-label">C${stringResult.string.courseIndex + 1}</text>
+        <text x="528" y="${stringGeometry.y + 3.5}" class="geometry-mobile-only geometry-course-label">${messages.courseAbbreviation}${stringResult.string.courseIndex + 1}</text>
         <text x="554" y="${stringGeometry.y + 3.5}" class="geometry-mobile-only geometry-string-label">${escapeMarkup(stringResult.string.name)}</text>
         <path d="M${stringGeometry.nutX} ${stringGeometry.y} L${stringGeometry.fretOneX} ${stringGeometry.y}" style="stroke-width:${stringStrokeWidth(stringResult)}" />
         <path d="M${stringGeometry.fretTwelveX} ${stringGeometry.y} L${stringGeometry.saddleX} ${stringGeometry.y}" style="stroke-width:${stringStrokeWidth(stringResult)}" />
@@ -290,24 +292,24 @@ function renderStrings(strings, geometry) {
   }).join("")}</g>`;
 }
 
-function renderNutStrings(strings, geometry) {
+function renderNutStrings(strings, geometry, messages) {
   return `<g class="geometry-strings">${strings.map((stringResult, index) => {
     const stringGeometry = geometry[index];
     return `
       <g>
-        <text x="22" y="${stringGeometry.y + 3.5}" class="geometry-course-label">C${stringResult.string.courseIndex + 1}</text>
+        <text x="22" y="${stringGeometry.y + 3.5}" class="geometry-course-label">${messages.courseAbbreviation}${stringResult.string.courseIndex + 1}</text>
         <text x="49" y="${stringGeometry.y + 3.5}" class="geometry-string-label">${escapeMarkup(stringResult.string.name)}</text>
         <path d="M${stringGeometry.nutX} ${stringGeometry.y} L${stringGeometry.fretOneX} ${stringGeometry.y}" style="stroke-width:${stringStrokeWidth(stringResult)}" />
       </g>`;
   }).join("")}</g>`;
 }
 
-function renderSaddleStrings(strings, geometry) {
+function renderSaddleStrings(strings, geometry, messages) {
   return `<g class="geometry-strings">${strings.map((stringResult, index) => {
     const stringGeometry = geometry[index];
     return `
       <g>
-        <text x="528" y="${stringGeometry.y + 3.5}" class="geometry-course-label">C${stringResult.string.courseIndex + 1}</text>
+        <text x="528" y="${stringGeometry.y + 3.5}" class="geometry-course-label">${messages.courseAbbreviation}${stringResult.string.courseIndex + 1}</text>
         <text x="554" y="${stringGeometry.y + 3.5}" class="geometry-string-label">${escapeMarkup(stringResult.string.name)}</text>
         <path d="M${stringGeometry.fretTwelveX} ${stringGeometry.y} L${stringGeometry.saddleX} ${stringGeometry.y}" style="stroke-width:${stringStrokeWidth(stringResult)}" />
       </g>`;
@@ -318,53 +320,63 @@ function stringStrokeWidth(stringResult) {
   return Math.min(4.2, 1.1 + stringResult.string.gaugeMm * 1.55);
 }
 
-function renderActionLabels(setup, layout, lengthUnit) {
+function renderActionLabels(setup, layout, lengthUnit, messages) {
   const nutAction = setup.benchActionTargets.nutActionAtFirstFretMm;
   const bridgeAction = setup.benchActionTargets.actionAtMeasurementWithCapoMm;
   const headingY = layout.stringBottomY + 80;
   const valueY = layout.stringBottomY + 99;
   return `
     <g class="geometry-action-labels">
-      <text x="282" y="${headingY}" text-anchor="middle">NUT ACTION @ FRET 1 · OPEN</text>
-      <text x="282" y="${valueY}" text-anchor="middle" class="geometry-action-value">first ${formatLength(nutAction.firstStringMm, lengthUnit)} · last ${formatLength(nutAction.lastStringMm, lengthUnit)}</text>
-      <text x="718" y="${headingY}" text-anchor="middle">ACTION @ FRET 12 · CAPO 1</text>
-      <text x="718" y="${valueY}" text-anchor="middle" class="geometry-action-value">first ${formatLength(bridgeAction.firstStringMm, lengthUnit)} · last ${formatLength(bridgeAction.lastStringMm, lengthUnit)}</text>
+      <text x="282" y="${headingY}" text-anchor="middle">${messages.nutActionHeading}</text>
+      <text x="282" y="${valueY}" text-anchor="middle" class="geometry-action-value">${formatOuterAction(nutAction, lengthUnit, messages)}</text>
+      <text x="718" y="${headingY}" text-anchor="middle">${messages.actionAtFret12Heading}</text>
+      <text x="718" y="${valueY}" text-anchor="middle" class="geometry-action-value">${formatOuterAction(bridgeAction, lengthUnit, messages)}</text>
     </g>`;
 }
 
-function renderNutActionLabel(setup, layout, lengthUnit) {
+function renderNutActionLabel(setup, layout, lengthUnit, messages) {
   const nutAction = setup.benchActionTargets.nutActionAtFirstFretMm;
   const headingY = layout.stringBottomY + 80;
   return `
     <g class="geometry-action-labels">
-      <text x="282" y="${headingY}" text-anchor="middle">NUT ACTION @ FRET 1 · OPEN</text>
-      <text x="282" y="${headingY + 19}" text-anchor="middle" class="geometry-action-value">first ${formatLength(nutAction.firstStringMm, lengthUnit)} · last ${formatLength(nutAction.lastStringMm, lengthUnit)}</text>
+      <text x="282" y="${headingY}" text-anchor="middle">${messages.nutActionHeading}</text>
+      <text x="282" y="${headingY + 19}" text-anchor="middle" class="geometry-action-value">${formatOuterAction(nutAction, lengthUnit, messages)}</text>
     </g>`;
 }
 
-function renderSaddleActionLabel(setup, layout, lengthUnit) {
+function renderSaddleActionLabel(setup, layout, lengthUnit, messages) {
   const bridgeAction = setup.benchActionTargets.actionAtMeasurementWithCapoMm;
   const headingY = layout.stringBottomY + 80;
   return `
     <g class="geometry-action-labels">
-      <text x="718" y="${headingY}" text-anchor="middle">ACTION @ FRET 12 · CAPO 1</text>
-      <text x="718" y="${headingY + 19}" text-anchor="middle" class="geometry-action-value">first ${formatLength(bridgeAction.firstStringMm, lengthUnit)} · last ${formatLength(bridgeAction.lastStringMm, lengthUnit)}</text>
+      <text x="718" y="${headingY}" text-anchor="middle">${messages.actionAtFret12Heading}</text>
+      <text x="718" y="${headingY + 19}" text-anchor="middle" class="geometry-action-value">${formatOuterAction(bridgeAction, lengthUnit, messages)}</text>
     </g>`;
 }
 
-function renderInsertLabels(layout, lengthUnit) {
+function renderInsertLabels(layout, lengthUnit, messages) {
   const labelY = layout.stringBottomY + 45;
   return `
-    <text x="170" y="${labelY}" text-anchor="middle" class="geometry-insert-label">NUT · ${formatInsertLength(5, lengthUnit)}</text>
-    <text x="838" y="${labelY}" text-anchor="middle" class="geometry-insert-label">SADDLE · ${formatInsertLength(6, lengthUnit)}</text>`;
+    <text x="170" y="${labelY}" text-anchor="middle" class="geometry-insert-label">${messages.nut} · ${formatInsertLength(5, lengthUnit)}</text>
+    <text x="838" y="${labelY}" text-anchor="middle" class="geometry-insert-label">${messages.saddle} · ${formatInsertLength(6, lengthUnit)}</text>`;
 }
 
-function renderNutInsertLabel(layout, lengthUnit) {
-  return `<text x="170" y="${layout.stringBottomY + 45}" text-anchor="middle" class="geometry-insert-label">NUT · ${formatInsertLength(5, lengthUnit)}</text>`;
+function renderNutInsertLabel(layout, lengthUnit, messages) {
+  return `<text x="170" y="${layout.stringBottomY + 45}" text-anchor="middle" class="geometry-insert-label">${messages.nut} · ${formatInsertLength(5, lengthUnit)}</text>`;
 }
 
-function renderSaddleInsertLabel(layout, lengthUnit) {
-  return `<text x="838" y="${layout.stringBottomY + 45}" text-anchor="middle" class="geometry-insert-label">SADDLE · ${formatInsertLength(6, lengthUnit)}</text>`;
+function renderSaddleInsertLabel(layout, lengthUnit, messages) {
+  return `<text x="838" y="${layout.stringBottomY + 45}" text-anchor="middle" class="geometry-insert-label">${messages.saddle} · ${formatInsertLength(6, lengthUnit)}</text>`;
+}
+
+function formatDiagramDescription(message, stringCount, neutralFret) {
+  return message
+    .replace("{stringCount}", String(stringCount))
+    .replace("{neutralFret}", String(neutralFret));
+}
+
+function formatOuterAction(action, lengthUnit, messages) {
+  return `${messages.first} ${formatLength(action.firstStringMm, lengthUnit)} · ${messages.last} ${formatLength(action.lastStringMm, lengthUnit)}`;
 }
 
 function dataAttribute(name, index, isIncluded) {

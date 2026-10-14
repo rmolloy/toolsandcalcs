@@ -1,13 +1,14 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-US">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Guitar Setup Calculator | The Lab at Rick Molloy Guitars</title>
+  <title>Guitar Setup Calculator | Cut Nut and Saddle Compensation from Measured Setup</title>
   <link rel="stylesheet" href="../common/tool_footer.css">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="../common/layout.css">
-  <meta name="description" content="A six-step guitar setup calculator for string length, radius, relief, action, nut clearance, and intonation.">
+  <meta name="description" content="Enter each string, the fingerboard radius, measured relief, nut clearance, and capoed 12th-fret action to calculate a string-by-string nut and saddle compensation pattern.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
 </head>
 <body>
   <div class="tl-app">
@@ -208,6 +209,23 @@
             <div id="mobile_result_cards" class="mobile-result-cards" aria-label="String-by-string setup results"></div>
             <p class="results-footnote">Gore compensation is active. The open-string action profile uses the book's circle/ellipse/line geometry, calibrated by the entered action readings. Manufacturer unit weight is authoritative for open-string tension; axial stiffness remains a labelled estimate until measured stiffness data is supplied. Verify with a strobe and the actual instrument before cutting.</p>
           </section>
+
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="en-US">
+  <h2>Guitar Setup Calculator</h2>
+  <p>Use this tool to turn the setup you measured into string-by-string nut height and compensation targets you can verify on the instrument.</p>
+  <p>The calculator keeps six setup decisions in order: string length, radius, relief, bridge action, nut action, and intonation. Each result stays tied to the physical string that produced it.</p>
+  <p>A setup can feel right and still pull selected fretted notes sharp. The calculation estimates how the measured string path changes tension, then shows where the nut and saddle witness points need to move.</p>
+  <ul>
+    <li>Scale length for every physical string</li>
+    <li>String manufacturer, construction, and diameter</li>
+    <li>Simple, compound, or flat fingerboard radius</li>
+    <li>Relief and the fret where it was measured</li>
+    <li>Capoed action at fret 12 for the first and last strings</li>
+    <li>Open-string clearance above fret 1 for the first and last strings</li>
+  </ul>
+  <p>Use the drawing as a starting cut pattern, then verify every string with a strobe tuner on the actual instrument before removing material.</p>
+  <p class="small muted">Created by Rick Molloy. The bench workflow reflects practical feedback from Robbie O'Brien. Compensation mathematics follows the published Gore and Gilet method. Method authors: Trevor Gore and Gerard Gilet.</p>
+</section>
 
         </section>
       </main>

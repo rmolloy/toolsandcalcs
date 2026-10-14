@@ -8,6 +8,7 @@ export function createSetupFormController({
   profileEditor,
   setSetup,
   sparseActionEditor,
+  tensionSourceLabels,
   tensionSourceOptions,
 }) {
   function writeSetupToForm() {
@@ -131,7 +132,9 @@ export function createSetupFormController({
       if (massInput) massInput.value = String(string.unitMassKgPerMeter);
       if (stiffnessInput) stiffnessInput.value = String(string.axialStiffnessN);
       if (sourceLabel) {
-        sourceLabel.textContent = string.tensionSource ? "Manufacturer" : "Gauge estimate";
+        sourceLabel.textContent = string.tensionSource
+          ? tensionSourceLabels.manufacturer
+          : tensionSourceLabels.gaugeEstimate;
       }
     });
   }

@@ -53,6 +53,7 @@ test("the setup page defaults to specs and exposes the measurement editor on req
   assert.match(behavior, /showSetupMode/);
   assert.match(behavior, /form\.hidden = !isMeasureMode/);
   assert.match(behavior, /setupPage\.dataset\.setupMode/);
+  assert.match(behavior, /setupModeMessageRead\(setupPage\.dataset\.setupMode\)/);
 });
 
 test("the setup page defaults dimensional measurements to millimetres", async () => {
