@@ -1,5 +1,6 @@
 import type { BraceStockMeasurements } from "./resonate_brace_calculator_link.js";
 import type { PlateTransferModeSummary } from "./resonate_plate_transfer_prompt.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export type BraceTransferPromptResult = {
   action: "continue" | "skip";
@@ -13,10 +14,10 @@ type BraceTransferField = {
 };
 
 const BRACE_TRANSFER_FIELDS: BraceTransferField[] = [
-  { key: "stockLengthMm", label: "Length", unit: "mm" },
-  { key: "stockWidthMm", label: "Width", unit: "mm" },
-  { key: "stockHeightMm", label: "Height", unit: "mm" },
-  { key: "stockMassG", label: "Mass", unit: "g" },
+  { key: "stockLengthMm", label: resonanceLocalizedMessages.braceTransferLengthLabel, unit: "mm" },
+  { key: "stockWidthMm", label: resonanceLocalizedMessages.braceTransferWidthLabel, unit: "mm" },
+  { key: "stockHeightMm", label: resonanceLocalizedMessages.braceTransferHeightLabel, unit: "mm" },
+  { key: "stockMassG", label: resonanceLocalizedMessages.braceTransferMassLabel, unit: "g" },
 ];
 
 export function braceTransferPromptOpen(
@@ -39,27 +40,27 @@ function braceTransferPromptElementBuild(modes: PlateTransferModeSummary[]) {
   modal.className = "save-modal plate-transfer-modal brace-transfer-modal";
   modal.innerHTML = `
     <div class="save-modal__backdrop" data-brace-transfer-cancel></div>
-    <div class="save-modal__panel plate-transfer-modal__panel" role="dialog" aria-modal="true" aria-label="Prepare transfer to Brace Calculator">
+    <div class="save-modal__panel plate-transfer-modal__panel" role="dialog" aria-modal="true" aria-label="${resonanceLocalizedMessages.braceTransferDialogLabel}">
       <header>
-        <h2>Prepare Transfer -> Brace Calculator</h2>
-        <button type="button" class="ghost-btn btn-small" data-brace-transfer-cancel>Close</button>
+        <h2>${resonanceLocalizedMessages.braceTransferTitle}</h2>
+        <button type="button" class="ghost-btn btn-small" data-brace-transfer-cancel>${resonanceLocalizedMessages.braceTransferClose}</button>
       </header>
       <form class="save-modal__form plate-transfer-modal__form">
         <section class="save-modal__section">
-          <h3>Modes <span class="muted">(from measurement)</span></h3>
+          <h3>${resonanceLocalizedMessages.braceTransferModesTitle} <span class="muted">${resonanceLocalizedMessages.braceTransferFromMeasurement}</span></h3>
           <div class="plate-transfer-mode-list">
             ${modes.map(braceTransferModeMarkupBuild).join("")}
           </div>
         </section>
         <section class="save-modal__section">
-          <h3>Additional Measurements <span class="muted">(optional)</span></h3>
+          <h3>${resonanceLocalizedMessages.braceTransferAdditionalMeasurementsTitle} <span class="muted">${resonanceLocalizedMessages.braceTransferOptional}</span></h3>
           <div class="plate-transfer-grid">
             ${BRACE_TRANSFER_FIELDS.map(braceTransferFieldMarkupBuild).join("")}
           </div>
         </section>
         <footer class="save-modal__footer plate-transfer-modal__footer">
-          <button type="button" class="ghost-btn" data-brace-transfer-skip>Skip for now</button>
-          <button type="submit" class="primary-btn">Continue to Brace Calculator</button>
+          <button type="button" class="ghost-btn" data-brace-transfer-skip>${resonanceLocalizedMessages.braceTransferSkip}</button>
+          <button type="submit" class="primary-btn">${resonanceLocalizedMessages.braceTransferContinue}</button>
         </footer>
       </form>
     </div>
@@ -123,6 +124,6 @@ function braceTransferFirstInputFocus(modal: HTMLElement) {
 }
 
 function braceTransferFrequencyFormat(value: number | null) {
-  if (!Number.isFinite(value)) return "Not detected";
+  if (!Number.isFinite(value)) return resonanceLocalizedMessages.braceTransferNotDetected;
   return `${(value as number).toFixed(1)} Hz`;
 }

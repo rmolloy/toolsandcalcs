@@ -1,10 +1,13 @@
 import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js";
 import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js";
 import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 import { stockKindResolve, stockMeasurementsDraftApply, stockMeasurementsDraftBuild } from "./resonate_stock_measurements.js";
 const FIELDS = [
-    ["stockLengthMm", "Length (mm)"], ["stockWidthMm", "Width (mm)"],
-    ["stockHeightMm", "Thickness (mm)"], ["stockMassG", "Mass (g)"],
+    ["stockLengthMm", resonanceLocalizedMessages.stockMeasurementsLengthLabel],
+    ["stockWidthMm", resonanceLocalizedMessages.stockMeasurementsWidthLabel],
+    ["stockHeightMm", resonanceLocalizedMessages.stockMeasurementsPlateHeightLabel],
+    ["stockMassG", resonanceLocalizedMessages.stockMeasurementsMassLabel],
 ];
 export function stockMeasurementsPromptOpen(state) {
     const draft = stockMeasurementsDraftBuild(state);
@@ -39,17 +42,17 @@ function stockMeasurementsDialogBuild(draft) {
     dialog.setAttribute("aria-labelledby", "stock_measurements_title");
     dialog.innerHTML = `
     <div class="save-modal__panel">
-      <h2 id="stock_measurements_title">Stock measurements</h2>
+      <h2 id="stock_measurements_title">${resonanceLocalizedMessages.stockMeasurementsTitle}</h2>
       <form class="save-modal__form">
         <div class="row" data-kind-summary ${draft.kind ? "" : "hidden"}>
-          <strong>${draft.kind === "brace_stock" ? "Brace stock" : "Plate"}</strong>
-          <button class="ghost-btn btn-small" type="button" data-change-kind>Change</button>
+          <strong>${draft.kind === "brace_stock" ? resonanceLocalizedMessages.stockMeasurementsBraceKind : resonanceLocalizedMessages.stockMeasurementsPlateKind}</strong>
+          <button class="ghost-btn btn-small" type="button" data-change-kind>${resonanceLocalizedMessages.stockMeasurementsChange}</button>
         </div>
-        <label data-kind-choice ${draft.kind ? "hidden" : ""}>Specimen
+        <label data-kind-choice ${draft.kind ? "hidden" : ""}>${resonanceLocalizedMessages.stockMeasurementsSpecimenLabel}
           <select class="plate-material-input" name="kind" required>
-            <option value="">Choose a specimen type</option>
-            <option value="plate_stock">Plate</option>
-            <option value="brace_stock">Brace stock</option>
+            <option value="">${resonanceLocalizedMessages.stockMeasurementsChooseKind}</option>
+            <option value="plate_stock">${resonanceLocalizedMessages.stockMeasurementsPlateKind}</option>
+            <option value="brace_stock">${resonanceLocalizedMessages.stockMeasurementsBraceKind}</option>
           </select>
         </label>
         <div class="plate-transfer-grid">
@@ -59,8 +62,8 @@ function stockMeasurementsDialogBuild(draft) {
         <p class="muted small" data-kind-consequence aria-live="polite" hidden></p>
         <div class="muted small" data-measurement-preview aria-live="polite"></div>
         <footer class="save-modal__footer plate-transfer-modal__footer">
-          <button type="button" class="ghost-btn" data-cancel>Cancel</button>
-          <button type="submit" class="primary-btn">Apply</button>
+          <button type="button" class="ghost-btn" data-cancel>${resonanceLocalizedMessages.stockMeasurementsCancel}</button>
+          <button type="submit" class="primary-btn">${resonanceLocalizedMessages.stockMeasurementsApply}</button>
         </footer>
       </form>
     </div>`;
@@ -80,25 +83,36 @@ function stockMeasurementsDraftRefresh(dialog, state, draft) {
     draft.kind = dialog.querySelector("select").value || null;
     for (const [key] of FIELDS)
         draft.measurements[key] = dialog.querySelector(`[name="${key}"]`).valueAsNumber;
-    dialog.querySelector("[data-label=stockHeightMm]").textContent = draft.kind === "brace_stock" ? "Height in bending direction (mm)" : "Thickness (mm)";
+    dialog.querySelector("[data-label=stockHeightMm]").textContent = draft.kind === "brace_stock"
+        ? resonanceLocalizedMessages.stockMeasurementsBraceHeightLabel
+        : resonanceLocalizedMessages.stockMeasurementsPlateHeightLabel;
     dialog.querySelector("[data-assumption]").textContent = draft.kind === "brace_stock"
-        ? "Free-free bending assumption. Specimen dimensions, not finished brace dimensions."
-        : "Free-free rectangular plate bending assumption. Length follows the grain; confirm the first Long bending mode.";
+        ? resonanceLocalizedMessages.stockMeasurementsBraceAssumption
+        : resonanceLocalizedMessages.stockMeasurementsPlateAssumption;
     dialog.querySelector("[type=submit]").disabled = !draft.kind || !braceStockMeasurementsValid(draft.measurements);
     const consequence = dialog.querySelector("[data-kind-consequence]");
     consequence.hidden = !stockLongConfirmationResolve(state) || draft.kind === stockKindResolve(state);
-    consequence.textContent = consequence.hidden ? "" : "Applying this specimen change clears confirmed Long.";
+    consequence.textContent = consequence.hidden
+        ? ""
+        : resonanceLocalizedMessages.stockMeasurementsKindChangeConsequence;
     dialog.querySelector("[data-measurement-preview]").textContent = stockMeasurementsPreviewBuild(state, draft);
 }
 function stockMeasurementsPreviewBuild(state, draft) {
-    if (!braceStockMeasurementsValid(draft.measurements))
-        return "Enter four positive measurements.";
-    if (!draft.kind)
-        return "Choose a specimen type.";
+    if (!braceStockMeasurementsValid(draft.measurements)) {
+        return resonanceLocalizedMessages.stockMeasurementsEnterPositive;
+    }
+    if (!draft.kind) {
+        return resonanceLocalizedMessages.stockMeasurementsChooseKindPreview;
+    }
     const previewState = { ...state };
     stockMeasurementsDraftApply(previewState, draft);
     const estimate = stockMaterialEstimateResolve(previewState);
-    if (estimate.status !== "ready")
-        return "Long mode not confirmed.";
-    return `Draft calculation · Confirmed Long ${estimate.confirmation.frequencyHz.toFixed(1)} Hz · Calculated longitudinal sound speed ${Math.round(estimate.material.longitudinalSoundSpeedMps).toLocaleString()} m/s · Calculated E ${estimate.material.dynamicYoungsModulusGPa.toFixed(2)} GPa · Density ${Math.round(estimate.material.densityKgM3)} kg/m³`;
+    if (estimate.status !== "ready") {
+        return resonanceLocalizedMessages.stockMeasurementsLongModeUnconfirmed;
+    }
+    return resonanceLocalizedMessages.stockMeasurementsReadyPreviewTemplate
+        .replace("{frequencyHz}", estimate.confirmation.frequencyHz.toFixed(1))
+        .replace("{soundSpeedMps}", Math.round(estimate.material.longitudinalSoundSpeedMps).toLocaleString())
+        .replace("{youngsModulusGPa}", estimate.material.dynamicYoungsModulusGPa.toFixed(2))
+        .replace("{densityKgM3}", String(Math.round(estimate.material.densityKgM3)));
 }

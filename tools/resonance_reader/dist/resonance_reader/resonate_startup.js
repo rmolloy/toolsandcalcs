@@ -1,3 +1,4 @@
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 export const RESONATE_STARTUP_RUNNER_FLAG = {
     name: "resonate_startup_runner",
     owner: "resonate",
@@ -15,14 +16,14 @@ export function startupPlanBuildFromMode(mode) {
             mode,
             runRunner: true,
             renderMock: false,
-            statusText: "Load or record to view the waveform.",
+            statusText: resonanceLocalizedMessages.saveIdleStatus,
         };
     }
     return {
         mode,
         runRunner: false,
         renderMock: true,
-        statusText: "Load or record to view the waveform.",
+        statusText: resonanceLocalizedMessages.saveIdleStatus,
     };
 }
 export function startupExecuteFromPlan(plan, deps) {

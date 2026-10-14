@@ -1,4 +1,5 @@
 import "../common/notebook_rpc_client.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 type ResonanceNotebookRestorePayload = {
   ok?: boolean;
@@ -22,14 +23,14 @@ export async function readNotebookRestorePayloadForResonance(
 ): Promise<ResonanceNotebookRestorePayload> {
   return await readSharedNotebookRpcClient().readNotebookRestorePayload(workbookId, eventId, {
     fetchImpl: fetchImpl || null,
-    fetchUnavailableMessage: "Resonance notebook restore fetch is unavailable.",
+    fetchUnavailableMessage: resonanceLocalizedMessages.notebookRestoreFetchUnavailable,
   });
 }
 
 function readSharedNotebookRpcClient(): SharedNotebookRpcClient {
   const shared = (globalThis as any).CommonNotebookRpcClient as SharedNotebookRpcClient | undefined;
   if (!shared) {
-    throw new Error("Common notebook rpc client is unavailable.");
+    throw new Error(resonanceLocalizedMessages.notebookCommonRpcUnavailable);
   }
   return shared;
 }

@@ -1,6 +1,7 @@
 import "../common/notebook_save_modal.js";
 import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js";
 import { measureModeLabelBuild, measureModeNormalize } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 type ResonanceSaveSelection = { subject: Record<string, any>; event: Record<string, any> };
 
@@ -20,7 +21,7 @@ export async function openConnectedResonanceSaveModal(args: {
 }): Promise<ResonanceSaveSelection | null> {
   const defaults = resonanceSubjectDraftDefaultsFromMeasureMode(args.measureMode);
   return await readSharedNotebookSaveModal().openNotebookSaveModal({
-    dialogLabel: "Save Resonance Capture",
+    dialogLabel: resonanceLocalizedMessages.saveDialogLabel,
     title: resonanceSaveTitleBuild(args.measureMode),
     summary: args.summary || [],
     notebookName: args.notebookName,
@@ -29,7 +30,7 @@ export async function openConnectedResonanceSaveModal(args: {
     newSubject: {
       typeKey: defaults.typeKey,
       subtypeKey: defaults.subtypeKey,
-      displayNamePlaceholder: "European Spruce Top",
+      displayNamePlaceholder: resonanceLocalizedMessages.saveDisplayNamePlaceholder,
       typeChoice: true,
     },
     eventExtras: { measureMode: args.measureMode },
@@ -39,15 +40,18 @@ export async function openConnectedResonanceSaveModal(args: {
 // The entry title the builder sees before renaming it: what was done, and in which mode.
 export function resonanceSaveTitleBuild(measureMode: unknown): string {
   const normalized = measureModeNormalize(measureMode);
-  if (normalized === "played_note") return "Played note";
-  if (normalized === "peak_analysis") return "Peak/Q analysis";
-  return `Tap test · ${measureModeLabelBuild(measureMode)}`;
+  if (normalized === "played_note") return resonanceLocalizedMessages.measureModePlayedNote;
+  if (normalized === "peak_analysis") return resonanceLocalizedMessages.savePeakAnalysisTitle;
+  return resonanceLocalizedMessages.saveTapTestTitleTemplate.replace(
+    "{mode}",
+    measureModeLabelBuild(measureMode),
+  );
 }
 
 function readSharedNotebookSaveModal(): SharedNotebookSaveModal {
   const shared = (globalThis as any).CommonNotebookSaveModal as SharedNotebookSaveModal | undefined;
   if (!shared) {
-    throw new Error("Common notebook save modal is unavailable.");
+    throw new Error(resonanceLocalizedMessages.saveNotebookUnavailable);
   }
   return shared;
 }

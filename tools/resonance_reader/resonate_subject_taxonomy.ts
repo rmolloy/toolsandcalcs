@@ -1,4 +1,5 @@
 import { measureModeNormalize, type MeasureMode } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 type SubjectTypeOption = {
   key: string;
@@ -7,18 +8,18 @@ type SubjectTypeOption = {
 };
 
 const SUBJECT_TYPE_OPTIONS: SubjectTypeOption[] = [
-  { key: "GUITAR", label: "Guitar", subtypes: [{ key: "", label: "General" }] },
-  { key: "MATERIAL", label: "Material", subtypes: [{ key: "PLATE_STOCK", label: "Plate Stock" }, { key: "BRACE_STOCK", label: "Brace Stock" }] },
-  { key: "BLANK", label: "Blank", subtypes: [{ key: "", label: "General" }] },
-  { key: "PART", label: "Part", subtypes: [{ key: "", label: "General" }] },
-  { key: "PLATE", label: "Plate", subtypes: [{ key: "", label: "General" }] },
-  { key: "BRACE", label: "Brace", subtypes: [{ key: "", label: "General" }] },
-  { key: "ASSEMBLY", label: "Assembly", subtypes: [{ key: "", label: "General" }] },
-  { key: "INSTRUMENT", label: "Instrument", subtypes: [{ key: "", label: "General" }] },
-  { key: "SETUP_COMPONENT", label: "Setup Component", subtypes: [{ key: "", label: "General" }] },
-  { key: "JIG", label: "Jig", subtypes: [{ key: "", label: "General" }] },
-  { key: "FIXTURE", label: "Fixture", subtypes: [{ key: "", label: "General" }] },
-  { key: "GENERIC", label: "Generic", subtypes: [{ key: "", label: "General" }] },
+  { key: "GUITAR", label: resonanceLocalizedMessages.subjectGuitar, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "MATERIAL", label: resonanceLocalizedMessages.subjectMaterial, subtypes: [{ key: "PLATE_STOCK", label: resonanceLocalizedMessages.subjectPlateStock }, { key: "BRACE_STOCK", label: resonanceLocalizedMessages.subjectBraceStock }] },
+  { key: "BLANK", label: resonanceLocalizedMessages.subjectBlank, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "PART", label: resonanceLocalizedMessages.subjectPart, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "PLATE", label: resonanceLocalizedMessages.subjectPlate, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "BRACE", label: resonanceLocalizedMessages.subjectBrace, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "ASSEMBLY", label: resonanceLocalizedMessages.subjectAssembly, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "INSTRUMENT", label: resonanceLocalizedMessages.subjectInstrument, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "SETUP_COMPONENT", label: resonanceLocalizedMessages.subjectSetupComponent, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "JIG", label: resonanceLocalizedMessages.subjectJig, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "FIXTURE", label: resonanceLocalizedMessages.subjectFixture, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
+  { key: "GENERIC", label: resonanceLocalizedMessages.subjectGeneric, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
 ];
 
 export function resonanceSubjectTypeOptionsRead(): SubjectTypeOption[] {
@@ -43,7 +44,7 @@ export function resonanceSubjectDraftDefaultsFromMeasureMode(measureMode: unknow
 }
 
 export function resonanceSubjectSubtypeOptionsRead(typeKey: string): Array<{ key: string; label: string }> {
-  return resonanceSubjectTypeOptionsRead().find((option) => option.key === typeKey)?.subtypes ?? [{ key: "", label: "General" }];
+  return resonanceSubjectTypeOptionsRead().find((option) => option.key === typeKey)?.subtypes ?? [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }];
 }
 
 export type { MeasureMode };

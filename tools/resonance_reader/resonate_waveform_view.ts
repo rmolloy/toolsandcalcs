@@ -6,6 +6,7 @@ import {
 } from "./resonate_note_window_selection.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 type WaveformViewDeps = {
   state: Record<string, any>;
@@ -720,7 +721,7 @@ function openWaveNoteOverrideEditorFromSlice(
   if (!noteSlice) return;
   const detectedLabel = waveDetectedLabelResolveForNoteSlice(noteSlice, deps);
   if (!detectedLabel || detectedLabel === "Tap") {
-    deps.setStatus("Tap labels are automatic; note override is available on note slices.");
+    deps.setStatus(resonanceLocalizedMessages.waveformNoteEditorTapOverrideUnavailable);
     return;
   }
   const plot = document.getElementById("plot_waveform");
@@ -734,7 +735,8 @@ function openWaveNoteOverrideEditorFromSlice(
   const closeBtn = editor.querySelector("[data-wave-note-close]") as HTMLButtonElement | null;
   if (!header || !quick || !input || !applyBtn || !clearBtn || !closeBtn) return;
   const currentOverride = noteLabelOverrideResolveFromState(deps.state, noteSliceId);
-  header.textContent = `Detected: ${detectedLabel}`;
+  header.textContent = resonanceLocalizedMessages.waveformNoteEditorDetectedTemplate
+    .replace("{note}", detectedLabel);
   input.value = currentOverride || detectedLabel;
   waveNoteQuickChoicesRender(quick, detectedLabel, input);
   const apply = () => {
@@ -784,16 +786,16 @@ function waveNoteOverrideEditorGetOrCreate(plot: HTMLElement) {
   editor.hidden = true;
   editor.innerHTML = [
     '<div class="wave-note-override-header">',
-    '  <span data-wave-note-detected>Detected:</span>',
-    '  <button type="button" class="ghost-btn btn-small" data-wave-note-close>Close</button>',
+    `  <span data-wave-note-detected>${resonanceLocalizedMessages.waveformNoteEditorDetectedLabel}</span>`,
+    `  <button type="button" class="ghost-btn btn-small" data-wave-note-close>${resonanceLocalizedMessages.waveformNoteEditorClose}</button>`,
     "</div>",
     '<div class="wave-note-override-row" data-wave-note-quick></div>',
     '<div class="wave-note-override-row">',
-    '  <input type="text" class="wave-note-override-input" data-wave-note-input placeholder="Type note (e.g. E4)" />',
+    `  <input type="text" class="wave-note-override-input" data-wave-note-input placeholder="${resonanceLocalizedMessages.waveformNoteEditorPlaceholder}" />`,
     "</div>",
     '<div class="wave-note-override-actions">',
-    '  <button type="button" class="ghost-btn btn-small" data-wave-note-clear>Clear</button>',
-    '  <button type="button" class="ghost-btn btn-small" data-wave-note-apply>Apply</button>',
+    `  <button type="button" class="ghost-btn btn-small" data-wave-note-clear>${resonanceLocalizedMessages.waveformNoteEditorClear}</button>`,
+    `  <button type="button" class="ghost-btn btn-small" data-wave-note-apply>${resonanceLocalizedMessages.waveformNoteEditorApply}</button>`,
     "</div>",
   ].join("");
   host.appendChild(editor);
@@ -1426,13 +1428,17 @@ export function waveformRangeHandlersBuild(deps: WaveformViewDeps) {
   return {
     onPrimaryRangeChange: (range: any) => {
       deps.state.viewRangeMs = range;
-      deps.setStatus(range ? "Analyzing selected region" : "Analyzing full clip");
+      deps.setStatus(range
+        ? resonanceLocalizedMessages.waveformAnalyzingSelectedRegion
+        : resonanceLocalizedMessages.waveformAnalyzingFullClip);
       if (!primaryRangePipelineShouldTriggerFromRangeChange(deps.state, range)) return;
       deps.runResonatePipeline("range").catch((err: any) => console.error("[Resonance Reader] FFT refresh failed", err));
     },
     onNoteSelectionRangeChange: (range: any) => {
       deps.state.noteSelectionRangeMs = range;
-      deps.setStatus(range ? "Analyzing selected tap window" : "Analyzing full clip");
+      deps.setStatus(range
+        ? resonanceLocalizedMessages.waveformAnalyzingSelectedTapWindow
+        : resonanceLocalizedMessages.waveformAnalyzingFullClip);
       if (!noteRangePipelineShouldTriggerFromRangeChange(deps.state, range)) return;
       deps.runResonatePipeline("tap-range").catch((err: any) => console.error("[Resonance Reader] FFT refresh failed", err));
     },

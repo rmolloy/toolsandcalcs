@@ -1,4 +1,5 @@
 import { resolveColorHexFromRole } from "./resonate_color_roles.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 const GUITAR_BANDS = {
     air: { low: 75, high: 115 },
     top: { low: 150, high: 205 },
@@ -6,24 +7,24 @@ const GUITAR_BANDS = {
 };
 const GUITAR_META = {
     air: {
-        label: "Air",
+        label: resonanceLocalizedMessages.modeAirLabel,
         aliasHtml: "T(1,1)<sub>1</sub>",
         aliasText: "T(1,1)₁",
-        tooltip: "Air (T(1,1)₁)\nHelmholtz air resonance of the cavity.",
+        tooltip: resonanceLocalizedMessages.modeAirTooltip,
         color: resolveColorHexFromRole("airMode"),
     },
     top: {
-        label: "Top",
+        label: resonanceLocalizedMessages.modeTopLabel,
         aliasHtml: "T(1,1)<sub>2</sub>",
         aliasText: "T(1,1)₂",
-        tooltip: "Top (T(1,1)₂)\nPrimary top-plate low-frequency mode.",
+        tooltip: resonanceLocalizedMessages.modeTopTooltip,
         color: resolveColorHexFromRole("topMode"),
     },
     back: {
-        label: "Back",
+        label: resonanceLocalizedMessages.modeBackLabel,
         aliasHtml: "T(1,1)<sub>3</sub>",
         aliasText: "T(1,1)₃",
-        tooltip: "Back (T(1,1)₃)\nPrimary back-plate low-frequency mode.",
+        tooltip: resonanceLocalizedMessages.modeBackTooltip,
         color: resolveColorHexFromRole("backMode"),
     },
 };
@@ -34,24 +35,24 @@ const PLATE_STOCK_BANDS = {
 };
 const PLATE_STOCK_META = {
     long: {
-        label: "Long",
+        label: resonanceLocalizedMessages.modeLongLabel,
         aliasHtml: "L",
         aliasText: "L",
-        tooltip: "Long\nLong-grain plate mode.",
+        tooltip: resonanceLocalizedMessages.modePlateLongTooltip,
         color: resolveColorHexFromRole("plateLongMode"),
     },
     cross: {
-        label: "Cross",
+        label: resonanceLocalizedMessages.modeCrossLabel,
         aliasHtml: "C",
         aliasText: "C",
-        tooltip: "Cross\nCross-grain plate mode.",
+        tooltip: resonanceLocalizedMessages.modeCrossTooltip,
         color: resolveColorHexFromRole("plateCrossMode"),
     },
     transverse: {
-        label: "Transverse",
+        label: resonanceLocalizedMessages.modeTransverseLabel,
         aliasHtml: "T",
         aliasText: "T",
-        tooltip: "Transverse\nTransverse/twisting plate mode.",
+        tooltip: resonanceLocalizedMessages.modeTransverseTooltip,
         color: resolveColorHexFromRole("plateTransverseMode"),
     },
 };
@@ -60,10 +61,10 @@ const BRACE_STOCK_BANDS = {
 };
 const BRACE_STOCK_META = {
     long: {
-        label: "Long",
+        label: resonanceLocalizedMessages.modeLongLabel,
         aliasHtml: "L",
         aliasText: "L",
-        tooltip: "Long\nLong-grain brace-stock mode.",
+        tooltip: resonanceLocalizedMessages.modeBraceLongTooltip,
         color: resolveColorHexFromRole("plateLongMode"),
     },
 };
@@ -102,14 +103,14 @@ export function peakAnalysisSourceMeasureModeResolve(state) {
 export function measureModeLabelBuild(measureMode) {
     const normalized = measureModeNormalize(measureMode);
     if (normalized === "played_note")
-        return "Played note";
+        return resonanceLocalizedMessages.measureModePlayedNote;
     if (normalized === "peak_analysis")
-        return "Peak/Q";
+        return resonanceLocalizedMessages.measureModePeakAnalysis;
     if (normalized === "plate_stock")
-        return "Plate stock";
+        return resonanceLocalizedMessages.measureModePlateStock;
     if (normalized === "brace_stock")
-        return "Brace stock";
-    return "Guitar";
+        return resonanceLocalizedMessages.measureModeBraceStock;
+    return resonanceLocalizedMessages.measureModeGuitar;
 }
 export function modeProfileResolveFromState(state) {
     return modeProfileResolveFromMeasureMode(peakAnalysisSourceMeasureModeResolve(state));

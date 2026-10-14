@@ -1,130 +1,8 @@
-import { RESONANCE_TONELAB_DEFAULTS } from "./resonate_debug_flags.js";
-const SETTINGS_IDS = {
-    dialog: "settings_dialog",
-    trigger: "btn_settings",
-    audioInput: "settings_audio_input",
-    audioRefresh: "settings_audio_refresh",
-    profile: "settings_fft_profile",
-    scope: "settings_fft_scope",
-    window: "settings_fft_window",
-    resolution: "settings_fft_resolution",
-    smoothing: "settings_fft_smoothing",
-    averaging: "settings_fft_averaging",
-    displayRange: "settings_fft_display_range",
-    dbScale: "settings_fft_db_scale",
-    yAxis: "settings_fft_y_axis",
-    xScale: "settings_fft_x_scale",
-    xMin: "settings_fft_x_min",
-    xMax: "settings_fft_x_max",
-    yMin: "settings_fft_y_min",
-    yMax: "settings_fft_y_max",
-    smoothingBins: "settings_fft_smoothing_bins",
-    smoothingHz: "settings_fft_smoothing_hz",
-    lineWidth: "settings_fft_line_width",
-    tapSliceWindowMs: "settings_fft_tap_slice_window_ms",
-    energyBandWidthHz: "settings_fft_energy_band_width_hz",
-    tapAveraging: "settings_fft_tap_averaging",
-    peakHold: "settings_fft_peak_hold",
-    peakRefine: "settings_fft_peak_refine",
-    polymaxValidation: "settings_fft_polymax_validation",
-    reset: "settings_fft_reset",
-    done: "settings_done",
-};
-export function settingsDebugPatchBuild(name, value) {
-    if (name === SETTINGS_IDS.profile)
-        return settingsProfilePatchBuild(value);
-    if (name === SETTINGS_IDS.scope)
-        return { fftInputScope: value || null };
-    if (name === SETTINGS_IDS.window)
-        return { fftWindow: value || null };
-    if (name === SETTINGS_IDS.resolution)
-        return { fftResolution: value || null };
-    if (name === SETTINGS_IDS.smoothing)
-        return settingsSmoothingPatchBuild(value);
-    if (name === SETTINGS_IDS.averaging)
-        return { spectrumAveragingMode: value || "off" };
-    if (name === SETTINGS_IDS.displayRange)
-        return { spectrumDisplayRange: value || null };
-    if (name === SETTINGS_IDS.dbScale)
-        return { spectrumDbScale: value || null };
-    if (name === SETTINGS_IDS.yAxis)
-        return { spectrumYAxisMode: value || null };
-    if (name === SETTINGS_IDS.xScale)
-        return { spectrumXAxisScale: value || null };
-    if (name === SETTINGS_IDS.xMin)
-        return settingsPositiveNumberPatchBuild("spectrumXAxisMin", value);
-    if (name === SETTINGS_IDS.xMax)
-        return settingsPositiveNumberPatchBuild("spectrumXAxisMax", value);
-    if (name === SETTINGS_IDS.yMin)
-        return settingsFiniteNumberPatchBuild("spectrumYAxisMin", value);
-    if (name === SETTINGS_IDS.yMax)
-        return settingsFiniteNumberPatchBuild("spectrumYAxisMax", value);
-    if (name === SETTINGS_IDS.smoothingBins)
-        return settingsNumberPatchBuild("spectrumSmoothingBins", value);
-    if (name === SETTINGS_IDS.smoothingHz)
-        return settingsNumberPatchBuild("spectrumSmoothingHz", value);
-    if (name === SETTINGS_IDS.lineWidth)
-        return settingsNumberPatchBuild("spectrumLineWidth", value);
-    if (name === SETTINGS_IDS.tapSliceWindowMs)
-        return settingsNumberPatchBuild("tapSliceWindowMs", value);
-    if (name === SETTINGS_IDS.energyBandWidthHz)
-        return settingsNumberPatchBuild("energyBandWidthHz", value);
-    return {};
-}
-export function settingsBooleanPatchBuild(name, checked) {
-    if (name === SETTINGS_IDS.tapAveraging)
-        return { useTapAveraging: checked };
-    if (name === SETTINGS_IDS.peakHold)
-        return { usePeakHold: checked };
-    if (name === SETTINGS_IDS.peakRefine)
-        return { useParabolicPeakRefine: checked };
-    if (name === SETTINGS_IDS.polymaxValidation)
-        return { usePolymaxValidation: checked };
-    return {};
-}
-export function settingsNumberPatchBuild(name, value) {
-    return settingsPositiveNumberPatchBuild(name, value);
-}
-export function settingsPositiveNumberPatchBuild(name, value) {
-    return { [name]: settingsPositiveNumberValueParse(value) };
-}
-export function settingsFiniteNumberPatchBuild(name, value) {
-    return { [name]: settingsFiniteNumberValueParse(value) };
-}
-export function settingsSmoothingPatchBuild(value) {
-    if (value === "off") {
-        return {
-            useSpectrumSmoothing: false,
-            spectrumSmoothingMode: null,
-        };
-    }
-    return {
-        useSpectrumSmoothing: value === "celestial" ? true : RESONANCE_TONELAB_DEFAULTS.useSpectrumSmoothing,
-        spectrumSmoothingMode: value || null,
-    };
-}
-export function settingsProfilePatchBuild(value) {
-    if (value === "custom")
-        return {};
-    return {
-        fftProfile: value === "celestial" ? "celestial" : "tonelab",
-        fftInputScope: null,
-        fftWindow: null,
-        fftResolution: null,
-        spectrumSmoothingMode: null,
-        spectrumAveragingMode: null,
-        spectrumDisplayRange: null,
-        spectrumDbScale: null,
-        spectrumYAxisMode: null,
-        spectrumXAxisScale: null,
-        spectrumXAxisMin: null,
-        spectrumXAxisMax: null,
-        spectrumYAxisMin: null,
-        spectrumYAxisMax: null,
-        useSpectrumSmoothing: value === "celestial" ? true : RESONANCE_TONELAB_DEFAULTS.useSpectrumSmoothing,
-        usePeakHold: RESONANCE_TONELAB_DEFAULTS.usePeakHold,
-    };
-}
+import { SETTINGS_IDS } from "./resonate_settings_ids.js";
+import { settingsAudioInputBind, settingsAudioInputsRefresh, } from "./resonate_audio_input_select.js";
+import { settingsBooleanPatchBuild, settingsDebugPatchBuild, settingsProfileValueRead, settingsSmoothingValueRead, } from "./resonate_settings_model.js";
+import { settingsPipelineRefresh, } from "./resonate_settings_refresh.js";
+export { settingsBooleanPatchBuild, settingsDebugPatchBuild, settingsFiniteNumberPatchBuild, settingsNumberPatchBuild, settingsPositiveNumberPatchBuild, settingsProfilePatchBuild, settingsProfileValueRead, settingsSmoothingPatchBuild, } from "./resonate_settings_model.js";
 export function settingsModalBind(deps) {
     const dialog = settingsDialogElementGet();
     const trigger = buttonElementGet(SETTINGS_IDS.trigger);
@@ -138,6 +16,7 @@ export function settingsModalBind(deps) {
     buttonElementGet(SETTINGS_IDS.audioRefresh)?.addEventListener("click", () => {
         void settingsAudioInputsRefresh();
     });
+    settingsAudioInputBind();
     buttonElementGet(SETTINGS_IDS.reset)?.addEventListener("click", () => {
         settingsDebugApiGet()?.reset?.();
         settingsControlsSyncFromRuntime();
@@ -167,27 +46,11 @@ export function settingsModalBind(deps) {
             settingsPipelineRefresh(deps);
         });
     });
-    selectElementGet(SETTINGS_IDS.audioInput)?.addEventListener("change", (event) => {
-        const select = event.currentTarget;
-        settingsAudioInputDeviceIdWrite(select.value);
-    });
 }
 function settingsDialogOpen(dialog) {
     if (dialog.open)
         return;
     dialog.showModal();
-}
-function settingsPipelineRefresh(deps) {
-    if (!deps.state.currentWave) {
-        deps.setStatus("FFT settings updated.");
-        return;
-    }
-    deps.runResonatePipeline("settings")
-        .then(() => deps.setStatus("FFT settings updated."))
-        .catch((error) => {
-        console.warn("[Resonance Reader] settings refresh failed", error);
-        deps.setStatus("FFT settings updated. Refresh failed.");
-    });
 }
 function settingsControlsSyncFromRuntime() {
     const flags = settingsDebugApiGet()?.show?.() || {};
@@ -214,97 +77,6 @@ function settingsControlsSyncFromRuntime() {
     toggleCheckedWrite(SETTINGS_IDS.peakHold, Boolean(flags.usePeakHold));
     toggleCheckedWrite(SETTINGS_IDS.peakRefine, flags.useParabolicPeakRefine !== false);
     toggleCheckedWrite(SETTINGS_IDS.polymaxValidation, Boolean(flags.usePolymaxValidation));
-}
-export function settingsProfileValueRead(flags) {
-    if (settingsCustomProfileRequired(flags))
-        return "custom";
-    return flags.fftProfile === "celestial" ? "celestial" : "tonelab";
-}
-function settingsCustomProfileRequired(flags) {
-    return Boolean(flags.fftInputScope
-        || flags.fftWindow
-        || flags.fftResolution
-        || flags.spectrumSmoothingMode
-        || (flags.spectrumAveragingMode && flags.spectrumAveragingMode !== "off")
-        || flags.spectrumDisplayRange
-        || flags.spectrumDbScale
-        || flags.spectrumYAxisMode
-        || flags.spectrumXAxisScale
-        || settingsNumberDiffersFromDefault(flags.spectrumXAxisMin, RESONANCE_TONELAB_DEFAULTS.spectrumXAxisMin)
-        || Number.isFinite(flags.spectrumXAxisMax)
-        || Number.isFinite(flags.spectrumYAxisMin)
-        || Number.isFinite(flags.spectrumYAxisMax)
-        || flags.spectrumSmoothingHz
-        || settingsNumberDiffersFromDefault(flags.spectrumSmoothingBins, RESONANCE_TONELAB_DEFAULTS.spectrumSmoothingBins)
-        || settingsNumberDiffersFromDefault(flags.spectrumLineWidth, RESONANCE_TONELAB_DEFAULTS.spectrumLineWidth)
-        || settingsNumberDiffersFromDefault(flags.tapSliceWindowMs, RESONANCE_TONELAB_DEFAULTS.tapSliceWindowMs)
-        || flags.energyBandWidthHz
-        || settingsBooleanDiffersFromDefault(flags.useSpectrumSmoothing, RESONANCE_TONELAB_DEFAULTS.useSpectrumSmoothing)
-        || settingsBooleanDiffersFromDefault(flags.useTapAveraging, RESONANCE_TONELAB_DEFAULTS.useTapAveraging)
-        || settingsBooleanDiffersFromDefault(flags.usePeakHold, RESONANCE_TONELAB_DEFAULTS.usePeakHold)
-        || flags.useParabolicPeakRefine === false
-        || flags.usePolymaxValidation !== false);
-}
-function settingsNumberDiffersFromDefault(value, defaultValue) {
-    if (!Number.isFinite(value))
-        return false;
-    return Number(value) !== defaultValue;
-}
-function settingsBooleanDiffersFromDefault(value, defaultValue) {
-    if (typeof value !== "boolean")
-        return false;
-    return value !== defaultValue;
-}
-function settingsSmoothingValueRead(flags) {
-    if (flags.useSpectrumSmoothing === false)
-        return "off";
-    return flags.spectrumSmoothingMode || "gaussian-bins";
-}
-async function settingsAudioInputsRefresh() {
-    const select = selectElementGet(SETTINGS_IDS.audioInput);
-    if (!select)
-        return;
-    settingsAudioInputOptionsRender(select, [], settingsAudioInputDeviceIdRead());
-    const devices = await settingsAudioInputDevicesRead();
-    settingsAudioInputOptionsRender(select, devices, settingsAudioInputDeviceIdRead());
-}
-async function settingsAudioInputDevicesRead() {
-    const audio = settingsAudioApiGet();
-    if (typeof audio?.listAudioInputDevices !== "function")
-        return [];
-    try {
-        return await audio.listAudioInputDevices();
-    }
-    catch (error) {
-        console.warn("[Resonance Reader] audio input list failed", error);
-        return [];
-    }
-}
-function settingsAudioInputOptionsRender(select, devices, selectedDeviceId) {
-    select.innerHTML = "";
-    select.appendChild(settingsOptionBuild("", "Default microphone", !selectedDeviceId));
-    devices.forEach((device, index) => {
-        select.appendChild(settingsOptionBuild(device.deviceId, settingsAudioDeviceLabelRead(device, index), device.deviceId === selectedDeviceId));
-    });
-}
-function settingsAudioDeviceLabelRead(device, index) {
-    return device.label || `Microphone ${index + 1}`;
-}
-function settingsOptionBuild(value, label, selected) {
-    const option = document.createElement("option");
-    option.value = value;
-    option.textContent = label;
-    option.selected = selected;
-    return option;
-}
-function settingsAudioInputDeviceIdRead() {
-    const audio = settingsAudioApiGet();
-    if (typeof audio?.getAudioInputDeviceId !== "function")
-        return null;
-    return audio.getAudioInputDeviceId();
-}
-function settingsAudioInputDeviceIdWrite(value) {
-    settingsAudioApiGet()?.setAudioInputDeviceId?.(value || null);
 }
 function settingsFftSelectsGet() {
     return [
@@ -359,29 +131,8 @@ function toggleCheckedWrite(id, checked) {
         return;
     input.checked = checked;
 }
-function settingsPositiveNumberValueParse(value) {
-    const trimmed = String(value || "").trim();
-    if (!trimmed)
-        return null;
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed) || parsed <= 0)
-        return null;
-    return parsed;
-}
-function settingsFiniteNumberValueParse(value) {
-    const trimmed = String(value || "").trim();
-    if (!trimmed)
-        return null;
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed))
-        return null;
-    return parsed;
-}
 function settingsDebugApiGet() {
     return window.ResonanceDebug;
-}
-function settingsAudioApiGet() {
-    return window.FFTAudio;
 }
 function settingsDialogElementGet() {
     return document.getElementById(SETTINGS_IDS.dialog);

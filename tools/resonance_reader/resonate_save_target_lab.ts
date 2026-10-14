@@ -15,6 +15,7 @@ import { downloadResonanceCapturePackage } from "./resonate_save_package_downloa
 import { openConnectedResonanceSaveModal } from "./resonate_save_modal.js";
 import { openResonanceSaveMenu } from "./resonate_save_menu.js";
 import { resonanceSaveSummaryBuild } from "./resonate_save_summary.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export function resonanceSaveRunnerCreate(): ResonanceSaveActionRunner {
   return {
@@ -28,14 +29,14 @@ async function readResonanceSaveSurface(): Promise<ResonanceSaveSurface> {
   if (connection.accessState !== "lab-connected") {
     return {
       mode: "lab-disconnected",
-      label: "Save",
+      label: resonanceLocalizedMessages.saveActionLabel,
       accessState: connection.accessState,
     };
   }
 
   return {
     mode: "lab-connected",
-    label: "Save",
+    label: resonanceLocalizedMessages.saveActionLabel,
     workbookId: connection.workbookId,
     notebookName: connection.notebookName,
   };
@@ -43,7 +44,7 @@ async function readResonanceSaveSurface(): Promise<ResonanceSaveSurface> {
 
 async function runResonanceSaveAction(request: ResonanceSaveActionRequest): Promise<boolean> {
   if (!hasWaveformCapture()) {
-    request.setStatus("Load or record before saving.");
+    request.setStatus(resonanceLocalizedMessages.saveLoadFirstStatus);
     return false;
   }
 
@@ -100,7 +101,10 @@ async function resonanceConnectedSaveActionRun(
       plotPngBlob: await resonanceCapturePlotPngBlobBuild(document.getElementById("plot_fft")),
     },
   });
-  request.setStatus(`Saved to ${saveSurface.notebookName || "Notebook"}.`);
+  request.setStatus(resonanceLocalizedMessages.saveSavedToNotebookTemplate.replace(
+    "{notebookName}",
+    saveSurface.notebookName || resonanceLocalizedMessages.saveDefaultNotebookName,
+  ));
   request.state.lastNotebookSave = result;
   return true;
 }
@@ -131,7 +135,7 @@ async function resonanceDisconnectedSaveActionRun(
     recordingLabel: resonanceCaptureRecordingLabelRead(request.state),
     plotElement: document.getElementById("plot_fft"),
   });
-  request.setStatus("Package downloaded.");
+  request.setStatus(resonanceLocalizedMessages.savePackageDownloadedStatus);
   return true;
 }
 
@@ -172,16 +176,16 @@ function buildResonanceDisconnectedSaveMenuItems(
   const items = [
     {
       key: "download-package",
-      label: "Download Package",
-      description: "Save state.json, source.wav, and plot.png locally.",
+      label: resonanceLocalizedMessages.saveDownloadPackageLabel,
+      description: resonanceLocalizedMessages.saveDownloadPackageDescription,
     },
   ];
 
   if (canRunNotebookConnectAction(saveSurface)) {
     items.push({
       key: "connect-notebook",
-      label: "Connect Google Drive + Notebook",
-      description: "Connect first, then save the package into your notebook.",
+      label: resonanceLocalizedMessages.saveConnectNotebookLabel,
+      description: resonanceLocalizedMessages.saveConnectNotebookDescription,
     });
   }
 

@@ -4,6 +4,7 @@ import {
   customMeasurementFrequencySetFromState,
   customMeasurementModesBuildFromState,
 } from "./resonate_custom_measurements.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 type PipelineBus = {
   wire: (event: PipelineEventName, handler: PipelineHandler) => void;
@@ -44,29 +45,39 @@ function pipelineStatusSet(message: string) {
 
 function pipelineStartEventHandle(_payload: unknown, ctx: { log: (message: string) => void }) {
   ctx.log("pipeline.started");
-  pipelineStatusSet("Pipeline started.");
+  pipelineStatusSet(resonanceLocalizedMessages.pipelineStartedStatus);
 }
 
 function pipelineCompletedEventHandle(_payload: unknown, ctx: { log: (message: string) => void }) {
   ctx.log("pipeline.completed");
-  pipelineStatusSet("Pipeline completed.");
+  pipelineStatusSet(resonanceLocalizedMessages.pipelineCompletedStatus);
 }
 
 function pipelineFailedEventHandle(_payload: unknown, ctx: { log: (message: string) => void }) {
   ctx.log("pipeline.failed");
-  pipelineStatusSet("Pipeline failed.");
+  pipelineStatusSet(resonanceLocalizedMessages.pipelineFailedStatus);
 }
 
 function pipelineStageStartedEventHandle(payload: unknown, ctx: { log: (message: string) => void }) {
-  const stage = (payload as { stage?: string } | null)?.stage || "unknown";
-  ctx.log(`stage.started:${stage}`);
-  pipelineStatusSet(`Running ${stage}...`);
+  const stage = pipelineStageRead(payload);
+  ctx.log(`stage.started:${stage || "unknown"}`);
+  pipelineStatusSet(resonanceLocalizedMessages.pipelineStageStartedTemplate.replace(
+    "{stage}",
+    stage || resonanceLocalizedMessages.pipelineUnknownStageLabel,
+  ));
 }
 
 function pipelineStageCompletedEventHandle(payload: unknown, ctx: { log: (message: string) => void }) {
-  const stage = (payload as { stage?: string } | null)?.stage || "unknown";
-  ctx.log(`stage.completed:${stage}`);
-  pipelineStatusSet(`Completed ${stage}.`);
+  const stage = pipelineStageRead(payload);
+  ctx.log(`stage.completed:${stage || "unknown"}`);
+  pipelineStatusSet(resonanceLocalizedMessages.pipelineStageCompletedTemplate.replace(
+    "{stage}",
+    stage || resonanceLocalizedMessages.pipelineUnknownStageLabel,
+  ));
+}
+
+function pipelineStageRead(payload: unknown) {
+  return String((payload as { stage?: string } | null)?.stage || "").trim();
 }
 
 function pipelineSpectrumReadyEventHandle(payload: unknown, ctx: { log: (message: string) => void }) {
@@ -128,12 +139,7 @@ function pipelineWaveformReadyEventHandle(payload: unknown, ctx: { log: (message
   const dbg = state?.waveDebug;
   const renderDbg = state?.waveRenderDebug;
   if (dbg && Number.isFinite(dbg.sampleRate) && Number.isFinite(dbg.waveLen)) {
-    const endLabel = Number.isFinite(dbg.endMs) ? `${Math.round(dbg.endMs)} ms` : "n/a";
-    const yLabel = renderDbg && Number.isFinite(renderDbg.yMax)
-      ? ` yMax=${renderDbg.yMax.toFixed(4)} maxAbs=${Number.isFinite(renderDbg.maxAbs) ? renderDbg.maxAbs.toFixed(4) : "n/a"}`
-      : "";
-    const pipeLabel = Number.isFinite(dbg.maxAbs) ? ` pipeMax=${dbg.maxAbs.toFixed(4)}` : "";
-    ui.setStatus(`Loaded. ${dbg.waveLen} samples @ ${dbg.sampleRate} Hz (${endLabel}).${yLabel}${pipeLabel}`);
+    ui.setStatus(pipelineWaveformLoadedStatusBuild(dbg, renderDbg));
     console.info("[Resonance Reader] waveform scale", {
       sampleRate: dbg.sampleRate,
       waveLen: dbg.waveLen,
@@ -147,6 +153,39 @@ function pipelineWaveformReadyEventHandle(payload: unknown, ctx: { log: (message
   }
 }
 
+function pipelineWaveformLoadedStatusBuild(dbg: any, renderDbg: any) {
+  return resonanceLocalizedMessages.pipelineWaveformLoadedTemplate
+    .replace("{sampleCount}", String(dbg.waveLen))
+    .replace("{sampleRate}", String(dbg.sampleRate))
+    .replace("{endLabel}", pipelineWaveformEndLabelRead(dbg))
+    .replace("{renderDiagnostics}", pipelineWaveformRenderDiagnosticsBuild(renderDbg))
+    .replace("{pipelineDiagnostics}", pipelineWaveformPipelineDiagnosticsBuild(dbg));
+}
+
+function pipelineWaveformEndLabelRead(dbg: any) {
+  return Number.isFinite(dbg.endMs)
+    ? `${Math.round(dbg.endMs)} ms`
+    : resonanceLocalizedMessages.pipelineUnavailableLabel;
+}
+
+function pipelineWaveformRenderDiagnosticsBuild(renderDbg: any) {
+  if (!renderDbg || !Number.isFinite(renderDbg.yMax)) return "";
+  const maxAbs = Number.isFinite(renderDbg.maxAbs)
+    ? renderDbg.maxAbs.toFixed(4)
+    : resonanceLocalizedMessages.pipelineUnavailableLabel;
+  return resonanceLocalizedMessages.pipelineWaveformRenderDiagnosticsTemplate
+    .replace("{yMax}", renderDbg.yMax.toFixed(4))
+    .replace("{maxAbs}", maxAbs);
+}
+
+function pipelineWaveformPipelineDiagnosticsBuild(dbg: any) {
+  if (!Number.isFinite(dbg.maxAbs)) return "";
+  return resonanceLocalizedMessages.pipelineWaveformPipelineDiagnosticsTemplate.replace(
+    "{pipelineMax}",
+    dbg.maxAbs.toFixed(4),
+  );
+}
+
 function pipelineNotesReadyEventHandle(payload: unknown, ctx: { log: (message: string) => void }) {
   ctx.log("notes.ready");
   const ui = pipelineUiRenderGet();
@@ -157,15 +196,22 @@ function pipelineNotesReadyEventHandle(payload: unknown, ctx: { log: (message: s
   if (waveSlice) ui.renderWaveform(waveSlice);
   if (state) ui.renderEnergyTransferFromState(state);
   if (!noteCount) {
-    ui.setStatus("No notes detected yet.");
+    ui.setStatus(resonanceLocalizedMessages.pipelineNoNotesStatus);
     return;
   }
-  ui.setStatus(`${noteCount} note${noteCount === 1 ? "" : "s"} detected.`);
+  if (noteCount === 1) {
+    ui.setStatus(resonanceLocalizedMessages.pipelineOneNoteStatus);
+    return;
+  }
+  ui.setStatus(resonanceLocalizedMessages.pipelineNotesDetectedTemplate.replace(
+    "{noteCount}",
+    String(noteCount),
+  ));
 }
 
 function pipelineArtifactEmittedEventHandle(_payload: unknown, ctx: { log: (message: string) => void }) {
   ctx.log("artifact.emitted");
-  pipelineStatusSet("Render ready.");
+  pipelineStatusSet(resonanceLocalizedMessages.pipelineRenderReadyStatus);
 }
 
 function pipelineModeOverrideRequestedEventHandle(

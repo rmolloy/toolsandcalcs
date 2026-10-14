@@ -5,6 +5,7 @@ import {
   braceStockLongModeConfirmationClear,
 } from "./resonate_brace_stock_confirmation.js";
 import { measureModeNormalize, peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export type BraceStockEstimatePresentation = {
   status: "incomplete" | "needs-confirmation" | "ready";
@@ -31,20 +32,20 @@ export function braceStockEstimatePresentationBuild(
   if (estimate.status === "incomplete") {
     return {
       status: "incomplete",
-      summary: "Add the stock length, width, height, and mass to characterize this piece.",
+      summary: resonanceLocalizedMessages.braceEstimateIncompleteSummary,
       metrics: [],
       primaryAction: "set-measurements",
-      primaryLabel: "Set measurements",
+      primaryLabel: resonanceLocalizedMessages.braceEstimateSetMeasurements,
       transferAvailable: false,
     };
   }
   if (estimate.status === "needs-confirmation") {
     return {
       status: "needs-confirmation",
-      summary: "Measurements are ready. Confirm the selected peak as the Long mode.",
+      summary: resonanceLocalizedMessages.braceEstimateNeedsConfirmationSummary,
       metrics: [],
       primaryAction: "confirm-long",
-      primaryLabel: "Use selected as Long",
+      primaryLabel: resonanceLocalizedMessages.braceEstimateUseSelectedLong,
       transferAvailable: false,
     };
   }
@@ -55,17 +56,20 @@ export function braceStockEstimatePresentationBuild(
     && inspectedFrequencyHz > 0;
   return {
     status: "ready",
-    summary: "Brace stock estimate",
+    summary: resonanceLocalizedMessages.braceEstimateReadySummary,
     metrics: [
-      { label: "Long", value: `${estimate.confirmation.frequencyHz.toFixed(1)} Hz` },
-      { label: "Density", value: `${Math.round(estimate.material.densityKgM3)} kg/m³` },
+      { label: resonanceLocalizedMessages.braceEstimateLongLabel, value: `${estimate.confirmation.frequencyHz.toFixed(1)} Hz` },
+      { label: resonanceLocalizedMessages.braceEstimateDensityLabel, value: `${Math.round(estimate.material.densityKgM3)} kg/m³` },
       { label: "E", value: `${estimate.material.dynamicYoungsModulusGPa.toFixed(2)} GPa` },
-      { label: "Sound speed", value: `${Math.round(estimate.material.longitudinalSoundSpeedMps).toLocaleString()} m/s` },
+      { label: resonanceLocalizedMessages.braceEstimateSoundSpeedLabel, value: `${Math.round(estimate.material.longitudinalSoundSpeedMps).toLocaleString()} m/s` },
     ],
     primaryAction: "open-details",
-    primaryLabel: "Edit measurements",
+    primaryLabel: resonanceLocalizedMessages.braceEstimateEditMeasurements,
     replaceLongLabel: inspectedPeakDiffers
-      ? `Use inspected ${inspectedFrequencyHz.toFixed(1)} Hz as Long`
+      ? resonanceLocalizedMessages.braceEstimateUseInspectedLongTemplate.replace(
+        "{frequencyHz}",
+        inspectedFrequencyHz.toFixed(1),
+      )
       : undefined,
     clearLongAvailable: true,
     transferAvailable: true,
@@ -148,13 +152,13 @@ function braceStockEstimateMarkupBuild(presentation: BraceStockEstimatePresentat
     `)
     .join("");
   const transfer = presentation.transferAvailable
-    ? '<button class="ghost-btn btn-small" type="button" data-brace-stock-action="transfer">Match in Flexural Rigidity</button>'
+    ? `<button class="ghost-btn btn-small" type="button" data-brace-stock-action="transfer">${resonanceLocalizedMessages.braceEstimateMatchFlexuralRigidity}</button>`
     : "";
   const replaceLong = presentation.replaceLongLabel
     ? `<button class="ghost-btn btn-small" type="button" data-brace-stock-action="confirm-long">${presentation.replaceLongLabel}</button>`
     : "";
   const clearLong = presentation.clearLongAvailable
-    ? '<button class="ghost-btn btn-small" type="button" data-brace-stock-action="clear-long">Clear Long</button>'
+    ? `<button class="ghost-btn btn-small" type="button" data-brace-stock-action="clear-long">${resonanceLocalizedMessages.braceEstimateClearLong}</button>`
     : "";
   return `
     <span class="brace-stock-estimate__summary">${presentation.summary}</span>

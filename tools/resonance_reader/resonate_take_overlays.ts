@@ -1,3 +1,5 @@
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+
 export type ResonanceTakeOverlay = {
   id: string;
   label: string;
@@ -181,7 +183,7 @@ function takeOverlaySnapshotRestoreIntoState(state: Record<string, any>, take: R
 
 function takeOverlayLabelResolve(state: TakeSnapshotState) {
   const label = String(state.recordingLabel || "").trim();
-  if (!label || label === "Demo (click record)") return "";
+  if (!label || label === resonanceLocalizedMessages.transportDemoPrompt) return "";
   return label;
 }
 

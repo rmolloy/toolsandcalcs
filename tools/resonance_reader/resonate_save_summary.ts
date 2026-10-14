@@ -1,4 +1,5 @@
 import { measureModeLabelBuild } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export type ResonanceSaveSummaryRow = {
   label: string;
@@ -21,8 +22,8 @@ export function resonanceSaveSummaryBuild(
 function contextRowsBuild(state: Record<string, any>, recordingLabel: string): ResonanceSaveSummaryRow[] {
   const rows: ResonanceSaveSummaryRow[] = [];
   const recording = String(recordingLabel || "").trim();
-  if (recording) rows.push({ label: "Recording", value: recording });
-  rows.push({ label: "Measuring", value: measureModeLabelBuild(state?.measureMode) });
+  if (recording) rows.push({ label: resonanceLocalizedMessages.saveSummaryRecording, value: recording });
+  rows.push({ label: resonanceLocalizedMessages.saveSummaryMeasuring, value: measureModeLabelBuild(state?.measureMode) });
   return rows;
 }
 
@@ -40,9 +41,9 @@ function cardHasFrequency(card: any): boolean {
 
 function modeRowBuild(card: any): ResonanceSaveSummaryRow {
   return {
-    label: String(card.label || card.key || "Mode"),
+    label: String(card.label || card.key || resonanceLocalizedMessages.saveSummaryMode),
     value: modeValueFormat(card),
-    provenance: "measured",
+    provenance: resonanceLocalizedMessages.saveSummaryMeasured,
   };
 }
 

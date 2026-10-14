@@ -5,6 +5,7 @@ import type {
 } from "./resonate_save_contract.js";
 import { readOfflineDownloadSaveSurface } from "../common/offline_save_surface.js";
 import { downloadResonanceWave } from "./resonate_save_package_download.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export function resonanceSaveRunnerCreate(): ResonanceSaveActionRunner {
   return {
@@ -15,14 +16,14 @@ export function resonanceSaveRunnerCreate(): ResonanceSaveActionRunner {
 
 async function readResonanceSaveSurface(): Promise<ResonanceSaveSurface> {
   return readOfflineDownloadSaveSurface({
-    label: "Save",
-    hint: "Save the current WAV file locally.",
+    label: resonanceLocalizedMessages.saveActionLabel,
+    hint: resonanceLocalizedMessages.saveWavHint,
   });
 }
 
 async function runResonanceSaveAction(request: ResonanceSaveActionRequest): Promise<boolean> {
   if (!hasWaveformCapture()) {
-    request.setStatus("Load or record before saving.");
+    request.setStatus(resonanceLocalizedMessages.saveLoadFirstStatus);
     return false;
   }
 
@@ -30,7 +31,7 @@ async function runResonanceSaveAction(request: ResonanceSaveActionRequest): Prom
     state: request.state,
     recordingLabel: resonanceCaptureRecordingLabelRead(request.state),
   });
-  request.setStatus("WAV saved.");
+  request.setStatus(resonanceLocalizedMessages.saveWavSavedStatus);
   return true;
 }
 

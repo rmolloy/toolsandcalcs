@@ -1,4 +1,5 @@
 import "../common/notebook_rpc_client.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 export async function listNotebookSubjectsForResonanceSave(workbookId) {
     return await readSharedNotebookRpcClient().listNotebookSubjects(workbookId);
 }
@@ -18,12 +19,12 @@ export async function saveNotebookResonanceCapture(args) {
                 plotPngBase64: await resonanceBlobBase64Build(args.package.plotPngBlob),
             },
         },
-    }, { failureMessage: "Notebook save failed." });
+    }, { failureMessage: resonanceLocalizedMessages.notebookSaveFailed });
 }
 function readSharedNotebookRpcClient() {
     const shared = globalThis.CommonNotebookRpcClient;
     if (!shared) {
-        throw new Error("Common notebook rpc client is unavailable.");
+        throw new Error(resonanceLocalizedMessages.notebookCommonRpcUnavailable);
     }
     return shared;
 }

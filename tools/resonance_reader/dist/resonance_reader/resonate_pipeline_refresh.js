@@ -1,4 +1,5 @@
 import { demoWaveBuildFromMeasureMode } from "./resonate_demo_wave.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 export async function resonatePipelineRefreshAllFromState(deps) {
     deps.prepareBoundaries?.();
     if (!deps.state.currentWave) {
@@ -6,7 +7,7 @@ export async function resonatePipelineRefreshAllFromState(deps) {
     }
     const waveAll = deps.fullWave();
     if (!waveAll) {
-        deps.setStatus("Load or record to view the waveform.");
+        deps.setStatus(resonanceLocalizedMessages.saveIdleStatus);
         return;
     }
     await deps.refreshFft();

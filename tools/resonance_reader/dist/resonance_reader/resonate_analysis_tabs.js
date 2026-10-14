@@ -1,13 +1,14 @@
 import { plateMaterialPanelVisibleForMeasureMode } from "./resonate_plate_material_panel.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
 const DEFAULT_ANALYSIS_TAB = "peak_analysis";
 const WAVEFORM_NAVIGATOR_COPY = {
-    title: "Frequency Response",
-    description: "Drag yellow range for FFT analysis. Drag green range for note selection. Click a note label (or Option/Command-click a note slice) to override its note.",
+    title: resonanceLocalizedMessages.waveformNavigatorTitle,
+    description: resonanceLocalizedMessages.waveformNavigatorDescription,
 };
 const PEAK_ANALYSIS_TAP_NAVIGATOR_COPY = {
-    title: "Tap Navigator",
-    description: "Select a tap to inspect its Peak/Q ring-down. Every marker is a detected tap.",
+    title: resonanceLocalizedMessages.peakTapNavigatorTitle,
+    description: resonanceLocalizedMessages.peakTapNavigatorDescription,
 };
 export function analysisTabsInitialize(state) {
     analysisTabSeedIntoState(state);

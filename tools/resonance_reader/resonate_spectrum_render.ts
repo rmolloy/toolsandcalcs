@@ -12,6 +12,7 @@ import {
   resonanceSpectrumYAxisModeResolve,
 } from "./resonate_debug_flags.js";
 import type { ResonanceTakeOverlay } from "./resonate_take_overlays.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 type SpectrumPayload = {
   freqs: number[];
@@ -272,7 +273,7 @@ function buildMeasuredTrace(freqs: number[], mags: number[], hoverNoteData: Arra
     type: "scatter",
     mode: "lines",
     line: { color: resolveColorHexFromRole("fftLine"), width: resonanceSpectrumLineWidthResolve(MEASURED_TRACE_LINE_WIDTH) },
-    name: "Measured",
+    name: resonanceLocalizedMessages.spectrumMeasuredTrace,
     customdata: hoverNoteData,
     hovertemplate: spectrumLineHoverTemplateBuild(),
     hoverlabel: spectrumLineHoverLabelStyleBuild(),
@@ -291,7 +292,7 @@ function buildSecondaryMeasuredTrace(
     type: "scatter",
     mode: "lines",
     line: { color: resolveColorHexFromRole("waveNoteSelection"), width: lineWidth },
-    name: "Selected Note Window",
+    name: resonanceLocalizedMessages.spectrumSelectedNoteWindowTrace,
     customdata: spectrumHoverNoteDataBuild(secondarySpectrum.freqs),
     hovertemplate: spectrumLineHoverTemplateBuild(),
     hoverlabel: spectrumLineHoverLabelStyleBuild(),
@@ -308,7 +309,7 @@ function buildPeakHoldTrace(
     type: "scatter",
     mode: "lines",
     line: { color: resolveColorRgbaFromRole("fftLine", 0.42), width: 1.5, dash: "dot" },
-    name: "Peak Hold",
+    name: resonanceLocalizedMessages.spectrumPeakHoldTrace,
     customdata: spectrumHoverNoteDataBuild(peakHoldSpectrum.freqs),
     hovertemplate: spectrumLineHoverTemplateBuild(),
     hoverlabel: spectrumLineHoverLabelStyleBuild(),
@@ -337,7 +338,7 @@ function spectrumLineHoverTemplateBuild() {
   return [
     "<b>%{fullData.name}</b>",
     "%{x:.1f} Hz · %{y:.1f} dB",
-    "Note: %{customdata[0]} %{customdata[1]}",
+    `${resonanceLocalizedMessages.spectrumHoverNoteLabel}: %{customdata[0]} %{customdata[1]}`,
     "<extra></extra>",
   ].join("<br>");
 }
@@ -358,7 +359,7 @@ function buildOverlayTraces(overlaySegments: OverlaySegment[], overlayVisible: b
     type: "scatter",
     mode: "lines",
     line: { color: resolveColorRgbaFromRole("modelOverlay", seg.opacity), width: seg.width, dash: "dash" },
-    name: "Model",
+    name: resonanceLocalizedMessages.spectrumModelTrace,
     showlegend: false,
     hovertemplate: "%{x:.1f} Hz<br>%{y:.1f} dB<extra></extra>",
     hoverlabel: {
@@ -389,7 +390,7 @@ function buildPolymaxTraces(
         type: "scatter",
         mode: "markers",
         marker: { size: 12, symbol: "diamond", color: "rgba(255,214,102,0.95)", line: { color: "rgba(23,26,38,0.95)", width: 2 } },
-        hovertemplate: `<b>PolyMAX Stable Pole</b><br>%{x:.1f} Hz<br>ζ ${(candidate.zeta * 100).toFixed(2)}%<br>stability ${(candidate.stability * 100).toFixed(0)}%<extra></extra>`,
+        hovertemplate: `<b>${resonanceLocalizedMessages.spectrumPolymaxStablePole}</b><br>%{x:.1f} Hz<br>ζ ${(candidate.zeta * 100).toFixed(2)}%<br>${resonanceLocalizedMessages.spectrumPolymaxStabilityLabel} ${(candidate.stability * 100).toFixed(0)}%<extra></extra>`,
         showlegend: false,
         meta: { kind: "polymax" },
       };
@@ -730,7 +731,7 @@ function spectrumPlotConfigBuild() {
 function settingsModebarButtonBuild() {
   return {
     name: "resonance-settings",
-    title: "FFT and microphone settings",
+    title: resonanceLocalizedMessages.spectrumSettingsTitle,
     icon: {
       width: 24,
       height: 24,

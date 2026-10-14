@@ -1,11 +1,12 @@
 import "../common/notebook_save_modal.js";
 import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js";
 import { measureModeLabelBuild, measureModeNormalize } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 const RESONANCE_CAPTURE_PACKAGE_FILES = ["state.json", "source.wav", "plot.png"];
 export async function openConnectedResonanceSaveModal(args) {
     const defaults = resonanceSubjectDraftDefaultsFromMeasureMode(args.measureMode);
     return await readSharedNotebookSaveModal().openNotebookSaveModal({
-        dialogLabel: "Save Resonance Capture",
+        dialogLabel: resonanceLocalizedMessages.saveDialogLabel,
         title: resonanceSaveTitleBuild(args.measureMode),
         summary: args.summary || [],
         notebookName: args.notebookName,
@@ -14,7 +15,7 @@ export async function openConnectedResonanceSaveModal(args) {
         newSubject: {
             typeKey: defaults.typeKey,
             subtypeKey: defaults.subtypeKey,
-            displayNamePlaceholder: "European Spruce Top",
+            displayNamePlaceholder: resonanceLocalizedMessages.saveDisplayNamePlaceholder,
             typeChoice: true,
         },
         eventExtras: { measureMode: args.measureMode },
@@ -24,15 +25,15 @@ export async function openConnectedResonanceSaveModal(args) {
 export function resonanceSaveTitleBuild(measureMode) {
     const normalized = measureModeNormalize(measureMode);
     if (normalized === "played_note")
-        return "Played note";
+        return resonanceLocalizedMessages.measureModePlayedNote;
     if (normalized === "peak_analysis")
-        return "Peak/Q analysis";
-    return `Tap test · ${measureModeLabelBuild(measureMode)}`;
+        return resonanceLocalizedMessages.savePeakAnalysisTitle;
+    return resonanceLocalizedMessages.saveTapTestTitleTemplate.replace("{mode}", measureModeLabelBuild(measureMode));
 }
 function readSharedNotebookSaveModal() {
     const shared = globalThis.CommonNotebookSaveModal;
     if (!shared) {
-        throw new Error("Common notebook save modal is unavailable.");
+        throw new Error(resonanceLocalizedMessages.saveNotebookUnavailable);
     }
     return shared;
 }

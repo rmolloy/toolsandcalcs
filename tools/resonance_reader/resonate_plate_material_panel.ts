@@ -1,4 +1,5 @@
 import { measureModeNormalize, type MeasureMode } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export type PlateMaterialMeasurements = {
   panelLengthMm: number;
@@ -78,13 +79,13 @@ export function plateMaterialCardCopyResolveFromMeasureMode(measureMode: unknown
   const normalized = measureModeNormalize(measureMode);
   if (normalized === "brace_stock") {
     return {
-      title: "Brace Stock Properties",
-      description: "Capture the stock dimensions and mass alongside the detected brace-stock modes.",
+      title: resonanceLocalizedMessages.plateMaterialBraceTitle,
+      description: resonanceLocalizedMessages.plateMaterialBraceDescription,
     };
   }
   return {
-    title: "Material Properties",
-    description: "These measurements travel with the detected plate modes into the Plate Thickness calculator.",
+    title: resonanceLocalizedMessages.plateMaterialTitle,
+    description: resonanceLocalizedMessages.plateMaterialDescription,
   };
 }
 

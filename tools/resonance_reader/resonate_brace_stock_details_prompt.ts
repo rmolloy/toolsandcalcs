@@ -1,5 +1,6 @@
 import type { BraceStockMeasurements } from "./resonate_brace_stock_material.js";
 import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export type BraceStockDetailsPromptResult = {
   measurements: BraceStockMeasurements;
@@ -10,10 +11,10 @@ const BRACE_STOCK_FIELDS: Array<{
   label: string;
   unit: string;
 }> = [
-  { key: "stockLengthMm", label: "Length", unit: "mm" },
-  { key: "stockWidthMm", label: "Width", unit: "mm" },
-  { key: "stockHeightMm", label: "Height", unit: "mm" },
-  { key: "stockMassG", label: "Mass", unit: "g" },
+  { key: "stockLengthMm", label: resonanceLocalizedMessages.braceStockDetailsLengthLabel, unit: "mm" },
+  { key: "stockWidthMm", label: resonanceLocalizedMessages.braceStockDetailsWidthLabel, unit: "mm" },
+  { key: "stockHeightMm", label: resonanceLocalizedMessages.braceStockDetailsHeightLabel, unit: "mm" },
+  { key: "stockMassG", label: resonanceLocalizedMessages.braceStockDetailsMassLabel, unit: "g" },
 ];
 
 export function braceStockDetailsPromptOpen(
@@ -37,25 +38,25 @@ function braceStockDetailsPromptElementBuild(state: Record<string, any>) {
   modal.className = "save-modal plate-transfer-modal brace-stock-details-modal";
   modal.innerHTML = `
     <div class="save-modal__backdrop" data-brace-stock-details-close></div>
-    <div class="save-modal__panel plate-transfer-modal__panel" role="dialog" aria-modal="true" aria-label="Brace stock details">
+    <div class="save-modal__panel plate-transfer-modal__panel" role="dialog" aria-modal="true" aria-label="${resonanceLocalizedMessages.braceStockDetailsDialogLabel}">
       <header>
         <div>
-          <h2>Brace stock details</h2>
-          <p class="muted small">Free-free stock characterization. These are specimen dimensions, not finished brace dimensions.</p>
+          <h2>${resonanceLocalizedMessages.braceStockDetailsTitle}</h2>
+          <p class="muted small">${resonanceLocalizedMessages.braceStockDetailsIntroduction}</p>
         </div>
-        <button type="button" class="ghost-btn btn-small" data-brace-stock-details-close>Close</button>
+        <button type="button" class="ghost-btn btn-small" data-brace-stock-details-close>${resonanceLocalizedMessages.braceStockDetailsClose}</button>
       </header>
       <form class="save-modal__form">
         <section class="save-modal__section">
-          <h3>Measurements</h3>
+          <h3>${resonanceLocalizedMessages.braceStockDetailsMeasurementsTitle}</h3>
           <div class="plate-transfer-grid">
             ${BRACE_STOCK_FIELDS.map((field) => braceStockDetailsFieldMarkupBuild(field, state.braceStockMeasurements?.[field.key])).join("")}
           </div>
         </section>
         ${braceStockDetailsEvidenceMarkupBuild(estimate)}
         <footer class="save-modal__footer plate-transfer-modal__footer">
-          <button type="button" class="ghost-btn" data-brace-stock-details-close>Cancel</button>
-          <button type="submit" class="primary-btn">Save measurements</button>
+          <button type="button" class="ghost-btn" data-brace-stock-details-close>${resonanceLocalizedMessages.braceStockDetailsCancel}</button>
+          <button type="submit" class="primary-btn">${resonanceLocalizedMessages.braceStockDetailsSave}</button>
         </footer>
       </form>
     </div>
@@ -82,22 +83,22 @@ function braceStockDetailsEvidenceMarkupBuild(
   if (estimate.status !== "ready") {
     return `
       <section class="save-modal__section">
-        <h3>Long mode</h3>
-        <p class="muted small">Save the measurements, then confirm the selected Peak/Q candidate as Long.</p>
+        <h3>${resonanceLocalizedMessages.braceStockDetailsLongModeTitle}</h3>
+        <p class="muted small">${resonanceLocalizedMessages.braceStockDetailsInstructions}</p>
       </section>
     `;
   }
   const material = estimate.material;
   return `
     <section class="save-modal__section">
-      <h3>Confirmed Long evidence</h3>
+      <h3>${resonanceLocalizedMessages.braceStockDetailsConfirmedEvidenceTitle}</h3>
       <div class="brace-stock-details-results">
-        ${braceStockDetailsResultMarkupBuild("Long", `${estimate.confirmation.frequencyHz.toFixed(1)} Hz`)}
-        ${braceStockDetailsResultMarkupBuild("Density", `${Math.round(material.densityKgM3)} kg/m³`)}
-        ${braceStockDetailsResultMarkupBuild("Section I", `${material.sectionMomentOfInertiaM4.toExponential(3)} m⁴`)}
+        ${braceStockDetailsResultMarkupBuild(resonanceLocalizedMessages.modeLongLabel, `${estimate.confirmation.frequencyHz.toFixed(1)} Hz`)}
+        ${braceStockDetailsResultMarkupBuild(resonanceLocalizedMessages.braceStockDetailsDensityLabel, `${Math.round(material.densityKgM3)} kg/m³`)}
+        ${braceStockDetailsResultMarkupBuild(resonanceLocalizedMessages.braceStockDetailsSectionMomentLabel, `${material.sectionMomentOfInertiaM4.toExponential(3)} m⁴`)}
         ${braceStockDetailsResultMarkupBuild("EI", `${material.flexuralRigidityNm2.toFixed(3)} N·m²`)}
         ${braceStockDetailsResultMarkupBuild("E", `${material.dynamicYoungsModulusGPa.toFixed(2)} GPa`)}
-        ${braceStockDetailsResultMarkupBuild("Sound speed", `${Math.round(material.longitudinalSoundSpeedMps).toLocaleString()} m/s`)}
+        ${braceStockDetailsResultMarkupBuild(resonanceLocalizedMessages.braceStockDetailsSoundSpeedLabel, `${Math.round(material.longitudinalSoundSpeedMps).toLocaleString()} m/s`)}
       </div>
     </section>
   `;

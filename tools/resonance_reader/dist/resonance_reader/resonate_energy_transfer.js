@@ -1,18 +1,16 @@
 import { measureModeNormalize } from "./resonate_mode_config.js";
-import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
-import { resonanceEnergyBandWidthHzResolve, resonanceSpectrumLineWidthResolve } from "./resonate_debug_flags.js";
-const ENERGY_COLORS = {
-    fundamental: resolveColorRgbaFromRole("stringFundamental", 0.9),
-    secondPartial: resolveColorRgbaFromRole("secondPartial", 0.9),
-    thirdPartial: resolveColorRgbaFromRole("thirdPartial", 0.9),
-    thirdPartialFill: resolveColorRgbaFromRole("thirdPartial", 0.3),
-};
+import { resolveColorHexFromRole } from "./resonate_color_roles.js";
+import { resonanceEnergyBandWidthHzResolve } from "./resonate_debug_flags.js";
+import { energyPanelVisibleSet, energyPlotPurge } from "./resonate_energy_transfer_panel.js";
+import { energyPlotLayoutBuildFromSeries, energyPlotRender } from "./resonate_energy_transfer_plot.js";
+import { energyTracesBuildFromSeries } from "./resonate_energy_transfer_traces.js";
+export { energyYMaxVisibleResolveFromSeries } from "./resonate_energy_transfer_plot.js";
+export { energyElapsedTimesBuildFromSeries } from "./resonate_energy_transfer_traces.js";
 const ENERGY_DB_FLOOR = -60;
 const ENERGY_STRIDE_TARGET = 360;
 const ENERGY_SLICE_CACHE_KEY = "__energySliceCache";
 const ENERGY_BANDWIDTH_CENTS = 25;
 const ENERGY_BANDWIDTH_FLOOR_HZ = 0.5;
-const ENERGY_NOTE_TRACE_LINE_WIDTH = 1;
 export function energyBandWidthHzResolveFromFrequency(frequencyHz, cents = ENERGY_BANDWIDTH_CENTS, minFloorHz = ENERGY_BANDWIDTH_FLOOR_HZ) {
     if (!Number.isFinite(frequencyHz) || frequencyHz <= 0)
         return minFloorHz;
@@ -115,48 +113,8 @@ export function selectedF0HzResolveFromState(state, noteResult) {
         return overrideHz;
     return Number.isFinite(noteResult?.f0) ? noteResult?.f0 : null;
 }
-function energyPanelElementGet() {
-    return document.getElementById("energy_nav");
-}
-function energyPlotElementGet() {
-    return document.getElementById("plot_energy_transfer");
-}
-function energyPanelVisibleSet(visible) {
-    const panel = energyPanelElementGet();
-    if (!panel)
-        return;
-    panel.hidden = !visible;
-    if (visible) {
-        panel.style.removeProperty("display");
-        return;
-    }
-    panel.style.display = "none";
-}
-function energyPlotPurge() {
-    const plot = energyPlotElementGet();
-    if (!plot)
-        return;
-    window.Plotly?.purge?.(plot);
-}
 function clamp01(x) {
     return Math.min(1, Math.max(0, x));
-}
-function hexToRgba(hex, alpha) {
-    if (!hex || typeof hex !== "string")
-        return resolveColorRgbaFromRole("secondPartial", alpha);
-    let h = hex.trim();
-    if (h.startsWith("#"))
-        h = h.slice(1);
-    if (h.length === 3)
-        h = h.split("").map((c) => c + c).join("");
-    if (h.length !== 6)
-        return resolveColorRgbaFromRole("secondPartial", alpha);
-    const r = parseInt(h.slice(0, 2), 16);
-    const g = parseInt(h.slice(2, 4), 16);
-    const b = parseInt(h.slice(4, 6), 16);
-    if ([r, g, b].some((v) => Number.isNaN(v)))
-        return resolveColorRgbaFromRole("secondPartial", alpha);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 function modeListResolveFromState(state) {
     const modes = Array.isArray(state.lastModesDetected) ? state.lastModesDetected : [];
@@ -560,64 +518,6 @@ function energySliceSeriesCombine(sliceSeriesList, modes) {
         f0Hz: sliceSeriesList[0].f0Hz,
     };
 }
-function applyLevelScale(seriesValues, levelScale) {
-    return seriesValues.map((value, idx) => {
-        const scale = Number.isFinite(levelScale[idx]) ? levelScale[idx] : 0;
-        return value * 100 * scale;
-    });
-}
-function frequencyLabelResolve(freqHz) {
-    return `${freqHz.toFixed(1)} Hz`;
-}
-function noteLabelResolve(freqHz) {
-    const FFTUtils = window.FFTUtils;
-    const note = FFTUtils?.freqToNoteCents?.(freqHz);
-    if (!note || typeof note.name !== "string")
-        return { note: "—", deviation: "—", cents: "—" };
-    const centsNum = Number.isFinite(note.centsNum) ? note.centsNum : null;
-    return {
-        note: note.name || "—",
-        deviation: note.cents || "—",
-        cents: centsNum === null ? "—" : `${Math.abs(centsNum)}c`,
-    };
-}
-function hoverTemplateBuild(freqHz) {
-    const freq = frequencyLabelResolve(freqHz);
-    const note = noteLabelResolve(freqHz);
-    return [
-        "<b>%{fullData.name}</b>",
-        `${freq} · ${note.note} ${note.deviation}`,
-        `Cents: ${note.cents}`,
-        "%{x:.2f} s",
-        "Amp: %{y:.1f}",
-        "<extra></extra>",
-    ].join("<br>");
-}
-function hoverTemplateBuildFromCustomData() {
-    return [
-        "<b>%{fullData.name}</b>",
-        "%{customdata[0]} · %{customdata[1]} %{customdata[2]}",
-        "Cents: %{customdata[3]}",
-        "%{x:.2f} s",
-        "Amp: %{y:.1f}",
-        "<extra></extra>",
-    ].join("<br>");
-}
-function hoverLabelStyleBuild() {
-    return {
-        bgcolor: "rgba(10,14,24,0.9)",
-        bordercolor: "rgba(255,255,255,0.18)",
-        font: { family: "Inter, system-ui, -apple-system, Segoe UI, sans-serif", size: 14, color: "#eef1ff" },
-        align: "left",
-    };
-}
-function hoverPointBuildFromFrequency(freqHz, noteOverrideLabel = null) {
-    const note = noteLabelResolve(freqHz);
-    if (noteOverrideLabel) {
-        return [frequencyLabelResolve(freqHz), noteOverrideLabel, note.deviation, note.cents];
-    }
-    return [frequencyLabelResolve(freqHz), note.note, note.deviation, note.cents];
-}
 function noteSliceForTimeMsResolve(state, timeMs) {
     const slices = Array.isArray(state.noteSlices) ? state.noteSlices : [];
     if (!Number.isFinite(timeMs))
@@ -648,75 +548,6 @@ function energyHoverDescriptorAtTimeSecResolve(state, timeSec, fallbackF0Hz) {
 export function energyHoverDescriptorsResolveFromState(state, timesSec, fallbackF0Hz) {
     return timesSec.map((timeSec) => energyHoverDescriptorAtTimeSecResolve(state, timeSec, fallbackF0Hz));
 }
-function tracesBuildFromSeries(series, state) {
-    const hoverDescriptors = energyHoverDescriptorsResolveFromState(state, series.t, series.f0Hz);
-    const elapsedTimes = energyElapsedTimesBuildFromSeries(series);
-    const fundamentalHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz, entry.noteOverrideLabel));
-    const secondPartialHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz * 2));
-    const thirdPartialHoverData = hoverDescriptors.map((entry) => hoverPointBuildFromFrequency(entry.f0Hz * 3));
-    const noteTraceWidth = energyNoteTraceLineWidthResolve();
-    const traces = [
-        {
-            x: elapsedTimes,
-            y: applyLevelScale(series.partialShares.f0 || [], series.levelScale),
-            type: "scatter",
-            mode: "lines",
-            name: "Fundamental",
-            line: { color: ENERGY_COLORS.fundamental, width: noteTraceWidth, dash: "solid" },
-            fill: "tozeroy",
-            fillcolor: resolveColorRgbaFromRole("stringFundamental", 0.25),
-            customdata: fundamentalHoverData,
-            hovertemplate: hoverTemplateBuildFromCustomData(),
-            hoverlabel: hoverLabelStyleBuild(),
-        },
-        {
-            x: elapsedTimes,
-            y: applyLevelScale(series.partialShares.secondPartial || [], series.levelScale),
-            type: "scatter",
-            mode: "lines",
-            name: "Second Partial",
-            line: { color: ENERGY_COLORS.secondPartial, width: noteTraceWidth, dash: "solid" },
-            fill: "none",
-            customdata: secondPartialHoverData,
-            hovertemplate: hoverTemplateBuildFromCustomData(),
-            hoverlabel: hoverLabelStyleBuild(),
-        },
-        {
-            x: elapsedTimes,
-            y: applyLevelScale(series.partialShares.thirdPartial || [], series.levelScale),
-            type: "scatter",
-            mode: "lines",
-            name: "Third Partial",
-            line: { color: ENERGY_COLORS.thirdPartial, width: noteTraceWidth, dash: "solid" },
-            fill: "none",
-            fillcolor: ENERGY_COLORS.thirdPartialFill,
-            customdata: thirdPartialHoverData,
-            hovertemplate: hoverTemplateBuildFromCustomData(),
-            hoverlabel: hoverLabelStyleBuild(),
-        },
-    ];
-    series.bodyModes.forEach((mode) => {
-        traces.push({
-            x: elapsedTimes,
-            y: applyLevelScale(series.bodyShares[mode.id] || [], series.levelScale),
-            type: "scatter",
-            mode: "lines",
-            name: `Body (${mode.label})`,
-            line: { color: mode.color, width: 2, dash: "dash" },
-            fill: "none",
-            fillcolor: hexToRgba(mode.color, 0.3),
-            hovertemplate: hoverTemplateBuild(mode.peakFreq),
-            hoverlabel: hoverLabelStyleBuild(),
-        });
-    });
-    return traces;
-}
-export function energyElapsedTimesBuildFromSeries(series) {
-    return series.t.map((timeSec) => (Number.isFinite(timeSec) ? timeSec - series.xWindowSec.start : timeSec));
-}
-function energyNoteTraceLineWidthResolve() {
-    return resonanceSpectrumLineWidthResolve(ENERGY_NOTE_TRACE_LINE_WIDTH);
-}
 export function energyXWindowResolveFromState(state, noteSlice) {
     const range = state.noteSelectionRangeMs;
     if (range && Number.isFinite(range.start) && Number.isFinite(range.end) && range.end > range.start) {
@@ -745,114 +576,11 @@ function energyWindowEndMsResolveFromSlices(state, noteSlice) {
         return nextStartMs;
     return defaultEndMs;
 }
-export function energyYMaxVisibleResolveFromSeries(series) {
-    let maxVisible = 0;
-    for (let i = 0; i < series.t.length; i += 1) {
-        if (!Number.isFinite(series.t[i]))
-            continue;
-        const scale = Number.isFinite(series.levelScale[i]) ? series.levelScale[i] : 0;
-        const values = [
-            (series.partialShares.f0?.[i] || 0) * 100 * scale,
-            (series.partialShares.secondPartial?.[i] || 0) * 100 * scale,
-            (series.partialShares.thirdPartial?.[i] || 0) * 100 * scale,
-            ...series.bodyModes.map((mode) => ((series.bodyShares[mode.id]?.[i] || 0) * 100 * scale)),
-        ];
-        const localMax = Math.max(...values, 0);
-        if (localMax > maxVisible)
-            maxVisible = localMax;
-    }
-    const floorMax = Math.max(maxVisible, 5);
-    return (floorMax * 1.2) + 2;
-}
-function layoutBuildFromSeries(series) {
-    const shapes = [];
-    const annotations = [];
-    if (Number.isFinite(series.dominanceTime)) {
-        shapes.push({
-            type: "line",
-            xref: "x",
-            yref: "paper",
-            x0: series.dominanceTime,
-            x1: series.dominanceTime,
-            y0: 0,
-            y1: 1,
-            line: { color: resolveColorRgbaFromRole("modelOverlay", 0.85), width: 2, dash: "dot" },
-        });
-        annotations.push({
-            x: series.dominanceTime,
-            y: 98,
-            xref: "x",
-            yref: "y",
-            text: `Body dominance begins (~${series.dominanceTime.toFixed(2)} s)`,
-            showarrow: false,
-            font: { color: resolveColorRgbaFromRole("modelOverlay", 0.9), size: 11 },
-            bgcolor: "rgba(12, 16, 24, 0.6)",
-            bordercolor: resolveColorRgbaFromRole("modelOverlay", 0.35),
-            borderwidth: 1,
-            borderpad: 4,
-            xanchor: "left",
-        });
-    }
-    return {
-        margin: { l: 50, r: 10, t: 46, b: 40 },
-        paper_bgcolor: "transparent",
-        plot_bgcolor: "transparent",
-        yaxis: {
-            title: "Relative band energy",
-            range: [0, energyYMaxVisibleResolveFromSeries(series)],
-            gridcolor: "rgba(255,255,255,0.06)",
-            zeroline: false,
-            tickfont: { color: "rgba(255,255,255,0.5)" },
-        },
-        xaxis: {
-            title: "Seconds from selected window start",
-            range: [0, series.xWindowSec.end - series.xWindowSec.start],
-            gridcolor: "rgba(255,255,255,0.06)",
-            tickfont: { color: "rgba(255,255,255,0.5)" },
-        },
-        showlegend: true,
-        legend: {
-            orientation: "h",
-            x: 0,
-            xanchor: "left",
-            y: 1.2,
-            yanchor: "top",
-            bgcolor: "rgba(0,0,0,0)",
-            font: { color: "rgba(255,255,255,0.82)", size: 12 },
-            itemclick: "toggle",
-            itemdoubleclick: "toggleothers",
-        },
-        shapes,
-        annotations,
-    };
-}
 function renderEnergyPlotFromSeries(series, state) {
-    const plot = energyPlotElementGet();
-    if (!plot)
-        return;
-    const plotly = window.Plotly;
-    if (!plotly?.newPlot)
-        return;
-    const traceVisibilityByName = energyTraceVisibilityByNameRead(plot);
-    const traces = energyTraceVisibilityApplyByName(tracesBuildFromSeries(series, state), traceVisibilityByName);
-    const layout = layoutBuildFromSeries(series);
-    plotly.newPlot(plot, traces, layout, { displayModeBar: true, displaylogo: false, responsive: true });
-}
-function energyTraceVisibilityByNameRead(plot) {
-    const traces = Array.isArray(plot.data) ? plot.data : [];
-    return traces.reduce((visibilityByName, trace) => {
-        if (typeof trace?.name === "string" && trace.visible !== undefined) {
-            visibilityByName[trace.name] = trace.visible;
-        }
-        return visibilityByName;
-    }, {});
-}
-function energyTraceVisibilityApplyByName(traces, visibilityByName) {
-    return traces.map((trace) => {
-        if (!Object.prototype.hasOwnProperty.call(visibilityByName, trace.name))
-            return trace;
-        return { ...trace, visible: visibilityByName[trace.name] };
-    });
+    const hoverDescriptors = energyHoverDescriptorsResolveFromState(state, series.t, series.f0Hz);
+    const traces = energyTracesBuildFromSeries(series, hoverDescriptors);
+    const layout = energyPlotLayoutBuildFromSeries(series);
+    energyPlotRender(traces, layout);
 }
 export function renderEnergyTransferFromState(state) {
     const shouldRender = energyTransferShouldRenderForMeasureMode(state.measureMode);

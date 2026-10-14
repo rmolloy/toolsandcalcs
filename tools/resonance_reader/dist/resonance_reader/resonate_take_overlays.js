@@ -1,3 +1,4 @@
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 const MAX_TAKES_STORED = 8;
 const MAX_TAKES_VISIBLE = 4;
 export function takeOverlayCaptureCurrentFromState(state) {
@@ -125,7 +126,7 @@ function takeOverlaySnapshotRestoreIntoState(state, take) {
 }
 function takeOverlayLabelResolve(state) {
     const label = String(state.recordingLabel || "").trim();
-    if (!label || label === "Demo (click record)")
+    if (!label || label === resonanceLocalizedMessages.transportDemoPrompt)
         return "";
     return label;
 }

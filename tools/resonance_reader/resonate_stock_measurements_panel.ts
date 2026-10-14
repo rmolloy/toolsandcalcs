@@ -5,6 +5,7 @@ import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js"
 import { stockLongConfirmationApply, stockLongConfirmationClear, stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js";
 import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js";
 import { stockPeakContextDiffers } from "./resonate_stock_peak_context.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 type SelectedPeak = { key: string; freq: number | null } | null;
 type Dependencies = { selectedPeak: () => SelectedPeak; render: () => void; transfer: () => void };
@@ -30,10 +31,14 @@ export function stockMeasurementsPanelRender(state: Record<string, any>, selecte
   const detailsOpen = content.querySelector("details")?.open;
   const draft = stockMeasurementsDraftBuild(state);
   const complete = braceStockMeasurementsValid(draft.measurements);
-  const kindLabel = draft.kind === "plate_stock" ? "Plate" : draft.kind === "brace_stock" ? "Brace stock" : "Stock measurements";
+  const kindLabel = draft.kind === "plate_stock"
+    ? resonanceLocalizedMessages.stockMeasurementsPlateKind
+    : draft.kind === "brace_stock"
+      ? resonanceLocalizedMessages.stockMeasurementsBraceKind
+      : resonanceLocalizedMessages.stockMeasurementsTitle;
   content.innerHTML = `<span class="brace-stock-estimate__summary">${kindLabel}${complete ? ` · ${stockMeasurementsSummaryBuild(draft.measurements)}` : ""}</span>
     <div class="brace-stock-estimate__actions">
-      ${stockActionMarkupBuild("edit", complete ? "Edit measurements" : "Add measurements")}
+      ${stockActionMarkupBuild("edit", complete ? resonanceLocalizedMessages.stockMeasurementsEdit : resonanceLocalizedMessages.stockMeasurementsAdd)}
       ${draft.kind ? stockLongActionsBuild(state, stockLongCandidateResolve(state, selectedPeak)) : ""}
     </div>
     ${draft.kind ? stockMaterialDetailsBuild(state) : ""}`;
@@ -72,10 +77,16 @@ function stockLongActionsBuild(state: Record<string, any>, selected: SelectedPea
   const frequency = selected?.freq;
   const different = confirmation?.peakKey !== selected?.key || confirmation?.frequencyHz !== frequency;
   const confirm = Number.isFinite(frequency) && Number(frequency) > 0 && different
-    ? stockActionMarkupBuild("confirm", `Use ${Number(frequency).toFixed(1)} Hz as Long`) : "";
-  const clear = confirmation ? stockActionMarkupBuild("clear", "Clear Long") : "";
+    ? stockActionMarkupBuild("confirm", resonanceLocalizedMessages.stockMeasurementsUseAsLongTemplate.replace(
+      "{frequencyHz}",
+      Number(frequency).toFixed(1),
+    )) : "";
+  const clear = confirmation
+    ? stockActionMarkupBuild("clear", resonanceLocalizedMessages.stockMeasurementsClearLong)
+    : "";
   const transfer = stockKindResolve(state) === "brace_stock" && braceStockEstimateResolveFromState(state).status === "ready"
-    ? stockActionMarkupBuild("transfer", "Match in Flexural Rigidity") : "";
+    ? stockActionMarkupBuild("transfer", resonanceLocalizedMessages.stockMeasurementsMatchFlexuralRigidity)
+    : "";
   return confirm + clear + transfer;
 }
 
@@ -83,13 +94,31 @@ function stockMaterialDetailsBuild(state: Record<string, any>) {
   const estimate = stockMaterialEstimateResolve(state);
   if (estimate.status !== "ready") {
     const frequency = stockLongConfirmationResolve(state)?.frequencyHz;
-    return `<span class="muted small">${Number.isFinite(frequency) ? `Confirmed Long ${frequency.toFixed(1)} Hz` : "Long mode not confirmed"}</span>`;
+    const status = Number.isFinite(frequency)
+      ? resonanceLocalizedMessages.stockMeasurementsConfirmedLongTemplate.replace(
+        "{frequencyHz}",
+        frequency.toFixed(1),
+      )
+      : resonanceLocalizedMessages.stockMeasurementsLongModeUnconfirmedPanel;
+    return `<span class="muted small">${status}</span>`;
   }
   const { material, confirmation } = estimate;
-  const rigidity = material.flexuralRigidityNm2 == null ? "" : ` · Specimen EI ${material.flexuralRigidityNm2.toFixed(3)} N·m²`;
+  const rigidity = material.flexuralRigidityNm2 == null
+    ? ""
+    : resonanceLocalizedMessages.stockMeasurementsRigidityTemplate.replace(
+      "{rigidityNm2}",
+      material.flexuralRigidityNm2.toFixed(3),
+    );
+  const summary = resonanceLocalizedMessages.stockMeasurementsReadySummaryTemplate
+    .replace("{frequencyHz}", confirmation.frequencyHz.toFixed(1))
+    .replace("{soundSpeedMps}", Math.round(material.longitudinalSoundSpeedMps).toLocaleString())
+    .replace("{youngsModulusGPa}", material.dynamicYoungsModulusGPa.toFixed(2));
+  const details = resonanceLocalizedMessages.stockMeasurementsReadyDetailsTemplate
+    .replace("{densityKgM3}", String(Math.round(material.densityKgM3)))
+    .replace("{rigidity}", rigidity);
   return `<details class="stock-measurements-properties">
-    <summary>Confirmed Long ${confirmation.frequencyHz.toFixed(1)} Hz · Calculated longitudinal sound speed ${Math.round(material.longitudinalSoundSpeedMps).toLocaleString()} m/s · Calculated E ${material.dynamicYoungsModulusGPa.toFixed(2)} GPa · Free-free bending</summary>
-    <p class="muted small">Free-free bending assumption · Calculated density ${Math.round(material.densityKgM3)} kg/m³${rigidity}</p>
+    <summary>${summary}</summary>
+    <p class="muted small">${details}</p>
   </details>`;
 }
 
@@ -98,5 +127,9 @@ function stockActionMarkupBuild(action: string, label: string) {
 }
 
 function stockMeasurementsSummaryBuild(measurements: ReturnType<typeof stockMeasurementsDraftBuild>["measurements"]) {
-  return `L ${measurements.stockLengthMm} × W ${measurements.stockWidthMm} × H ${measurements.stockHeightMm} mm · ${measurements.stockMassG} g`;
+  return resonanceLocalizedMessages.stockMeasurementsSummaryTemplate
+    .replace("{lengthMm}", String(measurements.stockLengthMm))
+    .replace("{widthMm}", String(measurements.stockWidthMm))
+    .replace("{heightMm}", String(measurements.stockHeightMm))
+    .replace("{massG}", String(measurements.stockMassG));
 }

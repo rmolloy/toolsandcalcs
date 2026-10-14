@@ -17,6 +17,7 @@ import {
 } from "./resonate_debug_flags.js";
 import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js";
 import { spectrumDbApply } from "./resonate_spectrum_db_scale.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 const FFT_SMOOTH_GAUSSIAN_BINS = 8;
 const SPECTRUM_AVERAGING_LIMITS: Record<string, number> = {
@@ -150,7 +151,7 @@ export async function refreshFftFromState(deps: {
   const signal = deps.signalBoundary ?? signalBoundaryDefault;
   const slice = deps.sliceCurrentWave();
   if (!slice) {
-    deps.setStatus("Load or record to view the waveform.");
+    deps.setStatus(resonanceLocalizedMessages.saveIdleStatus);
     return;
   }
   const fftFactory = (window as any).createFftEngine;

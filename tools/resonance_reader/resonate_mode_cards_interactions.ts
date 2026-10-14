@@ -4,6 +4,7 @@ import { emitModeOverrideResetRequested } from "./resonate_override_commands.js"
 import type { ModeCard } from "./resonate_types.js";
 import { analysisTabActivatePeakAnalysis } from "./resonate_analysis_tabs.js";
 import { peakAnalysisPanelRenderFromState, peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 import {
   customMeasurementCreateAndAppendFromState,
   customMeasurementDeleteFromState,
@@ -84,7 +85,7 @@ function customMeasurementValueSetHandle(e: Event, modes: ModeCard[], deps: Mode
   const currentRaw = card?.querySelector(".mode-primary-value")?.childNodes?.[0]?.textContent ?? "";
   const current = Number(String(currentRaw).trim());
   const promptValue = Number.isFinite(current) ? current.toFixed(1) : "";
-  const nextRaw = window.prompt("Set custom value (Hz)", promptValue);
+  const nextRaw = window.prompt(resonanceLocalizedMessages.modeCardsCustomValuePrompt, promptValue);
   if (nextRaw === null) return true;
   const next = Number(nextRaw.trim());
   if (!Number.isFinite(next) || next <= 0) return true;
@@ -121,7 +122,10 @@ function customMeasurementRenameHandle(e: Event, modes: ModeCard[], deps: ModeCa
   const key = modeTargetKeyFromCustomCard(card);
   if (!key) return true;
   const currentLabel = modeTargetLabelFromCustomCard(card);
-  const nextLabel = window.prompt("Custom measurement name", currentLabel || "Custom");
+  const nextLabel = window.prompt(
+    resonanceLocalizedMessages.modeCardsCustomNamePrompt,
+    currentLabel || resonanceLocalizedMessages.modeCardsCustomFallbackLabel,
+  );
   if (nextLabel === null) return true;
   customMeasurementRenameFromState(deps.state, key, nextLabel);
   modeTargetRerenderFromDeps(modes, deps);

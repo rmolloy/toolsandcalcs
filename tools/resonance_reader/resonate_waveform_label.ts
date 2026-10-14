@@ -1,4 +1,5 @@
 import { measureModeNormalize } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 type ModeLike = {
   mode?: string | null | undefined;
@@ -172,7 +173,7 @@ export function waveformLabelResolveFromContext(args: {
       debugMeta: args.debugMeta,
     })
   ) {
-    return "Tap";
+    return resonanceLocalizedMessages.waveformTapLabel;
   }
   return args.noteNameResolve(f0);
 }

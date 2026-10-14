@@ -2,6 +2,7 @@ import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js";
 import type { ModeCard } from "./resonate_types.js";
 import type { ModeMeta } from "./resonate_mode_config.js";
 import { resolveColorHexFromRole } from "./resonate_color_roles.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export type CustomMeasurement = {
   key: string;
@@ -19,7 +20,6 @@ type CustomMeasurementCardsBuildArgs = {
 };
 
 const CUSTOM_MEASUREMENT_KEY_PREFIX = "custom_";
-const CUSTOM_MEASUREMENT_LABEL_PREFIX = "Custom";
 const CUSTOM_MEASUREMENT_FALLBACK_FREQ_HZ = 180;
 const CUSTOM_MEASUREMENT_FREQ_SEPARATION_HZ = 6;
 
@@ -32,7 +32,7 @@ export function customMeasurementCreateAndAppendFromState(state: Record<string, 
   const customMeasurements = customMeasurementsGetOrInit(state);
   const sequence = customMeasurementSequenceNextFromState(state);
   const key = `${CUSTOM_MEASUREMENT_KEY_PREFIX}${sequence}`;
-  const label = `${CUSTOM_MEASUREMENT_LABEL_PREFIX} ${sequence}`;
+  const label = customMeasurementDefaultLabelFormat(sequence);
   const freqHz = customMeasurementFrequencyDefaultResolveFromState(state);
   const next = { key, label, freqHz } satisfies CustomMeasurement;
   customMeasurements.push(next);
@@ -88,11 +88,22 @@ export function customMeasurementModeMetaBuildFromState(state: Record<string, an
       label: measurement.label,
       aliasHtml: "",
       aliasText: "",
-      tooltip: `${measurement.label}\nCustom measurement`,
+      tooltip: customMeasurementTooltipFormat(measurement.label),
       color: resolveColorHexFromRole("customMode"),
     };
   }
   return modeMeta;
+}
+
+function customMeasurementDefaultLabelFormat(sequence: number) {
+  return resonanceLocalizedMessages.modeCardsCustomSequenceTemplate.replace(
+    "{sequence}",
+    String(sequence),
+  );
+}
+
+function customMeasurementTooltipFormat(label: string) {
+  return resonanceLocalizedMessages.modeCardsCustomTooltipTemplate.replace("{label}", label);
 }
 
 function customMeasurementModeBuild(

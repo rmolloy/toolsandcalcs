@@ -5,6 +5,7 @@ import { resonanceSpectrumSmoothingEnabled, resonanceSpectrumLineWidthResolve, r
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
 import { stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js";
 import { stockPeakLabelsForSpecimen } from "./resonate_stock_peak_context.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 const PEAK_RINGDOWN_DEFAULT_WINDOW_MS = 1200;
 const PEAK_RINGDOWN_MIN_WINDOW_MS = PEAK_RINGDOWN_DEFAULT_WINDOW_MS;
 const PEAK_RINGDOWN_MAX_WINDOW_MS = 3000;
@@ -154,10 +155,14 @@ function peakAnalysisRingdownInputBuild(state, selectedMode, adaptive = false) {
     };
 }
 function peakAnalysisContextAveragingLabelBuild() {
-    return resonanceTapAveragingEnabled() ? "power mean tap average" : "single tap";
+    return resonanceTapAveragingEnabled()
+        ? resonanceLocalizedMessages.peakAnalysisAveragingPowerMean
+        : resonanceLocalizedMessages.peakAnalysisAveragingSingleTap;
 }
 function peakAnalysisContextSmoothingLabelBuild() {
-    return resonanceSpectrumSmoothingEnabled() ? "smoothing on" : "smoothing off";
+    return resonanceSpectrumSmoothingEnabled()
+        ? resonanceLocalizedMessages.peakAnalysisSmoothingOn
+        : resonanceLocalizedMessages.peakAnalysisSmoothingOff;
 }
 function peakAnalysisQLabelBuild(q) {
     if (!Number.isFinite(q))
@@ -257,7 +262,7 @@ function peakAnalysisDetectedCandidatesBuild(points, modeCards, estimateQ) {
         candidates.push({
             key: mode?.key || `spectrum-peak-${index}`,
             kind: mode?.kind || "custom",
-            label: mode?.label || "Peak",
+            label: mode?.label || resonanceLocalizedMessages.peakAnalysisCandidateLabel,
             freq: point.freq,
             note: mode?.note || null,
             cents: mode?.cents || null,
@@ -416,8 +421,13 @@ function peakAnalysisActionsRender(state, selectedMode, data) {
     const candidates = peakAnalysisCandidatesReadFromState(state);
     const selectedIndex = candidates.findIndex((candidate) => candidate.key === selectedMode?.key);
     const position = document.getElementById("peak_analysis_position");
-    if (position)
-        position.textContent = selectedIndex < 0 ? "Peak -" : `Peak ${selectedIndex + 1} of ${candidates.length}`;
+    if (position) {
+        position.textContent = selectedIndex < 0
+            ? resonanceLocalizedMessages.peakAnalysisPositionEmpty
+            : resonanceLocalizedMessages.peakAnalysisPositionTemplate
+                .replace("{current}", String(selectedIndex + 1))
+                .replace("{total}", String(candidates.length));
+    }
     peakAnalysisModelLinkRender(state);
 }
 function peakAnalysisActionListenersAttach(state) {
@@ -425,7 +435,7 @@ function peakAnalysisActionListenersAttach(state) {
         const previous = peakAnalysisPreviousModeReview(state);
         if (!previous)
             return;
-        peakAnalysisStatusSet(`Reviewing ${previous.label || "previous"} peak.`);
+        peakAnalysisStatusSet(resonanceLocalizedMessages.peakAnalysisReviewingTemplate.replace("{label}", previous.label || resonanceLocalizedMessages.peakAnalysisPreviousFallback));
         peakAnalysisPanelRenderFromState(state);
     });
     peakAnalysisActionButtonListen("peak_analysis_next", () => peakAnalysisReviewNextApply(state));
@@ -443,7 +453,7 @@ function peakAnalysisReviewNextApply(state) {
     const next = peakAnalysisNextModeReview(state);
     if (!next)
         return;
-    peakAnalysisStatusSet(`Reviewing ${next.label || "next"} peak.`);
+    peakAnalysisStatusSet(resonanceLocalizedMessages.peakAnalysisReviewingTemplate.replace("{label}", next.label || resonanceLocalizedMessages.peakAnalysisNextFallback));
     peakAnalysisPanelRenderFromState(state);
 }
 function peakAnalysisEvidenceExport(state) {
@@ -452,7 +462,7 @@ function peakAnalysisEvidenceExport(state) {
     if (!selectedMode || !data)
         return;
     peakAnalysisJsonDownload(peakAnalysisEvidenceFilenameBuild(selectedMode), peakAnalysisEvidencePayloadBuild(state, selectedMode, data));
-    peakAnalysisStatusSet("Peak/Q evidence exported.");
+    peakAnalysisStatusSet(resonanceLocalizedMessages.peakAnalysisEvidenceExported);
 }
 function peakAnalysisEvidencePayloadBuild(state, selectedMode, data) {
     return {
@@ -513,43 +523,69 @@ function peakAnalysisStatusSet(text) {
         status.setStatus(text);
 }
 function peakAnalysisRingdownConfidenceLabelBuild(result) {
-    if (result.evidence?.rejected)
-        return "unavailable";
-    if (result.evidence && result.flags.length)
-        return "provisional";
-    if (!Number.isFinite(result.envelopeR2) || !Number.isFinite(result.Q))
-        return "weak";
-    if (result.envelopeR2 >= 0.92)
-        return "strong";
-    if (result.envelopeR2 >= 0.85)
-        return "usable";
-    return "weak";
+    if (result.evidence?.rejected) {
+        return resonanceLocalizedMessages.peakAnalysisConfidenceUnavailable;
+    }
+    if (result.evidence && result.flags.length) {
+        return resonanceLocalizedMessages.peakAnalysisConfidenceProvisional;
+    }
+    if (!Number.isFinite(result.envelopeR2) || !Number.isFinite(result.Q)) {
+        return resonanceLocalizedMessages.peakAnalysisConfidenceWeak;
+    }
+    if (result.envelopeR2 >= 0.92) {
+        return resonanceLocalizedMessages.peakAnalysisConfidenceStrong;
+    }
+    if (result.envelopeR2 >= 0.85) {
+        return resonanceLocalizedMessages.peakAnalysisConfidenceUsable;
+    }
+    return resonanceLocalizedMessages.peakAnalysisConfidenceWeak;
 }
 function peakAnalysisProvenanceTextBuild(provenance, result) {
     const tapLabel = provenance.tapIndex === null
-        ? "full file start"
-        : `tap ${provenance.tapIndex + 1} of ${Math.max(provenance.tapCount, provenance.tapIndex + 1)}`;
+        ? resonanceLocalizedMessages.peakAnalysisProvenanceFullFileStart
+        : resonanceLocalizedMessages.peakAnalysisProvenanceTapTemplate
+            .replace("{tapNumber}", String(provenance.tapIndex + 1))
+            .replace("{tapCount}", String(Math.max(provenance.tapCount, provenance.tapIndex + 1)));
     const spectralBandwidth = Number.isFinite(provenance.bandwidthHz)
-        ? `spectral BW ${provenance.bandwidthHz.toFixed(2)} Hz`
-        : "automatic spectral BW";
+        ? resonanceLocalizedMessages.peakAnalysisProvenanceSpectralBandwidthTemplate.replace("{bandwidthHz}", provenance.bandwidthHz.toFixed(2))
+        : resonanceLocalizedMessages.peakAnalysisProvenanceAutomaticBandwidth;
     const isolationBandwidth = Number.isFinite(result.isolationBandwidthHz)
-        ? `isolation ${result.isolationBandwidthHz.toFixed(2)} Hz`
+        ? resonanceLocalizedMessages.peakAnalysisProvenanceIsolationBandwidthTemplate.replace("{bandwidthHz}", result.isolationBandwidthHz.toFixed(2))
         : null;
     const bandwidth = [spectralBandwidth, isolationBandwidth].filter(Boolean).join(" · ");
-    const limit = provenance.limit === "next_tap" ? " (next tap)" : provenance.limit === "recording_end" ? " (recording ends)" : "";
-    const window = `Tap window: ${(provenance.windowMs / 1000).toFixed(2)} seconds${limit}`;
-    return `Ring-down source: ${tapLabel} · ${window} · ${provenance.preOnsetMs} ms pre-onset · ${bandwidth} · ${provenance.sampleRate.toLocaleString()} Hz${peakAnalysisAdaptiveStatusText(result)}`;
+    const limit = provenance.limit === "next_tap"
+        ? resonanceLocalizedMessages.peakAnalysisProvenanceNextTapLimit
+        : provenance.limit === "recording_end"
+            ? resonanceLocalizedMessages.peakAnalysisProvenanceRecordingEndsLimit
+            : "";
+    const window = resonanceLocalizedMessages.peakAnalysisProvenanceWindowTemplate
+        .replace("{seconds}", (provenance.windowMs / 1000).toFixed(2))
+        .replace("{limit}", limit);
+    return resonanceLocalizedMessages.peakAnalysisProvenanceSourceTemplate
+        .replace("{tapLabel}", tapLabel)
+        .replace("{window}", window)
+        .replace("{preOnsetMs}", String(provenance.preOnsetMs))
+        .replace("{bandwidth}", bandwidth)
+        .replace("{sampleRateHz}", provenance.sampleRate.toLocaleString())
+        .replace("{adaptiveStatus}", peakAnalysisAdaptiveStatusText(result));
 }
 function peakAnalysisAdaptiveStatusText(result) {
     if (!result.evidence)
         return "";
     const labels = {
-        insufficient_decay: "too little decay", non_decaying: "no consistent decay",
-        overlapping_modes: "overlapping peaks", filter_sensitive: "filter-sensitive", unstable_decay: "poor fit",
+        insufficient_decay: resonanceLocalizedMessages.peakAnalysisProvenanceTooLittleDecay,
+        non_decaying: resonanceLocalizedMessages.peakAnalysisProvenanceNoConsistentDecay,
+        overlapping_modes: resonanceLocalizedMessages.peakAnalysisProvenanceOverlappingPeaks,
+        filter_sensitive: resonanceLocalizedMessages.peakAnalysisProvenanceFilterSensitive,
+        unstable_decay: resonanceLocalizedMessages.peakAnalysisProvenancePoorFit,
     };
     const reasons = result.flags.map((flag) => labels[flag]).filter(Boolean);
-    const fit = result.evidence.rejected ? `Decay fit unavailable: ${reasons.join(", ")}` : "Adaptive decay fit";
-    return ` · ${fit} · noise ${result.evidence.noise.status}`;
+    const fit = result.evidence.rejected
+        ? resonanceLocalizedMessages.peakAnalysisProvenanceDecayFitUnavailableTemplate.replace("{reasons}", reasons.join(", "))
+        : resonanceLocalizedMessages.peakAnalysisProvenanceAdaptiveFit;
+    return resonanceLocalizedMessages.peakAnalysisProvenanceAdaptiveStatusTemplate
+        .replace("{fit}", fit)
+        .replace("{noiseStatus}", result.evidence.noise.status);
 }
 function peakAnalysisRingdownPlotRender(plot, data) {
     if (!plot)
@@ -676,7 +712,7 @@ function peakAnalysisRingdownTracesBuild(data) {
                     line: { color: PEAK_ANALYSIS_WAVEFORM_COLOR, width: 1 },
                     opacity: 0.82,
                     hovertemplate: "%{x:.3f} s<br>%{y:.3f}<extra></extra>",
-                    name: "Selected tap response",
+                    name: resonanceLocalizedMessages.peakAnalysisRingdownSelectedResponseTrace,
                 },
             ]
             : []),
@@ -687,7 +723,7 @@ function peakAnalysisRingdownTracesBuild(data) {
             mode: "lines",
             line: { color: PEAK_ANALYSIS_PROJECTION_COLOR, width: 2.2 },
             hovertemplate: "%{x:.3f} s<br>%{y:.3f}<extra></extra>",
-            name: "Envelope",
+            name: resonanceLocalizedMessages.peakAnalysisRingdownEnvelopeTrace,
         },
     ];
     if (data.fit) {
@@ -697,8 +733,8 @@ function peakAnalysisRingdownTracesBuild(data) {
             type: "scatter",
             mode: "lines",
             line: { color: PEAK_ANALYSIS_PROJECTION_COLOR, width: 1.7, dash: "dash" },
-            hovertemplate: "Fit<br>%{x:.3f} s<br>%{y:.3f}<extra></extra>",
-            name: "Decay fit",
+            hovertemplate: `${resonanceLocalizedMessages.peakAnalysisRingdownFitLabel}<br>%{x:.3f} s<br>%{y:.3f}<extra></extra>`,
+            name: resonanceLocalizedMessages.peakAnalysisRingdownDecayFitTrace,
         });
     }
     return traces;
@@ -710,13 +746,13 @@ function peakAnalysisRingdownLayoutBuild(data, result) {
         plot_bgcolor: "rgba(0,0,0,0)",
         font: { color: "rgba(230, 233, 239, 0.85)" },
         xaxis: {
-            title: "Seconds",
+            title: resonanceLocalizedMessages.peakAnalysisRingdownSecondsAxis,
             gridcolor: "rgba(255,255,255,0.08)",
             zeroline: false,
             range: peakAnalysisRingdownXAxisRangeBuild([...data.x, ...(data.fit?.x || [])]),
         },
         yaxis: {
-            title: "Amplitude",
+            title: resonanceLocalizedMessages.peakAnalysisRingdownAmplitudeAxis,
             gridcolor: "rgba(255,255,255,0.08)",
             zeroline: false,
             ...(data.response.length ? { range: [-1.35, 1.35] } : {}),
@@ -769,7 +805,7 @@ function peakAnalysisTracesBuild(data) {
             mode: "lines",
             line: { color: resolveColorHexFromRole("fftLine"), width: resonanceSpectrumLineWidthResolve(PEAK_ANALYSIS_MEASURED_TRACE_LINE_WIDTH) },
             hovertemplate: "%{x:.1f} Hz<br>%{y:.2f} dB<extra></extra>",
-            name: "Frequency response",
+            name: resonanceLocalizedMessages.peakAnalysisFrequencyResponseTrace,
         },
         {
             x: data.candidates.map((candidate) => candidate.x),
@@ -784,7 +820,7 @@ function peakAnalysisTracesBuild(data) {
             mode: "markers",
             marker: { color: "rgba(198, 205, 216, 0.76)", size: 8, line: { color: "rgba(15, 17, 24, 0.9)", width: 1.25 } },
             hovertemplate: "%{text}<extra></extra>",
-            name: "Peak candidates",
+            name: resonanceLocalizedMessages.peakAnalysisCandidatesTrace,
         },
         {
             x: [data.selectedX],
@@ -792,8 +828,8 @@ function peakAnalysisTracesBuild(data) {
             type: "scatter",
             mode: "markers",
             marker: { color: "#f5c46f", size: 9, line: { color: "rgba(15, 17, 24, 0.9)", width: 1.5 } },
-            hovertemplate: "Selected peak<br>%{x:.1f} Hz<br>%{y:.2f} dB<extra></extra>",
-            name: "Selected peak",
+            hovertemplate: `${resonanceLocalizedMessages.peakAnalysisSelectedTrace}<br>%{x:.1f} Hz<br>%{y:.2f} dB<extra></extra>`,
+            name: resonanceLocalizedMessages.peakAnalysisSelectedTrace,
         },
     ];
 }

@@ -1,7 +1,8 @@
 import { measureModeNormalize } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 const GUITAR_DESTINATION = {
     href: "../dof_model/index.html",
-    label: "Open in 4-DOF model",
+    label: resonanceLocalizedMessages.modelDestinationDofLabel,
     showOverlayToggle: true,
     showModelRow: true,
     kind: "dof",
@@ -15,14 +16,14 @@ const PLAYED_NOTE_DESTINATION = {
 };
 const BRACE_STOCK_DESTINATION = {
     href: "../flexural_rigidity/brace_calc/",
-    label: "Open in Brace Calculator",
+    label: resonanceLocalizedMessages.modelDestinationBraceLabel,
     showOverlayToggle: false,
     showModelRow: true,
     kind: "brace-calculator",
 };
 const PLATE_STOCK_DESTINATION = {
     href: "../plate_thickness/index.html",
-    label: "Open in Plate Thickness calculator",
+    label: resonanceLocalizedMessages.modelDestinationPlateLabel,
     showOverlayToggle: false,
     showModelRow: true,
     kind: "plate-thickness",

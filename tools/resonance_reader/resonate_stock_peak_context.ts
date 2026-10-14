@@ -1,6 +1,7 @@
 import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
 import { stockKindResolve } from "./resonate_stock_measurements.js";
 import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export function stockPeakContextDiffers(state: Record<string, any>) {
   const kind = stockKindResolve(state);
@@ -14,6 +15,8 @@ export function stockPeakLabelsForSpecimen<T extends { label: string; freq: numb
 }
 
 function stockPeakLabelBuild(peakHz: number | null, confirmedHz: number | undefined) {
-  if (Number.isFinite(peakHz) && Number.isFinite(confirmedHz) && Math.abs(Number(peakHz) - Number(confirmedHz)) < 0.05) return "Confirmed Long";
-  return "Peak";
+  if (Number.isFinite(peakHz) && Number.isFinite(confirmedHz) && Math.abs(Number(peakHz) - Number(confirmedHz)) < 0.05) {
+    return resonanceLocalizedMessages.modeCardsConfirmedLong;
+  }
+  return resonanceLocalizedMessages.stockPeakLabel;
 }

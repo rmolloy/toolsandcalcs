@@ -1,5 +1,6 @@
 import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js";
 import { resonanceToolNavigate } from "./resonate_tool_navigation.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 export function flexuralRigidityBaseHrefResolve(runtimeHref = typeof window !== "undefined" ? window.location.href : "http://localhost/") {
     return new URL(runtimeHref).protocol === "file:"
         ? "../flexural_rigidity/index.html"
@@ -13,7 +14,7 @@ export function flexuralRigidityHrefBuildFromBraceStock(baseHref, state) {
     const url = new URL(baseHref, runtimeBase);
     url.searchParams.set("stock_contract", "1");
     url.searchParams.set("stock_method", "free-free");
-    url.searchParams.set("stock_source", estimate.confirmation.sourceLabel || "Brace stock measurement");
+    url.searchParams.set("stock_source", estimate.confirmation.sourceLabel || resonanceLocalizedMessages.flexuralRigidityDefaultSource);
     url.searchParams.set("stock_long_hz", estimate.confirmation.frequencyHz.toFixed(3));
     url.searchParams.set("stock_specimen_length_mm", estimate.measurements.stockLengthMm.toFixed(3));
     url.searchParams.set("stock_specimen_width_mm", estimate.measurements.stockWidthMm.toFixed(3));

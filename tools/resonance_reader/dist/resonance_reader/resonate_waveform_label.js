@@ -1,4 +1,5 @@
 import { measureModeNormalize } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 const TAP_CLASSIFY_CENTS_THRESHOLD = 15;
 const TAP_CLASSIFY_BINS_THRESHOLD = 2;
 function centsDistanceAbs(freqA, freqB) {
@@ -141,7 +142,7 @@ export function waveformLabelResolveFromContext(args) {
             sampleRate: args.noteSliceSampleRate,
             debugMeta: args.debugMeta,
         })) {
-        return "Tap";
+        return resonanceLocalizedMessages.waveformTapLabel;
     }
     return args.noteNameResolve(f0);
 }

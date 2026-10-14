@@ -1,6 +1,7 @@
 import { overlayToggleShouldRender } from "./resonate_overlay_gate.js";
 import type { ModeCard } from "./resonate_types.js";
 import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export type ModeMeta = { label: string; aliasHtml: string; aliasText: string; tooltip: string; color: string };
 
@@ -23,9 +24,9 @@ export function modeCardsHtmlBuild(modes: ModeCard[], deps: ModeCardDeps, editin
 
 function modeCardAddCustomHtmlBuild() {
   return `
-    <button class="mode-card mode-custom mode-card-add" type="button" aria-label="Add custom measurement">
+    <button class="mode-card mode-custom mode-card-add" type="button" aria-label="${resonanceLocalizedMessages.modeCardsAddCustomAriaLabel}">
       <span class="mode-card-add-plus" aria-hidden="true">+</span>
-      <span class="mode-card-add-title">Add Mode</span>
+      <span class="mode-card-add-title">${resonanceLocalizedMessages.modeCardsAddMode}</span>
     </button>
   `;
 }
@@ -59,9 +60,9 @@ function modeCentsRoundedValue(cents: number) {
 }
 
 const MODE_PROXIMITY_TIERS = [
-  { limit: 10, label: "likely", tone: "high" },
-  { limit: 15, label: "possible", tone: "med" },
-  { limit: 25, label: "possible", tone: "low" },
+  { limit: 10, label: resonanceLocalizedMessages.modeCardsWolfLikely, tone: "high" },
+  { limit: 15, label: resonanceLocalizedMessages.modeCardsWolfPossible, tone: "med" },
+  { limit: 25, label: resonanceLocalizedMessages.modeCardsWolfPossible, tone: "low" },
 ] as const;
 
 function modeProximityLabelBuildFromAbsCents(cents: number) {
@@ -71,7 +72,7 @@ function modeProximityLabelBuildFromAbsCents(cents: number) {
 }
 
 function modeProximityLabelTextFromTier(label: string) {
-  return `Wolf ${label}`;
+  return resonanceLocalizedMessages.modeCardsWolfTemplate.replace("{likelihood}", label);
 }
 
 function modeCardHtmlBuildFromMode(m: ModeCard, deps: ModeCardDeps, editingKey: string | null, formatters: ModeCardFormatters) {
@@ -100,9 +101,9 @@ function modeCardHeaderHtmlBuildFromMode(m: ModeCard, deps: ModeCardDeps) {
 
 function modeCardActionHtmlBuildFromMode(m: ModeCard) {
   if (m.kind === "custom") {
-    return `<button class="mode-card-delete" type="button" data-mode="${m.key}" title="Delete custom measurement">X</button>`;
+    return `<button class="mode-card-delete" type="button" data-mode="${m.key}" title="${resonanceLocalizedMessages.modeCardsDeleteCustomTitle}">X</button>`;
   }
-  return `<div class="pencil" title="Reassign peak">✎</div>`;
+  return `<div class="pencil" title="${resonanceLocalizedMessages.modeCardsReassignPeakTitle}">✎</div>`;
 }
 
 function modeCardBodyHtmlBuildFromMode(
@@ -146,7 +147,7 @@ function modePrimaryHtmlBuildFromMode(
 
 function modeOverrideResetHtmlBuildFromMode(m: ModeCard) {
   if (!Number.isFinite(m.peakOverrideHz)) return "";
-  return ` <a class="mode-override-reset" href="#" data-mode="${m.key}">reset</a>`;
+  return ` <a class="mode-override-reset" href="#" data-mode="${m.key}">${resonanceLocalizedMessages.modeCardsReset}</a>`;
 }
 
 function escapeHtmlAttr(text: string) {
@@ -178,8 +179,12 @@ function modeTitleHtmlBuildFromMode(m: ModeCard, deps: ModeCardDeps) {
 function modeCardStockLongLabelBuild(mode: ModeCard, state: Record<string, any>) {
   if (mode.key !== "long" || peakAnalysisSourceMeasureModeResolve(state) !== "brace_stock") return null;
   const confirmedFrequency = state.braceStockConfirmedLongMode?.frequencyHz;
-  if (!Number.isFinite(confirmedFrequency) || !Number.isFinite(mode.freq)) return "Suggested Long";
-  return Math.abs(confirmedFrequency - Number(mode.freq)) < 0.05 ? "Confirmed Long" : "Suggested Long";
+  if (!Number.isFinite(confirmedFrequency) || !Number.isFinite(mode.freq)) {
+    return resonanceLocalizedMessages.modeCardsSuggestedLong;
+  }
+  return Math.abs(confirmedFrequency - Number(mode.freq)) < 0.05
+    ? resonanceLocalizedMessages.modeCardsConfirmedLong
+    : resonanceLocalizedMessages.modeCardsSuggestedLong;
 }
 
 function modeTitleHtmlBuildFromCustomMode(m: ModeCard) {
@@ -202,23 +207,25 @@ function modeBehaviorHtmlBuildFromMode(
   proximity: { label: string; tone: string } | null,
   formatQ: (q: number | null) => string,
 ) {
-  if (m.isPeak === false) return `<span class="behavior">No peak</span>`;
+  if (m.isPeak === false) {
+    return `<span class="behavior">${resonanceLocalizedMessages.modeCardsNoPeak}</span>`;
+  }
   const wolf = proximity ? ` • ${proximity.label}` : "";
   return `<span class="behavior">${formatQ(m.q)}${wolf}</span>`;
 }
 
 function modeTargetHtmlBuildFromMode(m: ModeCard, editingKey: string | null) {
   if (m.kind === "custom") {
-    return `<a class="mode-target-link mode-custom-value-link" href="#" data-mode="${m.key}">Set value</a>`;
+    return `<a class="mode-target-link mode-custom-value-link" href="#" data-mode="${m.key}">${resonanceLocalizedMessages.modeCardsSetValue}</a>`;
   }
   if (!modeTargetRenderAllowed()) return modeTargetResetRowHtmlBuildFromMode(m, "");
   const isEditing = Number.isFinite(m.targetHz) || editingKey === m.key;
   const resetHtml = modeOverrideResetHtmlBuildFromMode(m);
   if (!isEditing) {
-    return modeTargetResetRowHtmlBuildFromMode(m, `<a class="mode-target-link" href="#" data-mode="${m.key}">Set target</a>`);
+    return modeTargetResetRowHtmlBuildFromMode(m, `<a class="mode-target-link" href="#" data-mode="${m.key}">${resonanceLocalizedMessages.modeCardsSetTarget}</a>`);
   }
   const value = modeTargetInputValueBuildFromMode(m);
-  const targetHtml = `Target: <input class="mode-target-input" data-mode="${m.key}" inputmode="decimal" value="${value}"> <span class="mode-target-unit">Hz</span>`;
+  const targetHtml = `${resonanceLocalizedMessages.modeCardsTargetLabel}: <input class="mode-target-input" data-mode="${m.key}" inputmode="decimal" value="${value}"> <span class="mode-target-unit">Hz</span>`;
   return modeTargetResetRowHtmlBuildFromMode(m, targetHtml);
 }
 

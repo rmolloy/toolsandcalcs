@@ -1,3 +1,5 @@
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+
 function recipeSoundholeDeltaMm(area0: number, area1: number): number | null {
   if (!Number.isFinite(area0) || !Number.isFinite(area1) || area0 <= 0 || area1 <= 0) return null;
   const d0 = 2 * Math.sqrt(area0 / Math.PI);
@@ -25,51 +27,143 @@ export function buildWhatIfRecipes(baseline: Record<string, any> | null, whatIf:
   if (!baseline || !whatIf) return [];
   const out: string[] = [];
 
-  const area0 = baseline.area_hole;
-  const area1 = whatIf.area_hole;
-  const dMm = recipeSoundholeDeltaMm(area0, area1);
-  if (Number.isFinite(dMm) && Math.abs(dMm as number) >= 0.2) {
-    const abs = Math.abs(dMm as number).toFixed(1);
-    out.push(`${(dMm as number) < 0 ? "Reduce" : "Increase"} soundhole diameter by ${abs} mm`);
-  }
+  const soundholeRecipe = buildSoundholeRecipeFromStates(baseline, whatIf);
+  if (soundholeRecipe) out.push(soundholeRecipe);
 
-  const vol0 = baseline.volume_air;
-  const vol1 = whatIf.volume_air;
-  const volPct = recipePercentDelta(vol0, vol1);
-  if (Number.isFinite(volPct) && Math.abs(volPct as number) >= 2) {
-    out.push(`${(volPct as number) < 0 ? "Reduce" : "Increase"} effective air volume by ${Math.abs(volPct as number).toFixed(0)}%`);
-  }
+  const airVolumeRecipe = buildAirVolumeRecipeFromStates(baseline, whatIf);
+  if (airVolumeRecipe) out.push(airVolumeRecipe);
 
-  const kTop0 = baseline.stiffness_top;
-  const kTop1 = whatIf.stiffness_top;
-  const kTopPct = recipePercentDelta(kTop0, kTop1);
-  if (Number.isFinite(kTopPct) && Math.abs(kTopPct as number) >= 5) {
-    out.push(`${(kTopPct as number) < 0 ? "Soften" : "Stiffen"} top by ${Math.abs(kTopPct as number).toFixed(0)}% (brace height/scope)`);
-  }
+  const topStiffnessRecipe = buildTopStiffnessRecipeFromStates(baseline, whatIf);
+  if (topStiffnessRecipe) out.push(topStiffnessRecipe);
 
-  const kBack0 = baseline.stiffness_back;
-  const kBack1 = whatIf.stiffness_back;
-  const kBackPct = recipePercentDelta(kBack0, kBack1);
-  if (Number.isFinite(kBackPct) && Math.abs(kBackPct as number) >= 5) {
-    out.push(`${(kBackPct as number) < 0 ? "Soften" : "Stiffen"} back by ${Math.abs(kBackPct as number).toFixed(0)}% (brace height/scope)`);
-  }
+  const backStiffnessRecipe = buildBackStiffnessRecipeFromStates(baseline, whatIf);
+  if (backStiffnessRecipe) out.push(backStiffnessRecipe);
 
   return out;
+}
+
+function buildSoundholeRecipeFromStates(
+  baseline: Record<string, any>,
+  whatIf: Record<string, any>,
+) {
+  const diameterDeltaMm = recipeSoundholeDeltaMm(
+    baseline.area_hole,
+    whatIf.area_hole,
+  );
+  if (!Number.isFinite(diameterDeltaMm) || Math.abs(diameterDeltaMm as number) < 0.2) {
+    return null;
+  }
+  const amountMm = Math.abs(diameterDeltaMm as number).toFixed(1);
+  const template = (diameterDeltaMm as number) < 0
+    ? resonanceLocalizedMessages.whatIfSoundholeReduceTemplate
+    : resonanceLocalizedMessages.whatIfSoundholeIncreaseTemplate;
+  return template.replace("{amountMm}", amountMm);
+}
+
+function buildAirVolumeRecipeFromStates(
+  baseline: Record<string, any>,
+  whatIf: Record<string, any>,
+) {
+  const volumeDeltaPercent = recipePercentDelta(
+    baseline.volume_air,
+    whatIf.volume_air,
+  );
+  if (!Number.isFinite(volumeDeltaPercent) || Math.abs(volumeDeltaPercent as number) < 2) {
+    return null;
+  }
+  const amountPercent = Math.abs(volumeDeltaPercent as number).toFixed(0);
+  const template = (volumeDeltaPercent as number) < 0
+    ? resonanceLocalizedMessages.whatIfAirVolumeReduceTemplate
+    : resonanceLocalizedMessages.whatIfAirVolumeIncreaseTemplate;
+  return template.replace("{amountPercent}", amountPercent);
+}
+
+function buildTopStiffnessRecipeFromStates(
+  baseline: Record<string, any>,
+  whatIf: Record<string, any>,
+) {
+  const stiffnessDeltaPercent = recipePercentDelta(
+    baseline.stiffness_top,
+    whatIf.stiffness_top,
+  );
+  if (!Number.isFinite(stiffnessDeltaPercent) || Math.abs(stiffnessDeltaPercent as number) < 5) {
+    return null;
+  }
+  const amountPercent = Math.abs(stiffnessDeltaPercent as number).toFixed(0);
+  const template = (stiffnessDeltaPercent as number) < 0
+    ? resonanceLocalizedMessages.whatIfTopStiffnessSoftenTemplate
+    : resonanceLocalizedMessages.whatIfTopStiffnessStiffenTemplate;
+  return template.replace("{amountPercent}", amountPercent);
+}
+
+function buildBackStiffnessRecipeFromStates(
+  baseline: Record<string, any>,
+  whatIf: Record<string, any>,
+) {
+  const stiffnessDeltaPercent = recipePercentDelta(
+    baseline.stiffness_back,
+    whatIf.stiffness_back,
+  );
+  if (!Number.isFinite(stiffnessDeltaPercent) || Math.abs(stiffnessDeltaPercent as number) < 5) {
+    return null;
+  }
+  const amountPercent = Math.abs(stiffnessDeltaPercent as number).toFixed(0);
+  const template = (stiffnessDeltaPercent as number) < 0
+    ? resonanceLocalizedMessages.whatIfBackStiffnessSoftenTemplate
+    : resonanceLocalizedMessages.whatIfBackStiffnessStiffenTemplate;
+  return template.replace("{amountPercent}", amountPercent);
 }
 
 export function buildMassOnlyRecipes(baseline: Record<string, any> | null, massOnly: Record<string, any> | null): string[] {
   if (!baseline || !massOnly) return [];
   const out: string[] = [];
-  const area0 = baseline.area_hole;
-  const area1 = massOnly.area_hole;
-  const dMm = recipeSoundholeDeltaMm(area0, area1);
-  if (Number.isFinite(dMm) && (dMm as number) < -0.2) {
-    const reductionMm = massOnlySoundholeReductionMmResolve(dMm as number);
-    out.push(`Reduce soundhole diameter by ${reductionMm.toFixed(1)} mm`);
-  }
-  const dt = massDeltaGrams(baseline.mass_top, massOnly.mass_top);
-  if (Number.isFinite(dt) && (dt as number) > 0.2) out.push(`Add ${(dt as number).toFixed(1)} g mass near bridge (top)`);
-  const db = massDeltaGrams(baseline.mass_back, massOnly.mass_back);
-  if (Number.isFinite(db) && (db as number) > 0.2) out.push(`Add ${(db as number).toFixed(1)} g mass to back plate`);
+  const soundholeRecipe = buildMassOnlySoundholeRecipeFromStates(baseline, massOnly);
+  if (soundholeRecipe) out.push(soundholeRecipe);
+  const topMassRecipe = buildTopMassRecipeFromStates(baseline, massOnly);
+  if (topMassRecipe) out.push(topMassRecipe);
+  const backMassRecipe = buildBackMassRecipeFromStates(baseline, massOnly);
+  if (backMassRecipe) out.push(backMassRecipe);
   return out;
+}
+
+function buildMassOnlySoundholeRecipeFromStates(
+  baseline: Record<string, any>,
+  massOnly: Record<string, any>,
+) {
+  const diameterDeltaMm = recipeSoundholeDeltaMm(
+    baseline.area_hole,
+    massOnly.area_hole,
+  );
+  if (!Number.isFinite(diameterDeltaMm) || (diameterDeltaMm as number) >= -0.2) {
+    return null;
+  }
+  const reductionMm = massOnlySoundholeReductionMmResolve(diameterDeltaMm as number);
+  return resonanceLocalizedMessages.whatIfSoundholeReduceTemplate.replace(
+    "{amountMm}",
+    reductionMm.toFixed(1),
+  );
+}
+
+function buildTopMassRecipeFromStates(
+  baseline: Record<string, any>,
+  massOnly: Record<string, any>,
+) {
+  const massDeltaG = massDeltaGrams(baseline.mass_top, massOnly.mass_top);
+  if (!Number.isFinite(massDeltaG) || (massDeltaG as number) <= 0.2) return null;
+  return resonanceLocalizedMessages.whatIfTopMassTemplate.replace(
+    "{massG}",
+    (massDeltaG as number).toFixed(1),
+  );
+}
+
+function buildBackMassRecipeFromStates(
+  baseline: Record<string, any>,
+  massOnly: Record<string, any>,
+) {
+  const massDeltaG = massDeltaGrams(baseline.mass_back, massOnly.mass_back);
+  if (!Number.isFinite(massDeltaG) || (massDeltaG as number) <= 0.2) return null;
+  return resonanceLocalizedMessages.whatIfBackMassTemplate.replace(
+    "{massG}",
+    (massDeltaG as number).toFixed(1),
+  );
 }

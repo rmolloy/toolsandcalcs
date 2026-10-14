@@ -1,4 +1,5 @@
 import type { PlateMaterialMeasurements } from "./resonate_plate_material_panel.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 
 export type PlateTransferPromptResult = {
   action: "continue" | "skip";
@@ -18,10 +19,10 @@ type PlateTransferField = {
 };
 
 const PLATE_TRANSFER_FIELDS: PlateTransferField[] = [
-  { key: "panelLengthMm", label: "Length", unit: "mm" },
-  { key: "panelWidthMm", label: "Width", unit: "mm" },
-  { key: "panelHeightMm", label: "Thickness", unit: "mm" },
-  { key: "panelMassG", label: "Mass", unit: "g" },
+  { key: "panelLengthMm", label: resonanceLocalizedMessages.plateTransferLengthLabel, unit: "mm" },
+  { key: "panelWidthMm", label: resonanceLocalizedMessages.plateTransferWidthLabel, unit: "mm" },
+  { key: "panelHeightMm", label: resonanceLocalizedMessages.plateTransferThicknessLabel, unit: "mm" },
+  { key: "panelMassG", label: resonanceLocalizedMessages.plateTransferMassLabel, unit: "g" },
 ];
 
 export function plateTransferPromptOpen(
@@ -45,27 +46,27 @@ function plateTransferPromptElementBuild(defaults: PlateMaterialMeasurements, mo
   modal.className = "save-modal plate-transfer-modal";
   modal.innerHTML = `
     <div class="save-modal__backdrop" data-plate-transfer-cancel></div>
-    <div class="save-modal__panel plate-transfer-modal__panel" role="dialog" aria-modal="true" aria-label="Prepare transfer to Plate Calculator">
+    <div class="save-modal__panel plate-transfer-modal__panel" role="dialog" aria-modal="true" aria-label="${resonanceLocalizedMessages.plateTransferDialogLabel}">
       <header>
-        <h2>Prepare Transfer -> Plate Calculator</h2>
-        <button type="button" class="ghost-btn btn-small" data-plate-transfer-cancel>Close</button>
+        <h2>${resonanceLocalizedMessages.plateTransferTitle}</h2>
+        <button type="button" class="ghost-btn btn-small" data-plate-transfer-cancel>${resonanceLocalizedMessages.plateTransferClose}</button>
       </header>
       <form class="save-modal__form plate-transfer-modal__form">
         <section class="save-modal__section">
-          <h3>Modes <span class="muted">(from measurement)</span></h3>
+          <h3>${resonanceLocalizedMessages.plateTransferModesTitle} <span class="muted">${resonanceLocalizedMessages.plateTransferFromMeasurement}</span></h3>
           <div class="plate-transfer-mode-list">
             ${modes.map(plateTransferModeMarkupBuild).join("")}
           </div>
         </section>
         <section class="save-modal__section">
-          <h3>Additional Measurements <span class="muted">(optional)</span></h3>
+          <h3>${resonanceLocalizedMessages.plateTransferAdditionalMeasurementsTitle} <span class="muted">${resonanceLocalizedMessages.plateTransferOptional}</span></h3>
           <div class="plate-transfer-grid">
             ${PLATE_TRANSFER_FIELDS.map((field) => plateTransferFieldMarkupBuild(field, defaults[field.key])).join("")}
           </div>
         </section>
         <footer class="save-modal__footer plate-transfer-modal__footer">
-          <button type="button" class="ghost-btn" data-plate-transfer-skip>Skip for now</button>
-          <button type="submit" class="primary-btn">Continue to Plate Calculator</button>
+          <button type="button" class="ghost-btn" data-plate-transfer-skip>${resonanceLocalizedMessages.plateTransferSkip}</button>
+          <button type="submit" class="primary-btn">${resonanceLocalizedMessages.plateTransferContinue}</button>
         </footer>
       </form>
     </div>
@@ -135,6 +136,6 @@ function plateTransferNumberFormat(value: number) {
 }
 
 function plateTransferFrequencyFormat(value: number | null) {
-  if (!Number.isFinite(value)) return "Not detected";
+  if (!Number.isFinite(value)) return resonanceLocalizedMessages.plateTransferNotDetected;
   return `${(value as number).toFixed(1)} Hz`;
 }

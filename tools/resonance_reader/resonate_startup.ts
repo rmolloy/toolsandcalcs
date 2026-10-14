@@ -1,3 +1,5 @@
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+
 type StartupMode = "legacy" | "runner";
 
 type StartupPlan = {
@@ -35,14 +37,14 @@ export function startupPlanBuildFromMode(mode: StartupMode): StartupPlan {
       mode,
       runRunner: true,
       renderMock: false,
-      statusText: "Load or record to view the waveform.",
+      statusText: resonanceLocalizedMessages.saveIdleStatus,
     };
   }
   return {
     mode,
     runRunner: false,
     renderMock: true,
-    statusText: "Load or record to view the waveform.",
+    statusText: resonanceLocalizedMessages.saveIdleStatus,
   };
 }
 
