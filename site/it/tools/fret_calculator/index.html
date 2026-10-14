@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calcolatore dei tasti e della compensazione del ponte | Traccia la tastiera prima del taglio</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/layout.css">
+  <meta name="description" content="Calcola le posizioni dei tasti e la compensazione del ponte per tracciare una tastiera o verificare la geometria del diapason prima del taglio o del setup.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/it/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+</head>
+
+<body>
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Apri il menu del sito">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Sezioni del sito" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Tasti e compensazione del ponte</h1>
+          </div>
+          <div class="hero-actions">
+          </div>
+        </div>
+      </section>
+
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output">
+            <h2>Risultati</h2>
+            <div class="result-grid">
+              <article class="result-card">
+                <div class="label">Diapason</div>
+                <div id="summary_scale" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Arretramento per classica</div>
+                <div id="summary_classical" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Arretramento della prima corda d’acciaio</div>
+                <div id="summary_steel_1" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Arretramento della sesta corda d’acciaio</div>
+                <div id="summary_steel_6" class="value">—</div>
+              </article>
+            </div>
+            <p id="result_status" class="status">Live: computed from current scale length</p>
+          </section>
+
+          <section class="card pad tl-card tl-card-output">
+            <h2>Posizioni dei tasti (temperamento equabile)</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tasto</th>
+                    <th>Distanza dal capotasto</th>
+                    <th>Distanza tra i tasti</th>
+                    <th>Distanza restante fino alla selletta</th>
+                  </tr>
+                </thead>
+                <tbody id="fret_rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card pad tl-card tl-card-output">
+            <h2>Compensazione del ponte</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Corda / tipo</th>
+                    <th>Arretramento</th>
+                    <th>Dal capotasto alla selletta</th>
+                  </tr>
+                </thead>
+                <tbody id="comp_rows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls">
+            <h2>Dati in ingresso</h2>
+            <div class="tl-control-stack">
+              <label class="field">
+                <span class="field-label">Diapason</span>
+                <input id="scale_input" type="number" min="400" max="1000" step="1" value="650">
+              </label>
+              <label class="field">
+                <span class="field-label">Unità</span>
+                <select id="unit_select">
+                  <option value="mm" selected>mm</option>
+                  <option value="in">pollici</option>
+                </select>
+              </label>
+              <div class="tl-action-row">
+                <button id="reset_btn" type="button">Ripristina valori predefiniti</button>
+              </div>
+            </div>
+            <p class="small muted">
+              Le distanze sono misurate dal bordo del capotasto. I valori di compensazione sono adattati dal modello originale.
+            </p>
+          </section>
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+          <section class="card pad tl-card tl-card-info">
+            <h2>Funzionamento</h2>
+            <p class="tl-card-desc">
+              Le posizioni dei tasti usano il temperamento equabile: ogni semitono divide la lunghezza della corda per <code>2^(1/12)</code>.
+              Gli arretramenti della selletta sono adattati da un riferimento di 650 mm: la chitarra classica usa una selletta diritta, mentre le corde d’acciaio usano valori distinti per la prima e la sesta corda.
+            </p>
+          </section>
+
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="it">
+  <h2>Tasti e compensazione del ponte</h2>
+  <p>Calcola le posizioni dei tasti in temperamento equabile e i riferimenti di arretramento del ponte, adattati da una sola misura del diapason.</p>
+  <p>Questo calcolatore traccia le posizioni dei tasti in temperamento equabile e mostra valori di riferimento per l’arretramento della selletta su strumenti classici e con corde d’acciaio.</p>
+  <p>Un riferimento chiaro aiuta a posizionare i tasti e a stimare la posizione della selletta prima di tagliare la tastiera o installare il ponte.</p>
+  <ul>
+    <li>Inserisci la lunghezza vibrante della corda dal bordo anteriore del capotasto alla linea teorica della selletta.</li>
+    <li>Scegli millimetri o pollici per le quote visualizzate.</li>
+  </ul>
+  <p>Usa le distanze dei tasti come quote di tracciatura e gli arretramenti della selletta come riferimenti iniziali da verificare sullo strumento finito.</p>
+  <p class="small muted">Creato da Rick Molloy.</p>
+</section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="main.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Lingua","currentLocale":"it","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/fret_calculator/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/fret_calculator/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/fret_calculator/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/fret_calculator/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/fret_calculator/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resonance Reader | Rick Molloy Guitars Labor</title>
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=20260324a">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=20260324a">
+  <link rel="stylesheet" href="styles.css?rev=20260324a">
+  <link rel="stylesheet" href="../common/tool_guide.css?rev=20260927b">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=20261008a">
+  <link rel="canonical" href="https://rickmolloyguitars.com/de/lab/tools/resonance_reader/">
+  <link rel="stylesheet" href="../common/theme_profile.css">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
+</head>
+
+<body>
+  <div class="page-shell">
+    <section class="hero">
+      <div class="hero-row">
+        <div class="hero-controls-left">
+          <details class="hero-menu">
+            <summary class="hero-menu-trigger" aria-label="Seitenmenü öffnen">☰</summary>
+            <nav class="hero-menu-panel" aria-label="Seitenbereiche" data-site-menu data-menu-profile="lutherieacademy"></nav>
+          </details>
+          <h1>Resonance Reader</h1>
+          <div class="measure-select hero-control" id="measure_chip">
+            <span class="measure-label">Messobjekt:</span>
+            <select class="measure-dropdown" id="measure_mode">
+              <option value="guitar" selected>Instrument</option>
+              <option value="played_note">Gespielte Note</option>
+              <option value="plate_stock">Plattenholz</option>
+              <option value="brace_stock">Leistenholz</option>
+              <option value="peak_analysis">Peak / Q</option>
+            </select>
+          </div>
+          <input class="sr-only" type="file" id="file_input" accept="audio/*" tabindex="-1" aria-hidden="true">
+        </div>
+        <div class="hero-actions">
+          <a class="hero-help-link" href="#resonance_reader_help" aria-label="Resonance Reader-Anleitung lesen" title="Anleitung für Resonance Reader">?</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="card-surface">
+      <section class="energy-surface" id="energy_nav" hidden>
+        <div class="plot-header">
+          <div class="plot-header-copy">
+            <h2>Relative Energieübertragung</h2>
+            <p class="muted small">Nur im gespielten Notenmodus.</p>
+          </div>
+        </div>
+        <div id="plot_energy_transfer" class="plot energy-transfer-plot"></div>
+      </section>
+
+      <div id="plot_fft" class="plot tl-resonance-primary-plot"></div>
+      <button class="modebar-settings-trigger" id="btn_settings" type="button" aria-haspopup="dialog" aria-controls="settings_dialog" aria-label="FFT- und Mikrofon-Einstellungen öffnen" title="FFT- und Mikrofon-Einstellungen">
+        Einstellungen
+      </button>
+
+      <section class="analysis-surface" id="analysis_surface">
+        <div class="analysis-tabs" role="tablist" aria-label="Analyseansichten">
+          <button class="analysis-tab" id="analysis_tab_peak" data-analysis-tab="peak_analysis" type="button" role="tab" aria-controls="peak_analysis_panel" aria-selected="true">
+            Peak-/Q-Inspektor
+          </button>
+          <button class="analysis-tab" id="analysis_tab_material" data-analysis-tab="material_properties" type="button" role="tab" aria-controls="plate_material_card" aria-selected="false">
+            Materialeigenschaften
+          </button>
+        </div>
+
+        <section class="card peak-analysis-card" id="peak_analysis_panel" role="tabpanel" aria-labelledby="analysis_tab_peak">
+          <div class="plot-header">
+            <div class="plot-header-copy">
+              <h2>Peak-/Q-Inspektor</h2>
+              <p class="muted small" id="peak_analysis_description">Untersuchen Sie den gesamten Frequenzgang von 0 bis 500 Hz zusammen mit dem frequenzisolierten Ausschwingen des ausgewählten Peaks.</p>
+            </div>
+          </div>
+          <div class="peak-analysis-plot-grid">
+            <section class="peak-analysis-plot-panel" aria-labelledby="peak_analysis_spectrum_title">
+              <div class="plot-header">
+                <div class="plot-header-copy">
+                  <h3 id="peak_analysis_spectrum_title">Frequenzgang</h3>
+                  <p class="muted small">Frequenzgang von 0 bis 500 Hz mit dem ausgewählten Peak und seiner -3-dB-Bandbreite.</p>
+                </div>
+              </div>
+              <div class="plot peak-analysis-plot" id="plot_peak_analysis" hidden></div>
+            </section>
+            <section class="peak-analysis-plot-panel" aria-labelledby="peak_analysis_ringdown_title">
+              <div class="plot-header">
+                <div class="plot-header-copy">
+                  <h3 id="peak_analysis_ringdown_title">Ausschwingantwort</h3>
+                  <p class="muted small">Blau: isoliertes Klopfimpuls. Gold: Umhüllung. Gestricheltes Gold: angepasste Dämpfung.</p>
+                </div>
+              </div>
+              <div class="plot peak-analysis-ringdown-plot" id="plot_peak_ringdown" hidden></div>
+            </section>
+          </div>
+          <div class="peak-analysis-provenance" id="peak_analysis_provenance"></div>
+          <div class="peak-analysis-actions" id="peak_analysis_actions" aria-label="Peak-/Q-Aktionen">
+            <div class="peak-analysis-stepper" role="group" aria-label="Peak-Navigation">
+              <span class="peak-analysis-position" id="peak_analysis_position">Peak -</span>
+              <button class="ghost-btn btn-small icon-btn" id="peak_analysis_previous" type="button" aria-label="Vorheriger Peak" title="Vorheriger Peak"><span aria-hidden="true">&larr;</span></button>
+              <button class="ghost-btn btn-small icon-btn" id="peak_analysis_next" type="button" aria-label="Nächster Peak" title="Nächster Peak"><span aria-hidden="true">&rarr;</span></button>
+            </div>
+            <button class="ghost-btn btn-small" id="peak_analysis_export_data" type="button">Peak-Daten exportieren</button>
+          </div>
+        </section>
+
+        <section class="card plate-material-card" id="plate_material_card" role="tabpanel" aria-labelledby="analysis_tab_material" hidden>
+          <div class="plot-header">
+            <div class="plot-header-copy">
+              <h2 id="plate_material_title">Materialeigenschaften</h2>
+              <p class="muted small" id="plate_material_description">Diese Messungen werden mit den erkannten Plattenmoden in den Platten-Dicken-Rechner übertragen.</p>
+            </div>
+          </div>
+          <div class="plate-material-grid">
+            <label class="plate-material-field">
+              <span class="plate-material-label">Länge</span>
+              <input id="plate_material_length" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="555">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Breite</span>
+              <input id="plate_material_width" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="227">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Höhe</span>
+              <input id="plate_material_height" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="4.1">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Masse</span>
+              <input id="plate_material_mass" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="211.4">
+              <span class="plate-material-unit">g</span>
+            </label>
+          </div>
+        </section>
+      </section>
+
+      <section class="wave-surface" id="wave_nav" data-waveform-ready="false">
+        <div id="plot_waveform" class="plot waveform"></div>
+        <div class="plot-header">
+          <div class="plot-header-copy">
+            <h2 id="wave_nav_title">Frequenzgang</h2>
+            <p class="muted small" id="wave_nav_description">Ziehen Sie den gelben Bereich für die FFT-Analyse. Ziehen Sie den grünen Bereich für die Notenauswahl. Klicken Sie auf eine Notenbezeichnung (oder Option/Command-Klick auf einen Notenschnitt), um ihre Note zu überschreiben.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="mode-grid" id="mode_grid">
+        <!-- Mode cards populated by script -->
+      </div>
+
+      <section class="stock-measurements" id="stock_measurements" aria-label="Standardmessungen" hidden>
+        <div class="brace-stock-estimate__content" id="stock_measurements_content"></div>
+      </section>
+
+      <section class="measure-action-row" aria-label="Messungsaktionen">
+        <div class="wave-transport-inline">
+          <button class="ghost-btn btn-small" id="btn_wave_tone"><span class="transport-icon" aria-hidden="true">∿</span>Ton</button>
+          <button class="ghost-btn btn-small" id="btn_wave_record"><span class="transport-icon" aria-hidden="true">⏺</span>Aufnehmen</button>
+          <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Wiedergabe</button>
+          <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Stoppen</button>
+          <label class="ghost-btn btn-small" id="btn_import" for="file_input" role="button" tabindex="0"><span class="transport-icon" aria-hidden="true">⬆</span>Importieren</label>
+          <div class="take-overlay-controls" id="take_overlay_controls">
+            <button class="ghost-btn btn-small take-overlay-menu transport-recording" id="take_overlay_menu" type="button" aria-expanded="false" aria-controls="take_overlay_panel">Demo (auf Aufnahme klicken)</button>
+            <div class="take-overlay-panel" id="take_overlay_panel" hidden></div>
+          </div>
+          <button class="ghost-btn btn-small tl-save-action" id="btn_save_audio">Speichern</button>
+          <button class="ghost-btn btn-small take-overlay-clear" id="take_overlay_clear" type="button" hidden>Aufnahmen löschen</button>
+        </div>
+        <section class="dof-model-row">
+          <div class="dof-model-copy">
+            <h2>4DOF-Modell</h2>
+          </div>
+          <div class="dof-model-actions">
+            <label class="toggle dof-toggle">
+              <input type="checkbox" id="toggle_overlay">
+              <span class="toggle-label sr-only">4DOF-Modell-Overlay umschalten</span>
+              <span class="toggle-knob"></span>
+            </label>
+          </div>
+          <a href="../dof_model/" class="link dof-model-link" data-view-model>Öffnen im 4-DOF-Modell</a>
+        </section>
+      </section>
+
+      <div class="try-panel" id="try_panel" hidden>
+        <div class="try-cards">
+          <div class="try-card" id="try_card_structural" hidden>
+            <div class="try-label">Versuchen (strukturell):</div>
+            <ul class="try-list" id="try_list_structural"></ul>
+          </div>
+          <div class="try-card" id="try_card_reversible" hidden>
+            <div class="try-label">Versuchen (umkehrbar / nicht-strukturell):</div>
+            <ul class="try-list" id="try_list_reversible"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+    </section>
+
+    <section class="tl-tool-guide" id="resonance_reader_help" aria-labelledby="reader_help_title">
+      <div class="tl-tool-guide__body">
+        <h2 id="reader_help_title">Verwendung von Resonance Reader</h2>
+        <p>Resonance Reader ist ein browserbasiertes FFT-Audioanalyseprogramm für modale Tests und die Abstimmung von Instrumentenmaterialien und akustischen Instrumenten. Es macht die Mess- und Abstimmungstechniken aus Trevor Gores Büchern leichter anwendbar. Es hilft Gitarrenbauerinnen und Gitarrenbauern beim Bau und bei der Feinabstimmung ihrer Instrumente und Spielern dabei, hör- und fühlbares Verhalten zu verstehen.</p>
+        <p>Nehmen Sie einen Klopfimpuls auf oder importieren Sie eine Audiodatei, um Resonanzen in einer Decken- oder Bodenplatte, einem Leistenrohling oder einem zusammengebauten Instrument zu finden. Untersuchen Sie Frequenzen und Dämpfung und vergleichen Sie die Messungen vor und nach einer Änderung.</p>
+        <p>Wenn Sie eine Gitarre oder Platte klopfen, werden mehrere Resonanzen gleichzeitig angeregt. Wenn Sie eine Note auf einer Saite spielen, interagieren die Saite und die Resonanzen des Instruments, was das Anfangen, Entwickeln und Verklingen der Note beeinflusst. Resonance Reader ermöglicht es Ihnen, beide zu untersuchen.</p>
+        <nav aria-label="Resonance Reader-Anleitungsteile">
+          <a href="#reader_help_start">Erste Schritte</a>
+          <a href="#reader_help_controls">Steuerung</a>
+          <a href="#reader_help_modes">Moden</a>
+          <a href="#reader_help_connections">Andere Werkzeuge</a>
+          <a href="#reader_help_reference">Interpretation der Ergebnisse</a>
+        </nav>
+
+        <h3 id="reader_help_start">Erste Schritte</h3>
+        <ol class="tl-steps">
+          <li><strong>Wählen Sie aus, was Sie messen.</strong> Verwenden Sie Instrument für Körperschwingungen, Plattenrohling für eine Decken- oder Bodenplatte, Leistenrohling für eine rechteckige Rohlingsprobe oder Gespielte Note für eine angezupfte Saite. Peak / Q kann einen Peak aus jeder dieser Ansichten untersuchen; Messungen hinzufügen kennzeichnet eine Rohlingsprobe, ohne die Analyseansicht zu ändern.</li>
+          <li><strong>Aufnehmen oder importieren.</strong> Wählen Sie Aufnehmen, um Ihr Mikrofon zu verwenden, oder Importieren, um eine Audiodatei zu öffnen. WAV ist ein geeignetes Ausgangsformat. Lassen Sie vor dem ersten Klopfimpuls eine kurze stille Pause und genügend Abstand zwischen den Klopfimpulsen, damit jede Antwort abklingen kann.</li>
+          <li><strong>Wählen Sie den nützlichen Teil aus.</strong> Der gelbe Wellenformbereich steuert die FFT-Auswahl. Bei Gespielte Note wählt der grüne Bereich das Notensegment aus. Ziehen Sie eine Kante, um einen Bereich zu vergrößern oder seine untere Griff zu verschieben.</li>
+          <li><strong>Überprüfen Sie die vorgeschlagenen Peaks.</strong> Automatische Beschriftungen sind Ausgangspunkte. Bestätigen Sie, dass ein Peak der physikalischen Mode entspricht, die Sie messen möchten, bevor Sie ihn in einer anderen Berechnung verwenden.</li>
+          <li><strong>Wiederholen und vergleichen.</strong> Behalten Sie Unterstützung, Tippposition, Mikrofonposition und Eingangsverstärkung konstant. Ein Ergebnis, das wiederholt wird, ist nützlicher als eine präzise erscheinende Zahl aus einem unsicheren Klopfimpuls.</li>
+        </ol>
+        <p>Beginnen Sie mit dem Standard-FFT-Profil. Für Tests des Instrumentenkörpers dämpfen Sie die Saiten, damit ihr Klingklang den Körperschall nicht überdeckt. Verwenden Sie einen sauberen Klopfimpuls, der die Aufnahme nicht überlastet; reduzieren Sie die Eingangspegel oder tippen Sie leichter, wenn die Wellenform an ihren größten Auslenkungen sichtbar abgeflacht ist.</p>
+
+        <details class="tl-accordion" id="reader_help_fft">
+          <summary>Modale Resonanzen und die FFT</summary>
+          <p>Ein Modus ist ein bestimmtes Schwingungsmuster. Eine Platte kann hauptsächlich entlang der Faser, quer dazu oder verdrehen. Jedes Muster hat eine natürliche Frequenz und eine Rate, mit der seine Schwingung abklingt. Wenn die Struktur stark nahe einer dieser natürlichen Frequenzen reagiert, sehen Sie eine modale Resonanz.</p>
+          <p>Bei einer zusammengebauten Gitarre interagieren Decke, Boden und der eingeschlossene Luftraum. Luft, Decke und Boden beschreiben das Hauptmerkmal einer Antwort; sie bedeuten nicht, dass die anderen Teile nicht mehr bewegt werden. Die modale Abstimmung nutzt diese Resonanzen, um strukturelle Änderungen zu leiten und zu überprüfen. Sie unterscheidet sich von der Saitenabstimmung und bedeutet nicht, dass jedes Instrument die gleichen Frequenzen haben sollte.</p>
+          <p>FFT bedeutet <strong>Schnelle Fourier-Transformation</strong>. Sie zerlegt einen Abschnitt des aufgenommenen Audiosignals in Frequenzanteile. Die Wellenform zeigt den zeitlichen Verlauf; das Spektrum zeigt, welche Frequenzen in diesem Abschnitt enthalten sind.</p>
+          <ul class="tl-list">
+            <li><strong>Frequenz, Hz:</strong> Zyklen pro Sekunde. Ein Peak nahe 200 Hz repräsentiert eine Komponente, die etwa 200 Mal pro Sekunde schwingt.</li>
+            <li><strong>Signalebene, dB:</strong> aufgezeichnetes Spektrum auf der gewählten Anzeigeskala, nicht kalibrierte Schalldruck. Ein höherer Peak ist stärker in dieser Aufnahme, nicht automatisch eine bessere Resonanz.</li>
+            <li><strong>Peak-Position:</strong> wo eine starke Frequenzkomponente erscheint. Ein einzelner Peak identifiziert nicht automatisch sein Schwingungsmuster; Unterstützung, Klopfposition und physikalische Beobachtungen helfen dabei, dies festzustellen.</li>
+            <li><strong>Peak-Breite:</strong> wie konzentriert die Antwort um ihren Peak ist. Ein isolierter, ausreichend aufgelöster Peak kann eine Bandbreitenabschätzung von Q unterstützen.</li>
+          </ul>
+          <p>Bei einer gespielten Note gehören viele Peaks zum Grundton und den Obertönen der Saite, oft nahe dem Zweifachen, Dreifachen oder mehrfachen Grundton. Sie sind nicht automatisch separate Körpermoden.</p>
+          <p>Obwohl das Diagramm Frequenzgang heißt, ist ein nur mit dem Mikrofon aufgenommenes Klopfspektrum keine kraftnormierte Frequenzgangfunktion. Ohne Messung der Eingangskraft kann es nicht die absolute Mobilität der Struktur angeben. Die Höhe des Peaks hängt auch von der Art des Klopfens und der Aufnahmesituation ab.</p>
+        </details>
+
+        <h3 id="reader_help_controls">Allgemeine Steuerelemente</h3>
+        <details class="tl-accordion">
+          <summary>Aufnahme, Wiedergabe und Vergleichsaufnahmen</summary>
+          <dl>
+            <dt>Messobjekt</dt><dd>Wählt den Analyseworkflow aus, nicht eine andere Aufnahme. Physikalische Schwingungsmuster sind die Resonanzen, die innerhalb dieses Workflows identifiziert werden.</dd>
+            <dt>Aufnahme / Import</dt><dd>Aufnehmen startet die Mikrofonaufnahme. Erlauben Sie den Mikrofonzugriff, wenn Sie danach gefragt werden. Drücken Sie die Schaltfläche erneut, um die Aufnahme abzuschließen. Importieren öffnet eine vorhandene Audiodatei.</dd>
+            <dt>Wiedergabe / Stopp</dt><dd>Wiedergabe startet die aktuelle Aufnahme von Beginn an, nicht nur den ausgewählten gelben oder grünen Bereich. Drücken Sie die Schaltfläche erneut, um anzuhalten. Stopp beendet die Aufnahme oder Audiowiedergabe. Schalten Sie den Ton separat aus.</dd>
+            <dt>Dateinamen-Auswahlliste</dt><dd>Zeigt die aktuelle Aufnahme an. Wählen Sie eine andere Aufnahmezeile, um sie zur aktuellen Aufnahme zu machen und das Menü zu schließen. Jede Aufnahme behält ihre Analyseauswahl bei; die Sichtbarkeitssteuerung blendet Vergleichskurven ein oder aus.</dd>
+            <dt>Speichern</dt><dd>Speichert die aktuelle Aufnahme, nicht die gesamte Aufnahmeliste. Siehe <a href="#reader_help_save">Speichern von Messungen</a> für das beibehalten wird.</dd>
+            <dt>Vergleichsaufnahmen löschen</dt><dd>Entfernt gespeicherte Vergleichsaufnahmen, behält jedoch die aktuelle Aufnahme bei. Es löscht keine Dateien, die bereits auf Ihrem Computer gespeichert wurden.</dd>
+          </dl>
+          <p>Aufnahme oder Import einer weiteren Aufnahme behält die vorherige Aufnahme für Vergleiche bei, innerhalb der Aufnahmelimit. Halten Sie die Erfassungsbedingungen und die Anzeigeskalierung vergleichbar. Ein höherer Verlauf bedeutet nicht automatisch besseres Holz oder ein reaktionsfreudigeres Instrument.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>Wellenform-Navigator, Graph und Modenzuordnungen</summary>
+          <ul class="tl-list">
+            <li><strong>Gelber Bereich:</strong> die FFT-Auswahl. Ziehen Sie an einer Kante, um den Bereich zu vergrößern, oder am unteren Griff, um ihn zu verschieben. Der Eingangsbereich muss auf Auswahl stehen, damit die FFT diesem Bereich statt der gesamten Aufnahme folgt.</li>
+            <li><strong>Grüner Bereich:</strong> der Notensegment im Gespielten Ton. Die Energieübertragungsgrafik beginnt ihre Zeitachse am Anfang dieses Auswahls.</li>
+            <li><strong>Peak / Q:</strong> wählen Sie einen erkannten Klopfimpuls im Navigator aus, um dessen Abklingverhalten zu untersuchen. Überprüfen Sie, welcher Klopfimpuls ausgewählt ist, bevor Sie Abklingabschätzungen vergleichen.</li>
+          </ul>
+          <p>Das Verschieben einer Auswahl ändert die Analyse, nicht die gespeicherte Audioaufnahme. Wenn Mittelung von Klopfimpulsen aktiviert ist, kann das Spektrum akzeptierte Klopfimpulse kombinieren, statt ein einzelnes Roh-FFT des markierten Bereichs anzuzeigen.</p>
+          <p>Halten Sie den Mauszeiger über das Spektrum, um Frequenz und Pegel zu lesen. Die Plot-Toolleiste bietet Zoom, Pan, Achsen zurücksetzen und Bildherunterladen. Zoom ändert, was Sie sehen, nicht den Analysebereich des Navigators.</p>
+          <p>Modenkarten und Markierungen identifizieren zugewiesene physikalische Modi. Siehe <a href="#reader_help_correct_peaks">Korrektur eines Peaks oder Moduszuordnung</a> für die Schritte zum Verschieben und Zurücksetzen. Ein <strong>Ziel</strong> ist eine Frequenz, die Sie untersuchen möchten, nicht eine gemessene Frequenz in der Aufnahme.</p>
+          <p>Der <strong>4DOF-Modell</strong>-Schalter fügt eine modellierte Antwort im Instrument-Modus hinzu. Er verwandelt diese Kurve nicht in gemessene Daten. Standardworkflows bieten ihre entsprechenden Rechneraktionen stattdessen.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_correct_peaks">
+          <summary>Korrektur einer Peak- oder Modus-Zuordnung</summary>
+          <p>Eine automatische Beschriftung kann auf den falschen Peak landen. Die Korrektur der Zuordnung teilt dem Tool mit, welchen Teil des gemessenen Spektrums verwendet werden soll; sie verschiebt nicht die tatsächliche Resonanz oder verändert Ihre Aufnahme.</p>
+          <h4>Ein gemessenen Modus verschieben</h4>
+          <ol class="tl-steps">
+            <li><strong>Überprüfen Sie Aufnahme und Auswahl.</strong> Wählen Sie die gewünschte Aufnahme und einen sauberen Wellenformbereich. Verwenden Sie Instrument, Plattenrohling oder Leistenrohling, um die benannten Modushervorhebungen im Hauptspektrum zu sehen.</li>
+            <li><strong>Finden Sie die Hervorhebung zur Korrektur.</strong> Passen Sie ihren Namen, wie Decke oder Längsmodus, mit der Modus-Karte unter dem Graphen an. Vergrößern Sie, wenn benachbarte Peaks schwer zu trennen sind.</li>
+            <li><strong>Ziehen Sie den Zeiger in die Nähe des Peaks.</strong> Greifen Sie den kurzen Verbindungspunkt neben dem farbigen Peakpunkt, nicht das Textfeld. Bewegen Sie ihn nach links oder rechts zum gewünschten Peak und lassen Sie los.</li>
+            <li><strong>Überprüfen Sie die neue Frequenz.</strong> Hervorhebung und Karte werden aktualisiert. Der Zeiger rastet nach Möglichkeit am benachbarten lokalen Maximum ein; andernfalls wird eine benachbarte Spektralprobe verwendet. Stellen Sie sicher, dass er am gewünschten Peak liegt.</li>
+          </ol>
+          <p>Das Verschieben des Textfelds bewegt nur die Beschriftung zur besseren Lesbarkeit; die zugewiesene Frequenz bleibt unverändert. Sie müssen 4DOF nicht aktivieren, um einen gemessenen Moduszeiger zu verschieben. Klicken Sie auf die Karte, einschließlich des Bleistiftsymbols, um sie zur Prüfung auszuwählen, anstatt ein Eingabefeld für die gemessene Frequenz zu öffnen. Wählen Sie im Messmodus Peak / Q, um diese Ansicht anzuzeigen.</p>
+          <h4>Zur automatischen Erkennung zurückkehren</h4>
+          <p>Wählen Sie im Instrument den kleinen Link <strong>Zurücksetzen</strong> auf der korrigierten Moduskarte. Wenn er ausgeblendet ist, aktivieren Sie <strong>4DOF-Modell</strong>; danach können Sie das Modell wieder deaktivieren. Dadurch wird die manuelle Zuordnung für diesen Modus entfernt und das aktuelle automatische Ergebnis wiederhergestellt. Die Aufnahme bleibt erhalten und ein separates Ziel wird nicht gelöscht.</p>
+          <p>Das Zurücksetzen der Karte ist derzeit bei Platten- und Leistenrohlingen nicht sichtbar. Sie können diese Zuordnungen durch Verschieben der Zeiger korrigieren. Zurücksetzen im Einstellungsdialog stellt die FFT-Einstellungen wieder her; es setzt nicht die Moduszuordnung zurück.</p>
+          <h4>Ein Ziel festlegen, ohne die Messung zu ändern</h4>
+          <p>Im Instrument mit aktiviertem 4DOF-Modell können Sie mit <strong>Ziel festlegen</strong> eine Frequenz für einen modellierten Was-wäre-wenn-Vergleich eingeben. Geben Sie die Zielfrequenz ein und drücken Sie die Eingabetaste oder verlassen Sie das Feld. Drücken Sie Escape, um die Bearbeitung abzubrechen. Um ein Ziel zu entfernen, leeren Sie das Feld und drücken Sie die Eingabetaste. Keine dieser Aktionen weist den gemessenen Peak neu zu.</p>
+          <h4>Ein anderen Peak im Peak / Q inspizieren</h4>
+          <p>Wählen Sie den gewünschten Klopfimpuls, klicken Sie dann auf einen Peak-Punkt oder verwenden Sie die Pfeile für den vorherigen und nächsten Peak. Dies ändert den inspizierten Peak, ändert jedoch nicht die Beschriftung Luft, Decke oder Boden. Für Platten- oder Leistenrohlinge bleibt auch eine bestätigte Längsmodus-Zuordnung unverändert. Um diese Bestätigung zu ersetzen, wählen Sie den korrekten Peak und wählen Sie <strong>Verwenden Sie … Hz als Längsmodus</strong> neben der Rohling-Zusammenfassung. <strong>Längsmodus löschen</strong> entfernt die Bestätigung.</p>
+          <p>Wenn der erwartete Peak nicht sichtbar ist, überprüfen Sie den Frequenzbereich, den ausgewählten Klopfimpuls, die Unterstützung und die Klopfimpuls-Position. Eine manuelle Zuordnung kann eine Resonanz nicht wiederherstellen, die die Aufnahme nicht deutlich erfasst hat.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>Mikrofon- und FFT-Einstellungen</summary>
+          <p>Öffnen Sie Einstellungen über die Spektrum-Werkzeugleiste. Beginnen Sie mit Standard und ändern Sie bei der Untersuchung einer Messung jeweils nur eine Einstellung.</p>
+          <dl>
+            <dt>Audio-Eingang / Aktualisieren</dt><dd>Wählen Sie das Mikrofon; aktualisieren Sie die Liste nach dem Anschließen eines anderen Eingangs. Neue Aufnahmen verlangen Echo-Kompression, Rauschunterdrückung und automatische Lautstärkeregelung aus. Ein Browser oder Gerät kann eine nicht unterstützte Einstellung ignorieren, daher verwenden Sie konsistente Eingangslautstärke und Aufnahmebedingungen.</dd>
+            <dt>Eingangsbereich</dt><dd>Analysieren Sie den ausgewählten FFT-Bereich oder die gesamte Aufnahme.</dd>
+            <dt>Fenster / Auflösung</dt><dd>Legen Sie die Gewichtung und FFT-Länge fest. Eine feinere Frequenzgrid ist keine Substitution für eine lange, saubere Aufnahme.</dd>
+            <dt>Klopfimpuls-Mittelung / FFT-Mittelung</dt><dd>Die Mittelung von Klopfimpulsen kombiniert die Spektren erkannter Klopfimpulse. Die FFT-Mittelung kombiniert wiederholte FFT-Aktualisierungen. Dies sind getrennte Einstellungen.</dd>
+            <dt>Glättung</dt><dd>Glättet das angezeigte Spektrum. Lassen Sie es aus, wenn Sie eng beieinander liegende Peaks genau untersuchen, damit ihre Erscheinung nicht verschmolzen wird.</dd>
+            <dt>Anzeige- und Achsen-Einstellungen</dt><dd>Steuern Sie Bereich und Skalierung des Diagramms. Halten Sie beides beim Vergleich von Kurven konstant.</dd>
+            <dt>Zurücksetzen / Fertig</dt><dd>Zurücksetzen stellt die FFT-Standardwerte wieder her; es erzeugt keine leere Aufnahme. Fertig schließt die Einstellungen.</dd>
+          </dl>
+        </details>
+        <details class="tl-accordion" id="reader_help_tone">
+          <summary>Tongenerator und Chladni-Muster</summary>
+          <p>Schalten Sie <strong>Ton</strong> ein, dann bewegen Sie den Zeiger über das Haupt-Spektrum, um einen Sinuston bei dieser Frequenz zu hören. Bei einem Touchscreen bewegen Sie Ihren Finger über das Spektrum; das Loslassen hält die letzte Frequenz. Während Ton aktiviert ist, steuert eine Berührungsschwenkung die Frequenz statt die Panierung. Schalten Sie Ton aus, wenn Sie fertig sind.</p>
+          <p>Für Chladni-Musterarbeit verbinden Sie einen geeigneten Bluetooth-Lautsprecher mit Ihrem Gerät und wählen ihn als Audioausgabe aus. Er benötigt genügend Ausgangsleistung bei der getesteten Frequenz, um die Platte zu erregen. Ein Verstärker und ein Erreger können ebenfalls verwendet werden. Die App liefert den Ton; das physikalische Muster bildet sich auf der Platte, nicht auf dem Bildschirm.</p>
+          <p>Bei einem Chladni-Test bewegen sich eine leichte Streuung getrockneter Kräuter, Glitter oder feinen Sandes von stark schwingenden Bereichen weg und sammeln sich nahe den Knotenlinien, wo die Platte am wenigsten bewegt wird. Dies macht das Schwingungsmuster sichtbar. Wählen Sie ein Material, das die Oberfläche nicht kratzt oder verschmutzt, besonders bei Tests an einem fertigen Instrument.</p>
+          <p>Unterstützung und Anregung sind wichtig: das Anbringen eines Treibers oder das Hinzufügen von Masse kann die Antwort ändern. Beginnen Sie mit niedriger Lautstärke. Das Hören des Tons ist keine Bestätigung eines Modus; beobachten Sie die physikalische Reaktion. Halten Sie Tonwiedergabe außerhalb von Klopfimpuls-Aufnahmen, es sei denn, es ist bewusst Teil des Tests. Siehe <a href="https://newt.phys.unsw.edu.au/music/guitar/guitarchladni.html">UNSW-Erklärung der Chladni-Muster für Gitarrenplatten</a>.</p>
+        </details>
+
+        <h3 id="reader_help_modes">Verwendung jeder Modus</h3>
+        <details class="tl-accordion" id="reader_help_instrument">
+          <summary>Instrument</summary>
+          <p>Verwenden Sie Instrument, um die Hauptkörperschwingungen zu lokalisieren und zu vergleichen, wie sie sich ändern. Aufnehmen getrennter Einschläge mit gedämpften Saiten, wobei die Unterstützung und Position des Mikrofons konstant bleiben.</p>
+          <ol class="tl-steps">
+            <li>Untersuchen Sie die vorgeschlagenen Luft-, Decke- und Boden-Frequenzen im Vergleich zu den sichtbaren Peaks und Ihrem Wissen über das Instrument.</li>
+            <li><a href="#reader_help_correct_peaks">Korrigieren Sie eine Zuordnung mit dem Diagrammzeiger</a> wenn nötig. Reale Moden sind gekoppelt; ein starker Peak ist nicht unbedingt die gewünschte Mode.</li>
+            <li>Verwenden Sie den Ton mit geeigneter Anregungsausrüstung, um eine Frequenz zu untersuchen. Beobachten Sie die physikalische Reaktion, anstatt sich allein auf den Ton zu verlassen.</li>
+            <li>Vergleichen Sie wiederholte Einschläge oder eine andere Aufnahme, bevor Sie zu einem Schluss kommen.</li>
+          </ol>
+          <p>Das optionale 4DOF-Modell passt ein vereinfachtes gekoppeltes Modell an die zugewiesenen Frequenzen an. Ziele erkunden eine vorgeschlagene Änderung; sie sind keine Messungen oder Anweisungen zum Entfernen von Material. Fragen Sie, ob eine Intervention die beabsichtigte Resonanz bewegt hat, und was sonst noch mit ihr bewegt wurde.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_played_note">
+          <summary>Gespielte Note</summary>
+          <p>Verwenden Sie „Gespielte Note“, um zu untersuchen, wie eine Note entsteht und abklingt, besonders wenn ein hörbarer Effekt im Klopfspektrum nicht deutlich ist. Nehmen Sie eine saubere Note mit ausreichend Zeit zum Abklingen auf. Halten Sie Zupfposition und Anschlag möglichst gleich und dämpfen Sie die anderen Saiten für einen kontrollierten Vergleich.</p>
+          <ol class="tl-steps">
+            <li>Platzieren Sie die grüne Region um die Note, die Sie untersuchen möchten.</li>
+            <li>Überprüfen Sie die erkannte Note und korrigieren Sie die Beschriftung, falls der Grundton falsch erkannt wurde.</li>
+            <li>Lesen Sie die Energieübertragung zusammen mit der Wiedergabe ab. Sie zeigt den Grundton, den zweiten und dritten Teilton sowie verfügbare Körperfrequenzverläufe an.</li>
+            <li>Verwenden Sie die Legende, um Verläufe auszublenden, die den Vergleich nicht unterstützen. Das Verschieben der grünen Auswahl bewahrt diese Sichtbarkeitsauswahlen.</li>
+          </ol>
+          <p>Die Zeitachse und die Werte unter dem Mauszeiger zeigen die seit Beginn der grünen Auswahl verstrichene Zeit. Achten Sie auf Schwebungen, einen abrupt verschwindenden Teilton oder ein Abklingen, das sich von benachbarten Noten unterscheidet. Wiederholen Sie die Aufnahme, um zu prüfen, ob das Verhalten bestehen bleibt.</p>
+          <p>Trotz ihres Namens misst die Energieübertragung nicht direkt die Energie, die von der Saite in eine Körperschwingung fließt. Sie verfolgt das Signal in der Nähe ausgewählter Frequenzen. Ein nahe gelegener Saitenanteil und eine Körperschwingung können sich überlappen; verwenden Sie die Ansicht zur Untersuchung und leiten Sie aus einer einzelnen Kurve keine Ursache ab.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_plate">
+          <summary>Plattenholz</summary>
+          <p>Verwenden Sie „Plattenrohling“, um Biegemoden in einer Deck- oder Bodenplatte zu identifizieren, bevor eine Material- oder Dickenberechnung durchgeführt wird. Stützen und anregen Sie die Probe, damit die interessierende Mode sich bewegen kann; das Halten der Probe an der Stelle, an der diese Mode stark bewegt wird, kann ihre Antwort unterdrücken.</p>
+          <ol class="tl-steps">
+            <li>Aufnehmen oder Importieren der Platten-Klopfimpulse.</li>
+            <li>Untersuchen Sie Längs-, Quer- und Torsionsmodus. Der Längsmodus beschreibt die Biegung entlang der Faser, der Quermodus die Biegung quer zur Faser und der Torsionsmodus die von der Plattenberechnung verwendete Verdrehung.</li>
+            <li>Bestätigen Sie die Zuordnungen aus dem physikalischen Test, nicht nur die Reihenfolge oder Höhe der Peaks.</li>
+            <li>Wählen Sie „Messungen hinzufügen“ und geben Sie die Probenlänge, -breite, -dicke und -masse ein. „Anwenden“ speichert sie mit diesem Aufnahme; „Messungen bearbeiten“ öffnet denselben Editor erneut.</li>
+            <li>Öffnen Sie den Platten-Dickenrechner, um die Messungen in die Berechnung einzubringen.</li>
+          </ol>
+          <p>Messen Sie die tatsächliche Probe. Eine falsche Dicke oder Modenzuordnung kann zu einer plausiblen, aber falschen Materialabschätzung führen. Eine geformte, verstärkte oder montierte Deckplatte kann nützliche Resonanzen aufweisen, die untersucht werden können, ist aber nicht äquivalent zum rechteckigen Proben, das für die Rohlingberechnung verwendet wird.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_brace">
+          <summary>Leistenholz</summary>
+          <p>Verwenden Sie Leistenrohling, um das Holz zu charakterisieren, aus dem Sie Leisten schneiden werden, nicht um die fertigen Leistenabmessungen festzulegen. Beginnen Sie mit einer vernünftig gleichmäßigen rechteckigen Probe und lassen Sie sie frei genug biegen, um den Längsbiegemodus zu zeigen.</p>
+          <ol class="tl-steps">
+            <li>Aufnehmen oder Importieren der Einschläge. Die ursprüngliche Anzeige erstreckt sich bis 500 Hz; die automatische Längssuche liegt zwischen 100 und 500 Hz, kein Regel für jede Probe.</li>
+            <li>Überprüfen Sie den vorgeschlagenen Längspeak. Ein starker, schmaler Peak ist ein Kandidat, keine physikalische Bestätigung.</li>
+            <li>Wählen Sie Messungen hinzufügen und geben Sie Länge, Breite, Höhe in Biegerichtung und Masse der Probe ein.</li>
+            <li>Wählen Sie neben der Rohlingszusammenfassung … Hz als Längsmodus verwenden, um die vorgeschlagene Frequenz zu bestätigen. Für eine genauere Untersuchung wechseln Sie zu Peak / Q, wählen einen sauberen Einschlag und einen Peak aus und bestätigen ihn dort.</li>
+            <li>Überprüfen Sie Dichte, Längsmodul und Schallgeschwindigkeit. Mit dem Abgleich in Biegesteifigkeit fahren Sie mit den Leisten fort, die Sie herstellen möchten.</li>
+          </ol>
+          <p>Sie können Messungen bearbeiten, die bestätigte Längszuordnung löschen oder eine andere Frequenz bestätigen. Behalten Sie keine Zuordnung bei, nur weil sie einen vernünftigen Modul ergeben hat. Diese Schätzung benötigt einen Längsbiegemodus, nicht die drei Plattenfrequenzen. Sie legt nicht die Festigkeit oder Langzeit-Sicherheit einer fertigen Leiste fest.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_peak">
+          <summary>Peak / Q</summary>
+          <p>Verwenden Sie „Peak / Q“, um eine Resonanz und wie sicher deren Breite und Abklingen gemessen werden können, zu untersuchen. Starten Sie von jeder Analyseansicht aus. Für die Rohlingcharakterisierung identifiziert „Messungen hinzufügen“ das Probenstück hier; es ist nicht notwendig, durch Plattenrohling oder Leistenrohling zu wechseln.</p>
+          <ol class="tl-steps">
+            <li>Wählen Sie einen sauberen Klopfimpuls im Wellenform-Navigator aus, mit Platz danach, um die Antwort zu beobachten.</li>
+            <li>Wählen Sie einen Peakpunkt aus, oder verwenden Sie die vorherige und nächste Peak-Steuerung.</li>
+            <li>Lesen Sie Frequenz, Bandbreite und spektrales Q auf der linken Seite ab.</li>
+            <li>Untersuchen Sie die isolierte Antwort und die Abklinganpassung auf der rechten Seite, dann wiederholen Sie dies für einen anderen Klopfimpuls.</li>
+          </ol>
+          <h4>Lesen Sie die beiden Graphen zusammen</h4>
+          <p>Bandbreite ist die Resonanzbreite bei 3 dB unterhalb des Peaks. Spektrales Q ist die Peakfrequenz geteilt durch diese Bandbreite. Ein schmalerer Peak hat ein höheres Q, vorausgesetzt, der Peak und beide Bandbreitenüberschneidungen sind aufgelöst.</p>
+          <p>Auf der rechten Seite ist der blaue Verlauf der ausgewählte Klopfimpuls, der um den ausgewählten Resonanzpunkt gefiltert ist, nicht der volle Frequenz-WAV. Solides Gold ist seine Amplitudenhülle. Gestricheltes Gold ist eine exponentielle Abnahme, die an einen nutzbaren Teil dieser Antwort angepasst wurde. Vertikale Markierungen identifizieren das Anpassungsintervall, wenn eine Anpassung verfügbar ist.</p>
+          <p>Die Amplitudenskala ist relativ, nicht physikalische Verschiebung oder kalibrierte Schalldruck. Eine Anpassung, die über den beobachteten Verlauf hinausgeht, ist eine Projektion, nicht mehr aufgezeichnete Daten. Je nach Einstellungen kann das Spektrum akzeptierte Klopfimpulse mitteln; der Abklingvorgang gehört zum ausgewählten Klopfimpuls.</p>
+          <h4>Was das Ergebnis bedeutet</h4>
+          <p>Bei gleicher Frequenz bedeutet ein höheres Q im Allgemeinen ein langsameres Abklingen. Es ist weder ein Maß für die Holzqualität noch eine direkte Vorhersage der Dauer jeder gespielten Note. Bei einem Klopftest ist der nützliche Vergleich, ob eine bestimmte Resonanz nach einer Änderung stärker oder schwächer gedämpft ist und ob sich das Ergebnis wiederholen lässt.</p>
+          <p>Die Abklinganalyse sucht nach einem nutzbaren Rückgang nach dem Maximum der Hülle, schätzt Hintergrundrauschen aus geeigneten ruhigen Bereichen und vermeidet das Anpassen des Schwanzes zu nahe am Rauschen. Sie prüft benachbarte Peaks und Empfindlichkeit gegenüber Isolierbandbreite. Ohne einen geeigneten ruhigen Referenzbereich ist die Anpassung vorläufig; ein kurzer, kontaminierter oder instabiler Verlauf kann keine vertrauenswürdige Schätzung unterstützen.</p>
+          <p>Lassen Sie mehr Abstand zwischen den Klopfimpulsen, reduzieren Sie das Hintergrundrauschen und prüfen Sie einen anderen Klopfimpuls, statt ein Ergebnis zu erzwingen. Der Export der Peakdaten enthält den ausgewählten Peak und die verfügbaren Nachweise, einschließlich des Q-Werts aus der Abklinganalyse und der Anpassungsdiagnosen. Abweichungen zwischen spektralem Q und Abkling-Q sollten untersucht werden; wählen Sie nicht einfach den attraktiveren Wert.</p>
+          <h4>Charakterisierter Rohling</h4>
+          <p>„Messungen hinzufügen“ öffnet denselben Editor, der auch im Plattenrohling und Leistenrohling verwendet wird, auch wenn Sie hierher aus dem Instrument gekommen sind. Identifizieren Sie das Probenstück als Platten- oder Leistenrohling und geben Sie seine Abmessungen und Masse ein. „Ändern“ ermöglicht die Korrektur eines vorhandenen Probenstyps; „Anwenden“ löscht eine inkonsistente Längsmodus-Bestätigung. „Abbrechen“ belässt die gespeicherten Messungen und Bestätigung unverändert. Weder Aktion ändert die Analyseansicht.</p>
+          <p>Bestätigen Sie den ersten Längsbiegemodus der Probe mit <strong>… Hz als Längsmodus verwenden</strong>. Die Zusammenfassung zeigt die berechnete longitudinale Schallgeschwindigkeit und den dynamischen Elastizitätsmodul in Faserrichtung. Erweitern Sie sie für Dichte und bei Leistenrohlingen für das Proben-EI. Q ist kein Eingabewert für diese Schätzungen; ein ausgewählter Peak und sein Q allein reichen nicht aus.</p>
+          <p>Die Plattenabschätzung verwendet das frei-frei gelagerte Rechteckplattenmodell des Plattendickenrechners mit der Länge entlang der Faserrichtung. Der Längsmodus allein unterstützt nur die longitudinale Abschätzung; Quer- und Torsionsmodus bleiben für die vollständige Dickenberechnung erforderlich. Abmessungen einer fertigen Gitarre oder ein beliebiger Körperpeak charakterisieren das Holz nicht. Verwenden Sie eine geeignete Rohlingsprobe und überprüfen Sie den Modus physisch.</p>
+        </details>
+
+        <h3 id="reader_help_connections">Verwenden Sie die Messungen in anderen Tools</h3>
+        <details class="tl-accordion">
+          <summary>Was jede Rechnerübertragung mit sich bringt</summary>
+          <p>Verwenden Sie die Rechneraktion für den aktuellen Workflow, und überprüfen Sie die übertragenen Eingaben. Eine Übertragung liefert Eingaben, nicht eine kontinuierliche Verbindung, die zwei Tools synchronisiert. Sie enthält nicht die Audioaufnahme.</p>
+          <h4>Instrument zum 4-DOF-Modell</h4>
+          <p>Bestätigen Sie Luft, Decke und Boden und aktivieren Sie dann das 4DOF-Modell, um das vereinfachte gekoppelte Modell anzupassen. <strong>Im 4DOF-Modell öffnen</strong> überträgt die verfügbaren angepassten Parameter in das spezialisierte Werkzeug. Ein gelöstes Was-wäre-wenn-Zielmodell hat Vorrang vor der Ausgangsanpassung; prüfen Sie daher, welches Szenario Sie übertragen möchten. Ohne Anpassung öffnet der Link das Werkzeug ohne angepasste Parameter.</p>
+          <p>Ein Fit lässt Sie modellierte Änderungen untersuchen. Es misst die Massen und Steifigkeiten des Instruments nicht unabhängig.</p>
+          <h4>Leistenrohling zur Plattendicke</h4>
+          <p><strong>Öffnen im Plattendicke-Rechner</strong> sendet bestätigte Längsmoduswerte, wenn verfügbar, andere kompatible Plattenfrequenzen und die von Ihnen angewendeten Messungen. Körperresonanzen werden nicht als Quer oder Torsion umbenannt. Ohne Messungen werden nur verfügbare Frequenzen gesendet. Standardeinstellungen am Ziel sind keine Messungen Ihres Leistenrohlings.</p>
+          <p>Der Rechner schätzt Dichte, Längs- und Quermodul, ihr Verhältnis und den Schubmodul, der von seinem Plattenmodell verwendet wird. Sie geben die beabsichtigten Körperabmessungen und die Zielresonanzfrequenz an, um Dicke und projizierte Masse zu berechnen. Die Übertragung wählt nicht das richtige Ziel für Ihr Instrument aus.</p>
+          <h4>Leistenrohling zu Leiste-Rechner</h4>
+          <p><strong>Im Leistenrechner öffnen</strong> verwendet die bereits hier eingegebenen Messungen. Mit einem bestätigten Längsmodus und gültigen Messungen werden die berechnete Dichte und der Längsfasermodul übertragen. Andernfalls werden nur verfügbare Frequenzen gesendet. Geben Sie im Zielwerkzeug die Geometrie der Leiste ein, die Sie schneiden möchten; die geprüften Rohlingsabmessungen werden nicht stillschweigend als fertige Leistenabmessungen verwendet.</p>
+          <h4>Charakterisierter Leistenrohling zur Biegesteifigkeit</h4>
+          <p>Geben Sie in Leistenrohling oder Peak / Q die Probenmessungen ein und bestätigen Sie <strong>… Hz als Längsmodus verwenden</strong>. <strong>In Biegesteifigkeit abgleichen</strong> überträgt diese bestätigte Frequenz, Probenabmessungen und Masse, die Quellenbezeichnung sowie berechnete Dichte, Modul und Schallgeschwindigkeit.</p>
+          <p>Abgleichen vergleicht den Entwurf mit diesem Material und untersucht Anpassungen von Breite und Höhe. Prüfen Sie den Vorschlag vor der Anwendung. Das Zielwerkzeug berechnet EI aus Materialmodul und entworfener Geometrie; das EI des Rohlings ist nicht das EI jeder daraus geschnittenen Leiste. Die Untersuchung eines anderen Peaks ersetzt nicht stillschweigend Ihre bestätigte Längsmoduszuordnung.</p>
+        </details>
+
+        <h3 id="reader_help_reference">Interpretation und Speicherung von Ergebnissen</h3>
+        <details class="tl-accordion" id="reader_help_save">
+          <summary>Speichern von Messungen</summary>
+          <p>Speichern gilt für die <strong>aktuelle Aufnahme</strong>, nicht für die gesamte Liste der Vergleichsaufnahmen.</p>
+          <p id="reader_save_help">Überprüfen Sie die verfügbare Speichern-Aktion, bevor Sie die Seite schließen. Speichern Sie auch Ihre Quell-Audio sowie alle Analyseergebnisse, die Sie benötigen.</p>
+          <p>Exportieren von Peak-Daten ist eine separate Analyse-Export, keine Ersetzung für das Speichern der Quell-Audio. Gespeicherter Browser-Status ist praktisch für das Wechseln zwischen Tools, sollte aber nicht Ihre einzige Kopie einer Messung sein. Speichern Sie die Aufnahmen, die Sie benötigen, bevor Sie löschen.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>Wenn ein Ergebnis nicht richtig aussieht</summary>
+          <dl>
+            <dt>Eine Mode scheint fehlend zu sein</dt><dd>Überprüfen Sie den sichtbaren Frequenzbereich, die Einschlagposition und die Stichprobenunterstützung. Eine automatische Beschriftung ist keine vollständige Inventarliste physikalischer Moden.</dd>
+            <dt>Einschläge wurden verpasst oder kombiniert</dt><dd>Untersuchen Sie das Wellenform und den ausgewählten Bereich. Eng beieinander liegende Einschläge, schwache Einschläge und Hintergrundereignisse können die Erkennung verwirren. Verwenden Sie saubere, getrennte Ereignisse und wiederholen Sie.</dd>
+            <dt>Frequenzänderungen zwischen Aufnahmen</dt><dd>Stellen Sie sicher, dass Sie die gleiche Resonanz ausgewählt haben, überprüfen Sie dann die Unterstützung, den Stichprobenzustand und die Analyseauswahl, bevor Sie die Differenz dem Instrument zuschreiben.</dd>
+            <dt>Q ändert sich viel stärker als Frequenz</dt><dd>Stellen Sie sicher, dass der Peak isoliert ist und die Aufnahme lang genug ist, um seine Breite und Dämpfung aufzulösen. Nahe gelegene Moden, Rauschen, Stützungsdämpfung und Einstellungen können Q beeinflussen, während die Frequenz stabil bleibt.</dd>
+            <dt>Eine Kurve ändert sich nach Einstellungsanpassungen.</dt><dd>Zurück zu Standard. Glättung und Anzeigenskalierung ändern, was leicht zu sehen ist, ohne eine Änderung im Instrument darzustellen.</dd>
+          </dl>
+        </details>
+        <details class="tl-accordion">
+          <summary>Wie die Zahlen berechnet werden</summary>
+          <p>Die FFT beschreibt den Frequenzinhalt des ausgewählten Signals. Mittelung von Klopfimpulsen kombiniert akzeptierte Spektren im Leistungsbereich. Die Standard-Klopfimpuls-Spektrumanalyse verwendet ein 400 ms Fenster mit 100 ms vor dem Einschalten. Das sind Analyse-Einstellungen, keine Behauptung, dass die Antwort 400 ms dauert.</p>
+          <p>Ein feineres FFT-Gitter kann helfen, einen Peak zwischen weit auseinanderliegenden Bins zu lokalisieren. Padding erstellt keine zusätzliche aufgezeichnete Dämpfung oder trennt Modi, die das verfügbare Signal nicht auflösen kann.</p>
+          <ul class="tl-list">
+            <li><strong>Spektrale Q:</strong> Spitzenfrequenz geteilt durch die -3 dB-Bandbreite.</li>
+            <li><strong>Dämpfungs-Q:</strong> pi &times; Frequenz &times; Amplituden-Zeitkonstante für eine exponentielle Dämpfung. Die Zeitkonstante ist die Zeit, um auf etwa 37 % der angepassten Ausgangsamplitude zu fallen, nicht die Zeit bis zum Verstummen.</li>
+            <li><strong>Leistenrohlingsdichte:</strong> Probenmasse geteilt durch rechteckiges Volumen, mit konsistenten Einheiten.</li>
+            <li><strong>Längsgerichtete Schallgeschwindigkeit:</strong> Quadratwurzel aus Modul geteilt durch Dichte, mit Modul in Pascal und Dichte in kg/m&sup3;. Dies ist eine geschätzte Materialwellengeschwindigkeit, nicht die Schallgeschwindigkeit in Luft oder eine direkte Reisezeitmessung.</li>
+          </ul>
+          <p>Spektrale und Dämpfungs-Q verwenden unterschiedliche Merkmale der Antwort, aber beide hängen von Analyseentscheidungen ab. Die Frequenzisolierung ändert das Signal, das für die Anpassung verwendet wird, daher ist die Übereinstimmung eine nützliche Kreuzkontrolle, keine vollständig unabhängige Beweis. Eine exponentielle Funktion nähert sich Null, erreicht sie nie exakt.</p>
+          <p>Abmessungen, Masse, Modidentität, Geometrie und Lagerbedingungen müssen dem Materialmodell entsprechen. Eine saubere Frequenzmessung kann keine falsche Dicke oder falsche Moden ausgleichen.</p>
+        </details>
+      </div>
+    </section>
+
+    <footer class="tl-footer" data-tool-footer></footer>
+  </div>
+
+  <dialog class="settings-dialog" id="settings_dialog" aria-labelledby="settings_title">
+    <form class="settings-dialog__panel" method="dialog">
+      <header class="settings-dialog__header">
+        <h2 id="settings_title">Einstellungen</h2>
+        <button class="ghost-btn btn-small icon-btn" type="submit" value="close" aria-label="Einstellungen schließen" title="Schließen">
+          <span aria-hidden="true">×</span>
+        </button>
+      </header>
+
+      <div class="settings-dialog__content">
+        <section class="settings-dialog__section" aria-labelledby="settings_audio_title">
+          <div class="settings-dialog__section-title">
+            <h3 id="settings_audio_title">Audioeingabe</h3>
+            <button class="ghost-btn btn-small" id="settings_audio_refresh" type="button">Aktualisieren</button>
+          </div>
+          <label class="settings-field">
+            <span class="settings-label-row">Eingabe<span class="settings-help" tabindex="0" data-tooltip="Wählen Sie die Mikrofon-Eingabe aus, die für die Aufnahme verwendet werden soll. Verwenden Sie Aktualisieren, nachdem Sie ein neues Gerät angeschlossen haben.">?</span></span>
+            <select id="settings_audio_input"></select>
+          </label>
+        </section>
+
+        <section class="settings-dialog__section" aria-labelledby="settings_fft_title">
+          <h3 id="settings_fft_title">FFT</h3>
+          <div class="settings-grid">
+            <label class="settings-field">
+              <span class="settings-label-row">Profil<span class="settings-help" tabindex="0" data-tooltip="Standard verwendet das aktuelle Baseline-Verhalten von ToneLab. Klassische FFT verwendet die Celestial-artigen Vergleichseinstellungen. Benutzerdefiniert erscheint automatisch, wenn Sie einzelne FFT-Steuerungen ändern.">?</span></span>
+              <select id="settings_fft_profile">
+                <option value="tonelab">Standard</option>
+                <option value="celestial">Klassische FFT</option>
+                <option value="custom">Eigene Angaben</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Eingabebereich<span class="settings-help" tabindex="0" data-tooltip="Auswahl analysiert den hervorgehobenen FFT-Slice. Vollständige Datei analysiert das gesamte geladene Wellenform.">?</span></span>
+              <select id="settings_fft_scope">
+                <option value="">Profilstandard</option>
+                <option value="selection">Auswahl</option>
+                <option value="full-file">Vollständige Datei</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Fenster<span class="settings-help" tabindex="0" data-tooltip="Wendet eine Gewichtungsfenster vor der FFT an. Hann ist der aktuelle ToneLab-Standard. Hamming entspricht näher der älteren Celestial-Vergleichsroute.">?</span></span>
+              <select id="settings_fft_window">
+                <option value="">Profilstandard</option>
+                <option value="hann">Hann</option>
+                <option value="hamming">Hamming</option>
+                <option value="rect">Rechteckig</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Auflösung<span class="settings-help" tabindex="0" data-tooltip="Legt die minimale FFT-Länge fest. Höhere Auflösung verengt die Bin-Abstände, aktualisiert aber langsamer.">?</span></span>
+              <select id="settings_fft_resolution">
+                <option value="">Profilstandard</option>
+                <option value="fast">Schnell (8k)</option>
+                <option value="balanced">Ausgeglichen (32k)</option>
+                <option value="fine">Fein (64k)</option>
+                <option value="very-fine">Sehr fein (128k)</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Glättung<span class="settings-help" tabindex="0" data-tooltip="Steuerung der post-FFT-Glättung des angezeigten Spektrums. Gauß-Bins glätten nach FFT-Bins. Dreieckig Hz glättet nach Frequenzbreite. Aus zeigt das rohe Anzeigespektrum.">?</span></span>
+              <select id="settings_fft_smoothing">
+                <option value="gaussian-bins">Gauß-Bins</option>
+                <option value="triangular-hz">Dreieckig Hz</option>
+                <option value="off">Aus</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Durchschnitt<span class="settings-help" tabindex="0" data-tooltip="Mittelt wiederholte FFT-Aktualisierungen. Die gleitende Mittelung glättet die letzten Spektren; die exponentielle Mittelung gewichtet neuere Eingaben stärker; Unbegrenzt behält alle Spektren seit dem Zurücksetzen bei.">?</span></span>
+              <select id="settings_fft_averaging">
+                <option value="off">Aus</option>
+                <option value="avg-4">4 Durchschnitte</option>
+                <option value="avg-8">8 Durchschnitte</option>
+                <option value="exp-80">Exponentiell 80%</option>
+                <option value="forever">Für immer</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Anzeigebereich<span class="settings-help" tabindex="0" data-tooltip="Legt den horizontalen Frequenzbereich fest, der im Haupt-Spektrum angezeigt wird. Klassische FFT verwendet eine engere 20-1000 Hz-Ansicht.">?</span></span>
+              <select id="settings_fft_display_range">
+                <option value="">Profilstandard</option>
+                <option value="mode-default">Modusstandard</option>
+                <option value="celestial">20-1000 Hz</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">dB-Skala<span class="settings-help" tabindex="0" data-tooltip="Steuert, wie Spektralbeträge in dB umgerechnet werden. Relativer Boden folgt der aktuellen ToneLab-Skalierung. Celestial fest verwendet einen festen Boden zum Vergleich mit der älteren Anzeige.">?</span></span>
+              <select id="settings_fft_db_scale">
+                <option value="">Profilstandard</option>
+                <option value="relative-floor">Relativer Boden</option>
+                <option value="celestial-fixed">Celestial fest</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Y-Achse<span class="settings-help" tabindex="0" data-tooltip="Skaliert die vertikale dB-Bereich automatisch auf das aktuelle Spektrum. Der feste Wert sperrt die Achse auf -100 bis -40 dB für Vergleiche.">?</span></span>
+              <select id="settings_fft_y_axis">
+                <option value="">Profilstandard</option>
+                <option value="auto">Auto</option>
+                <option value="celestial-fixed">-100 bis -40 dB</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">X-Skala<span class="settings-help" tabindex="0" data-tooltip="Linear hält die Frequenzabstände proportional in Hz bei. Log gibt niedrigeren Frequenzen mehr visuellen Platz.">?</span></span>
+              <select id="settings_fft_x_scale">
+                <option value="">Profilstandard</option>
+                <option value="linear">Linear</option>
+                <option value="log">Log</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">X Min<span class="settings-help" tabindex="0" data-tooltip="Überschreibt die minimale Frequenz, die im FFT-Plot angezeigt wird. Leer lassen für den aktuellen Modusstandard.">?</span></span>
+              <input id="settings_fft_x_min" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">X Max<span class="settings-help" tabindex="0" data-tooltip="Überschreibt die maximale Frequenz, die im FFT-Plot angezeigt wird. Leer lassen für den aktuellen Modusstandard.">?</span></span>
+              <input id="settings_fft_x_max" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Y Min<span class="settings-help" tabindex="0" data-tooltip="Überschreibt die untere dB-Grenze im FFT-Plot. Negative Werte sind erlaubt. Leer lassen für Auto.">?</span></span>
+              <input id="settings_fft_y_min" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Y Max<span class="settings-help" tabindex="0" data-tooltip="Überschreibt die obere dB-Grenze im FFT-Plot. Negative Werte sind erlaubt. Leer lassen für Auto.">?</span></span>
+              <input id="settings_fft_y_max" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Gauß-Bins<span class="settings-help" tabindex="0" data-tooltip="Legt die Gaußsche Glättungsweite in FFT-Bins fest, wenn Gaußsche Glättung aktiviert ist. Größere Werte produzieren ein runderes, weniger spitzen Spektrum.">?</span></span>
+              <input id="settings_fft_smoothing_bins" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="8">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Dreieckig Hz<span class="settings-help" tabindex="0" data-tooltip="Legt die Glättungsweite in Hz fest, wenn die dreieckige Glättung aktiviert ist. Größere Werte mischen benachbarte Peaks aggressiver.">?</span></span>
+              <input id="settings_fft_smoothing_hz" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="1">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Linienbreite<span class="settings-help" tabindex="0" data-tooltip="Steuert die Linienbreite der gemessenen FFT-Kurve. Niedrigere Werte wirken schärfer. Höhere Werte lassen das Spektrum voller oder runder erscheinen.">?</span></span>
+              <input id="settings_fft_line_width" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="3">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Schlagsegment (ms)<span class="settings-help" tabindex="0" data-tooltip="Überschreibt die Länge des Schlaganalysefensters in Millisekunden. Leer lassen, um das Standardverhalten des Schlagsegments zu verwenden.">?</span></span>
+              <input id="settings_fft_tap_slice_window_ms" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Energieband (Hz)<span class="settings-help" tabindex="0" data-tooltip="Überschreibt die Bandbreite, die für Energieübertragungs-Messungen um den ausgewählten Peak verwendet wird. Lassen Sie leer, um die automatische Bandbreite zu verwenden.">?</span></span>
+              <input id="settings_fft_energy_band_width_hz" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+          </div>
+          <div class="settings-toggle-list" role="group" aria-label="FFT-Analyse-Umschalter">
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Schlagmittelung<span class="settings-help" tabindex="0" data-tooltip="Mittelt mehrere erkannte Schlagspektren vor der Darstellung und Modenerkennung. Dies kann rauschhafte Schläge stabilisieren, kann aber auch Peaks verbreitern.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_tap_averaging" type="checkbox">
+                <span class="toggle-label sr-only">Schlagmittelung</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Peak-Hold<span class="settings-help" tabindex="0" data-tooltip="Zeigt den höchsten Live-Preview-Spektrumpegel an, der bei jedem Frequenzbin während der Aufnahme erreicht wurde. Es wird zurückgesetzt, wenn die Aufnahme beginnt.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_peak_hold" type="checkbox">
+                <span class="toggle-label sr-only">Peak-Hold</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Parabolische Peak-Verfeinerung<span class="settings-help" tabindex="0" data-tooltip="Verfeinert die erkannte Peak-Frequenz zwischen FFT-Bins mit einer parabolischen Anpassung. Schalten Sie es aus, um rohe Bin-zentrierte Peak-Auswahlen zu untersuchen.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_peak_refine" type="checkbox">
+                <span class="toggle-label sr-only">Parabolische Peak-Verfeinerung</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">PolyMAX-Validierung<span class="settings-help" tabindex="0" data-tooltip="Zeigt an, ob erkannte Peaks mit stabilen PolyMAX-Kandidaten übereinstimmen. Nützlich zum Überprüfen verdächtiger Modi, aber nicht erforderlich für gewöhnliche FFT-Inspektion.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_polymax_validation" type="checkbox">
+                <span class="toggle-label sr-only">PolyMAX-Validierung</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="settings-dialog__footer">
+        <button class="ghost-btn btn-small" id="settings_fft_reset" type="button">Zurücksetzen</button>
+        <button class="primary-btn btn-small" id="settings_done" type="submit" value="close">Fertig</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=20260324a" defer></script>
+  <script src="../common/atmosphere.js?rev=20260324a" defer></script>
+  <script src="../plate_thickness/calculator.js?rev=20260927a" defer></script>
+  <script src="../common/solver_core.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/state.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/utils.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/audio.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/waveform.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/segmentation.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/fft_engine.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/fft_plot.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=20260324a" defer></script>
+  <script src="../common/4dof/model_core.js?rev=20260324a" defer></script>
+  <script src="../common/per_tab_tool_session.js?rev=20260723a" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js?rev=20260324a" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=20260324a" defer></script>
+  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/main.js?rev=20260324a"></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Sprache","currentLocale":"de","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/resonance_reader/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/resonance_reader/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/resonance_reader/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/resonance_reader/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

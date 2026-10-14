@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Espessura da placa | The Lab da Rick Molloy Guitars</title>
+  <link rel="stylesheet" href="../common/tool_footer.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/layout.css">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <meta name="description" content="Estime a espessura-alvo de um tampo ou fundo a partir das dimensões, massa, frequências dos modos de vibração e modo-alvo do instrumento pronto.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/pt/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/plate_thickness/">
+</head>
+
+<body data-plate-default-preset="obrien_om_ss">
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Abrir o menu do site">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Secções do site" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Espessura da placa</h1>
+          </div>
+          <div class="hero-actions">
+</div>
+        </div>
+      </section>
+
+      <section class="card-surface plate-tool-surface">
+        <main class="tl-content plate-thickness-page">
+          <section class="card pad tl-card tl-card-output plate-results-section">
+            <div class="plate-surface-header">
+              <div class="plate-surface-heading">
+                <h2>Resultados</h2>
+                <p class="small muted">Os resultados são atualizados automaticamente à medida que introduz as medições.</p>
+              </div>
+            </div>
+            <div class="results-grid plate-results-grid">
+              <div class="result-card result-card-primary">
+                <div class="label">Espessura calculada</div>
+                <div id="result_thickness" class="value tl-primary-result">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">Massa projetada da placa</div>
+                <div id="result_mass" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">Densidade ρ</div>
+                <div id="result_density" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>L</sub></div>
+                <div id="result_el" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>C</sub></div>
+                <div id="result_ec" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>L</sub> / E<sub>C</sub></div>
+                <div id="result_ratio" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">G<sub>LC</sub></div>
+                <div id="result_shear" class="value">—</div>
+              </div>
+            </div>
+            <p id="result_status" class="status">Live: computed from current inputs</p>
+          </section>
+
+          <section class="card pad tl-card tl-card-controls plate-inputs-section">
+            <div class="plate-surface-header">
+              <div class="plate-surface-heading">
+                <h2>Entradas</h2>
+                <p class="small muted">Introduza a especificação-alvo, a placa atual e os modos medidos.</p>
+              </div>
+              <div class="tl-action-row plate-action-row">
+                <button id="load_results" class="ghost-btn btn-small tl-save-action" type="button">Carregar JSON</button>
+                <button id="save_results" class="ghost-btn btn-small tl-save-action" type="button">Descarregar JSON</button>
+                <button id="reset_inputs" class="ghost-btn btn-small" type="button">Repor valores predefinidos</button>
+                <input id="load_results_file" type="file" accept="application/json,.json" hidden>
+              </div>
+            </div>
+
+            <div class="plate-preset-row">
+              <label class="plate-fit-field plate-fit-field-preset">
+                <span class="field-label">Predefinição</span>
+                <select id="body_preset">
+                  <option value="gore_medium_ss">Gore Medium SS</option>
+                  <option value="obrien_om_ss" selected>O'Brien OM SS</option>
+                  <option value="martin_om_ss">Martin OM SS</option>
+                  <option value="obrien_classical">O'Brien Classical</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="plate-input-grid plate-input-grid-regrouped">
+              <div class="input-block plate-input-block plate-input-block-target">
+                <h3 class="input-block__title">Especificação-alvo</h3>
+                <p class="small muted input-block__copy">Objetivos de projeto para a caixa e a resposta da placa acabada.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Frequência principal de toque pretendida (Hz)</span>
+                    <input type="number" step="0.1" min="20" data-field="target_freq" value="75">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Largura do bojo inferior (mm)</span>
+                    <input type="number" step="1" min="200" data-field="lower_bout" value="381">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Comprimento da caixa da guitarra (mm)</span>
+                    <input type="number" step="1" min="200" data-field="body_length" value="494">
+                  </label>
+                </form>
+              </div>
+
+              <div class="input-block plate-input-block plate-input-block-panel">
+                <h3 class="input-block__title">Placa atual</h3>
+                <p class="small muted input-block__copy">Medições da placa que está a avaliar neste momento.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Comprimento da placa (mm)</span>
+                    <input type="number" step="1" min="200" data-field="panel_length" value="555">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Largura da placa (mm)</span>
+                    <input type="number" step="1" min="200" data-field="panel_width" value="227">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Espessura da placa (mm)</span>
+                    <input type="number" step="0.1" min="1" data-field="panel_height" value="4.1">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Massa da placa (g)</span>
+                    <input type="number" step="0.1" min="10" data-field="panel_mass" value="211.4">
+                  </label>
+                </form>
+              </div>
+
+              <div class="input-block plate-input-block plate-input-block-modes">
+                <h3 class="input-block__title">Modos medidos</h3>
+                <p class="small muted input-block__copy">Leituras modais mais recentes da placa ou valores introduzidos manualmente.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Modo longitudinal ao veio f<sub>L</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="long_freq" value="74">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Modo transversal ao veio f<sub>C</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="cross_freq" value="109">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Modo de torção f<sub>T</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="twist_freq" value="42">
+                  </label>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <section class="tl-content tl-content-secondary">
+    <header class="card pad tl-card tl-card-info">
+      <h1>Calculadora da espessura-alvo da placa</h1>
+      <p class="tl-card-desc">Use esta ferramenta para estimar a espessura de um tampo ou fundo a partir das dimensões, massa e frequências de toque, para obter uma rigidez consistente e uma resposta acústica previsível.</p>
+      <p class="tl-card-desc">Esta calculadora baseia-se no livro Design de Gore &amp; Gilet (secções 4.5.2–4.5.3) e foi validada com as respetivas tabelas de referência.</p>
+      <details class="tl-accordion">
+        <summary>Visão geral e medições necessárias</summary>
+        <p class="tl-card-desc">A espessura não é o objetivo; a rigidez é. Uma das formas mais diretas de estimar a rigidez de uma placa de guitarra é medir as suas frequências modais.</p>
+        <div class="before-columns">
+          <div class="before-card">
+            <h3>Como utilizar esta ferramenta</h3>
+            <ol class="tl-steps">
+              <li>Prepare a placa para que fique lisa, retangular e com espessura uniforme.</li>
+              <li>Percuta a placa para identificar os modos longitudinal, transversal e de torção.</li>
+              <li>Introduza as suas medições nos controlos abaixo.</li>
+              <li>Reveja a espessura-alvo recomendada.</li>
+            </ol>
+          </div>
+          <div class="before-card">
+            <h3>Medições necessárias</h3>
+            <ul class="tl-list">
+              <li>Comprimento da caixa da guitarra e largura do bojo inferior (mm)</li>
+              <li>Comprimento, largura e espessura da placa (mm)</li>
+              <li>Massa da placa (g)</li>
+              <li>Frequências de toque: longitudinal, transversal e torção (Hz)</li>
+              <li>Frequência modal pretendida para o tampo ou fundo acabado (Hz)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="before-card">
+          <h3>Precisão e resolução de problemas</h3>
+          <p class="tl-card-desc">Meça a frequência fundamental de cada modo (uma FFT ajuda). Uma espessura irregular ou uma lixagem grosseira podem alterar as frequências de toque; aplainar ou raspar produz as leituras mais fiáveis.</p>
+          <p class="tl-card-desc">Se a espessura recomendada parecer invulgarmente fina, volte a medir as frequências de toque e compare-as com os exemplos do livro de Gore &amp; Gilet. Devem estar na mesma ordem de grandeza. Caso contrário, envie-nos os seus valores através do formulário abaixo e iremos analisá-los.</p>
+        </div>
+      </details>
+    </header>
+    <section class="card pad tl-card tl-card-info">
+      <h2>Como funciona o cálculo</h2>
+      <p class="tl-card-desc">Esta calculadora baseia-se em Gore &amp; Gilet, vol. 1 (secções 4.5.2–4.5.3), e nas tabelas de exemplo do livro Design. Converte a geometria, a massa e as frequências de toque da placa em propriedades de rigidez e determina a espessura correspondente à frequência modal pretendida.</p>
+
+      <div class="tl-eq-block">
+        <h3>Densidade (ρ)</h3>
+        <p class="small muted">Derivada da massa e das dimensões da placa em bruto.</p>
+        <div class="tl-equation">ρ =
+          <span class="tl-eq-frac"><span class="tl-eq-num">m</span><span class="tl-eq-den">h · l · w</span></span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Módulos de Young (E<sub>L</sub>, E<sub>C</sub>)</h3>
+        <p class="small muted">Rigidez ao longo e através do veio, calculada a partir da densidade, geometria e frequências de toque.</p>
+        <div class="tl-equation">
+          E = 0.94146 ·
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">ρ · l<sup>4</sup> · f<sup>2</sup></span>
+            <span class="tl-eq-den">h<sup>2</sup></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Módulo de cisalhamento (G<sub>LC</sub>)</h3>
+        <p class="small muted">Resistência à torção, obtida a partir do modo de torção.</p>
+        <div class="tl-equation">
+          G = 1.21585 ·
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">ρ · l<sup>2</sup> · w<sup>2</sup> · f<sup>2</sup></span>
+            <span class="tl-eq-den">h<sup>2</sup></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Espessura-alvo (h)</h3>
+        <p class="small muted">A espessura na qual a placa atingirá a frequência modal escolhida.</p>
+        <div class="tl-equation">
+          h =
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">0.95977 · f · a<sup>2</sup> · √ρ</span>
+            <span class="tl-eq-den">√(E<sub>L</sub> + (a/b)<sup>4</sup> · E<sub>C</sub> + (a/b)<sup>2</sup> · (0.02857 ·
+              E<sub>L</sub> + 1.12 · G<sub>LC</sub>))</span>
+          </span>
+        </div>
+      </div>
+
+      <p class="small muted">Dica para o URL: acrescente <code>?long=80&amp;cross=120&amp;twisting=45</code> para preencher previamente os modos ao partilhar resultados.</p>
+    </section>
+    <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="pt">
+  <h2>Espessura da placa</h2>
+  <p>Estime a espessura de um tampo ou fundo a partir das suas dimensões, massa e frequências dos modos de vibração para procurar uma rigidez consistente e uma resposta acústica previsível.</p>
+  <p>Esta calculadora converte a geometria, a massa e as frequências dos modos longitudinal, transversal e de torção da placa em propriedades de rigidez e numa espessura-alvo.</p>
+  <p>A espessura é apenas uma aproximação da rigidez. Medir cada placa permite responder à madeira que está à sua frente, em vez de copiar uma dimensão nominal.</p>
+  <ul>
+    <li>Introduza o comprimento, a largura, a espessura e a massa da placa, além das três frequências modais.</li>
+    <li>Introduza as dimensões da caixa da guitarra e a frequência principal de toque pretendida para a placa acabada.</li>
+  </ul>
+  <p>Use a espessura calculada como alvo inicial baseado em medições e confirme a resposta da placa à medida que remove material.</p>
+  <p class="small muted">Criada por Rick Molloy a partir dos métodos de propriedades de placas e espessura-alvo publicados por Trevor Gore e Gerard Gilet.</p>
+</section>
+          </section>
+        </main>
+      </section>
+
+      <footer class="tl-footer" data-tool-footer></footer>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js"></script>
+  <script src="../common/tool_footer_loader.js"></script>
+  <script src="../common/tool_document.js"></script>
+  <script src="../common/tool_document_file.js"></script>
+  <script src="../common/per_tab_tool_session.js"></script>
+  <script src="../common/offline_save_surface.js"></script>
+  <script src="calculator.js"></script>
+  <script src="plate_thickness_save_surface.js"></script>
+  <script src="../common/notebook_rpc_client.js" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_connection_client.js" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_save_client.js" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_restore_client.js" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_restore.js" data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js" data-feature="notebook"></script>
+  <script src="plate_thickness_save_modal.js" data-feature="notebook"></script>
+  <script src="plate_thickness_save_target.js"></script>
+  <script src="plate_thickness_save_snapshot.js"></script>
+  <script src="query_params.js"></script>
+  <script src="main.js"></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Idioma","currentLocale":"pt","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/plate_thickness/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/plate_thickness/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/plate_thickness/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/plate_thickness/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/plate_thickness/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/plate_thickness/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

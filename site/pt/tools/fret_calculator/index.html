@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculadora de trastes e compensação do rastilho | Trace a escala antes do corte</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/layout.css">
+  <meta name="description" content="Calcule as posições dos trastes e a compensação do rastilho para traçar uma escala ou conferir a geometria antes do corte ou da regulagem.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+</head>
+
+<body>
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Abrir menu do site">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Seções do site" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Trastes e compensação do rastilho</h1>
+          </div>
+          <div class="hero-actions">
+          </div>
+        </div>
+      </section>
+
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output">
+            <h2>Resultados</h2>
+            <div class="result-grid">
+              <article class="result-card">
+                <div class="label">Comprimento de escala</div>
+                <div id="summary_scale" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Recuo para clássica</div>
+                <div id="summary_classical" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Recuo da primeira corda de aço</div>
+                <div id="summary_steel_1" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Recuo da sexta corda de aço</div>
+                <div id="summary_steel_6" class="value">—</div>
+              </article>
+            </div>
+            <p id="result_status" class="status">Live: computed from current scale length</p>
+          </section>
+
+          <section class="card pad tl-card tl-card-output">
+            <h2>Posições dos trastes (temperamento igual)</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Traste</th>
+                    <th>Distância desde a pestana</th>
+                    <th>Distância entre trastes</th>
+                    <th>Distância restante até o rastilho</th>
+                  </tr>
+                </thead>
+                <tbody id="fret_rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card pad tl-card tl-card-output">
+            <h2>Compensação do rastilho</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Corda / tipo</th>
+                    <th>Recuo</th>
+                    <th>Da pestana ao rastilho</th>
+                  </tr>
+                </thead>
+                <tbody id="comp_rows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls">
+            <h2>Entradas</h2>
+            <div class="tl-control-stack">
+              <label class="field">
+                <span class="field-label">Comprimento de escala</span>
+                <input id="scale_input" type="number" min="400" max="1000" step="1" value="650">
+              </label>
+              <label class="field">
+                <span class="field-label">Unidades</span>
+                <select id="unit_select">
+                  <option value="mm" selected>mm</option>
+                  <option value="in">polegadas</option>
+                </select>
+              </label>
+              <div class="tl-action-row">
+                <button id="reset_btn" type="button">Restaurar padrões</button>
+              </div>
+            </div>
+            <p class="small muted">
+              As distâncias são medidas desde a borda da pestana. Os valores de compensação são ajustados a partir do modelo original.
+            </p>
+          </section>
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+          <section class="card pad tl-card tl-card-info">
+            <h2>Como funciona</h2>
+            <p class="tl-card-desc">
+              As posições dos trastes usam temperamento igual: cada semitom divide o comprimento da corda por <code>2^(1/12)</code>.
+              Os recuos do rastilho são ajustados a partir de uma referência de 650 mm: a guitarra clássica usa um recuo reto do rastilho, enquanto as cordas de aço usam valores separados para a primeira e a sexta corda.
+            </p>
+          </section>
+
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="pt">
+  <h2>Trastes e compensação do rastilho</h2>
+  <p>Calcule posições de trastes em temperamento igual e referências de recuo do rastilho ajustadas a partir de uma única medida do comprimento de escala.</p>
+  <p>Esta calculadora traça as posições dos trastes em temperamento igual e mostra valores de referência para o recuo do rastilho em instrumentos clássicos e com cordas de aço.</p>
+  <p>Uma referência clara ajuda a posicionar os trastes e estimar a posição do rastilho antes de cortar a escala ou instalar o cavalete.</p>
+  <ul>
+    <li>Informe o comprimento vibrante da corda desde a borda da pestana até a linha teórica do rastilho.</li>
+    <li>Escolha milímetros ou polegadas para as dimensões exibidas.</li>
+  </ul>
+  <p>Use as distâncias dos trastes como cotas de traçado e os recuos do rastilho como valores iniciais a confirmar no instrumento pronto.</p>
+  <p class="small muted">Criado por Rick Molloy.</p>
+</section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="main.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Idioma","currentLocale":"pt","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/fret_calculator/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/fret_calculator/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/fret_calculator/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/fret_calculator/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/fret_calculator/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

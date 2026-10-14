@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modèle à quatre degrés de liberté | Le laboratoire Rick Molloy Guitars</title>
+  <link rel="stylesheet" href="../common/tool_footer.css">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <link rel="canonical" href="https://rickmolloyguitars.com/fr/lab/tools/dof_model/">
+  <link rel="stylesheet" href="../common/theme_profile.css">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/dof_model/">
+</head>
+
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-row">
+        <div class="hero-controls-left">
+          <details class="hero-menu">
+            <summary class="hero-menu-trigger" aria-label="Ouvrir le menu du site">☰</summary>
+            <nav class="hero-menu-panel" aria-label="Sections du site" data-site-menu data-menu-profile="lutherieacademy"></nav>
+          </details>
+          <h1>Modèle à quatre degrés de liberté</h1>
+        </div>
+        <div class="hero-actions">
+          <button id="load_model" class="ghost-btn btn-small tl-save-action" type="button">Charger</button>
+          <button id="save_model" class="ghost-btn btn-small tl-save-action" type="button">Enregistrer</button>
+          <input id="load_model_file" type="file" accept="application/json,.json" hidden>
+<label class="toggle">
+            <input type="checkbox" id="toggle_overlay">
+            <span class="toggle-label">Comparer</span>
+            <span class="toggle-knob"></span>
+          </label>
+          <div class="mode-tabs" role="tablist">
+            <button class="tab-btn" data-order="1">1-DOF</button>
+            <button class="tab-btn" data-order="2">2-DOF</button>
+            <button class="tab-btn" data-order="3">3-DOF</button>
+            <button class="tab-btn tab-btn-active" data-order="4">4-DOF</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="card-surface">
+      <div class="plot-shell">
+        <div id="plot_dof" class="plot tl-resonance-primary-plot"></div>
+        <div id="plot_overlay" class="plot-overlay"></div>
+      </div>
+
+      <div class="dof-task-rail">
+        <div class="dof-task-tabs" role="tablist" aria-label="Mode de tâche DDL">
+          <button class="task-tab-btn task-tab-btn-active" data-task-mode="edit" type="button">Modifier le modèle</button>
+          <button class="task-tab-btn" data-task-mode="fit" type="button">Ajuster ma guitare</button>
+          <button class="task-tab-btn" data-task-mode="solve" type="button">Résoudre les cibles</button>
+        </div>
+        <button id="add_simple_source" class="task-tab-btn dof-add-peak-action" type="button">Ajouter des pics</button>
+      </div>
+
+      <div id="dof_cards_header" class="lfs-header dof-modes-header">
+        <div class="dof-cards-heading">
+          <h2 id="dof_cards_title">Modèle actuel</h2>
+          <p id="dof_cards_copy" class="muted small">Modification directe des paramètres de chaque degré de liberté.</p>
+        </div>
+      </div>
+
+      <div class="mode-grid" id="dof_cards">
+        <!-- populated by script -->
+      </div>
+
+      <div class="dof-task-parking" aria-hidden="true">
+        <div id="dof_fit_panel_home"></div>
+        <section id="dof_fit_panel" class="dof-fit-panel" aria-label="Ajuster le modèle aux fréquences cibles">
+          <div class="dof-fit-copy">
+            <h3>Ajuster ma guitare</h3>
+            <p class="muted small">Saisissez des cibles modales ou structurelles et ajustez le modèle à ces cibles.</p>
+          </div>
+          <div class="dof-fit-controls">
+            <label class="dof-fit-field">
+              <span>Air (Hz)</span>
+              <input id="fit_target_air" type="number" min="50" max="140" step="0.1" inputmode="decimal" placeholder="100">
+            </label>
+            <label class="dof-fit-field">
+              <span>Table (Hz)</span>
+              <input id="fit_target_top" type="number" min="120" max="240" step="0.1" inputmode="decimal" placeholder="185">
+            </label>
+            <label class="dof-fit-field">
+              <span>Fond (Hz)</span>
+              <input id="fit_target_back" type="number" min="180" max="300" step="0.1" inputmode="decimal" placeholder="230">
+            </label>
+            <label class="dof-fit-field">
+              <span>Masse effective de la table (g)</span>
+              <input id="fit_target_mass_top" type="number" min="5" max="120" step="0.1" inputmode="decimal" placeholder="43">
+            </label>
+            <label class="dof-fit-field">
+              <span>Raideur effective de la table (N/m)</span>
+              <input id="fit_target_stiffness_top" type="number" min="10000" max="150000" step="100" inputmode="decimal" placeholder="42700">
+            </label>
+            <label class="dof-fit-field">
+              <span>Masse effective du fond (g)</span>
+              <input id="fit_target_mass_back" type="number" min="20" max="180" step="0.1" inputmode="decimal" placeholder="94">
+            </label>
+            <label class="dof-fit-field">
+              <span>Raideur effective du fond (N/m)</span>
+              <input id="fit_target_stiffness_back" type="number" min="50000" max="400000" step="100" inputmode="decimal" placeholder="130000">
+            </label>
+            <label class="dof-fit-field">
+              <span>Volume de caisse (m³)</span>
+              <input id="fit_target_volume_air" type="number" min="0.01" max="0.025" step="0.0001" inputmode="decimal" placeholder="0.0141">
+            </label>
+            <label class="dof-fit-field">
+              <span>Diamètre de la rosace (mm)</span>
+              <input id="fit_target_area_hole_diam" type="number" min="50" max="120" step="0.1" inputmode="decimal" placeholder="83.6">
+            </label>
+            <label class="dof-fit-field dof-fit-range-field">
+              <span>Altitude</span>
+              <span class="dof-fit-range-value" id="fit_altitude_value">0 m</span>
+              <input id="fit_altitude" type="range" min="0" max="3000" step="10" value="0" aria-describedby="fit_altitude_value">
+            </label>
+            <button id="btn_fit_guitar" class="ghost-btn btn-small" type="button">Ajuster ma guitare</button>
+            <button id="btn_fit_clear" class="ghost-btn btn-small" type="button">Effacer</button>
+          </div>
+          <p id="fit_status" class="muted small dof-fit-status"></p>
+        </section>
+
+        <div id="dof_solve_panel_home"></div>
+        <section id="dof_solve_panel" class="dof-guided-panel" aria-label="Résoudre la recette cible">
+          <div class="dof-guided-copy">
+            <h3>Résoudre les cibles</h3>
+            <p class="muted small">Exécutez les cibles actuelles comme une recette hypothétique et examinez les modifications structurelles proposées.</p>
+          </div>
+          <label class="dof-guided-option">
+            <input id="fit_restrict_simple" type="checkbox" checked>
+            <span>Agrandir uniquement la rosace et augmenter les masses des plaques.</span>
+          </label>
+          <div class="dof-guided-actions">
+            <button id="btn_solve_targets" class="ghost-btn btn-small" type="button">Résoudre les cibles</button>
+            <button id="btn_reset_whatif" class="ghost-btn btn-small" type="button">Réinitialiser la comparaison hypothétique</button>
+          </div>
+          <div id="whatif_summary" class="delta-summary">
+            <h3>Recette hypothétique</h3>
+            <div class="delta-summary__body muted">Exécutez Résoudre les cibles pour voir les ajustements proposés.</div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <footer class="tl-footer" data-tool-footer></footer>
+  </div>
+
+  <script src="../vendor/plotly/plotly-basic.min.js" defer></script>
+  <script src="../common/atmosphere.js" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../common/tool_document.js" defer></script>
+  <script src="../common/tool_document_file.js" defer></script>
+  <script src="../common/per_tab_tool_session.js" defer></script>
+  <script src="../common/offline_save_surface.js" defer></script>
+  <script src="../common/dof_solver_adapter.js" defer></script>
+  <script src="../common/overlay_segments.js" defer></script>
+  <script src="../common/solver_core.js" defer></script>
+  <script src="../common/4dof/model_core.js" defer></script>
+  <script src="../common/4dof/whatif_recipe_summary.js" defer></script>
+  <script src="dof_save_surface.js" defer></script>
+  <script src="../common/notebook_rpc_client.js" defer data-feature="notebook"></script>
+  <script src="dof_notebook_connection_client.js" defer data-feature="notebook"></script>
+  <script src="dof_notebook_save_client.js" defer data-feature="notebook"></script>
+  <script src="dof_notebook_restore_client.js" defer data-feature="notebook"></script>
+  <script src="dof_notebook_restore.js" defer data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js" defer data-feature="notebook"></script>
+  <script src="dof_save_modal.js" defer data-feature="notebook"></script>
+  <script src="dof_save_target.js" defer></script>
+  <script src="dof_save_snapshot.js" defer></script>
+  <script>
+    window.ToneLabDofMessages = Object.freeze({
+      airDampingLabel: "Amortissement de l’air Rₐ",
+      airLabel: "Air",
+      altitudeLabel: "Altitude (m)",
+      alwaysBadge: "Toujours",
+      ambientTemperatureLabel: "Température ambiante (°C)",
+      backDampingLabel: "Amortissement Rᵦ",
+      backLabel: "Fond",
+      backMassLabel: "Masse mᵦ (g)",
+      backRadiatingAreaLabel: "Surface rayonnante Aᵦ (m²)",
+      backStiffnessLabel: "Raideur kᵦ (N/m)",
+      cavityVolumeLabel: "Volume de caisse (m³)",
+      drivingForceLabel: "Force d’excitation F (N)",
+      editCardsTitle: "Modèle actuel",
+      editCardsCopy: "Modification directe des paramètres de chaque degré de liberté.",
+      environmentLabel: "Environnement",
+      externalAlias: "Externe",
+      fitAirAlias: "Mode mesuré + caisse",
+      fitAirCopy: "Ajustez la résonance de l’air à partir du mode mesuré et des paramètres de caisse que vous connaissez déjà.",
+      fitBackCopy: "Ancrez le mode du fond avec la fréquence observée et les propriétés effectives du fond auxquelles vous vous fiez.",
+      fitBadge: "Ajuster",
+      fitCardsTitle: "Ajuster par système",
+      fitCardsCopy: "Utilisez les modes mesurés et les entrées connues pour déduire le modèle actuel.",
+      fitEnvironmentAlias: "Atmosphère + actions",
+      fitEnvironmentCopy: "Définissez l’altitude de mesure, lancez l’ajustement et effacez les entrées lorsque vous souhaitez recommencer.",
+      fitPlateAlias: "Mode mesuré + plaque",
+      fitTopCopy: "Ancrez le mode de la table avec la fréquence observée et les propriétés effectives de la table auxquelles vous vous fiez.",
+      inputsAlias: "Entrées",
+      movingAirMassLabel: "Masse d’air en mouvement (g)",
+      plotBaseTraceLabel: "Base 4 DDL",
+      plotComposedTraceLabel: "4 DDL + sources",
+      plotCurrentTraceLabel: "Actuel",
+      plotFrequencyAxisLabel: "Fréquence (Hz)",
+      plotLevelAxisLabel: "Niveau (dB)",
+      plotResponseUnavailable: "La réponse du modèle n’est pas disponible.",
+      plotTargetTraceLabel: "Cible",
+      saveConnectedLabel: "Enregistrer",
+      saveDefaultDisplayName: "Instrument",
+      saveDefaultNotebookName: "Carnet",
+      saveDialogLabel: "Enregistrer le modèle 4 DDL",
+      saveModelTitle: "Modèle à 4 DDL",
+      saveSummaryAirModeLabel: "Air T(1,1)₁",
+      saveSummaryBackModeLabel: "Fond T(1,1)₃",
+      saveSummaryFittedModelValueTemplate: "{order} DDL · ajusté aux cibles",
+      saveSummaryModelLabel: "Modèle",
+      saveSummaryModeledProvenance: "modélisé",
+      saveSummaryTopModeLabel: "Table T(1,1)₂",
+      saveDownloadLabel: "Enregistrer",
+      saveDownloadHint: "L’enregistrement dans le carnet n’est pas disponible ici. Téléchargez plutôt le modèle.",
+      saveSavedToNotebookTemplate: "Enregistré dans {notebookName}.",
+      sidesAreaLabel: "Surface des éclisses (m²)",
+      sidesDampingLabel: "Amortissement des éclisses",
+      sidesLabel: "Éclisses",
+      sidesMassLabel: "Masse des éclisses (g)",
+      sidesStiffnessLabel: "Raideur des éclisses (N/m)",
+      simpleSourceAmplitudeLabel: "Amplitude (m²/kg)",
+      simpleSourceAmplitudeTerm: "Amplitude",
+      simpleSourceFrequencyLabel: "Fréquence (Hz)",
+      simpleSourceNameLabel: "nom",
+      simpleSourcePeakLabel: "Pic",
+      simpleSourceRemoveLabel: "Supprimer",
+      simpleSourceResponsePeakLabel: "Pic de réponse",
+      simpleSourcesTraceLabel: "Sources simples",
+      solveAirAlias: "Mode cible + caisse",
+      solveAirCopy: "Définissez d’abord la cible d’air, puis ajustez les paramètres de caisse qui la déplacent le plus directement.",
+      solveBackCopy: "Définissez la cible du fond et les propriétés effectives du fond que le solveur doit respecter.",
+      solveBadge: "Résoudre",
+      solveCardsTitle: "Résoudre par système",
+      solveCardsCopy: "Définissez les cibles et les contraintes, puis examinez les modifications proposées.",
+      solveEnvironmentAlias: "Actions de la recette",
+      solveEnvironmentCopy: "Limitez la recette, résolvez le scénario hypothétique et examinez les modifications structurelles proposées.",
+      solvePlateAlias: "Mode cible + plaque",
+      solveTopCopy: "Définissez la cible de la table et les propriétés effectives de la table qui déterminent la modification recherchée.",
+      soundholeAreaLabel: "Surface de la rosace (m²)",
+      statusCompareUnavailable: "Le mode de comparaison n’est pas disponible.",
+      statusComparisonReset: "Comparaison hypothétique réinitialisée.",
+      statusEnterTargetFrequency: "Saisissez au moins une fréquence cible.",
+      statusFitApplied: "Ajustement appliqué.",
+      statusNotebookEventRestored: "Événement du carnet restauré.",
+      statusPackageLoaded: "Paquet JSON chargé.",
+      statusPackageLoadFailed: "Impossible de charger le paquet JSON.",
+      statusPackageDownloaded: "Paquet JSON téléchargé.",
+      statusSolveApplied: "Résoudre les cibles a été appliqué comme recette hypothétique.",
+      topDampingLabel: "Amortissement Rₜ",
+      topLabel: "Table",
+      topMassLabel: "Masse mₜ (g)",
+      topRadiatingAreaLabel: "Surface rayonnante Aₜ (m²)",
+      topStiffnessLabel: "Raideur kₜ (N/m)",
+      whatIfEmptyMessage: "Exécutez Résoudre les cibles pour voir les ajustements proposés.",
+      whatIfDecreaseTemplate: "Diminuer {field} de {amount} {unit}",
+      whatIfBackPlateMassLabel: "masse de la plaque de fond",
+      whatIfBackPlateStiffnessLabel: "raideur de la plaque de fond",
+      whatIfCavityVolumeLabel: "volume de caisse",
+      whatIfIncreaseTemplate: "Augmenter {field} de {amount} {unit}",
+      whatIfSoundholeAreaDeltaTemplate: " ({sign}{area} m²)",
+      whatIfSoundholeDiameterLabel: "diamètre de la rosace",
+      whatIfTargetLabel: "Cible",
+      whatIfTopPlateMassLabel: "masse de la table",
+      whatIfTopPlateStiffnessLabel: "raideur de la table"
+    });
+  </script>
+  <script src="main.browser.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Langue","currentLocale":"fr","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/dof_model/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/dof_model/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/dof_model/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/dof_model/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/dof_model/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/dof_model/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

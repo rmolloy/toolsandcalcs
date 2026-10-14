@@ -1,0 +1,54 @@
+{
+  "hideWhenEmpty": true,
+  "items": [
+    {
+      "label": "Rick Molloy Guitars",
+      "href": "/",
+      "className": "hero-menu-home"
+    },
+    {
+      "label": "Labor-Startseite",
+      "href": "/lab/"
+    },
+    {
+      "label": "Resonance Reader",
+      "href": "/de/lab/tools/resonance_reader/"
+    },
+    {
+      "label": "Modell mit vier Freiheitsgraden",
+      "href": "/de/lab/tools/dof_model/"
+    },
+    {
+      "label": "Rechner für Monopol-Mobilität",
+      "href": "/de/lab/tools/monopole_mobility/"
+    },
+    {
+      "label": "Plattenstärke",
+      "href": "/de/lab/tools/plate_thickness/"
+    },
+    {
+      "label": "Bundpositionen und Stegkompensation",
+      "href": "/de/lab/tools/fret_calculator/"
+    },
+    {
+      "label": "Gitarren-Setup-Rechner",
+      "href": "/de/lab/tools/guitar_setup_calculator/"
+    },
+    {
+      "label": "Biegesteifigkeitsrechner (EI)",
+      "href": "/de/lab/tools/flexural_rigidity/"
+    },
+    {
+      "label": "Leistengeometrie-Rechner",
+      "href": "/de/lab/tools/brace_calc/"
+    },
+    {
+      "label": "FIT Design Workspace",
+      "href": "/de/lab/tools/fit_design/"
+    },
+    {
+      "label": "LUTHIER'S NOTEBOOK",
+      "href": "/de/lab/notebook/"
+    }
+  ]
+}

@@ -1,0 +1,294 @@
+<!--
+© 2025 Rick Molloy. All rights reserved.
+
+This tool builds on the monopole mobility measurement workflow described by Trevor Gore.
+Permission is granted to view and reference this file for educational use only.
+No redistribution, modification, or commercial use without written consent from the author.
+-->
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calcolatore della mobilità monopolare</title>
+  <link rel="stylesheet" href="../common/tool_footer.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../common/layout.css" />
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <link rel="canonical" href="https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/monopole_mobility/">
+</head>
+
+<body data-monopole-save-mode="offline">
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Apri il menu del sito">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Sezioni del sito" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Calcolatore della mobilità monopolare</h1>
+          </div>
+          <div class="hero-actions">
+</div>
+        </div>
+      </section>
+
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output results">
+            <div class="results-header">
+              <h2>Proprietà calcolate</h2>
+              <div class="results-meta">
+                <span id="instrument_display" class="badge" hidden>Rick Molloy OM (10/25/2025) • Corde in acciaio</span>
+                <span id="status" class="status muted">Calcolo in tempo reale</span>
+              </div>
+            </div>
+            <div class="result-grid">
+              <article class="result-card highlighted">
+                <div class="label">Indice di mobilità monopolare</div>
+                <div class="value-row">
+                  <div id="mobilityScore" class="value">--</div>
+                  <span class="unit-inline">indice</span>
+                </div>
+                <div class="note">1000 / √(K · M<sub>eff</sub>)</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Rigidezza della tavola K</div>
+                <div class="value-row">
+                  <div id="stiffness" class="value">--</div>
+                  <span class="unit-inline">N/m</span>
+                </div>
+                <div class="note">K = m·g / x</div>
+              </article>
+              <article class="result-card">
+                <div class="label">MASSA EFFETTIVA M<sub>eff</sub></div>
+                <div class="value-row">
+                  <div id="effMass" class="value">--</div>
+                  <span class="unit-inline">g</span>
+                </div>
+                <div class="note">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </article>
+            </div>
+            <div class="muted small">
+              Indici più bassi indicano una tavola più rigida e/o più pesante. Le chitarre con indici elevati (&gt; 20 per chitarre con corde in acciaio, &gt; 30 per le classiche) richiederanno probabilmente una costruzione composita per resistere nel tempo.
+            </div>
+            <div id="warnings" class="muted small"></div>
+            <div class="muted small">
+              La rigidezza della tavola K e la massa effettiva M<sub>eff</sub> possono essere inserite nel risolutore 4‑DOF per modellare l’accoppiamento aria/tavola/fondo della chitarra e indicare modifiche realistiche a catene o piastre quando si cercano frequenze specifiche.
+            </div>
+          </section>
+        </section>
+
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls controls">
+            <h2>Dati di misura</h2>
+            <div id="monopole_mode_controls">
+              <div class="mode-toggle" role="group" aria-label="Seleziona la modalità di calcolo">
+                <button id="mode_static" class="mode-btn active" type="button">
+                  Modalità statica (dispositivo di Gore)
+                  <span class="help-text">Usa la flessione misurata con il comparatore</span>
+                </button>
+                <button id="mode_dynamic" class="mode-btn" type="button" title="La modalità dinamica usa due letture di frequenza invece di un comparatore.">
+                  Modalità dinamica (caricamento di massa)
+                  <span class="help-text">Due frequenze FFT, nessuna flessione</span>
+                </button>
+              </div>
+              <div class="muted small" id="mode_hint_static" data-mode-note="static">Modalità statica: inserisci f<sub>u</sub>, la flessione x misurata dal comparatore e la massa di prova.</div>
+              <div class="muted small hidden" id="mode_hint_dynamic" data-mode-note="dynamic">Modalità dinamica: inserisci la frequenza senza carico f<sub>0</sub>, la frequenza caricata f<sub>1</sub> e la massa aggiunta in grammi.</div>
+            </div>
+            <div id="monopole_identity_controls" hidden>
+              <label class="name-input">
+                Nome della chitarra o del campione
+                <input id="instrument_name" type="text" value="Rick Molloy OM (10/25/2025)" />
+              </label>
+              <label class="type-input">
+                Tipo di costruzione
+                <select id="instrument_type">
+                  <option value="steel" selected>Corde in acciaio</option>
+                  <option value="classical">Classica</option>
+                  <option value="other">Altra</option>
+                </select>
+              </label>
+            </div>
+            <div class="inputs mode-panel" id="staticInputs">
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="freq_field">Frequenza monopolare disaccoppiata della tavola, f<sub>u</sub> (Hz)<span class="help-text">Buca sigillata e corde smorzate</span></label>
+                  <input id="freq_field" class="value-input" type="number" min="90" max="220" step="0.1" value="153" />
+                </div>
+                <input id="freq" type="range" min="90" max="220" step="0.1" value="153" />
+              </div>
+
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="deflection_field">Flessione del ponte sotto il carico di prova, x (mm)<span class="help-text">Comparatore sul ponte, carico verticale</span></label>
+                  <input id="deflection_field" class="value-input" type="number" min="0.05" max="0.50" step="0.005" value="0.18" />
+                </div>
+                <input id="deflection" type="range" min="0.05" max="0.50" step="0.005" value="0.18" />
+              </div>
+
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="mass_field">Massa di prova, m (kg)<span class="help-text">Applica il carico verticalmente sul ponte tramite lo stelo del comparatore</span></label>
+                  <input id="mass_field" class="value-input" type="number" min="0.30" max="1.80" step="0.01" value="1.02" />
+                </div>
+                <input id="mass" type="range" min="0.30" max="1.80" step="0.01" value="1.02" />
+              </div>
+            </div>
+            <div class="inputs mode-panel hidden" id="dynamicInputs">
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_f0_field">Frequenza disaccoppiata della tavola, f<sub>0</sub> (Hz)<span class="help-text">Buca sigillata e corde smorzate</span></label>
+                  <input id="dyn_f0_field" class="value-input" type="number" min="90" max="240" step="0.1" value="153" />
+                </div>
+                <input id="dyn_f0" type="range" min="90" max="240" step="0.1" value="153" />
+              </div>
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_f1_field">Frequenza caricata, f<sub>1</sub> (Hz)<span class="help-text">Con massa aggiunta sul ponte</span></label>
+                  <input id="dyn_f1_field" class="value-input" type="number" min="70" max="230" step="0.1" value="141" />
+                </div>
+                <input id="dyn_f1" type="range" min="70" max="230" step="0.1" value="141" />
+              </div>
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_mass_field">Massa aggiunta (g)<span class="help-text" title="La modalità dinamica usa la variazione di frequenza quando una piccola massa viene aggiunta sul ponte.">Usa una piccola massa nota collocata sul ponte</span></label>
+                  <input id="dyn_mass_field" class="value-input" type="number" min="2" max="80" step="0.5" value="20" />
+                </div>
+                <input id="dyn_mass" type="range" min="2" max="80" step="0.5" value="20" />
+              </div>
+            </div>
+            <div class="actions">
+              <button id="reset">Ripristina</button>
+              <button id="copy" class="ghost">Copia i risultati</button>
+              <button id="load" class="ghost tl-save-action">Carica JSON</button>
+              <button id="save" class="ghost tl-save-action">Scarica JSON</button>
+              <input id="load_file" type="file" accept="application/json,.json" hidden />
+            </div>
+          </section>
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+          <header class="card pad tl-card tl-card-info">
+            <h2>Panoramica e misure necessarie</h2>
+            
+              <p class="tl-card-desc">
+                <strong>Usa questo strumento per</strong> convertire le letture del tuo dispositivo di mobilità monopolare in stile Gore nella rigidezza della tavola K e nella massa modale effettiva M<sub>eff</sub>, quindi calcolare il valore di mobilità monopolare di una chitarra per confrontare gli strumenti in modo coerente.
+              </p>
+              <p class="tl-card-desc">
+                <strong>Perché è importante:</strong> La mobilità monopolare mostra quanto liberamente la tavola pompa aria alla sua risonanza principale e misura la reattività di una chitarra su un ampio intervallo di frequenze. Indica quanto suono si ottiene per una determinata forza di pizzicamento. Non protegge dai problemi strutturali, ma mostra che tavole con massa e rigidezza ridotte saranno più reattive, purché resistano nel tempo.
+              </p>
+              <div class="sample-note badge">
+                Set di dati predefinito: Rick Molloy OM (10/25/2025) (abete / corde in acciaio, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
+              </div>
+              <details class="tl-accordion">
+                <summary>Panoramica e misure necessarie</summary>
+                <p class="tl-card-desc">
+                  Sigilla la buca, smorza le corde e percuoti leggermente la tavola per trovare la frequenza f<sub>u</sub> della risonanza monopolare disaccoppiata. Poi usa il dispositivo di mobilità monopolare per applicare una forza nota al ponte e registrare la flessione x.
+                </p>
+                <div class="before-card">
+                  <h3>Misure necessarie</h3>
+                  <ul class="tl-list">
+                    <li>Frequenza monopolare disaccoppiata della tavola, f<sub>u</sub> (Hz)</li>
+                    <li>Flessione del ponte sotto il carico di prova, x (mm)</li>
+                    <li>Massa di prova, m (kg)</li>
+                  </ul>
+                </div>
+                <div class="before-card">
+                  <h3>Come usare questo strumento</h3>
+                  <ol class="tl-steps">
+                    <li>Sigilla la buca con una copertura leggera e rigida in modo che la cassa sia ermetica.</li>
+                    <li>Smorza le corde, percuoti leggermente la tavola e registra la frequenza disaccoppiata f<sub>u</sub> con la tua applicazione FFT.</li>
+                    <li>Monta il dispositivo di mobilità. Applica sul ponte una massa di prova nota (m) e misura la flessione del pannello (x) in millimetri.</li>
+                    <li>Inserisci f<sub>u</sub>, x e m. Il calcolatore determina K, M<sub>eff</sub> e la mobilità.</li>
+                    <li>Esamina l’indice e confrontalo con i tuoi dati di costruzione.</li>
+                  </ol>
+                </div>
+              </details>
+            </header>
+
+          
+            <section class="card pad tl-card tl-card-info tl-span-2">
+              <h2>Come funziona questo strumento</h2>
+              <p class="tl-card-desc">
+                Questo strumento si basa sul dispositivo di mobilità monopolare di Gore e Gilet (vol. 1, appendice AI 3). Il calcolatore converte le misure in rigidezza della tavola al ponte (K), massa modale effettiva (M<sub>eff</sub>) e indice standard di mobilità monopolare.
+              </p>
+              <div class="tl-eq-block">
+                <h3>Forza prodotta dalla massa di prova</h3>
+                <p class="small muted">La massa determina la forza applicata tramite il dispositivo.</p>
+                <div class="tl-equation">F = m · g</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Rigidezza della tavola al ponte</h3>
+                <p class="small muted">La forza applicata divisa per la flessione x, convertita in metri, fornisce la rigidezza K.</p>
+                <div class="tl-equation">K = F / x</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Massa modale effettiva</h3>
+                <p class="small muted">Derivata dalla rigidezza K e dalla frequenza disaccoppiata della tavola f<sub>u</sub>.</p>
+                <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Indice di mobilità monopolare</h3>
+                <p class="small muted">Indice usato per confrontare la reattività tra strumenti.</p>
+                <div class="tl-equation">Indice di mobilità = 1000 / √(K · M<sub>eff</sub>)</div>
+              </div>
+            </section>
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="it">
+  <h2>Calcolatore della mobilità monopolare</h2>
+  <p>Converte misure statiche con il dispositivo di Gore o misure dinamiche mediante caricamento di massa in rigidezza della tavola, massa modale effettiva e indice di mobilità monopolare.</p>
+  <p>La mobilità monopolare descrive quanto facilmente la tavola armonica di una chitarra si muove alla sua principale risonanza disaccoppiata rispetto alla sua rigidezza e alla massa modale effettiva.</p>
+  <p>Confrontare la mobilità tra strumenti aiuta a capire quanto liberamente risponde ogni tavola e come rigidezza e massa contribuiscono alla risposta.</p>
+  <ul>
+    <li>Misura la frequenza disaccoppiata della tavola con la buca sigillata e le corde smorzate.</li>
+    <li>Misura la flessione del ponte sotto un carico di prova noto oppure lo spostamento di frequenza causato da una massa aggiunta nota.</li>
+  </ul>
+  <p>Usa insieme rigidezza, massa effettiva e mobilità calcolate quando confronti strumenti o pianifichi modifiche misurate a catene e piastre.</p>
+  <p class="small muted">Creato da Rick Molloy a partire dai metodi di mobilità monopolare pubblicati da Trevor Gore e Gerard Gilet.</p>
+</section>
+        </section>
+      </main>
+
+      <footer class="tl-footer" data-tool-footer></footer>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../common/tool_document.js" defer></script>
+  <script src="../common/tool_document_file.js" defer></script>
+  <script src="../common/per_tab_tool_session.js" defer></script>
+  <script src="../common/offline_save_surface.js" defer></script>
+  <script src="monopole_save_surface.js" defer></script>
+  <script src="../common/notebook_rpc_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_connection_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_save_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_restore_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_restore.js" defer data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js" defer data-feature="notebook"></script>
+  <script src="monopole_save_modal.js" defer data-feature="notebook"></script>
+  <script src="monopole_save_summary.js" defer></script>
+  <script src="monopole_save_target.js" defer></script>
+  <script src="monopole_save_snapshot.js" defer></script>
+  <script src="main.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Lingua","currentLocale":"it","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/monopole_mobility/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/monopole_mobility/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

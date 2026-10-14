@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resonance Reader | O Laboratório na Rick Molloy Guitars</title>
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=20260324a">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=20260324a">
+  <link rel="stylesheet" href="styles.css?rev=20260324a">
+  <link rel="stylesheet" href="../common/tool_guide.css?rev=20260927b">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=20261008a">
+  <link rel="canonical" href="https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/">
+  <link rel="stylesheet" href="../common/theme_profile.css">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/resonance_reader/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
+</head>
+
+<body>
+  <div class="page-shell">
+    <section class="hero">
+      <div class="hero-row">
+        <div class="hero-controls-left">
+          <details class="hero-menu">
+            <summary class="hero-menu-trigger" aria-label="Abrir o menu do site">☰</summary>
+            <nav class="hero-menu-panel" aria-label="Seções do site" data-site-menu data-menu-profile="lutherieacademy"></nav>
+          </details>
+          <h1>Resonance Reader</h1>
+          <div class="measure-select hero-control" id="measure_chip">
+            <span class="measure-label">Medição:</span>
+            <select class="measure-dropdown" id="measure_mode">
+              <option value="guitar" selected>Instrumento</option>
+              <option value="played_note">Nota Tocada</option>
+              <option value="plate_stock">Madeira de placa</option>
+              <option value="brace_stock">Madeira para barras</option>
+              <option value="peak_analysis">Pico / Q</option>
+            </select>
+          </div>
+          <input class="sr-only" type="file" id="file_input" accept="audio/*" tabindex="-1" aria-hidden="true">
+        </div>
+        <div class="hero-actions">
+          <a class="hero-help-link" href="#resonance_reader_help" aria-label="Leia o guia Resonance Reader" title="Guia do Resonance Reader">?</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="card-surface">
+      <section class="energy-surface" id="energy_nav" hidden>
+        <div class="plot-header">
+          <div class="plot-header-copy">
+            <h2>Transferência Relativa de Energia</h2>
+            <p class="muted small">Modo Played Note apenas.</p>
+          </div>
+        </div>
+        <div id="plot_energy_transfer" class="plot energy-transfer-plot"></div>
+      </section>
+
+      <div id="plot_fft" class="plot tl-resonance-primary-plot"></div>
+      <button class="modebar-settings-trigger" id="btn_settings" type="button" aria-haspopup="dialog" aria-controls="settings_dialog" aria-label="Abrir configurações FFT e microfone" title="Configurações FFT e microfone">
+        Configurações
+      </button>
+
+      <section class="analysis-surface" id="analysis_surface">
+        <div class="analysis-tabs" role="tablist" aria-label="Visualizações de análise">
+          <button class="analysis-tab" id="analysis_tab_peak" data-analysis-tab="peak_analysis" type="button" role="tab" aria-controls="peak_analysis_panel" aria-selected="true">
+            Inspeção de Pico / Q
+          </button>
+          <button class="analysis-tab" id="analysis_tab_material" data-analysis-tab="material_properties" type="button" role="tab" aria-controls="plate_material_card" aria-selected="false">
+            Propriedades do Material
+          </button>
+        </div>
+
+        <section class="card peak-analysis-card" id="peak_analysis_panel" role="tabpanel" aria-labelledby="analysis_tab_peak">
+          <div class="plot-header">
+            <div class="plot-header-copy">
+              <h2>Inspeção de Pico / Q</h2>
+              <p class="muted small" id="peak_analysis_description">Inspeccione a resposta completa de 0–500 Hz ao lado da resposta isolada por frequência do pico selecionado.</p>
+            </div>
+          </div>
+          <div class="peak-analysis-plot-grid">
+            <section class="peak-analysis-plot-panel" aria-labelledby="peak_analysis_spectrum_title">
+              <div class="plot-header">
+                <div class="plot-header-copy">
+                  <h3 id="peak_analysis_spectrum_title">Resposta em Frequência</h3>
+                  <p class="muted small">Resposta de 0–500 Hz com o pico selecionado e largura de banda de -3 dB.</p>
+                </div>
+              </div>
+              <div class="plot peak-analysis-plot" id="plot_peak_analysis" hidden></div>
+            </section>
+            <section class="peak-analysis-plot-panel" aria-labelledby="peak_analysis_ringdown_title">
+              <div class="plot-header">
+                <div class="plot-header-copy">
+                  <h3 id="peak_analysis_ringdown_title">Resposta de Aniquilação</h3>
+                  <p class="muted small">Azul: toque isolado. Dourado: envelope. Dourado tracejado: decaimento ajustado.</p>
+                </div>
+              </div>
+              <div class="plot peak-analysis-ringdown-plot" id="plot_peak_ringdown" hidden></div>
+            </section>
+          </div>
+          <div class="peak-analysis-provenance" id="peak_analysis_provenance"></div>
+          <div class="peak-analysis-actions" id="peak_analysis_actions" aria-label="Ações de pico/Q">
+            <div class="peak-analysis-stepper" role="group" aria-label="Navegação de pico">
+              <span class="peak-analysis-position" id="peak_analysis_position">Pico -</span>
+              <button class="ghost-btn btn-small icon-btn" id="peak_analysis_previous" type="button" aria-label="Pico anterior" title="Pico anterior"><span aria-hidden="true">&larr;</span></button>
+              <button class="ghost-btn btn-small icon-btn" id="peak_analysis_next" type="button" aria-label="Próximo pico" title="Próximo pico"><span aria-hidden="true">&rarr;</span></button>
+            </div>
+            <button class="ghost-btn btn-small" id="peak_analysis_export_data" type="button">Exportar dados do pico</button>
+          </div>
+        </section>
+
+        <section class="card plate-material-card" id="plate_material_card" role="tabpanel" aria-labelledby="analysis_tab_material" hidden>
+          <div class="plot-header">
+            <div class="plot-header-copy">
+              <h2 id="plate_material_title">Propriedades do Material</h2>
+              <p class="muted small" id="plate_material_description">Essas medições viajam com os modos de placa detectados para o calculador de Espessura de Placa.</p>
+            </div>
+          </div>
+          <div class="plate-material-grid">
+            <label class="plate-material-field">
+              <span class="plate-material-label">Comprimento</span>
+              <input id="plate_material_length" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="555">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Largura</span>
+              <input id="plate_material_width" class="plate-material-input" type="number" inputmode="decimal" min="1" step="0.1" value="227">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Altura</span>
+              <input id="plate_material_height" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="4.1">
+              <span class="plate-material-unit">mm</span>
+            </label>
+            <label class="plate-material-field">
+              <span class="plate-material-label">Massa</span>
+              <input id="plate_material_mass" class="plate-material-input" type="number" inputmode="decimal" min="0.1" step="0.1" value="211.4">
+              <span class="plate-material-unit">g</span>
+            </label>
+          </div>
+        </section>
+      </section>
+
+      <section class="wave-surface" id="wave_nav" data-waveform-ready="false">
+        <div id="plot_waveform" class="plot waveform"></div>
+        <div class="plot-header">
+          <div class="plot-header-copy">
+            <h2 id="wave_nav_title">Resposta em Frequência</h2>
+            <p class="muted small" id="wave_nav_description">Arraste a faixa amarela para análise FFT. Arraste a faixa verde para seleção de nota. Clique em uma etiqueta de nota (ou Option/Command-clique em uma fatia de nota) para substituir sua nota.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="mode-grid" id="mode_grid">
+        <!-- Mode cards populated by script -->
+      </div>
+
+      <section class="stock-measurements" id="stock_measurements" aria-label="Medições de material para barras" hidden>
+        <div class="brace-stock-estimate__content" id="stock_measurements_content"></div>
+      </section>
+
+      <section class="measure-action-row" aria-label="Ações de medição">
+        <div class="wave-transport-inline">
+          <button class="ghost-btn btn-small" id="btn_wave_tone"><span class="transport-icon" aria-hidden="true">∿</span>Tom</button>
+          <button class="ghost-btn btn-small" id="btn_wave_record"><span class="transport-icon" aria-hidden="true">⏺</span>Gravar</button>
+          <button class="ghost-btn btn-small" id="btn_wave_play"><span class="transport-icon" aria-hidden="true">▶</span>Reproduzir</button>
+          <button class="ghost-btn btn-small" id="btn_wave_stop"><span class="transport-icon" aria-hidden="true">■</span>Parar</button>
+          <label class="ghost-btn btn-small" id="btn_import" for="file_input" role="button" tabindex="0"><span class="transport-icon" aria-hidden="true">⬆</span>Importar</label>
+          <div class="take-overlay-controls" id="take_overlay_controls">
+            <button class="ghost-btn btn-small take-overlay-menu transport-recording" id="take_overlay_menu" type="button" aria-expanded="false" aria-controls="take_overlay_panel">Demonstração (clique em gravar)</button>
+            <div class="take-overlay-panel" id="take_overlay_panel" hidden></div>
+          </div>
+          <button class="ghost-btn btn-small tl-save-action" id="btn_save_audio">Salvar</button>
+          <button class="ghost-btn btn-small take-overlay-clear" id="take_overlay_clear" type="button" hidden>Limpar tomadas</button>
+        </div>
+        <section class="dof-model-row">
+          <div class="dof-model-copy">
+            <h2>Modelo 4DOF</h2>
+          </div>
+          <div class="dof-model-actions">
+            <label class="toggle dof-toggle">
+              <input type="checkbox" id="toggle_overlay">
+              <span class="toggle-label sr-only">Alternar sobreposição do modelo 4DOF</span>
+              <span class="toggle-knob"></span>
+            </label>
+          </div>
+          <a href="../dof_model/" class="link dof-model-link" data-view-model>Abrir no modelo 4-DOF</a>
+        </section>
+      </section>
+
+      <div class="try-panel" id="try_panel" hidden>
+        <div class="try-cards">
+          <div class="try-card" id="try_card_structural" hidden>
+            <div class="try-label">Tente (estrutural):</div>
+            <ul class="try-list" id="try_list_structural"></ul>
+          </div>
+          <div class="try-card" id="try_card_reversible" hidden>
+            <div class="try-label">Tente (reversível / não estrutural):</div>
+            <ul class="try-list" id="try_list_reversible"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-divider"></div>
+
+    </section>
+
+    <section class="tl-tool-guide" id="resonance_reader_help" aria-labelledby="reader_help_title">
+      <div class="tl-tool-guide__body">
+        <h2 id="reader_help_title">Usando o Resonance Reader</h2>
+        <p>Resonance Reader é um analisador de áudio FFT baseado em navegador para testes modais e ajuste de materiais de instrumentos e instrumentos acústicos. Foi criado para tornar mais fácil a aplicação das técnicas de medição e modal-tuning descritas nos livros de Trevor Gore. Ajuda luthiers a construir e ajustar seus instrumentos, e ajuda os músicos a entenderem a resposta que ouvem e sentem.</p>
+        <p>Grave um toque ou importe um arquivo de áudio para localizar ressonâncias em uma placa superior ou traseira, uma peça de material para barras, ou um instrumento montado. Inspeccione suas frequências e decaimento, depois compare medições antes e depois de uma mudança.</p>
+        <p>Quando você toca um violão ou placa, você excita várias ressonâncias de uma vez. Quando você toca uma nota em uma corda, a corda e as ressonâncias do instrumento interagem, moldando como a nota começa, se desenvolve e desaparece. O Resonance Reader permite que você examine ambos.</p>
+        <nav aria-label="Seções do guia Resonance Reader">
+          <a href="#reader_help_start">Começando</a>
+          <a href="#reader_help_controls">Controles</a>
+          <a href="#reader_help_modes">Modos</a>
+          <a href="#reader_help_connections">Outras ferramentas</a>
+          <a href="#reader_help_reference">Interpretando resultados</a>
+        </nav>
+
+        <h3 id="reader_help_start">Começando</h3>
+        <ol class="tl-steps">
+          <li><strong>Escolha o que você está medindo.</strong> Use Instrumento para ressonâncias do corpo, Placa para uma placa superior ou traseira, Material para barras para uma amostra de material em forma retangular, ou Nota Tocada para uma corda puxada. Pico / Q pode inspecionar um pico de qualquer um desses modos; Adicionar medições identifica uma amostra de material sem alterar a visualização da análise.</li>
+          <li><strong>Grave ou importe.</strong> Escolha Gravar para usar seu microfone, ou Importar para abrir um arquivo de áudio. WAV é um formato útil para começar. Deixe um intervalo silencioso antes do primeiro toque e espaço suficiente entre os toques para que cada resposta desvaneça.</li>
+          <li><strong>Selecione a parte útil.</strong> A região da onda amarela controla a seleção FFT. Em Nota Tocada, a região verde seleciona o trecho da nota. Arraste uma borda para redimensionar uma região ou seu grip inferior para movê-la.</li>
+          <li><strong>Verifique os picos sugeridos.</strong> Rótulos automáticos são pontos de partida. Confirme que um pico pertence ao modo físico que você pretendia medir antes de usá-lo em outro cálculo.</li>
+          <li><strong>Repita e compare.</strong> Mantenha suporte, posição do toque, posição do microfone e ganho de entrada consistentes. Um resultado que se repete é mais útil do que um número preciso de um único toque incerto.</li>
+        </ol>
+        <p>Comece com o perfil FFT Padrão. Para testes do corpo do instrumento, amortecça as cordas para que seu ressoar não obscureça a resposta do corpo. Use um toque limpo que não sobrecarregue a gravação; reduza o nível de entrada ou toque com mais leveza se a onda estiver visivelmente achatada em suas maiores excursões.</p>
+
+        <details class="tl-accordion" id="reader_help_fft">
+          <summary>Ressonâncias modais e o FFT</summary>
+          <p>Um modo é um padrão particular de vibração. Uma placa pode dobrar principalmente ao longo da fibra, dobrar transversalmente ou torcer. Cada padrão tem uma frequência natural e uma taxa na qual sua vibração desaparece. Quando a estrutura responde fortemente perto de uma dessas frequências naturais, você está vendo uma ressonância modal.</p>
+          <p>Em uma guitarra montada, tampo, fundo e ar contido interagem. Ar, Tampo e Fundo descrevem o caráter dominante de uma resposta; isso não significa que as outras partes deixaram de se mover. A afinação modal usa essas ressonâncias para orientar e verificar mudanças estruturais. Ela é diferente da afinação das cordas e não implica que todos os instrumentos devam ter as mesmas frequências.</p>
+          <p>FFT significa <strong>Transformada Rápida de Fourier</strong>. Separa uma seção de áudio gravado em componentes de frequência. A forma de onda mostra o que aconteceu ao longo do tempo; o espectro mostra quais frequências estão presentes nessa seção.</p>
+          <ul class="tl-list">
+            <li><strong>Frequência, Hz:</strong> ciclos por segundo. Um pico próximo a 200 Hz representa um componente vibrando cerca de 200 vezes por segundo.</li>
+            <li><strong>Nível do sinal, dB:</strong> nível do espectro gravado na escala de exibição escolhida, não pressão sonora calibrada. Um pico mais alto é mais forte nesta gravação, não automaticamente uma melhor ressonância.</li>
+            <li><strong>Posição do pico:</strong> onde aparece um componente forte de frequência. Um pico isolado não identifica automaticamente seu padrão de vibração; o suporte, posição do toque e observações físicas ajudam a estabelecer isso.</li>
+            <li><strong>Largura do pico:</strong> quão concentrada é a resposta em torno de seu pico. Um pico isolado, suficientemente resolvido, pode suportar uma estimativa de largura de banda de Q.</li>
+          </ul>
+          <p>Com uma nota tocada, muitos picos pertencem ao fundamental da corda e seus harmônicos, frequentemente próximos a duas, três ou mais vezes sua frequência fundamental. Eles não são automaticamente modos de corpo separados.</p>
+          <p>Embora o gráfico seja chamado de Resposta em Frequência, um espectro de toque com microfone apenas não é uma função de resposta em frequência normalizada por força. Sem medir a força de entrada, não pode dizer a mobilidade absoluta da estrutura. A altura do pico também depende do toque e da configuração de gravação.</p>
+        </details>
+
+        <h3 id="reader_help_controls">Controles comuns</h3>
+        <details class="tl-accordion">
+          <summary>Gravação, reprodução e tomadas</summary>
+          <dl>
+            <dt>Medição</dt><dd>Seleciona o fluxo de trabalho de análise, não uma gravação diferente. Modos de vibração física são as ressonâncias identificadas dentro desse fluxo de trabalho.</dd>
+            <dt>Gravar / Importar</dt><dd>Gravar inicia a captura do microfone. Permita o acesso ao microfone se solicitado. Pressione novamente para finalizar a tomada. Importar abre um arquivo de áudio existente.</dd>
+            <dt>Reproduzir / Parar</dt><dd>Reproduz começa a gravação atual do início, não apenas a região amarela ou verde selecionada. Pressione novamente para parar. Parar interrompe a gravação ou reprodução de áudio. Desligue o Tom separadamente.</dd>
+            <dt>Menu suspenso de Arquivo</dt><dd>Mostra a gravação atual. Selecione outra linha de tomada para torná-la atual e fechar o menu. Cada tomada mantém suas seleções de análise; os controles de visibilidade mostram ou ocultam traçados de comparação.</dd>
+            <dt>Salvar</dt><dd>Salva a tomada atual, não a lista completa de tomadas. Veja <a href="#reader_help_save">Salvando medições</a> para o que for mantido.</dd>
+            <dt>Limpar tomadas</dt><dd>Remove as tomadas de comparação armazenadas, mantendo a tomada atual. Não exclui arquivos já salvos no seu computador.</dd>
+          </dl>
+          <p>Gravar ou importar outra tomada mantém a tomada anterior disponível para comparação, dentro do limite de tomadas. Mantenha as condições de captura e a escala de exibição comparáveis. Uma traçado mais alto não significa automaticamente madeira melhor ou um instrumento mais sensível.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>Navegador de forma de onda, gráfico e atribuições de modo</summary>
+          <ul class="tl-list">
+            <li><strong>Região amarela:</strong> a seleção FFT. Arraste uma borda para redimensioná-la ou a alça inferior para movê-la. O Escopo de entrada deve estar em Seleção para que a FFT siga esta região em vez da gravação completa.</li>
+            <li><strong>Região verde:</strong> o segmento da nota em Nota tocada. O gráfico de Transferência de energia inicia o eixo do tempo no começo desta seleção.</li>
+            <li><strong>Pico / Q:</strong> selecione um toque detectado no navegador para inspecionar o decaimento. Verifique qual toque está selecionado antes de comparar estimativas de decaimento.</li>
+          </ul>
+          <p>Mover uma seleção altera a análise, não o áudio salvo. Quando a média de batidas está habilitada, o espectro pode combinar batidas aceitas em vez de exibir um FFT bruto da região destacada.</p>
+          <p>Passe o mouse sobre o espectro para ler frequência e nível. A barra de ferramentas do gráfico fornece controles de zoom, panorâmica, reiniciar e download de imagem. O zoom altera o que você vê, não a região de análise do navegador.</p>
+          <p>Cartões de modo e marcadores identificam modos físicos atribuídos. Veja <a href="#reader_help_correct_peaks">Corrigindo uma pico ou atribuição de modo</a> para os passos de arrastar e reiniciar. Um <strong>alvo</strong> é uma frequência que você deseja explorar, não uma medida na gravação.</p>
+          <p>O interruptor <strong>Modelo 4DOF</strong> adiciona uma resposta modelada no modo Instrumento. Ele não transforma essa curva em dados medidos. Fluxos de trabalho padrão fornecem suas ações correspondentes de cálculo.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_correct_peaks">
+          <summary>Corrigindo uma atribuição de pico ou modo</summary>
+          <p>Uma etiqueta automática pode ser atribuída a um pico errado. Corrigir sua atribuição informa à ferramenta qual parte do espectro medido usar; não move a ressonância real ou altera sua gravação.</p>
+          <h4>Mover um modo medido</h4>
+          <ol class="tl-steps">
+            <li><strong>Verifique a tomada e seleção.</strong> Escolha a gravação pretendida e uma região limpa da onda. Use Instrumento, Placa ou Material para Barras para ver as chamadas de modo nomeadas no espectro principal.</li>
+            <li><strong>Encontre o indicador a corrigir.</strong> Faça o nome, como Tampo ou Longitudinal, corresponder ao cartão de modo abaixo do gráfico. Amplie se os picos próximos forem difíceis de separar.</li>
+            <li><strong>Arraste o ponteiro próximo ao pico.</strong> Segure o curto conectador ao lado do ponto de pico colorido, não a caixa de texto. Mova-o para a esquerda ou direita em direção ao pico pretendido, depois solte.</li>
+            <li><strong>Verifique a nova frequência.</strong> A chamada e o cartão são atualizados. O ponteiro se ajusta a um máximo local próximo, quando disponível; caso contrário, usa uma amostra de espectro próxima. Verifique se ele pousou no pico pretendido.</li>
+          </ol>
+          <p>Arrastar a caixa de texto move apenas a etiqueta para legibilidade; não altera a frequência atribuída. Você não precisa ativar 4DOF para arrastar um ponteiro de modo medido. Clicar no cartão, incluindo seu símbolo de lápis, seleciona-o para inspeção, em vez de abrir um campo de entrada de frequência medida. Escolha Pico / Q em Medição para exibir essa visualização de inspeção.</p>
+          <h4>Retornar à detecção automática</h4>
+          <p>Em Instrumento, escolha o pequeno link <strong>reiniciar</strong> no cartão do modo corrigido. Se estiver oculto, ative <strong>Modelo 4DOF</strong> para expô-lo; você pode desativar o modelo novamente depois. Isso remove a atribuição manual desse modo e retorna ao resultado automático atual. Mantém a gravação e não limpa um alvo separado.</p>
+          <p>O reinício do cartão atualmente não está exposto em Placa ou Material para Barras. Você pode corrigir essas atribuições arrastando seus ponteiros. Reiniciar na caixa de diálogo Configurações restaura as configurações FFT; não é o reinício da atribuição de modo.</p>
+          <h4>Definir um alvo sem alterar a medição</h4>
+          <p>Em Instrumento com Modelo 4DOF habilitado, <strong>Definir alvo</strong> entra uma frequência para uma comparação do que se fosse modelada. Digite o alvo e pressione Enter ou deixe o campo para aplicá-lo. Pressione Escape para cancelar uma edição. Para remover um alvo, deixe o campo vazio e pressione Enter. Nenhuma dessas ações reatribui o pico medido.</p>
+          <h4>Inspeção de um pico diferente em Pico / Q</h4>
+          <p>Selecione o toque pretendido, depois clique em um ponto de pico ou use as setas de pico anterior e seguinte. Isso altera o pico inspecionado sem reatribuir Ar, Tampo ou Fundo. Para placa ou material para barras, a atribuição longitudinal confirmada também permanece inalterada. Para substituí-la, selecione o pico correto e escolha <strong>Usar … Hz como modo longitudinal</strong> ao lado do resumo do material. <strong>Limpar modo longitudinal</strong> remove a confirmação.</p>
+          <p>Se o pico esperado não estiver visível, verifique a faixa de frequência, toque selecionado, suporte e posição de toque. Uma atribuição manual não pode recuperar uma ressonância que a gravação não capturou claramente.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>Configurações do microfone e FFT</summary>
+          <p>Abra Configurações a partir da barra de ferramentas do espectro. Comece com Padrão e altere uma configuração de cada vez ao investigar uma medição.</p>
+          <dl>
+            <dt>Entrada de Áudio / Atualizar</dt><dd>Escolha o microfone; atualize a lista após conectar outra entrada. Novas gravações solicitam cancelamento de eco, supressão de ruído e controle automático de ganho desligados. Um navegador ou dispositivo pode ignorar uma configuração não suportada, então use ganho de entrada e condições de gravação consistentes.</dd>
+            <dt>Escopo de Entrada</dt><dd>Analise a região FFT selecionada ou a gravação completa.</dd>
+            <dt>Janela / Resolução</dt><dd>Defina o peso e o comprimento do FFT. Uma grade de frequência mais fina não substitui uma gravação limpa e suficientemente longa.</dd>
+            <dt>Média de batidas / Média</dt><dd>A média de batidas combina os espectros detectados de batidas. A média combina atualizações repetidas do FFT. São configurações separadas.</dd>
+            <dt>Suavização</dt><dd>Suaviza o espectro exibido. Deixe desligado ao inspecionar picos próximos para que sua aparência não seja misturada.</dd>
+            <dt>Configurações de Exibição e Eixos</dt><dd>Controle a amplitude e a escala do gráfico. Mantenha-as consistentes ao comparar traços.</dd>
+            <dt>Restaurar / Concluído</dt><dd>Restaurar retorna às configurações padrão do FFT, não a uma gravação vazia. Concluído fecha as Configurações.</dd>
+          </dl>
+        </details>
+        <details class="tl-accordion" id="reader_help_tone">
+          <summary>Gerador de tom e padrões de Chladni</summary>
+          <p>Ative <strong>Tom</strong>, depois mova o ponteiro sobre o espectro principal para ouvir um tom senoidal naquela frequência. Em uma tela sensível ao toque, mova o dedo sobre o espectro; levantá-lo mantém a última frequência. Enquanto o Tom está ativado, uma varredura de toque controla a frequência em vez de panorâmica. Desative o Tom quando terminar.</p>
+          <p>Para trabalhar com padrões de Chladni, combine um alto-falante Bluetooth adequado com seu dispositivo e selecione-o como saída de áudio. Ele precisa de saída suficiente na frequência sendo testada para excitar a placa. Um amplificador e um excitador também podem ser usados. O aplicativo fornece o tom; o padrão físico forma-se na placa, não na tela.</p>
+          <p>Em um teste de Chladni, uma leve quantidade de ervas secas, glitter ou areia fina se move para longe das áreas fortemente vibrantes e coleta-se nas linhas nodais, onde a placa se move menos. Isso torna o padrão de vibração visível. Escolha um material que não rasure ou manche a superfície, especialmente ao testar um instrumento acabado.</p>
+          <p>Suporte e excitação importam: a fixação de um driver ou a adição de massa pode alterar a resposta. Comece com volume baixo. Ouvir o tom não confirma por si só um modo; observe a resposta física. Mantenha a reprodução do tom fora das gravações de batida, a menos que seja deliberadamente parte do teste. Veja <a href="https://newt.phys.unsw.edu.au/music/guitar/guitarchladni.html">Explicação da UNSW sobre padrões de Chladni de placas de guitarra</a>.</p>
+        </details>
+
+        <h3 id="reader_help_modes">Usando cada modo</h3>
+        <details class="tl-accordion" id="reader_help_instrument">
+          <summary>Instrumento</summary>
+          <p>Use Instrument para localizar as ressonâncias principais do corpo e comparar como elas mudam. Grave toques separados com as cordas amortecidas, mantendo o suporte e a posição do microfone consistentes.</p>
+          <ol class="tl-steps">
+            <li>Inspecione as frequências sugeridas de Ar, Tampo e Fundo em relação aos picos visíveis e ao seu conhecimento do instrumento.</li>
+            <li><a href="#reader_help_correct_peaks">Corrija uma atribuição usando seu ponteiro gráfico</a> quando necessário. Modos reais são acoplados; um pico forte não é necessariamente o que você esperava.</li>
+            <li>Use Tom com equipamento de excitação adequado para investigar uma frequência. Observe a resposta física em vez de confiar apenas no som.</li>
+            <li>Compare toques repetidos ou outra gravação antes de tirar uma conclusão.</li>
+          </ol>
+          <p>O modelo opcional 4DOF ajusta um modelo simplificado acoplado às frequências atribuídas. Alvos exploram uma mudança proposta; eles não são medições ou instruções para remover material. Pergunte se uma intervenção moveu a ressonância pretendida e o que mais se moveu com ela.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_played_note">
+          <summary>Nota tocada</summary>
+          <p>Use Nota tocada para examinar como uma nota se desenvolve e decai, especialmente quando algo audível não aparece claramente no espectro de toque. Grave uma nota limpa com tempo suficiente para o decaimento. Mantenha semelhantes a posição de dedilhado e o ataque; abafe as outras cordas para obter uma comparação controlada.</p>
+          <ol class="tl-steps">
+            <li>Coloque a região verde em torno da nota que pretende inspecionar.</li>
+            <li>Verifique a nota detectada e corrija o rótulo se a fundamental tiver sido identificada incorretamente.</li>
+            <li>Leia a Transferência de energia junto com a reprodução. Ela mostra a fundamental, o segundo e o terceiro parciais e os traços disponíveis das frequências do corpo.</li>
+            <li>Use a legenda para ocultar traços que não ajudam na comparação. Mover a seleção verde preserva essas escolhas de visibilidade.</li>
+          </ol>
+          <p>O eixo do tempo e as leituras sob o ponteiro mostram o tempo decorrido desde o início da seleção verde. Procure batimentos, um parcial que desaparece abruptamente ou um decaimento diferente do das notas vizinhas. Repita a gravação para verificar se o comportamento persiste.</p>
+          <p>Apesar do nome, Transferência de Energia não mede diretamente a energia fluindo da corda para um modo do corpo. Ela rastreia o sinal próximo às frequências selecionadas. Uma parte parcial de corda próxima e uma ressonância do corpo podem se sobrepor; use a visualização para investigar, não para declarar uma causa a partir de uma única traçado.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_plate">
+          <summary>Madeira de placa</summary>
+          <p>Use Placa para identificar modos de flexão em uma placa do tampo ou do fundo antes de calcular o material ou a espessura. Apoie e excite a amostra de modo que o modo de interesse possa mover-se; segurá-la onde esse modo se move intensamente pode suprimir a resposta.</p>
+          <ol class="tl-steps">
+            <li>Grave ou importe os toques na placa.</li>
+            <li>Inspecione os modos longitudinal, transversal e de torção. O longitudinal é a flexão ao longo da fibra, o transversal é a flexão através da fibra e o de torção é o modo usado pelo cálculo da placa.</li>
+            <li>Confirme as atribuições pelo teste físico, não apenas pela ordem ou altura dos picos.</li>
+            <li>Escolha Adicionar medições e insira o comprimento, a largura, a espessura e a massa da amostra. Aplicar guarda os dados com esta gravação; Editar medições reabre o mesmo editor.</li>
+            <li>Abra o Calculador de espessura da placa para levar as medições ao cálculo.</li>
+          </ol>
+          <p>Meça a amostra real. Uma espessura ou atribuição de modo incorreta pode produzir uma estimativa de material plausível, mas errada. Um tampo moldado, reforçado ou montado pode ter ressonâncias úteis para inspeção, mas não equivale à amostra retangular usada no cálculo do material.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_brace">
+          <summary>Madeira para barras</summary>
+          <p>Use Material para barras para caracterizar a madeira da qual as barras serão cortadas, não para definir as dimensões finais das barras. Comece com uma amostra retangular razoavelmente uniforme e permita que ela flexione com liberdade suficiente para revelar o modo de flexão longitudinal.</p>
+          <ol class="tl-steps">
+            <li>Grave ou importe os toques. A exibição inicial vai até 500 Hz; a busca longitudinal automática ocorre entre 100 e 500 Hz, mas essa faixa não é uma regra para todas as amostras.</li>
+            <li>Verifique o pico longitudinal sugerido. Um pico forte e estreito é um candidato, não uma confirmação física.</li>
+            <li>Escolha Adicionar medições e insira o comprimento, largura, altura na direção de flexão e massa da amostra.</li>
+            <li>Escolha Usar … Hz como modo longitudinal ao lado do resumo do material para confirmar a frequência sugerida. Para uma inspeção mais detalhada, mude para Pico / Q, selecione um toque limpo e um pico e confirme-o nessa vista.</li>
+            <li>Revise a densidade, o módulo de flexão e a velocidade do som. A correspondência em Rigidez Flexional continua com as barras que você pretende fazer.</li>
+          </ol>
+          <p>Pode editar as medições, limpar a atribuição longitudinal confirmada ou confirmar outro pico. Não mantenha uma atribuição apenas porque ela produziu um módulo plausível. Esta estimativa exige um modo de flexão longitudinal, não os três picos da placa. Ela não determina a resistência nem a segurança a longo prazo de uma barra acabada.</p>
+        </details>
+        <details class="tl-accordion" id="reader_help_peak">
+          <summary>Pico / Q</summary>
+          <p>Use Pico / Q para examinar uma ressonância e a confiabilidade da medição de sua largura e de seu decaimento. Pode entrar a partir de qualquer vista de análise. Para caracterizar o material, Adicionar medições identifica a amostra aqui; não é necessário passar primeiro por Placa ou Material para barras.</p>
+          <ol class="tl-steps">
+            <li>Selecione um toque limpo no navegador de onda, com espaço após ele para observar a resposta.</li>
+            <li>Selecione um ponto de pico, ou use os controles de pico anterior e próximo.</li>
+            <li>Leia frequência, largura de ressonância e Q espectral à esquerda.</li>
+            <li>Inspeccione a resposta isolada e ajuste da decadência à direita, em seguida, repita em outro toque.</li>
+          </ol>
+          <h4>Leia os dois gráficos em conjunto</h4>
+          <p>A largura de banda é a largura da ressonância 3 dB abaixo do pico. O Q espectral é a frequência do pico dividida por essa largura de banda. Um pico mais estreito tem Q mais alto, desde que o pico e os dois cruzamentos da largura de banda estejam resolvidos.</p>
+          <p>À direita, o traço azul é o toque selecionado filtrado em torno da ressonância escolhida, não o WAV de espectro completo. O traço dourado contínuo é o envelope de amplitude. O dourado tracejado é um decaimento exponencial ajustado a uma parte útil da resposta. Marcadores verticais identificam o intervalo de ajuste quando ele está disponível.</p>
+          <p>A escala de amplitude é relativa; não representa deslocamento físico nem pressão sonora calibrada. Um ajuste que se estende além da resposta observada é uma projeção, não dados adicionais gravados. Dependendo das definições, o espectro pode calcular a média dos toques aceitos; o decaimento pertence ao toque selecionado.</p>
+          <h4>O que o resultado significa</h4>
+          <p>Na mesma frequência, um Q mais alto geralmente significa um decaimento mais lento. Não é uma pontuação da qualidade da madeira nem uma previsão direta da sustentação de cada nota tocada. Para quem constrói, a comparação útil é saber se uma ressonância ficou mais ou menos amortecida após uma alteração e se o resultado se repete.</p>
+          <p>A análise do decaimento procura uma queda útil após o máximo do envelope, estima o ruído de fundo em regiões silenciosas adequadas e evita ajustar a cauda demasiado perto desse ruído. Ela verifica picos próximos e a sensibilidade à largura da banda de isolamento. Sem uma referência silenciosa adequada, o ajuste é provisório; uma resposta curta, contaminada ou instável pode não sustentar uma estimativa confiável.</p>
+          <p>Deixe mais espaço entre os toques, reduza o ruído de fundo e verifique outro toque em vez de forçar um resultado. A exportação dos dados do pico preserva o pico selecionado e as evidências disponíveis, incluindo o Q derivado do decaimento e os diagnósticos do ajuste. A divergência entre Q espectral e Q de decaimento deve ser investigada; não é motivo para escolher o número mais atraente.</p>
+          <h4>Material caracterizado</h4>
+          <p>Adicionar medições abre o mesmo editor usado em Placa e Material para barras, mesmo que tenha chegado aqui a partir de Instrumento. Identifique a amostra como placa ou material para barras e insira as dimensões e a massa. Alterar permite corrigir um tipo de amostra existente; Aplicar elimina uma confirmação longitudinal incompatível. Cancelar mantém inalteradas as medições guardadas e a confirmação. Nenhuma dessas ações muda a vista de análise.</p>
+          <p>Confirme o primeiro modo de flexão longitudinal da amostra com <strong>Usar … Hz como modo longitudinal</strong>. O resumo mostra a velocidade longitudinal do som calculada e o módulo de Young dinâmico ao longo da fibra. Expanda-o para ver a densidade e, no material para barras, o EI da amostra. Q não entra nessas estimativas; um pico selecionado e seu Q não são suficientes por si só.</p>
+          <p>A estimativa da placa usa o modelo de placa retangular livre-livre do Calculador de espessura da placa, com o comprimento ao longo da fibra. O modo longitudinal sozinho sustenta a estimativa longitudinal; os modos transversal e de torção continuam necessários para o cálculo completo da espessura. As dimensões finais da guitarra ou um pico arbitrário do corpo não caracterizam a madeira. Use uma amostra adequada e verifique fisicamente o modo.</p>
+        </details>
+
+        <h3 id="reader_help_connections">Use as medições em outras ferramentas</h3>
+        <details class="tl-accordion">
+          <summary>O que cada transferência de calculadora transporta</summary>
+          <p>Use a ação de calculadora para a atual sequência de trabalho, depois revise as entradas transferidas. Uma transferência fornece entradas, não uma ligação contínua que mantenha duas ferramentas sincronizadas. Não inclui a gravação de áudio.</p>
+          <h4>Instrumento para o Modelo 4-DOF</h4>
+          <p>Confirme Ar, Tampo e Costas, em seguida habilite o Modelo 4-DOF para ajustar o modelo acoplado simplificado. <strong>Abrir no Modelo 4-DOF</strong> transporta os parâmetros ajustados disponíveis para a ferramenta dedicada. Um modelo-alvo de simulação resolvido tem prioridade sobre o ajuste base, então verifique qual cenário você pretende transferir. Sem um ajuste, o link abre a ferramenta sem parâmetros ajustados.</p>
+          <p>Uma adequação permite que você explore mudanças modeladas. Ela não mede independentemente as massas e rigidezes do instrumento.</p>
+          <h4>Material para Barras para Espessura da Placa</h4>
+          <p><strong>Abrir no Calculador de espessura da placa</strong> envia o modo longitudinal confirmado, quando disponível, outras frequências compatíveis da placa e as medições aplicadas à amostra. As ressonâncias do corpo não são renomeadas como Transversal ou Torção. Sem medições, envia apenas as frequências disponíveis. Os valores padrão do destino não são medições da sua placa.</p>
+          <p>A calculadora estima densidade, módulos de grão longitudinal e transversal, sua razão e o módulo de cisalhamento usado pelo seu modelo de placa. Você fornece as dimensões corporais pretendidas e a frequência-alvo para calcular a espessura e a massa projetada. A transferência não escolhe a frequência-alvo certa para seu instrumento.</p>
+          <h4>Calculadora de barra a partir de material para barras</h4>
+          <p><strong>Abrir no Calculador de barras</strong> usa as medições já inseridas aqui. Com um modo longitudinal confirmado e medições válidas, ele transfere a densidade calculada e o módulo ao longo da fibra. Caso contrário, envia apenas as frequências disponíveis. Insira no destino a geometria da barra que pretende cortar; as dimensões do material testado não são usadas silenciosamente como dimensões da barra acabada.</p>
+          <h4>Material para barras caracterizado para Rigidez flexional</h4>
+          <p>Em Material para barras ou Pico / Q, insira as medições da amostra e confirme <strong>Usar … Hz como modo longitudinal</strong>. <strong>Corresponder em Rigidez flexional</strong> transfere essa frequência confirmada, as dimensões e a massa da amostra, o rótulo de origem e a densidade, o módulo e a velocidade do som calculados.</p>
+          <p>A correspondência compara o plano com este material e explora ajustes de largura e altura. Revise a proposta antes de aplicá-la. O destino calcula EI a partir do módulo do material e da geometria projetada; o EI do material bruto não é o EI de cada barra cortada a partir dele. Inspecionar outro pico não substitui silenciosamente a atribuição longitudinal confirmada.</p>
+        </details>
+
+        <h3 id="reader_help_reference">Interpretando e salvando resultados</h3>
+        <details class="tl-accordion" id="reader_help_save">
+          <summary>Salvando medições</summary>
+          <p>Salvar aplica-se à <strong>tomada atual</strong>, não à lista inteira de tomadas de comparação.</p>
+          <p id="reader_save_help">Verifique a ação disponível de Salvar antes de fechar a página. Salve seu áudio de origem, bem como quaisquer resultados de análise que você precise.</p>
+          <p>Exportar dados de pico é uma exportação de análise separada, não uma substituição para salvar o áudio de origem. O estado do navegador lembrado é conveniente para mover entre ferramentas, mas não deve ser sua única cópia de uma medição. Salve as gravações que você precisa antes de limpar.</p>
+        </details>
+        <details class="tl-accordion">
+          <summary>Se um resultado não parece correto</summary>
+          <dl>
+            <dt>Um modo parece estar faltando</dt><dd>Verifique a faixa de frequência visível, a posição do toque e o suporte da amostra. Um rótulo automático não é um inventário completo dos modos físicos.</dd>
+            <dt>Toques foram perdidos ou combinados</dt><dd>Inspeccione a forma de onda e a região selecionada. Impactos próximos, toques fracos e eventos de fundo podem confundir a detecção. Use eventos limpos e separados e repita.</dd>
+            <dt>A frequência muda entre gravações</dt><dd>Verifique se você selecionou a mesma ressonância, depois verifique o suporte, o estado da amostra e a seleção de análise antes de atribuir a diferença ao instrumento.</dd>
+            <dt>O Q muda muito mais do que a frequência</dt><dd>Verifique se o pico está isolado e a gravação é longa o suficiente para resolver sua largura e decaimento. Modos próximos, ruído, amortecimento do suporte e configurações podem afetar o Q enquanto a frequência permanece estável.</dd>
+            <dt>Uma curva muda após ajustar configurações</dt><dd>Retorne ao Padrão. Suavização e escala de exibição mudam o que é fácil de ver sem representar uma mudança no instrumento.</dd>
+          </dl>
+        </details>
+        <details class="tl-accordion">
+          <summary>Como os números são calculados</summary>
+          <p>O FFT descreve o conteúdo de frequência do sinal selecionado. A média de batidas combina espectros aceitos no domínio da potência. A análise padrão de batida-espectro usa uma janela de 400 ms com 100 ms de contexto pré-início. Essas são configurações de análise, não uma afirmação de que a resposta dura 400 ms.</p>
+          <p>Uma grade FFT mais fina pode ajudar a localizar um pico entre bins amplamente espaçados. O padding não cria mais decaimento gravado ou separa modos que o sinal disponível não pode resolver.</p>
+          <ul class="tl-list">
+            <li><strong>Q espectral:</strong> frequência do pico dividida pela largura de banda de -3 dB.</li>
+            <li><strong>Q de decaimento:</strong> pi &times; frequência &times; constante de tempo de amplitude, para um decaimento exponencial. A constante de tempo é o tempo para cair para cerca de 37% da amplitude inicial ajustada, não o tempo até que o som pare.</li>
+            <li><strong>Densidade do material para barras:</strong> massa da amostra dividida pelo volume retangular, com unidades consistentes.</li>
+            <li><strong>Velocidade do som longitudinal:</strong> raiz quadrada do módulo dividido pela densidade, usando módulo em pascals e densidade em kg/m&sup3;. Isso é uma velocidade estimada da onda material, não a velocidade do som no ar ou uma medição direta de tempo de percurso.</li>
+          </ul>
+          <p>O Q espectral e o Q de decaimento usam características diferentes da resposta, mas ambos dependem das escolhas de análise. A isolamento de frequência muda o sinal usado para o ajuste, então a concordância é uma útil verificação cruzada, não uma prova totalmente independente. Um exponencial se aproxima de zero; nunca atinge um ponto exato de parada.</p>
+          <p>Dimensões, massa, identidade do modo, geometria e condições de suporte devem se adequar ao modelo de material. Uma leitura de frequência limpa não pode compensar uma espessura errada ou um modo errado.</p>
+        </details>
+      </div>
+    </section>
+
+    <footer class="tl-footer" data-tool-footer></footer>
+  </div>
+
+  <dialog class="settings-dialog" id="settings_dialog" aria-labelledby="settings_title">
+    <form class="settings-dialog__panel" method="dialog">
+      <header class="settings-dialog__header">
+        <h2 id="settings_title">Configurações</h2>
+        <button class="ghost-btn btn-small icon-btn" type="submit" value="close" aria-label="Fechar configurações" title="Fechar">
+          <span aria-hidden="true">×</span>
+        </button>
+      </header>
+
+      <div class="settings-dialog__content">
+        <section class="settings-dialog__section" aria-labelledby="settings_audio_title">
+          <div class="settings-dialog__section-title">
+            <h3 id="settings_audio_title">Entrada de Áudio</h3>
+            <button class="ghost-btn btn-small" id="settings_audio_refresh" type="button">Atualizar</button>
+          </div>
+          <label class="settings-field">
+            <span class="settings-label-row">Entrada<span class="settings-help" tabindex="0" data-tooltip="Escolha qual entrada de microfone usar para gravação. Use Atualizar após conectar um novo dispositivo.">?</span></span>
+            <select id="settings_audio_input"></select>
+          </label>
+        </section>
+
+        <section class="settings-dialog__section" aria-labelledby="settings_fft_title">
+          <h3 id="settings_fft_title">FFT</h3>
+          <div class="settings-grid">
+            <label class="settings-field">
+              <span class="settings-label-row">Perfil<span class="settings-help" tabindex="0" data-tooltip="Padrão usa o comportamento atual da base do ToneLab. FFT Clássica usa os padrões de comparação do estilo Celestial. Personalizado aparece automaticamente quando você altera controles individuais de FFT.">?</span></span>
+              <select id="settings_fft_profile">
+                <option value="tonelab">Padrão</option>
+                <option value="celestial">FFT Clássica</option>
+                <option value="custom">Personalizado</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Escopo de Entrada<span class="settings-help" tabindex="0" data-tooltip="Seleção analisa o trecho FFT destacado. Arquivo completo analisa toda a onda carregada.">?</span></span>
+              <select id="settings_fft_scope">
+                <option value="">Padrão do perfil</option>
+                <option value="selection">Seleção</option>
+                <option value="full-file">Arquivo completo</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Janela<span class="settings-help" tabindex="0" data-tooltip="Aplica uma janela de ponderação antes da FFT. Hann é o padrão atual do ToneLab. Hamming corresponde mais de perto ao caminho de comparação mais antigo do Celestial.">?</span></span>
+              <select id="settings_fft_window">
+                <option value="">Padrão do perfil</option>
+                <option value="hann">Hann</option>
+                <option value="hamming">Hamming</option>
+                <option value="rect">Retangular</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Resolução<span class="settings-help" tabindex="0" data-tooltip="Define o comprimento mínimo da FFT. Maior resolução reduz a distância entre os bins, mas atualiza mais lentamente.">?</span></span>
+              <select id="settings_fft_resolution">
+                <option value="">Padrão do perfil</option>
+                <option value="fast">Rápido (8k)</option>
+                <option value="balanced">Equilibrado (32k)</option>
+                <option value="fine">Preciso (64k)</option>
+                <option value="very-fine">Muito fino (128k)</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Suavização<span class="settings-help" tabindex="0" data-tooltip="Controla o suavização pós-FFT do espectro exibido. Bins Gaussiana suaviza por bins FFT. Triangular Hz suaviza por largura de frequência. Desligado mostra o espectro exibido bruto.">?</span></span>
+              <select id="settings_fft_smoothing">
+                <option value="gaussian-bins">Bins Gaussiana</option>
+                <option value="triangular-hz">Hz Triangular</option>
+                <option value="off">Desativada</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Média<span class="settings-help" tabindex="0" data-tooltip="Médias de atualizações repetidas do FFT. A média contada suaviza os últimos espectros; exponencial mantém mais input recente com peso maior; sempre mantém todos os espectros desde o último reset.">?</span></span>
+              <select id="settings_fft_averaging">
+                <option value="off">Desativada</option>
+                <option value="avg-4">4 médias</option>
+                <option value="avg-8">8 médias</option>
+                <option value="exp-80">Exponencial 80%</option>
+                <option value="forever">Sempre</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Intervalo de Exibição<span class="settings-help" tabindex="0" data-tooltip="Define o intervalo de frequência horizontal exibido no espectro principal. O FFT clássico usa uma visualização mais estreita de 20-1000 Hz.">?</span></span>
+              <select id="settings_fft_display_range">
+                <option value="">Padrão do perfil</option>
+                <option value="mode-default">Padrão do modo</option>
+                <option value="celestial">20-1000 Hz</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Escala dB<span class="settings-help" tabindex="0" data-tooltip="Controla como as magnitudes do espectro são convertidas para dB. Piso relativo segue a escala atual do ToneLab. Fixo celestial usa um piso fixo para comparação com a exibição mais antiga.">?</span></span>
+              <select id="settings_fft_db_scale">
+                <option value="">Padrão do perfil</option>
+                <option value="relative-floor">Piso relativo</option>
+                <option value="celestial-fixed">Fixo celestial</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Eixo Y<span class="settings-help" tabindex="0" data-tooltip="Dimensiona automaticamente a escala vertical em dB para o espectro atual. A configuração fixa bloqueia o eixo em -100 a -40 dB para comparação.">?</span></span>
+              <select id="settings_fft_y_axis">
+                <option value="">Padrão do perfil</option>
+                <option value="auto">Auto</option>
+                <option value="celestial-fixed">-100 a -40 dB</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Escala X<span class="settings-help" tabindex="0" data-tooltip="Linear mantém o espaçamento de frequência proporcional em Hz. Log dá mais espaço visual para frequências mais baixas.">?</span></span>
+              <select id="settings_fft_x_scale">
+                <option value="">Padrão do perfil</option>
+                <option value="linear">Linear</option>
+                <option value="log">Log</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">X Min<span class="settings-help" tabindex="0" data-tooltip="Substitui a frequência mínima mostrada no gráfico FFT. Deixe em branco para o padrão atual do modo.">?</span></span>
+              <input id="settings_fft_x_min" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">X Max<span class="settings-help" tabindex="0" data-tooltip="Substitui a frequência máxima mostrada no gráfico FFT. Deixe em branco para o padrão atual do modo.">?</span></span>
+              <input id="settings_fft_x_max" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Y Min<span class="settings-help" tabindex="0" data-tooltip="Substitui o limite inferior em dB mostrado no gráfico FFT. Valores negativos são permitidos. Deixe em branco para automático.">?</span></span>
+              <input id="settings_fft_y_min" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Y Max<span class="settings-help" tabindex="0" data-tooltip="Substitui o limite superior em dB mostrado no gráfico FFT. Valores negativos são permitidos. Deixe em branco para automático.">?</span></span>
+              <input id="settings_fft_y_max" type="number" inputmode="decimal" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Bins Gaussiana<span class="settings-help" tabindex="0" data-tooltip="Define a largura de suavização Gaussiana em bins FFT quando a suavização Gaussiana está ativa. Valores maiores produzem um espectro mais arredondado, menos picado.">?</span></span>
+              <input id="settings_fft_smoothing_bins" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="8">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Hz Triangular<span class="settings-help" tabindex="0" data-tooltip="Define a largura de suavização em Hz quando a suavização triangular está ativa. Valores maiores misturam picos próximos de forma mais agressiva.">?</span></span>
+              <input id="settings_fft_smoothing_hz" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="1">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Largura da Linha<span class="settings-help" tabindex="0" data-tooltip="Controla a largura da linha da trilha FFT medida. Valores mais baixos parecem mais nítidos. Valores mais altos fazem o espectro parecer mais cheio ou arredondado.">?</span></span>
+              <input id="settings_fft_line_width" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="3">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Janela de Toque (ms)<span class="settings-help" tabindex="0" data-tooltip="Substitui o comprimento da janela de análise de toque em milissegundos. Deixe em branco para usar o comportamento padrão da janela de toque.">?</span></span>
+              <input id="settings_fft_tap_slice_window_ms" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Largura de Banda de Energia (Hz)<span class="settings-help" tabindex="0" data-tooltip="Substitui a largura de banda usada para medições de transferência de energia ao redor do pico selecionado. Deixe em branco para usar a largura de banda automática.">?</span></span>
+              <input id="settings_fft_energy_band_width_hz" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Auto">
+            </label>
+          </div>
+          <div class="settings-toggle-list" role="group" aria-label="Alternadores de análise FFT">
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Média de Toque<span class="settings-help" tabindex="0" data-tooltip="Média múltiplos espectros de toque detectados antes de renderizar e detectar modos. Isso pode estabilizar toques ruidosos, mas também pode alargar picos.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_tap_averaging" type="checkbox">
+                <span class="toggle-label sr-only">Média de Toque</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Pico de Mantença<span class="settings-help" tabindex="0" data-tooltip="Mostra o nível mais alto do espectro de visualização ao vivo alcançado em cada bin de frequência durante a gravação. Reseta quando a gravação começa.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_peak_hold" type="checkbox">
+                <span class="toggle-label sr-only">Pico de Mantença</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Refinamento Parabólico de Pico<span class="settings-help" tabindex="0" data-tooltip="Refina a frequência do pico detectado entre os bins FFT usando um ajuste parabólico. Desligue para inspecionar picos centrais de bin.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_peak_refine" type="checkbox">
+                <span class="toggle-label sr-only">Refinamento Parabólico de Pico</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+            <div class="settings-toggle-row">
+              <span class="settings-toggle-title">Validação PolyMAX<span class="settings-help" tabindex="0" data-tooltip="Mostra se os picos detectados alinham com candidatos estáveis do PolyMAX. Útil para verificar modos suspeitos, mas não é necessário para inspeção FFT comum.">?</span></span>
+              <label class="toggle settings-toggle">
+                <input id="settings_fft_polymax_validation" type="checkbox">
+                <span class="toggle-label sr-only">Validação PolyMAX</span>
+                <span class="toggle-knob"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="settings-dialog__footer">
+        <button class="ghost-btn btn-small" id="settings_fft_reset" type="button">Repor</button>
+        <button class="primary-btn btn-small" id="settings_done" type="submit" value="close">Concluído</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=20260324a" defer></script>
+  <script src="../common/atmosphere.js?rev=20260324a" defer></script>
+  <script src="../plate_thickness/calculator.js?rev=20260927a" defer></script>
+  <script src="../common/solver_core.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/state.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/utils.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/audio.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/waveform.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/segmentation.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/fft_engine.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/fft_plot.js?rev=20260324a" defer></script>
+  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=20260324a" defer></script>
+  <script src="../common/4dof/model_core.js?rev=20260324a" defer></script>
+  <script src="../common/per_tab_tool_session.js?rev=20260723a" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js?rev=20260324a" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=20260324a" defer></script>
+  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=20260324a"></script>
+  <script type="module" src="dist/resonance_reader/main.js?rev=20260324a"></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Idioma","currentLocale":"pt","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/resonance_reader/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/resonance_reader/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/resonance_reader/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/resonance_reader/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

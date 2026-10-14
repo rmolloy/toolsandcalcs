@@ -1,0 +1,46 @@
+{
+  "hideWhenEmpty": true,
+  "items": [
+    {
+      "label": "Lutherie Academy",
+      "href": "/",
+      "className": "hero-menu-home"
+    },
+    {
+      "label": "Tool Index",
+      "href": "../../"
+    },
+    {
+      "label": "Resonance Reader",
+      "href": "../resonance_reader/"
+    },
+    {
+      "label": "Four Degrees of Freedom Model",
+      "href": "../dof_model/"
+    },
+    {
+      "label": "Monopole Mobility",
+      "href": "../monopole_mobility/"
+    },
+    {
+      "label": "Plate Thickness",
+      "href": "../plate_thickness/"
+    },
+    {
+      "label": "Fret Scale & Bridge Compensation",
+      "href": "../fret_calculator/"
+    },
+    {
+      "label": "Guitar Setup Calculator",
+      "href": "../guitar_setup_calculator/"
+    },
+    {
+      "label": "Flexural Rigidity",
+      "href": "../flexural_rigidity/"
+    },
+    {
+      "label": "Brace Designer",
+      "href": "../brace_calc/"
+    }
+  ]
+}

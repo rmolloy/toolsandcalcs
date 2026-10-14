@@ -1,0 +1,48 @@
+.tool-locale-selector {
+  display: inline-flex;
+  align-items: center;
+  order: 80;
+  margin: 0;
+  color: inherit;
+}
+
+.hero-actions .hero-help-link,
+.fit-actions .hero-help-link {
+  order: 90;
+}
+
+.hero-actions #btn_fullscreen,
+.fit-actions #btn_fullscreen {
+  order: 100;
+  margin-inline-start: auto;
+}
+
+.hero-actions #fullscreen_status,
+.fit-actions #fullscreen_status {
+  order: 101;
+}
+
+.tool-locale-selector select {
+  width: auto;
+  min-height: var(--hero-control-height, 32px);
+  margin: 0;
+  border: var(--hero-control-border, 1px solid rgba(127, 127, 127, 0.45));
+  border-radius: var(--hero-control-radius, 999px);
+  background: var(--hero-control-bg, var(--panel, #fff));
+  color: var(--hero-control-text, var(--ink, #20242a));
+  padding: 0 12px;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tool-locale-selector select:focus-visible {
+  outline: 2px solid var(--orange, #e69f00);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .tool-locale-selector select {
+    max-width: 10rem;
+  }
+}

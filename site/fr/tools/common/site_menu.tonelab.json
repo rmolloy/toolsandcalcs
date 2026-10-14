@@ -1,0 +1,54 @@
+{
+  "hideWhenEmpty": true,
+  "items": [
+    {
+      "label": "Rick Molloy Guitars",
+      "href": "/",
+      "className": "hero-menu-home"
+    },
+    {
+      "label": "Accueil du laboratoire",
+      "href": "/lab/"
+    },
+    {
+      "label": "Resonance Reader",
+      "href": "/fr/lab/tools/resonance_reader/"
+    },
+    {
+      "label": "Modèle à quatre degrés de liberté",
+      "href": "/fr/lab/tools/dof_model/"
+    },
+    {
+      "label": "Calculateur de mobilité monopolaire",
+      "href": "/fr/lab/tools/monopole_mobility/"
+    },
+    {
+      "label": "Épaisseur de plaque",
+      "href": "/fr/lab/tools/plate_thickness/"
+    },
+    {
+      "label": "Frettes et compensation du chevalet",
+      "href": "/fr/lab/tools/fret_calculator/"
+    },
+    {
+      "label": "Calculateur de réglage de guitare",
+      "href": "/fr/lab/tools/guitar_setup_calculator/"
+    },
+    {
+      "label": "Calculateur de rigidité en flexion (EI)",
+      "href": "/fr/lab/tools/flexural_rigidity/"
+    },
+    {
+      "label": "Calculateur de géométrie des barres",
+      "href": "/fr/lab/tools/brace_calc/"
+    },
+    {
+      "label": "Espace de conception FIT",
+      "href": "/fr/lab/tools/fit_design/"
+    },
+    {
+      "label": "CARNET DE LUTHIER",
+      "href": "/fr/lab/notebook/"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+.tl-tool-guide {
+  border-top: 1px solid var(--border-strong);
+  margin-top: 24px;
+  padding-block: 32px;
+}
+
+.tl-tool-guide__body {
+  max-width: 680px;
+  margin-inline: auto;
+  overflow-wrap: anywhere;
+}
+
+.tl-tool-guide h2 {
+  margin: 0 0 16px;
+}
+
+.tl-tool-guide h3 {
+  margin: 28px 0 12px;
+}
+
+.tl-tool-guide h4 {
+  margin: 24px 0 8px;
+}
+
+.tl-tool-guide p,
+.tl-tool-guide ul,
+.tl-tool-guide ol,
+.tl-tool-guide dl {
+  margin: 12px 0;
+}
+
+.tl-tool-guide li + li,
+.tl-tool-guide dt {
+  margin-top: 10px;
+}
+
+.tl-tool-guide dd {
+  margin: 2px 0 14px;
+}
+
+.tl-tool-guide nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin-block: 20px;
+}
+
+.tl-tool-guide a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tl-tool-guide a:focus-visible,
+.tl-tool-guide summary:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.tl-tool-guide details + details {
+  margin-top: var(--tl-section-gap, 14px);
+}
+
+.tl-tool-guide [id] {
+  scroll-margin-top: 24px;
+}

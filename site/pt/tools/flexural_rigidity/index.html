@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <title>Calculadora de rigidez à flexão (EI) | O Laboratório da Rick Molloy Guitars</title>
+  <link rel="stylesheet" href="../common/tool_footer.css">
+  <link rel="stylesheet" href="../common/styles.css">
+  <link rel="stylesheet" href="../common/theme_resonance_shared.css">
+  <link rel="stylesheet" href="../common/layout.css">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <style>
+    :root {
+      --card-bg: #0d1116;
+      --card-border: rgba(255, 255, 255, 0.06);
+      --card-border-strong: rgba(255, 255, 255, 0.12);
+      --text-strong: #f7f8fa;
+      --text-body: #c7cfdb;
+      --text-muted: #7c869b;
+      --flexural-workbench-max: 1180px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-body);
+      font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      letter-spacing: 0;
+    }
+
+    header {
+      max-width: 960px;
+      margin: 32px auto 16px;
+      color: var(--text-body);
+    }
+
+    .brace-app {
+      width: min(100%, var(--flexural-workbench-max));
+      max-width: none;
+      margin: 0 auto 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .wide-card {
+      grid-column: 1 / -1;
+    }
+
+    .brace-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .brace-toolbar button {
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 6px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text-body);
+      transition: background 160ms ease, border 160ms ease;
+    }
+    .brace-toolbar button:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--card-border-strong);
+    }
+    .brace-toolbar button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+    .brace-toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .brace-match-plan-modal__panel {
+      width: min(1120px, calc(100vw - 32px));
+      height: min(744px, calc(100vh - 28px));
+      max-height: calc(100vh - 28px);
+      margin: 14px auto;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    .brace-match-plan-header {
+      width: 100%;
+      max-width: none;
+      min-height: 68px;
+      margin: 0;
+      padding: 14px 20px !important;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brace-match-plan-header p {
+      margin: 4px 0 0;
+    }
+
+    .brace-match-plan-close {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .brace-match-plan-workbench {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(330px, 0.85fr);
+      overflow: hidden;
+    }
+
+    .brace-match-plan-inputs {
+      min-width: 0;
+      overflow-y: auto;
+      padding: 18px;
+      border-left: 1px solid var(--card-border);
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .brace-match-plan-section-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brace-match-plan-section-heading h3,
+    .brace-match-plan-controls h3 {
+      margin: 0 0 4px;
+    }
+
+    .brace-match-plan-section-heading p {
+      margin: 0;
+      max-width: 68ch;
+    }
+
+    .brace-match-plan-provenance {
+      flex: 0 0 auto;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .brace-match-plan-material-grid,
+    .brace-match-plan-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .brace-match-plan-field-wide {
+      grid-column: 1 / -1;
+    }
+
+    .brace-match-plan-top {
+      padding: 0 0 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brace-match-plan-evidence {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .brace-match-plan-stock-evidence {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .brace-match-plan-evidence div {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 10px 12px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.14);
+    }
+
+    .brace-match-plan-evidence span {
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    [data-match-plan-system-status] {
+      min-height: 68px;
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    [data-match-plan-system-status] .brace-match-plan-evidence {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 0;
+    }
+
+    [data-match-plan-system-status] .brace-match-plan-evidence div {
+      min-height: 44px;
+      justify-content: center;
+      padding: 0 16px;
+      border: 0;
+      border-right: 1px solid var(--card-border);
+      border-radius: 0;
+      background: transparent;
+    }
+
+    [data-match-plan-system-status] .brace-match-plan-evidence div:first-child {
+      padding-left: 0;
+    }
+
+    [data-match-plan-system-status] .brace-match-plan-evidence div:last-child {
+      padding-right: 0;
+      border-right: 0;
+    }
+
+    [data-match-plan-system-status] [data-match-plan-system-message] {
+      margin: 0;
+    }
+
+    .brace-match-plan-results {
+      min-width: 0;
+      overflow-y: auto;
+      padding: 18px 20px;
+    }
+
+    .brace-match-plan-results-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .brace-match-plan-results-heading h3,
+    .brace-match-plan-results-heading p {
+      margin: 0;
+    }
+
+    .brace-match-plan-rows {
+      border-top: 1px solid var(--card-border);
+    }
+
+    .brace-match-plan-row {
+      display: grid;
+      grid-template-columns: minmax(68px, 0.45fr) minmax(0, 2.6fr) auto;
+      grid-template-areas: "name dimensions action";
+      gap: 12px;
+      align-items: center;
+      min-height: 54px;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brace-match-plan-row-name {
+      grid-area: name;
+    }
+
+    .brace-match-plan-row-dimensions {
+      grid-area: dimensions;
+      min-width: 0;
+      display: flex;
+      gap: 8px;
+      align-items: baseline;
+    }
+
+    .brace-match-plan-row-dimensions small {
+      margin-left: auto;
+      color: var(--text-muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .brace-match-plan-row-dimensions strong {
+      font-size: 0.9rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .brace-match-plan-row-proposed {
+      color: var(--accent);
+    }
+
+    .brace-match-plan-row-arrow {
+      color: var(--text-muted);
+    }
+
+    .brace-match-plan-row-action {
+      grid-area: action;
+      justify-self: end;
+    }
+
+    .brace-match-plan-action {
+      display: grid;
+      grid-template-columns: auto auto;
+      border: 1px solid var(--card-border);
+      border-radius: 6px;
+      overflow: hidden;
+      background-color: rgba(0, 0, 0, 0.35);
+    }
+
+    .brace-match-plan-action button {
+      min-height: 34px;
+      padding: 0 10px;
+      border: 0;
+      border-right: 1px solid var(--card-border);
+      border-radius: 0;
+      background: transparent;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .brace-match-plan-action button:last-child {
+      border-right: 0;
+    }
+
+    .brace-match-plan-action button[aria-pressed="true"] {
+      background: var(--surface-raised, rgba(97, 168, 255, 0.14));
+      color: var(--text-body);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .brace-match-plan-constraint {
+      display: block;
+      max-width: 24ch;
+      margin-top: 4px;
+      color: var(--warning, #f0a202);
+    }
+
+    .brace-match-plan-unchanged {
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .brace-match-plan-disclosure {
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brace-match-plan-disclosure > summary {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      list-style: none;
+      font-weight: 700;
+    }
+
+    .brace-match-plan-disclosure > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .brace-match-plan-disclosure > summary::after {
+      content: "›";
+      color: var(--text-muted);
+      font-size: 18px;
+      transform: rotate(90deg);
+    }
+
+    .brace-match-plan-disclosure[open] > summary::after {
+      transform: rotate(-90deg);
+    }
+
+    .brace-match-plan-disclosure-content {
+      padding: 0 0 16px;
+    }
+
+    .brace-match-plan-footer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      min-height: 66px;
+      padding: 12px 20px;
+      border-top: 1px solid var(--card-border);
+      background: rgba(11, 16, 27, 0.98);
+    }
+
+    .brace-match-plan-footer-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .brace-match-plan-footer [hidden],
+    .brace-match-plan-controls [hidden] {
+      display: none;
+    }
+
+    .tool-save-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 0;
+    }
+
+    .gallery-grid {
+      display: block;
+    }
+    .brace-gallery {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    }
+
+    .brace-view-gallery {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    }
+
+    .brace-card {
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--card-bg);
+      box-shadow: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: box-shadow 200ms ease, border 200ms ease;
+    }
+    .brace-card:hover {
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+      border-color: var(--card-border-strong);
+    }
+
+    .brace-card.readonly:hover {
+      box-shadow: none;
+      border-color: var(--card-border);
+    }
+
+    .brace-card header {
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brace-card header input {
+      flex: 1;
+      border: none;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-strong);
+      padding: 4px 0;
+    }
+
+    .brace-card header h4 {
+      margin: 0;
+      color: var(--text-strong);
+      font-size: 17px;
+    }
+
+    .brace-card-edit {
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      padding: 5px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-body);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .brace-card-edit:hover,
+    .brace-card-edit:focus-visible {
+      border-color: var(--card-border-strong);
+      background: rgba(255, 255, 255, 0.08);
+      outline: none;
+    }
+
+    .brace-preview {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brace-preview-svg {
+      width: 112px;
+      height: 128px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      flex-shrink: 0;
+    }
+
+    .preview-shape {
+      stroke: rgba(0, 0, 0, 0.2);
+      stroke-width: 1;
+    }
+    .preview-outline {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.7);
+      stroke-width: 1.4;
+      pointer-events: none;
+    }
+
+    .segment-rectangle {
+      fill: var(--blue);
+    }
+
+    .segment-triangle {
+      fill: var(--orange);
+    }
+
+    .segment-parabolic {
+      fill: var(--yellow);
+    }
+
+    .brace-preview-meta {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-strong);
+      letter-spacing: 0.01em;
+    }
+
+    .brace-info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--card-border);
+      padding-top: 12px;
+      gap: 12px;
+      font-size: 13px;
+    }
+    .brace-info-row span {
+      color: var(--text-body);
+      font-weight: 500;
+    }
+    .brace-info-row button {
+      border: none;
+      background: transparent;
+      color: var(--orange);
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .brace-meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 14px;
+      font-size: 13px;
+    }
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .metric-label {
+      color: var(--text-body);
+    }
+    .metric-value {
+      color: var(--text-strong);
+      font-weight: 500;
+      text-align: right;
+    }
+    .metric-value.primary {
+      color: var(--blue);
+    }
+
+    .profile-card {
+      display: grid;
+      grid-template-areas:
+        "title title"
+        "preview preview"
+        "inputs inputs";
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .profile-card h2 {
+      grid-area: title;
+    }
+
+    .profile-preview {
+      grid-area: preview;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .profile-preview-canvas {
+      width: 100%;
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+      padding: 12px;
+    }
+    .profile-preview-canvas svg {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    .top-inputs {
+      grid-area: inputs;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .top-inputs .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .top-inputs input {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text-strong);
+      font-size: 14px;
+    }
+    .viz-card .viz-frame {
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.02);
+      overflow: hidden;
+      padding: 12px;
+    }
+    .viz-card .viz-frame svg {
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    .brace-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .brace-stack-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: stretch;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .segment-chip {
+      align-self: flex-start;
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #05060a;
+    }
+    .segment-chip-rectangle {
+      background: var(--blue);
+    }
+    .segment-chip-triangle {
+      background: var(--orange);
+    }
+    .segment-chip-parabolic {
+      background: var(--yellow);
+      color: #0b0d12;
+    }
+    .stack-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .stack-field span {
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+    .stack-field input,
+    .stack-field select {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text-strong);
+      font-size: 13px;
+      transition: border 160ms ease, box-shadow 160ms ease;
+    }
+    .stack-field input:focus,
+    .stack-field select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue);
+      outline: none;
+    }
+
+    .brace-stack-row input,
+    .brace-stack-row select {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .brace-stack-row button {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      color: var(--text-body);
+    }
+
+    .brace-stack-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .brace-stack-actions button {
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      color: var(--text-body);
+    }
+
+    .brace-design {
+      border-top: 1px solid var(--card-border);
+      padding-top: 12px;
+    }
+    .brace-design summary {
+      list-style: none;
+      cursor: pointer;
+      height: 56px;
+      padding: 0 4px;
+      font-size: 15px;
+      color: var(--text-body);
+      display: flex;
+      align-items: center;
+    }
+    .brace-design summary::marker {
+      content: "";
+    }
+    .brace-design-summary::after {
+      content: "›";
+      font-size: 18px;
+      color: var(--text-muted);
+      transition: transform 200ms ease;
+      margin-left: 8px;
+    }
+    .brace-design[open] .brace-design-summary::after {
+      transform: rotate(90deg);
+    }
+    .brace-design-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      gap: 12px;
+    }
+    .brace-design-summary .design-label {
+      font-weight: 600;
+      color: var(--text-body);
+    }
+    .brace-design-summary .design-detail {
+      color: var(--text-muted);
+      font-size: 14px;
+      text-align: right;
+    }
+    .brace-design-body {
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .brace-design-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .comparison-panel .brace-summary-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .brace-summary-card {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px 18px;
+      background: var(--card-bg);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .brace-summary-card h4 {
+      margin: 0;
+      font-size: 15px;
+      color: var(--text-strong);
+    }
+
+    .brace-summary-card .metric {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-body);
+    }
+
+    .metric span:first-child {
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+
+    .results-card {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .results-header > div:first-child {
+      min-width: 0;
+    }
+    .results-card h2 {
+      margin: 0;
+      color: var(--text-strong);
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(150px, 1fr));
+      gap: 14px;
+    }
+    .results-figure-grid {
+      display: grid;
+      grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1.1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .results-figure-grid > div,
+    .viz-card {
+      min-width: 0;
+    }
+    .result-card {
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .result-card .label {
+      color: var(--text-muted);
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+      text-transform: uppercase;
+      overflow-wrap: anywhere;
+    }
+    .result-card .value {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-strong);
+    }
+    .result-card .value.primary {
+      color: var(--blue);
+      font-size: 24px;
+    }
+
+    .flexural-mode-row {
+      width: min(100%, var(--flexural-workbench-max));
+      margin: 0 auto;
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .flexural-mode-switch {
+      display: inline-flex;
+      align-self: flex-start;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--card-border);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .flexural-mode-button {
+      border: 0;
+      border-radius: 999px;
+      padding: 7px 14px;
+      background: transparent;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .flexural-mode-button[aria-pressed="true"] {
+      background: var(--blue);
+      color: #061016;
+    }
+
+    .flexural-mode-region {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .flexural-mode-region[hidden] {
+      display: none;
+    }
+
+    .edit-result-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .edit-result-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .edit-result-label {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .edit-result-value {
+      color: var(--text-strong);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .result-interpretation {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .empty-state {
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    @media (min-width: 1800px) {
+      :root {
+        --flexural-workbench-max: 1320px;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .results-figure-grid {
+        grid-template-columns: minmax(210px, 0.9fr) minmax(240px, 1.1fr);
+      }
+
+      .results-grid {
+        grid-template-columns: repeat(2, minmax(95px, 1fr));
+        gap: 10px;
+      }
+
+      .results-header {
+        flex-wrap: nowrap;
+      }
+
+      .tool-save-actions {
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+      }
+
+      .edit-result-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        padding: 10px 12px;
+      }
+
+      .edit-result-value {
+        font-size: 17px;
+      }
+
+      .brace-gallery {
+        grid-template-columns: repeat(2, minmax(180px, 1fr));
+      }
+
+      .brace-view-gallery .brace-meta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .result-card {
+        padding: 12px;
+      }
+
+      .result-card .value {
+        font-size: 20px;
+      }
+
+      .result-card .value.primary {
+        font-size: 22px;
+      }
+
+    }
+
+    @media (max-width: 1100px) {
+      .brace-match-plan-modal__panel {
+        width: calc(100vw - 24px);
+        height: calc(100vh - 24px);
+        max-height: calc(100vh - 24px);
+        margin: 12px auto;
+      }
+
+      .brace-match-plan-header {
+        min-height: 60px;
+        padding: 10px 18px !important;
+      }
+
+      [data-match-plan-system-status] {
+        min-height: 60px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr);
+        align-items: center;
+        gap: 12px;
+        padding: 6px 18px;
+      }
+
+      [data-match-plan-system-status] .brace-match-plan-evidence div {
+        min-height: 40px;
+      }
+
+      [data-match-plan-system-status] [data-match-plan-system-message] {
+        font-size: 11px;
+        line-height: 1.35;
+      }
+
+      .brace-match-plan-workbench {
+        display: block;
+        overflow-y: auto;
+      }
+
+      .brace-match-plan-results {
+        overflow: visible;
+        padding: 8px 20px;
+        border-bottom: 1px solid var(--card-border);
+      }
+
+      .brace-match-plan-results-heading {
+        margin-bottom: 4px;
+      }
+
+      .brace-match-plan-inputs {
+        overflow: visible;
+        border-left: 0;
+      }
+
+      .brace-match-plan-top {
+        gap: 6px;
+      }
+
+      .brace-match-plan-top .brace-match-plan-section-heading p {
+        display: none;
+      }
+
+      .brace-match-plan-top .brace-match-plan-material-grid {
+        margin-top: 6px;
+      }
+
+    }
+
+    @media (max-width: 600px) {
+      .results-figure-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .brace-match-plan-modal__panel {
+        width: calc(100vw - 16px);
+        height: calc(100vh - 16px);
+        max-height: calc(100vh - 16px);
+        margin: 8px auto;
+      }
+
+      .brace-match-plan-section-heading {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .brace-match-plan-material-grid,
+      .brace-match-plan-controls,
+      .brace-match-plan-evidence {
+        grid-template-columns: 1fr;
+      }
+
+      [data-match-plan-system-status] {
+        grid-template-columns: 1fr;
+      }
+
+      .brace-match-plan-footer {
+        grid-template-columns: 1fr;
+      }
+
+      .brace-match-plan-footer-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .brace-match-plan-footer-actions [data-match-plan-apply] {
+        grid-column: 1 / -1;
+      }
+
+      .brace-match-plan-results-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .brace-match-plan-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+          "name action"
+          "dimensions dimensions";
+        gap: 4px 10px;
+      }
+
+      .brace-match-plan-row-dimensions {
+        grid-area: dimensions;
+      }
+
+      .brace-match-plan-row-action {
+        grid-area: action;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .results-grid,
+      .edit-result-strip,
+      .top-inputs {
+        grid-template-columns: 1fr;
+      }
+
+      .profile-card {
+        display: flex;
+      }
+
+      .brace-gallery {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <link rel="canonical" href="https://rickmolloyguitars.com/pt/lab/tools/flexural_rigidity/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/flexural_rigidity/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/flexural_rigidity/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/flexural_rigidity/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/flexural_rigidity/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/flexural_rigidity/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/flexural_rigidity/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/flexural_rigidity/">
+</head>
+
+<body>
+<div class="tl-app">
+  <div class="tl-page" data-flexural-mode="view">
+    <section class="hero">
+      <div class="hero-row">
+        <div class="hero-controls-left">
+          <details class="hero-menu">
+            <summary class="hero-menu-trigger" aria-label="Abrir o menu do site">☰</summary>
+            <nav class="hero-menu-panel" aria-label="Seções do site" data-site-menu data-menu-profile="lutherieacademy"></nav>
+          </details>
+          <h1>Calculadora de rigidez à flexão (EI)</h1>
+        </div>
+        <div class="hero-actions">
+          <div class="tool-save-actions">
+            <button id="load_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Carregar JSON</button>
+            <button id="save_flexural_state" class="ghost-btn btn-small tl-save-action" type="button">Baixar JSON</button>
+            <input id="load_flexural_state_file" type="file" accept="application/json,.json" hidden>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="flexural-mode-row">
+      <div class="flexural-mode-switch" role="group" aria-label="Modo de trabalho de flexão">
+        <button class="flexural-mode-button" type="button" data-flexural-mode-button="view" aria-pressed="true">Ver</button>
+        <button class="flexural-mode-button" type="button" data-flexural-mode-button="edit" aria-pressed="false">Editar</button>
+        <button class="flexural-mode-button" type="button" id="match_brace_plan_view" aria-haspopup="dialog" disabled>Ajustar</button>
+      </div>
+    </div>
+
+    <main class="tl-layout tl-single">
+      <section class="tl-content">
+<div class="brace-app">
+  <section id="flexural_view_mode" class="flexural-mode-region" data-flexural-region="view" aria-label="Vista dos resultados de flexão">
+  <section class="card pad tl-card results-card">
+    <div class="results-header">
+      <div>
+        <h2>Resultados</h2>
+        <p class="small muted">Exemplo padrão do livro: vão de 280 mm, tampo de 2,8 mm e disposição com quatro barras.</p>
+      </div>
+    </div>
+    <div class="results-figure-grid">
+      <div>
+        <div class="results-grid">
+          <div class="result-card">
+            <div class="label">EI composto (N·m²)</div>
+            <div id="result_ei" class="value primary">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">I transformado (mm⁴)</div>
+            <div id="result_I" class="value">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Centroide a partir da placa (mm)</div>
+            <div id="result_centroid" class="value">—</div>
+          </div>
+          <div class="result-card">
+            <div class="label">Altura (mm)</div>
+            <div id="result_height" class="value">—</div>
+          </div>
+        </div>
+        <p id="result_status" class="small muted">Em tempo real: pronto para os dados.</p>
+        <div class="result-interpretation">
+          <p class="small muted">Calculado a partir do perfil atual do tampo e da disposição das barras.</p>
+          <button class="ghost-btn btn-small" type="button" data-flexural-mode-target="edit">Editar geometria</button>
+        </div>
+      </div>
+      <div class="viz-card">
+        <h3>Seção da linha AA</h3>
+        <div class="viz-frame">
+          <svg id="aa_view" viewBox="0 0 700 320">
+            <rect id="viz_bg" x="0" y="0" width="700" height="320" fill="transparent" />
+            <line id="viz_axis_y" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+            <line id="viz_axis_x" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+            <line id="viz_span_line" x1="0" y1="0" x2="0" y2="0" stroke="transparent" stroke-width="0" />
+            <rect id="viz_top" x="0" y="0" width="0" height="0" fill="var(--panel)" stroke="var(--border-soft)" />
+            <g id="viz_braces"></g>
+            <line id="viz_centroid" x1="0" y1="0" x2="0" y2="0" stroke="var(--orange)" stroke-width="2" stroke-dasharray="4 3" />
+          </svg>
+        </div>
+        <div class="small muted" id="viz_status">O vão e a disposição das barras são atualizados em tempo real.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card pad tl-card comparison-panel">
+    <h2>Comparação das barras</h2>
+    <p class="small muted">A massa relativa usa a área total como aproximação. A rigidez relativa baseia-se em I.</p>
+    <div id="brace_summary" class="brace-summary-grid"></div>
+  </section>
+
+  <section class="card pad tl-card">
+    <div class="brace-toolbar">
+      <h2>Galeria de barras</h2>
+    </div>
+    <p class="small muted">Formas atuais das barras usadas no resultado da linha AA.</p>
+    <div id="brace_gallery_view" class="brace-view-gallery"></div>
+  </section>
+  </section>
+
+  <section id="flexural_edit_mode" class="flexural-mode-region" data-flexural-region="edit" aria-label="Editor de geometria de flexão" hidden>
+  <section class="edit-result-strip" aria-label="Resumo em tempo real do resultado de flexão">
+    <div class="edit-result-item">
+      <span class="edit-result-label">EI composto</span>
+      <span id="edit_result_ei" class="edit-result-value">—</span>
+    </div>
+    <div class="edit-result-item">
+      <span class="edit-result-label">I transformado</span>
+      <span id="edit_result_I" class="edit-result-value">—</span>
+    </div>
+    <div class="edit-result-item">
+      <span class="edit-result-label">Centroide</span>
+      <span id="edit_result_centroid" class="edit-result-value">—</span>
+    </div>
+  </section>
+
+  <div class="overview-grid">
+    <section class="card pad tl-card profile-card">
+      <h2>Perfil do tampo</h2>
+      <div class="profile-preview">
+        <div class="profile-preview-canvas">
+          <svg id="edit_aa_view" viewBox="0 0 700 320">
+            <rect x="0" y="0" width="700" height="320" fill="transparent" />
+            <line id="edit_viz_axis_y" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+            <line id="edit_viz_axis_x" x1="0" y1="0" x2="0" y2="0" stroke="var(--border-soft)" stroke-width="1.5" />
+            <line id="edit_viz_span_line" x1="0" y1="0" x2="0" y2="0" stroke="transparent" stroke-width="0" />
+            <rect id="edit_viz_top" x="0" y="0" width="0" height="0" fill="var(--panel)" stroke="var(--border-soft)" />
+            <g id="edit_viz_braces"></g>
+            <line id="edit_viz_centroid" x1="0" y1="0" x2="0" y2="0" stroke="var(--orange)" stroke-width="2" stroke-dasharray="4 3" />
+          </svg>
+        </div>
+        <div class="brace-preview-meta" id="top_profile_meta">—</div>
+      </div>
+      <div class="top-inputs">
+        <label class="field">
+          <span>Vão AA (mm)</span>
+          <input type="number" value="280" min="100" step="1" id="top_span_input">
+        </label>
+        <label class="field">
+          <span>Espessura do tampo em AA (mm)</span>
+          <input type="number" value="2.8" min="0.5" step="0.1" id="top_thickness_input">
+        </label>
+        <label class="field">
+          <span>Módulo E do tampo (GPa)</span>
+          <input type="number" value="12" min="1" step="0.1" id="top_modulus_input">
+        </label>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="gallery-grid">
+    <section class="card pad tl-card">
+      <div class="brace-toolbar">
+        <div>
+          <h2>Galeria de barras</h2>
+        </div>
+        <div class="brace-toolbar-actions">
+          <button type="button" id="add_brace">+ Adicionar barra</button>
+          <button type="button" id="save_braces">Salvar disposição</button>
+          <button type="button" id="load_braces">Carregar disposição</button>
+          <input type="file" id="brace_file_input" accept="application/json" hidden>
+        </div>
+      </div>
+      <div id="brace_gallery" class="brace-gallery"></div>
+    </section>
+  </div>
+  </section>
+  </div>
+      </section>
+    </main>
+
+    <footer class="tl-footer" data-tool-footer></footer>
+  </div>
+</div>
+
+<script src="../common/tool_fullscreen_navigation.js" defer></script>
+<script src="../common/page_fullscreen.js" defer></script>
+<script src="../common/site_menu_loader.js"></script>
+<script src="../common/tool_footer_loader.js"></script>
+<script src="./flexural_render_mode.js"></script>
+<script src="./flexural_commonjs_bridge.js"></script>
+<script src="./calculator.js"></script>
+<script src="./brace_calc/brace-geometry.js"></script>
+<script src="../common/tool_document.js"></script>
+<script src="../common/tool_document_file.js"></script>
+<script src="../common/per_tab_tool_session.js"></script>
+<script src="../common/offline_save_surface.js"></script>
+<script src="../common/notebook_rpc_client.js" data-feature="notebook"></script>
+<script src="./brace_calc/brace_notebook_connection_client.js" data-feature="notebook"></script>
+<script src="./brace_calc/brace_notebook_save_client.js" data-feature="notebook"></script>
+<script src="./brace_calc/brace_notebook_restore_client.js" data-feature="notebook"></script>
+<script src="./brace_calc/brace_notebook_restore.js" data-feature="notebook"></script>
+<script src="./brace_calc/brace_save_surface.js"></script>
+<script src="../common/notebook_save_modal.js" data-feature="notebook"></script>
+<script src="./brace_calc/brace_save_modal.js" data-feature="notebook"></script>
+<script src="./brace_calc/brace_save_target.js"></script>
+<script src="./flexural_notebook_connection_client.js" data-feature="notebook"></script>
+<script src="./flexural_notebook_save_client.js" data-feature="notebook"></script>
+<script src="./flexural_notebook_restore_client.js" data-feature="notebook"></script>
+<script src="./flexural_notebook_restore.js" data-feature="notebook"></script>
+<script src="./flexural_save_surface.js"></script>
+<script src="./flexural_save_modal.js" data-feature="notebook"></script>
+<script src="./flexural_save_target.js"></script>
+<script src="./flexural_save_boot.js"></script>
+<script src="./flexural_default_layout.js"></script>
+<script src="./brace_calc/brace-layout-state.js"></script>
+<script src="./brace_calc/brace-stock-transfer.js"></script>
+<script src="./brace_calc/brace-match-plan.js"></script>
+<script src="./brace_calc/brace-match-system.js"></script>
+<script src="./brace_calc/brace-match-plan-prompt.js"></script>
+<script src="./brace_calc/brace-geometry-ui.js"></script>
+<script src="./flexural_aa_preview.js"></script>
+<script src="./flexural_results_controller.js"></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Idioma","currentLocale":"pt","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/flexural_rigidity/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/flexural_rigidity/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/flexural_rigidity/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/flexural_rigidity/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/flexural_rigidity/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/flexural_rigidity/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plate Thickness | The Lab at Rick Molloy Guitars</title>
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=1d50c39bd456">
+  <link rel="stylesheet" href="styles.css?rev=1d50c39bd456">
+  <link rel="stylesheet" href="../common/layout.css?rev=1d50c39bd456">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=1d50c39bd456">
+  <meta name="description" content="Estimate a target top or back thickness from panel dimensions, mass, tap-tone frequencies, and the finished instrument’s target mode.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/plate_thickness/">
+</head>
+
+<body data-plate-default-preset="obrien_om_ss">
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Plate Thickness</h1>
+          </div>
+          <div class="hero-actions">
+</div>
+        </div>
+      </section>
+
+      <section class="card-surface plate-tool-surface">
+        <main class="tl-content plate-thickness-page">
+          <section class="card pad tl-card tl-card-output plate-results-section">
+            <div class="plate-surface-header">
+              <div class="plate-surface-heading">
+                <h2>Results</h2>
+                <p class="small muted">Results update automatically as you enter measurements.</p>
+              </div>
+            </div>
+            <div class="results-grid plate-results-grid">
+              <div class="result-card result-card-primary">
+                <div class="label">Solved thickness</div>
+                <div id="result_thickness" class="value tl-primary-result">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">Projected panel mass</div>
+                <div id="result_mass" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">Density ρ</div>
+                <div id="result_density" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>L</sub></div>
+                <div id="result_el" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>C</sub></div>
+                <div id="result_ec" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>L</sub> / E<sub>C</sub></div>
+                <div id="result_ratio" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">G<sub>LC</sub></div>
+                <div id="result_shear" class="value">—</div>
+              </div>
+            </div>
+            <p id="result_status" class="status">Live: computed from current inputs</p>
+          </section>
+
+          <section class="card pad tl-card tl-card-controls plate-inputs-section">
+            <div class="plate-surface-header">
+              <div class="plate-surface-heading">
+                <h2>Inputs</h2>
+                <p class="small muted">Enter the target spec, current panel, and measured modes.</p>
+              </div>
+              <div class="tl-action-row plate-action-row">
+                <button id="load_results" class="ghost-btn btn-small tl-save-action" type="button">Load JSON</button>
+                <button id="save_results" class="ghost-btn btn-small tl-save-action" type="button">Download JSON</button>
+                <button id="reset_inputs" class="ghost-btn btn-small" type="button">Reset defaults</button>
+                <input id="load_results_file" type="file" accept="application/json,.json" hidden>
+              </div>
+            </div>
+
+            <div class="plate-preset-row">
+              <label class="plate-fit-field plate-fit-field-preset">
+                <span class="field-label">Preset</span>
+                <select id="body_preset">
+                  <option value="gore_medium_ss">Gore Medium SS</option>
+                  <option value="obrien_om_ss" selected>O'Brien OM SS</option>
+                  <option value="martin_om_ss">Martin OM SS</option>
+                  <option value="obrien_classical">O'Brien Classical</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="plate-input-grid plate-input-grid-regrouped">
+              <div class="input-block plate-input-block plate-input-block-target">
+                <h3 class="input-block__title">Target Spec</h3>
+                <p class="small muted input-block__copy">Design targets for the body and finished plate response.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Target main tap frequency (Hz)</span>
+                    <input type="number" step="0.1" min="20" data-field="target_freq" value="75">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Lower bout width (mm)</span>
+                    <input type="number" step="1" min="200" data-field="lower_bout" value="381">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Guitar box length (mm)</span>
+                    <input type="number" step="1" min="200" data-field="body_length" value="494">
+                  </label>
+                </form>
+              </div>
+
+              <div class="input-block plate-input-block plate-input-block-panel">
+                <h3 class="input-block__title">Current Panel</h3>
+                <p class="small muted input-block__copy">Measurements from the panel you are evaluating right now.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Panel length (mm)</span>
+                    <input type="number" step="1" min="200" data-field="panel_length" value="555">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Panel width (mm)</span>
+                    <input type="number" step="1" min="200" data-field="panel_width" value="227">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Panel thickness (mm)</span>
+                    <input type="number" step="0.1" min="1" data-field="panel_height" value="4.1">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Mass of panel (g)</span>
+                    <input type="number" step="0.1" min="10" data-field="panel_mass" value="211.4">
+                  </label>
+                </form>
+              </div>
+
+              <div class="input-block plate-input-block plate-input-block-modes">
+                <h3 class="input-block__title">Measured Modes</h3>
+                <p class="small muted input-block__copy">Latest modal readings for the panel, or manual entry.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Long-grain mode f<sub>L</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="long_freq" value="74">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Cross-grain mode f<sub>C</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="cross_freq" value="109">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Twist mode f<sub>T</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="twist_freq" value="42">
+                  </label>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <section class="tl-content tl-content-secondary">
+    <header class="card pad tl-card tl-card-info">
+      <h1>Target Panel Thickness Calculator</h1>
+      <p class="tl-card-desc">Use this tool to estimate the thickness for a top or back panel using its dimensions, mass, and tap-tone frequencies, so you can achieve consistent stiffness and a predictable acoustic response.</p>
+      <p class="tl-card-desc">This calculator is based on the Gore &amp; Gilet “Design” book (sections 4.5.2–4.5.3) and validated against their reference tables.</p>
+      <details class="tl-accordion">
+        <summary>Overview &amp; Required Measurements</summary>
+        <p class="tl-card-desc">Thickness isn’t the target, stiffness is. And one of the most straightforward ways to estimate stiffness in a guitar panel is by measuring its modal frequencies.</p>
+        <div class="before-columns">
+          <div class="before-card">
+            <h3>How to use this tool</h3>
+            <ol class="tl-steps">
+              <li>Prepare the panel so it is smooth, rectangular, and evenly thicknessed.</li>
+              <li>Tap to identify the long grain, cross grain, and twisting modes.</li>
+              <li>Enter your measurements into the controls below.</li>
+              <li>Review the recommended target thickness.</li>
+            </ol>
+          </div>
+          <div class="before-card">
+            <h3>Measurements required</h3>
+            <ul class="tl-list">
+              <li>Guitar box length &amp; lower-bout width (mm)</li>
+              <li>Panel length, width, and thickness (mm)</li>
+              <li>Panel mass (g)</li>
+              <li>Tap-tone frequencies: long, cross, twist (Hz)</li>
+              <li>Target modal frequency for the finished top or back (Hz)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="before-card">
+          <h3>Accuracy &amp; troubleshooting</h3>
+          <p class="tl-card-desc">Measure the fundamental of each mode (an FFT helps). Uneven thickness or coarse sanding can shift the tap frequencies; planing or scraping gives the most reliable readings.</p>
+          <p class="tl-card-desc">If the recommended thickness seems unusually thin, re-measure your tap frequencies and compare them to the examples in the Gore &amp; Gilet book. They should be in the same ballpark. If they’re not, send your numbers using the form below and we’ll take a look.</p>
+        </div>
+      </details>
+    </header>
+    <section class="card pad tl-card tl-card-info">
+      <h2>How the calculation works</h2>
+      <p class="tl-card-desc">This calculator is based on Gore &amp; Gilet Vol. 1 (sections 4.5.2–4.5.3) and the example tables in the Design book. It converts your panel’s geometry, mass, and tap-tone frequencies into stiffness properties, then determines the thickness that corresponds to your target modal frequency.</p>
+
+      <div class="tl-eq-block">
+        <h3>Density (ρ)</h3>
+        <p class="small muted">Derived from the bare panel mass and dimensions.</p>
+        <div class="tl-equation">ρ =
+          <span class="tl-eq-frac"><span class="tl-eq-num">m</span><span class="tl-eq-den">h · l · w</span></span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Young’s moduli (E<sub>L</sub>, E<sub>C</sub>)</h3>
+        <p class="small muted">Stiffness along and across the grain, calculated from density, geometry, and tap frequencies.</p>
+        <div class="tl-equation">
+          E = 0.94146 ·
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">ρ · l<sup>4</sup> · f<sup>2</sup></span>
+            <span class="tl-eq-den">h<sup>2</sup></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Shear modulus (G<sub>LC</sub>)</h3>
+        <p class="small muted">Resistance to twisting, taken from the twisting mode.</p>
+        <div class="tl-equation">
+          G = 1.21585 ·
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">ρ · l<sup>2</sup> · w<sup>2</sup> · f<sup>2</sup></span>
+            <span class="tl-eq-den">h<sup>2</sup></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Target thickness (h)</h3>
+        <p class="small muted">The thickness at which the panel will reach your chosen modal frequency.</p>
+        <div class="tl-equation">
+          h =
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">0.95977 · f · a<sup>2</sup> · √ρ</span>
+            <span class="tl-eq-den">√(E<sub>L</sub> + (a/b)<sup>4</sup> · E<sub>C</sub> + (a/b)<sup>2</sup> · (0.02857 ·
+              E<sub>L</sub> + 1.12 · G<sub>LC</sub>))</span>
+          </span>
+        </div>
+      </div>
+
+      <p class="small muted">URL tip: append <code>?long=80&amp;cross=120&amp;twisting=45</code> to prefill the modal taps when sharing results.</p>
+    </section>
+    <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="en-US">
+  <h2>Plate Thickness</h2>
+  <p>Estimate the thickness for a top or back panel from its dimensions, mass, and tap-tone frequencies so you can work toward consistent stiffness and a predictable acoustic response.</p>
+  <p>This calculator converts panel geometry, mass, and long-grain, cross-grain, and twisting-mode frequencies into stiffness properties and a target thickness.</p>
+  <p>Thickness is only a proxy for stiffness. Measuring each panel lets you respond to the wood in front of you instead of copying one nominal dimension.</p>
+  <ul>
+    <li>Enter the panel length, width, thickness, mass, and three modal frequencies.</li>
+    <li>Enter the guitar body dimensions and the target main tap frequency for the finished plate.</li>
+  </ul>
+  <p>Use the solved thickness as a measured starting target, then confirm the panel’s response as material is removed.</p>
+  <p class="small muted">Created by Rick Molloy from the plate-property and target-thickness methods published by Trevor Gore and Gerard Gilet.</p>
+</section>
+          </section>
+        </main>
+      </section>
+
+      <footer class="tl-footer" data-tool-footer></footer>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js?rev=1d50c39bd456" defer></script>
+  <script src="../common/page_fullscreen.js?rev=1d50c39bd456" defer></script>
+  <script src="../common/site_menu_loader.js?rev=1d50c39bd456"></script>
+  <script src="../common/tool_footer_loader.js?rev=1d50c39bd456"></script>
+  <script src="../common/tool_document.js?rev=1d50c39bd456"></script>
+  <script src="../common/tool_document_file.js?rev=1d50c39bd456"></script>
+  <script src="../common/per_tab_tool_session.js?rev=1d50c39bd456"></script>
+  <script src="../common/offline_save_surface.js?rev=1d50c39bd456"></script>
+  <script src="calculator.js?rev=1d50c39bd456"></script>
+  <script src="plate_thickness_save_surface.js?rev=1d50c39bd456"></script>
+  <script src="../common/notebook_rpc_client.js?rev=1d50c39bd456" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_connection_client.js?rev=1d50c39bd456" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_save_client.js?rev=1d50c39bd456" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_restore_client.js?rev=1d50c39bd456" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_restore.js?rev=1d50c39bd456" data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js?rev=1d50c39bd456" data-feature="notebook"></script>
+  <script src="plate_thickness_save_modal.js?rev=1d50c39bd456" data-feature="notebook"></script>
+  <script src="plate_thickness_save_target.js?rev=1d50c39bd456"></script>
+  <script src="plate_thickness_save_snapshot.js?rev=1d50c39bd456"></script>
+  <script src="query_params.js?rev=1d50c39bd456"></script>
+  <script src="main.js?rev=1d50c39bd456"></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=1d50c39bd456">
+  <script id="tool_locale_config" type="application/json">{"label":"Language","currentLocale":"en-US","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/plate_thickness/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/plate_thickness/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/plate_thickness/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/plate_thickness/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/plate_thickness/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/plate_thickness/"}]}</script>
+  <script src="../common/locale_preference.js?rev=1d50c39bd456" defer></script>
+  <script src="../common/locale_selector.js?rev=1d50c39bd456" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

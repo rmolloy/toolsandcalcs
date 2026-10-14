@@ -1,0 +1,14 @@
+:root {
+  --tl-resonance-primary-plot-height: clamp(180px, 32vh, 420px);
+  --tl-resonance-primary-plot-height-mobile: clamp(180px, 30vh, 360px);
+}
+
+.tl-resonance-primary-plot {
+  height: var(--tl-resonance-primary-plot-height);
+}
+
+@media (max-width: 900px) {
+  .tl-resonance-primary-plot {
+    height: var(--tl-resonance-primary-plot-height-mobile);
+  }
+}

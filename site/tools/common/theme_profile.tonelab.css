@@ -1,0 +1,5 @@
+:root {
+  --atmo-nebula-blue: color-mix(in srgb, var(--blue, #56B4E9) 24%, transparent);
+  --atmo-nebula-gold: color-mix(in srgb, var(--orange, #E69F00) 20%, transparent);
+  --atmo-nebula-cyan: color-mix(in srgb, var(--green, #009E73) 18%, transparent);
+}

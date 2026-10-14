@@ -1,0 +1,834 @@
+(() => {
+  const EPS = 1e-12;
+
+  interface SpectrumLike {
+    freqs: number[] | Float64Array;
+    mags?: number[] | Float64Array;
+    dbs?: number[] | Float64Array;
+  }
+
+  interface RingdownResult {
+    f0: number | null;
+    tau: number | null;
+    Q: number | null;
+    deltaF: number | null;
+    envelopeR2: number | null;
+    slope: number | null;
+    fitStartSec: number | null;
+    fitEndSec: number | null;
+    flags: string[];
+    response: number[];
+    envelope: number[];
+    envelopeFull: number[];
+    timeAxis: number[];
+    dt: number;
+    sampleRate: number;
+    attackSkipMs: number;
+    smoothWindowMs: number;
+    fitMethod: "envelope" | "damped_sinusoid";
+    isolationBandwidthHz: number | null;
+  }
+
+  interface EnvelopeFitResult {
+    tau: number | null;
+    envelopeR2: number | null;
+    slope: number | null;
+    fitStartSec: number | null;
+    fitEndSec: number | null;
+  }
+
+  interface DampedSinusoidFitResult {
+    frequencyHz: number | null;
+    tau: number | null;
+    r2: number | null;
+    slope: number | null;
+  }
+
+  function nextPow2(n: number): number {
+    let p = 1;
+    while (p < n) p <<= 1;
+    return p;
+  }
+
+  // Radix-2 FFT with optional inverse flag.
+  function fftRadix2(real: Float64Array, imag: Float64Array, inverse = false): void {
+    const n = real.length;
+    if ((n & (n - 1)) !== 0) throw new Error("FFT length must be power of two");
+
+    let j = 0;
+    for (let i = 0; i < n; i += 1) {
+      if (i < j) {
+        [real[i], real[j]] = [real[j], real[i]];
+        [imag[i], imag[j]] = [imag[j], imag[i]];
+      }
+      let m = n >> 1;
+      while (m >= 1 && j >= m) {
+        j -= m;
+        m >>= 1;
+      }
+      j += m;
+    }
+
+    const sign = inverse ? 1 : -1;
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = (sign * 2 * Math.PI) / len;
+      const wlenCos = Math.cos(ang);
+      const wlenSin = Math.sin(ang);
+      for (let i = 0; i < n; i += len) {
+        let wCos = 1;
+        let wSin = 0;
+        for (let k = 0; k < len / 2; k += 1) {
+          const uReal = real[i + k];
+          const uImag = imag[i + k];
+          const vReal = real[i + k + len / 2] * wCos - imag[i + k + len / 2] * wSin;
+          const vImag = real[i + k + len / 2] * wSin + imag[i + k + len / 2] * wCos;
+
+          real[i + k] = uReal + vReal;
+          imag[i + k] = uImag + vImag;
+          real[i + k + len / 2] = uReal - vReal;
+          imag[i + k + len / 2] = uImag - vImag;
+
+          const nextCos = wCos * wlenCos - wSin * wlenSin;
+          wSin = wCos * wlenSin + wSin * wlenCos;
+          wCos = nextCos;
+        }
+      }
+    }
+
+    if (inverse) {
+      for (let i = 0; i < n; i += 1) {
+        real[i] /= n;
+        imag[i] /= n;
+      }
+    }
+  }
+
+  function hilbertEnvelope(signal: ArrayLike<number>): Float64Array {
+    const n = nextPow2(signal.length);
+    const real = new Float64Array(n);
+    const imag = new Float64Array(n);
+    real.set(signal);
+    fftRadix2(real, imag, false);
+
+    const h = new Float64Array(n).fill(0);
+    h[0] = 1;
+    if (n % 2 === 0) h[n / 2] = 1;
+    for (let k = 1; k < n / 2; k += 1) h[k] = 2;
+
+    for (let k = 0; k < n; k += 1) {
+      real[k] *= h[k];
+      imag[k] *= h[k];
+    }
+
+    fftRadix2(real, imag, true);
+    const env = new Float64Array(signal.length);
+    for (let i = 0; i < signal.length; i += 1) {
+      env[i] = Math.hypot(real[i], imag[i]);
+    }
+    return env;
+  }
+
+  function movingAverage(arr: ArrayLike<number>, windowSamples: number): Float64Array {
+    const n = arr.length;
+    const out = new Float64Array(n);
+    const w = Math.max(1, windowSamples);
+    let acc = 0;
+    for (let i = 0; i < n; i += 1) {
+      acc += arr[i];
+      if (i >= w) acc -= arr[i - w];
+      out[i] = acc / Math.min(i + 1, w);
+    }
+    return out;
+  }
+
+  function linearRegression(xs: number[], ys: number[]): { slope: number; intercept: number; r2: number } | null {
+    const n = xs.length;
+    if (n === 0) return null;
+    let sumX = 0;
+    let sumY = 0;
+    let sumXY = 0;
+    let sumXX = 0;
+    let sumYY = 0;
+    for (let i = 0; i < n; i += 1) {
+      const x = xs[i];
+      const y = ys[i];
+      sumX += x;
+      sumY += y;
+      sumXY += x * y;
+      sumXX += x * x;
+      sumYY += y * y;
+    }
+    const meanX = sumX / n;
+    const meanY = sumY / n;
+    const denom = sumXX - n * meanX * meanX;
+    if (Math.abs(denom) < EPS) return null;
+    const slope = (sumXY - n * meanX * meanY) / denom;
+    const intercept = meanY - slope * meanX;
+    const ssTot = sumYY - n * meanY * meanY;
+    const ssRes = ys.reduce((acc, y, i) => {
+      const diff = y - (slope * xs[i] + intercept);
+      return acc + diff * diff;
+    }, 0);
+    const r2 = ssTot > 0 ? Math.max(0, 1 - ssRes / ssTot) : 0;
+    return { slope, intercept, r2 };
+  }
+
+  function meanRemovedSignalFromBuffer(buffer: ArrayLike<number>): Float64Array {
+    const signal = new Float64Array(buffer.length);
+    let mean = 0;
+    for (let i = 0; i < buffer.length; i += 1) {
+      const value = buffer[i];
+      signal[i] = value;
+      mean += value;
+    }
+    mean /= Math.max(1, buffer.length);
+    for (let i = 0; i < signal.length; i += 1) signal[i] -= mean;
+    return signal;
+  }
+
+  function normalizedEnvelopeFromSignal(
+    signal: ArrayLike<number>,
+    sampleRate: number,
+    smoothWindowMs: number,
+  ): Float64Array {
+    const env = hilbertEnvelope(signal);
+    const smoothSamples = Math.max(1, Math.round((smoothWindowMs / 1000) * sampleRate));
+    const smoothed = movingAverage(env, smoothSamples);
+    return normalizedEnvelopeFromSamples(smoothed);
+  }
+
+  function normalizedEnvelopeFromSamples(samples: ArrayLike<number>): Float64Array {
+    let maxEnv = EPS;
+    for (let i = 0; i < samples.length; i += 1) {
+      if (samples[i] > maxEnv) maxEnv = samples[i];
+    }
+    const normalized = new Float64Array(samples.length);
+    for (let i = 0; i < samples.length; i += 1) {
+      normalized[i] = samples[i] / maxEnv;
+    }
+    return normalized;
+  }
+
+  function envelopePeakIndexResolve(envelope: ArrayLike<number>): number {
+    let peakIdx = 0;
+    let peakVal = -Infinity;
+    for (let i = 0; i < envelope.length; i += 1) {
+      if (envelope[i] > peakVal) {
+        peakVal = envelope[i];
+        peakIdx = i;
+      }
+    }
+    return peakIdx;
+  }
+
+  function envelopeFitResultFromDecay(
+    envelope: ArrayLike<number>,
+    sampleRate: number,
+    attackSkipMs: number,
+    fitFloorDb: number,
+  ): EnvelopeFitResult {
+    const startIdx = fitStartIndexResolve(envelope, sampleRate, attackSkipMs);
+    const endIdx = fitEndIndexResolve(envelope, startIdx, fitFloorDb);
+    const fitTimes = fitTimesBuild(sampleRate, startIdx, endIdx);
+    const fitVals = fitLogEnvelopeBuild(envelope, startIdx, endIdx);
+    const fitStartSec = startIdx / sampleRate;
+    const fitEndSec = endIdx / sampleRate;
+    if (fitTimes.length <= 8) {
+      return { tau: null, envelopeR2: null, slope: null, fitStartSec, fitEndSec };
+    }
+    const reg = linearRegression(fitTimes, fitVals);
+    if (!reg) {
+      return { tau: null, envelopeR2: null, slope: null, fitStartSec, fitEndSec };
+    }
+    return {
+      slope: reg.slope,
+      tau: reg.slope < 0 ? -1 / reg.slope : null,
+      envelopeR2: reg.r2,
+      fitStartSec,
+      fitEndSec,
+    };
+  }
+
+  function fitStartIndexResolve(
+    envelope: ArrayLike<number>,
+    sampleRate: number,
+    attackSkipMs: number,
+  ): number {
+    const peakIdx = envelopePeakIndexResolve(envelope);
+    const peakSkip = Math.round((attackSkipMs / 1000) * sampleRate);
+    return Math.min(envelope.length - 1, peakIdx + peakSkip);
+  }
+
+  function fitEndIndexResolve(
+    envelope: ArrayLike<number>,
+    startIdx: number,
+    fitFloorDb: number,
+  ): number {
+    const threshold = Math.pow(10, -Math.abs(fitFloorDb) / 20);
+    for (let i = envelope.length - 1; i > startIdx; i -= 1) {
+      if (envelope[i] >= threshold) return i;
+    }
+    return envelope.length - 1;
+  }
+
+  function fitTimesBuild(sampleRate: number, startIdx: number, endIdx: number): number[] {
+    const fitTimes: number[] = [];
+    for (let i = startIdx; i <= endIdx; i += 1) fitTimes.push(i / sampleRate);
+    return fitTimes;
+  }
+
+  function fitLogEnvelopeBuild(
+    envelope: ArrayLike<number>,
+    startIdx: number,
+    endIdx: number,
+  ): number[] {
+    const fitVals: number[] = [];
+    for (let i = startIdx; i <= endIdx; i += 1) {
+      fitVals.push(Math.log(Math.max(envelope[i], EPS)));
+    }
+    return fitVals;
+  }
+
+  function fitDampedSinusoid({
+    signal,
+    sampleRate,
+    targetFrequencyHz,
+    fitStartSec,
+    fitEndSec,
+    initialTau,
+  }: {
+    signal: ArrayLike<number>;
+    sampleRate: number;
+    targetFrequencyHz: number;
+    fitStartSec: number;
+    fitEndSec: number;
+    initialTau?: number | null;
+  }): DampedSinusoidFitResult {
+    const startIndex = Math.max(0, Math.round(fitStartSec * sampleRate));
+    const endIndex = Math.min(signal.length - 1, Math.round(fitEndSec * sampleRate));
+    if (endIndex - startIndex < 8 || !Number.isFinite(targetFrequencyHz) || targetFrequencyHz <= 0) {
+      return { frequencyHz: null, tau: null, r2: null, slope: null };
+    }
+    const frequencyRadiusHz = Math.max(1, Math.min(6, targetFrequencyHz * 0.03));
+    const alphaCenter = Number.isFinite(initialTau) && (initialTau as number) > 0
+      ? 1 / (initialTau as number)
+      : 4;
+    const initialBest = dampedSinusoidCandidateResolve({
+      signal,
+      sampleRate,
+      startIndex,
+      endIndex,
+      frequencyCandidates: centeredCandidatesBuild(targetFrequencyHz, frequencyRadiusHz, 17),
+      alphaCandidates: scaledCandidatesBuild(alphaCenter),
+    });
+    const best = dampedSinusoidCandidateRefine({
+      signal,
+      sampleRate,
+      startIndex,
+      endIndex,
+      initialBest,
+      initialFrequencyRadiusHz: frequencyRadiusHz,
+    });
+    if (!best) return { frequencyHz: null, tau: null, r2: null, slope: null };
+    return {
+      frequencyHz: best.frequencyHz,
+      tau: 1 / best.alpha,
+      r2: best.r2,
+      slope: -best.alpha,
+    };
+  }
+
+  function centeredCandidatesBuild(center: number, radius: number, count: number): number[] {
+    return Array.from(
+      { length: count },
+      (_value, index) => center - radius + (2 * radius * index) / Math.max(1, count - 1),
+    );
+  }
+
+  function scaledCandidatesBuild(center: number): number[] {
+    return [0.4, 0.55, 0.7, 0.85, 1, 1.15, 1.35, 1.65, 2.1].map((factor) => center * factor);
+  }
+
+  function dampedSinusoidCandidateRefine({
+    signal,
+    sampleRate,
+    startIndex,
+    endIndex,
+    initialBest,
+    initialFrequencyRadiusHz,
+  }: {
+    signal: ArrayLike<number>;
+    sampleRate: number;
+    startIndex: number;
+    endIndex: number;
+    initialBest: { frequencyHz: number; alpha: number; r2: number } | null;
+    initialFrequencyRadiusHz: number;
+  }) {
+    let best = initialBest;
+    let frequencyRadiusHz = initialFrequencyRadiusHz / 4;
+    for (let pass = 0; pass < 3 && best; pass += 1) {
+      best = dampedSinusoidCandidateResolve({
+        signal,
+        sampleRate,
+        startIndex,
+        endIndex,
+        frequencyCandidates: centeredCandidatesBuild(best.frequencyHz, frequencyRadiusHz, 13),
+        alphaCandidates: centeredCandidatesBuild(best.alpha, best.alpha * 0.25, 13),
+      });
+      frequencyRadiusHz /= 4;
+    }
+    return best;
+  }
+
+  function dampedSinusoidCandidateResolve({
+    signal,
+    sampleRate,
+    startIndex,
+    endIndex,
+    frequencyCandidates,
+    alphaCandidates,
+  }: {
+    signal: ArrayLike<number>;
+    sampleRate: number;
+    startIndex: number;
+    endIndex: number;
+    frequencyCandidates: number[];
+    alphaCandidates: number[];
+  }) {
+    let best: { frequencyHz: number; alpha: number; r2: number } | null = null;
+    frequencyCandidates.forEach((frequencyHz) => {
+      alphaCandidates.forEach((alpha) => {
+        const r2 = dampedSinusoidFitQualityResolve(
+          signal,
+          sampleRate,
+          startIndex,
+          endIndex,
+          frequencyHz,
+          alpha,
+        );
+        if (r2 === null || !Number.isFinite(r2) || (best && r2 <= best.r2)) return;
+        best = { frequencyHz, alpha, r2 };
+      });
+    });
+    return best;
+  }
+
+  function dampedSinusoidFitQualityResolve(
+    signal: ArrayLike<number>,
+    sampleRate: number,
+    startIndex: number,
+    endIndex: number,
+    frequencyHz: number,
+    alpha: number,
+  ): number | null {
+    const stride = Math.max(1, Math.floor(sampleRate / 4000));
+    const angularFrequency = 2 * Math.PI * frequencyHz;
+    let cosineEnergy = 0;
+    let sineEnergy = 0;
+    let crossEnergy = 0;
+    let cosineSignal = 0;
+    let sineSignal = 0;
+    let signalEnergy = 0;
+    for (let index = startIndex; index <= endIndex; index += stride) {
+      const timeSec = (index - startIndex) / sampleRate;
+      const decay = Math.exp(-alpha * timeSec);
+      const cosine = decay * Math.cos(angularFrequency * timeSec);
+      const sine = decay * Math.sin(angularFrequency * timeSec);
+      const value = Number(signal[index]) || 0;
+      cosineEnergy += cosine * cosine;
+      sineEnergy += sine * sine;
+      crossEnergy += cosine * sine;
+      cosineSignal += cosine * value;
+      sineSignal += sine * value;
+      signalEnergy += value * value;
+    }
+    const determinant = cosineEnergy * sineEnergy - crossEnergy * crossEnergy;
+    if (Math.abs(determinant) < EPS || signalEnergy < EPS) return null;
+    const cosineCoefficient = (cosineSignal * sineEnergy - sineSignal * crossEnergy) / determinant;
+    const sineCoefficient = (sineSignal * cosineEnergy - cosineSignal * crossEnergy) / determinant;
+    const explainedEnergy = cosineCoefficient * cosineSignal + sineCoefficient * sineSignal;
+    return Math.max(0, Math.min(1, explainedEnergy / signalEnergy));
+  }
+
+  function findPeakFrequency(spectrum: SpectrumLike | null | undefined): number | null {
+    if (!spectrum?.freqs?.length || (!spectrum.mags && !spectrum.dbs)) return null;
+    const mags = spectrum.mags || (spectrum.dbs as any)?.map((db: number) => 10 ** (db / 20));
+    if (!mags?.length) return null;
+    let maxIdx = 0;
+    let maxVal = -Infinity;
+    for (let i = 0; i < mags.length; i += 1) {
+      if (mags[i] > maxVal) {
+        maxVal = mags[i];
+        maxIdx = i;
+      }
+    }
+    return spectrum.freqs[maxIdx] ?? null;
+  }
+
+  function localPeakFrequencyNearTarget(
+    spectrum: SpectrumLike | null | undefined,
+    targetFrequencyHz: number,
+    searchWidthHz: number,
+  ): number | null {
+    const peakIdx = localPeakIndexNearTargetResolve(spectrum, targetFrequencyHz, searchWidthHz);
+    return peakIdx === null ? null : spectrum!.freqs[peakIdx];
+  }
+
+  function findDeltaF(spectrum: SpectrumLike | null | undefined, f0: number | null): number | null {
+    if (!spectrum?.freqs?.length || !Number.isFinite(f0)) return null;
+    const freqs = spectrum.freqs;
+    const mags = spectrum.mags || spectrum.dbs?.map((db) => 10 ** (db / 20));
+    if (!mags?.length) return null;
+
+    let peakIdx = 0;
+    let peakVal = -Infinity;
+    for (let i = 0; i < mags.length; i += 1) {
+      if (mags[i] > peakVal) {
+        peakVal = mags[i];
+        peakIdx = i;
+      }
+    }
+    if (peakIdx < 0) return null;
+
+    const target = peakVal / Math.SQRT2; // -3 dB in linear magnitude space
+    let left = peakIdx;
+    while (left > 0 && mags[left] >= target) left -= 1;
+    let right = peakIdx;
+    while (right < mags.length - 1 && mags[right] >= target) right += 1;
+
+    const leftFreq = freqs[Math.max(0, left)];
+    const rightFreq = freqs[Math.min(freqs.length - 1, right)];
+    return Math.max(EPS, rightFreq - leftFreq);
+  }
+
+  function localDeltaFNearTarget(
+    spectrum: SpectrumLike | null | undefined,
+    targetFrequencyHz: number,
+    searchWidthHz: number,
+  ): number | null {
+    if (!spectrum?.freqs?.length) return null;
+    const mags = magnitudeSeriesResolve(spectrum);
+    if (!mags?.length) return null;
+    const peakIdx = localPeakIndexNearTargetResolve(spectrum, targetFrequencyHz, searchWidthHz);
+    if (peakIdx === null) return null;
+    const target = mags[peakIdx] / Math.SQRT2;
+    const leftBound = lowerIndexForFrequency(spectrum.freqs, targetFrequencyHz - searchWidthHz / 2);
+    const rightBound = upperIndexForFrequency(spectrum.freqs, targetFrequencyHz + searchWidthHz / 2);
+    let left = peakIdx;
+    while (left > leftBound && mags[left] >= target) left -= 1;
+    let right = peakIdx;
+    while (right < rightBound && mags[right] >= target) right += 1;
+    return Math.max(EPS, spectrum.freqs[right] - spectrum.freqs[left]);
+  }
+
+  function localPeakIndexNearTargetResolve(
+    spectrum: SpectrumLike | null | undefined,
+    targetFrequencyHz: number,
+    searchWidthHz: number,
+  ): number | null {
+    if (!spectrum?.freqs?.length) return null;
+    const mags = magnitudeSeriesResolve(spectrum);
+    if (!mags?.length) return null;
+    const lowerBound = targetFrequencyHz - searchWidthHz / 2;
+    const upperBound = targetFrequencyHz + searchWidthHz / 2;
+    let bestIdx: number | null = null;
+    let bestVal = -Infinity;
+    for (let i = 0; i < spectrum.freqs.length; i += 1) {
+      const freq = spectrum.freqs[i];
+      if (freq < lowerBound || freq > upperBound) continue;
+      if (mags[i] > bestVal) {
+        bestVal = mags[i];
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }
+
+  function magnitudeSeriesResolve(
+    spectrum: SpectrumLike,
+  ): number[] | Float64Array | null | undefined {
+    return spectrum.mags || spectrum.dbs?.map((db) => 10 ** (db / 20));
+  }
+
+  function lowerIndexForFrequency(freqs: number[] | Float64Array, minimumFreq: number): number {
+    for (let i = 0; i < freqs.length; i += 1) {
+      if (freqs[i] >= minimumFreq) return i;
+    }
+    return 0;
+  }
+
+  function upperIndexForFrequency(freqs: number[] | Float64Array, maximumFreq: number): number {
+    for (let i = freqs.length - 1; i >= 0; i -= 1) {
+      if (freqs[i] <= maximumFreq) return i;
+    }
+    return freqs.length - 1;
+  }
+
+  function modeBandwidthResolve(
+    targetFrequencyHz: number,
+    requestedBandwidthHz: number | null | undefined,
+  ): number {
+    if (Number.isFinite(requestedBandwidthHz) && (requestedBandwidthHz as number) > 0) {
+      return requestedBandwidthHz as number;
+    }
+    return Math.max(12, targetFrequencyHz * 0.08);
+  }
+
+  function bandpassSignalAroundTargetFrequency(
+    signal: ArrayLike<number>,
+    sampleRate: number,
+    targetFrequencyHz: number,
+    bandwidthHz: number,
+  ): Float64Array {
+    const n = nextPow2(signal.length);
+    const real = new Float64Array(n);
+    const imag = new Float64Array(n);
+    real.set(signal);
+    fftRadix2(real, imag, false);
+    const halfWidthHz = bandwidthHz / 2;
+    for (let k = 0; k < n; k += 1) {
+      const signedFrequencyHz = signedFrequencyResolve(k, n, sampleRate);
+      if (Math.abs(Math.abs(signedFrequencyHz) - targetFrequencyHz) <= halfWidthHz) continue;
+      real[k] = 0;
+      imag[k] = 0;
+    }
+    fftRadix2(real, imag, true);
+    return real.slice(0, signal.length);
+  }
+
+  function signedFrequencyResolve(binIndex: number, fftLength: number, sampleRate: number): number {
+    const frequency = (binIndex * sampleRate) / fftLength;
+    return binIndex <= fftLength / 2 ? frequency : frequency - sampleRate;
+  }
+
+  function ringdownResultBuild(args: {
+    response: ArrayLike<number>;
+    envelope: Float64Array;
+    sampleRate: number;
+    smoothWindowMs: number;
+    attackSkipMs: number;
+    peakFrequencyHz: number | null;
+    deltaF: number | null;
+    fitFloorDb: number;
+    fitOverride?: EnvelopeFitResult | null;
+    qFrequencyHz?: number | null;
+    fitMethod?: "envelope" | "damped_sinusoid";
+    isolationBandwidthHz?: number | null;
+  }): RingdownResult {
+    const fit = args.fitOverride || envelopeFitResultFromDecay(
+        args.envelope,
+        args.sampleRate,
+        args.attackSkipMs,
+        args.fitFloorDb,
+      );
+    const qFrequencyHz = Number.isFinite(args.qFrequencyHz)
+      ? args.qFrequencyHz
+      : args.peakFrequencyHz;
+    const Q = Number.isFinite(qFrequencyHz) && Number.isFinite(fit.tau)
+      ? Math.PI * (qFrequencyHz as number) * (fit.tau as number)
+      : null;
+    const flags = flagsResolve(Q, args.deltaF, args.peakFrequencyHz, fit.envelopeR2);
+    const downsampleStep = Math.max(1, Math.floor(args.envelope.length / 400));
+    const envelopePreview = previewSeriesBuild(args.envelope, downsampleStep);
+    const responsePreview = normalizedResponsePreviewBuild(args.response, downsampleStep);
+    const timeAxis = timeAxisPreviewBuild(args.envelope.length, args.sampleRate, downsampleStep);
+    return {
+      f0: args.peakFrequencyHz ?? null,
+      tau: fit.tau,
+      Q,
+      deltaF: args.deltaF,
+      envelopeR2: fit.envelopeR2,
+      slope: fit.slope,
+      fitStartSec: fit.fitStartSec,
+      fitEndSec: fit.fitEndSec,
+      flags,
+      response: responsePreview,
+      envelope: envelopePreview,
+      envelopeFull: Array.from(args.envelope),
+      timeAxis,
+      dt: 1 / args.sampleRate,
+      sampleRate: args.sampleRate,
+      attackSkipMs: args.attackSkipMs,
+      smoothWindowMs: args.smoothWindowMs,
+      fitMethod: args.fitMethod || "envelope",
+      isolationBandwidthHz: args.isolationBandwidthHz ?? null,
+    };
+  }
+
+  function previewSeriesBuild(series: ArrayLike<number>, downsampleStep: number): number[] {
+    const preview: number[] = [];
+    for (let i = 0; i < series.length; i += downsampleStep) preview.push(Number(series[i]) || 0);
+    return preview;
+  }
+
+  function normalizedResponsePreviewBuild(signal: ArrayLike<number>, downsampleStep: number): number[] {
+    const preview = previewSeriesBuild(signal, downsampleStep);
+    const maxAbs = preview.reduce((max, value) => Math.max(max, Math.abs(value)), EPS);
+    return preview.map((value) => value / maxAbs);
+  }
+
+  function timeAxisPreviewBuild(sampleCount: number, sampleRate: number, downsampleStep: number): number[] {
+    const preview: number[] = [];
+    for (let i = 0; i < sampleCount; i += downsampleStep) preview.push(i / sampleRate);
+    return preview;
+  }
+
+  function flagsResolve(
+    Q: number | null,
+    deltaF: number | null,
+    peak: number | null,
+    envelopeR2: number | null,
+  ): string[] {
+    const flags: string[] = [];
+    if (Number.isFinite(Q) && (Q as number) < 150) flags.push("low_Q");
+    if (Number.isFinite(deltaF) && Number.isFinite(peak) && (deltaF as number) > (peak as number) * 0.03) flags.push("broad_peak");
+    if (Number.isFinite(envelopeR2) && (envelopeR2 as number) < 0.85) flags.push("unstable_decay");
+    return flags;
+  }
+
+  function analyzeRingdown({
+    buffer,
+    sampleRate,
+    f0 = null,
+    spectrum = null,
+    smoothWindowMs = 5,
+    attackSkipMs = 40,
+  }: {
+    buffer: ArrayLike<number>;
+    sampleRate: number;
+    f0?: number | null;
+    spectrum?: SpectrumLike | null;
+    smoothWindowMs?: number;
+    attackSkipMs?: number;
+  }): RingdownResult {
+    if (!buffer || !buffer.length || !Number.isFinite(sampleRate)) {
+      throw new Error("Ring-down analysis requires audio buffer and sample rate");
+    }
+    const signal = meanRemovedSignalFromBuffer(buffer);
+    const envelope = normalizedEnvelopeFromSignal(signal, sampleRate, smoothWindowMs);
+    const peak = Number.isFinite(f0) ? (f0 as number) : findPeakFrequency(spectrum);
+    const deltaF = spectrum ? findDeltaF(spectrum, peak) : null;
+    return ringdownResultBuild({
+      response: signal,
+      envelope,
+      sampleRate,
+      smoothWindowMs,
+      attackSkipMs,
+      peakFrequencyHz: peak,
+      deltaF,
+      fitFloorDb: 26,
+    });
+  }
+
+  function analyzeModeRingdown({
+    buffer,
+    sampleRate,
+    targetFrequencyHz,
+    spectrum = null,
+    modeBandwidthHz = null,
+    smoothWindowMs = 5,
+    attackSkipMs = 40,
+    fitFloorDb = 26,
+  }: {
+    buffer: ArrayLike<number>;
+    sampleRate: number;
+    targetFrequencyHz: number;
+    spectrum?: SpectrumLike | null;
+    modeBandwidthHz?: number | null;
+    smoothWindowMs?: number;
+    attackSkipMs?: number;
+    fitFloorDb?: number;
+  }): RingdownResult {
+    if (!buffer || !buffer.length || !Number.isFinite(sampleRate)) {
+      throw new Error("Ring-down analysis requires audio buffer and sample rate");
+    }
+    if (!Number.isFinite(targetFrequencyHz) || targetFrequencyHz <= 0) {
+      throw new Error("Mode ring-down analysis requires a finite, positive target frequency.");
+    }
+    const signal = meanRemovedSignalFromBuffer(buffer);
+    const bandwidthHz = modeBandwidthResolve(targetFrequencyHz, modeBandwidthHz);
+    const isolationBandwidthHz = Math.max(12, bandwidthHz * 4);
+    const filteredSignal = bandpassSignalAroundTargetFrequency(
+      signal,
+      sampleRate,
+      targetFrequencyHz,
+      isolationBandwidthHz,
+    );
+    const envelope = normalizedEnvelopeFromSignal(filteredSignal, sampleRate, smoothWindowMs);
+    const envelopeFit = envelopeFitResultFromDecay(
+      envelope,
+      sampleRate,
+      attackSkipMs,
+      fitFloorDb,
+    );
+    const directFit = dampedSinusoidFitFromEnvelopeWindow(
+      filteredSignal,
+      sampleRate,
+      targetFrequencyHz,
+      envelopeFit,
+    );
+    const peak = spectrum
+      ? localPeakFrequencyNearTarget(spectrum, targetFrequencyHz, bandwidthHz)
+      : targetFrequencyHz;
+    const deltaF = spectrum
+      ? localDeltaFNearTarget(spectrum, targetFrequencyHz, bandwidthHz)
+      : null;
+    return ringdownResultBuild({
+      response: filteredSignal,
+      envelope,
+      sampleRate,
+      smoothWindowMs,
+      attackSkipMs,
+      peakFrequencyHz: peak ?? targetFrequencyHz,
+      deltaF,
+      fitFloorDb,
+      fitOverride: directFit,
+      qFrequencyHz: directFit ? directFit.frequencyHz : null,
+      fitMethod: directFit ? "damped_sinusoid" : "envelope",
+      isolationBandwidthHz,
+    });
+  }
+
+  function dampedSinusoidFitFromEnvelopeWindow(
+    signal: ArrayLike<number>,
+    sampleRate: number,
+    targetFrequencyHz: number,
+    envelopeFit: EnvelopeFitResult,
+  ): (EnvelopeFitResult & { frequencyHz: number }) | null {
+    if (!Number.isFinite(envelopeFit.fitStartSec) || !Number.isFinite(envelopeFit.fitEndSec)) return null;
+    const fit = fitDampedSinusoid({
+      signal,
+      sampleRate,
+      targetFrequencyHz,
+      fitStartSec: envelopeFit.fitStartSec as number,
+      fitEndSec: envelopeFit.fitEndSec as number,
+      initialTau: envelopeFit.tau,
+    });
+    if (
+      !Number.isFinite(fit.frequencyHz)
+      || !Number.isFinite(fit.tau)
+      || !Number.isFinite(fit.r2)
+      || !Number.isFinite(fit.slope)
+    ) return null;
+    return {
+      frequencyHz: fit.frequencyHz as number,
+      tau: fit.tau,
+      envelopeR2: fit.r2,
+      slope: fit.slope,
+      fitStartSec: envelopeFit.fitStartSec,
+      fitEndSec: envelopeFit.fitEndSec,
+    };
+  }
+
+  type ModalRingdownApi = {
+    analyzeRingdown: typeof analyzeRingdown;
+    analyzeModeRingdown: typeof analyzeModeRingdown;
+    fitDampedSinusoid: typeof fitDampedSinusoid;
+    transformComplex: typeof fftRadix2;
+  };
+  const scope = (typeof window !== "undefined" ? window : globalThis) as typeof globalThis & {
+    ModalRingdown?: ModalRingdownApi;
+  };
+
+  scope.ModalRingdown = { analyzeRingdown, analyzeModeRingdown, fitDampedSinusoid, transformComplex: fftRadix2 };
+})();

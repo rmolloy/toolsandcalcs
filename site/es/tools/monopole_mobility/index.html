@@ -1,0 +1,296 @@
+<!--
+© 2025 Rick Molloy. All rights reserved.
+
+This tool builds on the monopole mobility measurement workflow described by Trevor Gore.
+Permission is granted to view and reference this file for educational use only.
+No redistribution, modification, or commercial use without written consent from the author.
+-->
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de movilidad monopolar</title>
+  <link rel="stylesheet" href="../common/tool_footer.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../common/layout.css" />
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <link rel="canonical" href="https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/monopole_mobility/">
+</head>
+
+<body data-monopole-save-mode="offline">
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Abrir el menú del sitio">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Secciones del sitio" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Calculadora de movilidad monopolar</h1>
+          </div>
+          <div class="hero-actions">
+</div>
+        </div>
+      </section>
+
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output results">
+            <div class="results-header">
+              <h2>Propiedades calculadas</h2>
+              <div class="results-meta">
+                <span id="instrument_display" class="badge" hidden>Rick Molloy OM (10/25/2025) • Cuerdas de acero</span>
+                <span id="status" class="status muted">Cálculo en vivo</span>
+              </div>
+            </div>
+            <div class="result-grid">
+              <article class="result-card highlighted">
+                <div class="label">Puntuación de movilidad monopolar</div>
+                <div class="value-row">
+                  <div id="mobilityScore" class="value">--</div>
+                  <span class="unit-inline">puntuación</span>
+                </div>
+                <div class="note">1000 / √(K · M<sub>eff</sub>)</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Rigidez de la tapa K</div>
+                <div class="value-row">
+                  <div id="stiffness" class="value">--</div>
+                  <span class="unit-inline">N/m</span>
+                </div>
+                <div class="note">K = m·g / x</div>
+              </article>
+              <article class="result-card">
+                <div class="label">MASA EFECTIVA M<sub>eff</sub></div>
+                <div class="value-row">
+                  <div id="effMass" class="value">--</div>
+                  <span class="unit-inline">g</span>
+                </div>
+                <div class="note">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </article>
+            </div>
+            <div class="muted small">
+              Las puntuaciones más bajas indican una tapa más rígida o pesada. Las guitarras con puntuaciones altas (&gt; 20 para guitarras de cuerdas de acero, &gt; 30 para clásicas) probablemente necesitarán una construcción con materiales compuestos para resistir con el tiempo.
+            </div>
+            <div id="warnings" class="muted small"></div>
+            <div class="muted small">
+              La rigidez de la tapa K y la masa efectiva M<sub>eff</sub> se pueden introducir en el solucionador 4‑DOF para modelar el
+              acoplamiento aire/tapa/fondo de tu guitarra e indicar cambios realistas de ajuste en varetas o placas al buscar frecuencias concretas.
+            </div>
+          </section>
+        </section>
+
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls controls">
+            <h2>Datos de medición</h2>
+            <div id="monopole_mode_controls">
+              <div class="mode-toggle" role="group" aria-label="Seleccionar el modo de cálculo">
+                <button id="mode_static" class="mode-btn active" type="button">
+                  Modo estático (útil de Gore)
+                  <span class="help-text">Usa la flexión medida con comparador</span>
+                </button>
+                <button id="mode_dynamic" class="mode-btn" type="button" title="El modo dinámico usa dos lecturas de frecuencia en lugar de un comparador.">
+                  Modo dinámico (carga de masa)
+                  <span class="help-text">Dos frecuencias FFT, sin flexión</span>
+                </button>
+              </div>
+              <div class="muted small" id="mode_hint_static" data-mode-note="static">Modo estático: introduce f<sub>u</sub>, la flexión x medida con el comparador y la masa de prueba.</div>
+              <div class="muted small hidden" id="mode_hint_dynamic" data-mode-note="dynamic">Modo dinámico: introduce la frecuencia sin carga f<sub>0</sub>, la frecuencia cargada f<sub>1</sub> y la masa añadida en gramos.</div>
+            </div>
+            <div id="monopole_identity_controls" hidden>
+              <label class="name-input">
+                Nombre de la guitarra o muestra
+                <input id="instrument_name" type="text" value="Rick Molloy OM (10/25/2025)" />
+              </label>
+              <label class="type-input">
+                Tipo de construcción
+                <select id="instrument_type">
+                  <option value="steel" selected>Cuerdas de acero</option>
+                  <option value="classical">Clásica</option>
+                  <option value="other">Otra</option>
+                </select>
+              </label>
+            </div>
+            <div class="inputs mode-panel" id="staticInputs">
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="freq_field">Frecuencia monopolar desacoplada de la tapa, f<sub>u</sub> (Hz)<span class="help-text">Boca sellada y cuerdas silenciadas</span></label>
+                  <input id="freq_field" class="value-input" type="number" min="90" max="220" step="0.1" value="153" />
+                </div>
+                <input id="freq" type="range" min="90" max="220" step="0.1" value="153" />
+              </div>
+
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="deflection_field">Flexión del puente bajo la carga de prueba, x (mm)<span class="help-text">Comparador en el puente, carga vertical</span></label>
+                  <input id="deflection_field" class="value-input" type="number" min="0.05" max="0.50" step="0.005" value="0.18" />
+                </div>
+                <input id="deflection" type="range" min="0.05" max="0.50" step="0.005" value="0.18" />
+              </div>
+
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="mass_field">Masa de prueba, m (kg)<span class="help-text">Aplica la carga verticalmente sobre el puente mediante el vástago del comparador</span></label>
+                  <input id="mass_field" class="value-input" type="number" min="0.30" max="1.80" step="0.01" value="1.02" />
+                </div>
+                <input id="mass" type="range" min="0.30" max="1.80" step="0.01" value="1.02" />
+              </div>
+            </div>
+            <div class="inputs mode-panel hidden" id="dynamicInputs">
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_f0_field">Frecuencia desacoplada de la tapa, f<sub>0</sub> (Hz)<span class="help-text">Boca sellada y cuerdas silenciadas</span></label>
+                  <input id="dyn_f0_field" class="value-input" type="number" min="90" max="240" step="0.1" value="153" />
+                </div>
+                <input id="dyn_f0" type="range" min="90" max="240" step="0.1" value="153" />
+              </div>
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_f1_field">Frecuencia cargada, f<sub>1</sub> (Hz)<span class="help-text">Con la masa añadida sobre el puente</span></label>
+                  <input id="dyn_f1_field" class="value-input" type="number" min="70" max="230" step="0.1" value="141" />
+                </div>
+                <input id="dyn_f1" type="range" min="70" max="230" step="0.1" value="141" />
+              </div>
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_mass_field">Masa añadida (g)<span class="help-text" title="El modo dinámico usa el cambio de frecuencia al añadir una pequeña masa en el puente.">Usa una masa pequeña y conocida colocada en el puente</span></label>
+                  <input id="dyn_mass_field" class="value-input" type="number" min="2" max="80" step="0.5" value="20" />
+                </div>
+                <input id="dyn_mass" type="range" min="2" max="80" step="0.5" value="20" />
+              </div>
+            </div>
+            <div class="actions">
+              <button id="reset">Restablecer</button>
+              <button id="copy" class="ghost">Copiar resultados</button>
+              <button id="load" class="ghost tl-save-action">Cargar JSON</button>
+              <button id="save" class="ghost tl-save-action">Descargar JSON</button>
+              <input id="load_file" type="file" accept="application/json,.json" hidden />
+            </div>
+          </section>
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+          <header class="card pad tl-card tl-card-info">
+            <h2>Resumen y mediciones necesarias</h2>
+            
+              <p class="tl-card-desc">
+                <strong>Usa esta herramienta para</strong> convertir las lecturas de tu útil de movilidad monopolar al estilo Gore en rigidez de la tapa K,
+                masa modal efectiva M<sub>eff</sub> y, a continuación, calcular el valor de movilidad monopolar de una guitarra para poder comparar instrumentos de forma coherente.
+              </p>
+              <p class="tl-card-desc">
+                <strong>Por qué importa:</strong> La movilidad monopolar muestra la libertad con la que la tapa bombea aire en su resonancia principal y mide la capacidad de respuesta de una guitarra en un amplio intervalo de frecuencias. Indica cuánto sonido puedes obtener para una determinada fuerza de pulsación. No protege frente a problemas estructurales, pero sí muestra que las tapas de baja masa y baja rigidez responderán mejor, siempre que resistan.
+              </p>
+              <div class="sample-note badge">
+                Conjunto de datos predeterminado: Rick Molloy OM (10/25/2025) (abeto / cuerdas de acero, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
+              </div>
+              <details class="tl-accordion">
+                <summary>Resumen y mediciones necesarias</summary>
+                <p class="tl-card-desc">
+                  Sella la boca, silencia las cuerdas y golpea suavemente la tapa para encontrar la frecuencia f<sub>u</sub> de la resonancia monopolar desacoplada. Después, usa el útil de movilidad monopolar para aplicar una fuerza conocida al puente y registra su flexión x.
+                </p>
+                <div class="before-card">
+                  <h3>Mediciones necesarias</h3>
+                  <ul class="tl-list">
+                    <li>Frecuencia monopolar desacoplada de la tapa, f<sub>u</sub> (Hz)</li>
+                    <li>Flexión del puente bajo la carga de prueba, x (mm)</li>
+                    <li>Masa de prueba, m (kg)</li>
+                  </ul>
+                </div>
+                <div class="before-card">
+                  <h3>Cómo usar esta herramienta</h3>
+                  <ol class="tl-steps">
+                    <li>Sella la boca con una cubierta rígida y ligera para que la caja quede hermética.</li>
+                    <li>Silencia las cuerdas, golpea suavemente la tapa y registra la frecuencia desacoplada f<sub>u</sub> con tu aplicación FFT.</li>
+                    <li>Monta el útil de movilidad. Aplica sobre el puente una masa de prueba conocida (m) y mide la flexión del panel (x) en milímetros.</li>
+                    <li>Introduce f<sub>u</sub>, x y m. La calculadora obtiene K, M<sub>eff</sub> y la movilidad.</li>
+                    <li>Revisa la puntuación y compárala con tus propios registros de construcción.</li>
+                  </ol>
+                </div>
+              </details>
+            </header>
+
+          
+            <section class="card pad tl-card tl-card-info tl-span-2">
+              <h2>Cómo funciona esta herramienta</h2>
+              <p class="tl-card-desc">
+                Esta herramienta se basa en el útil de movilidad monopolar de Gore y Gilet (Vol. 1, Apéndice AI 3). La calculadora convierte las mediciones del útil en rigidez de la tapa en el puente (K), masa modal efectiva (M<sub>eff</sub>) y la puntuación estándar de movilidad monopolar.
+              </p>
+              <div class="tl-eq-block">
+                <h3>Fuerza de la masa de prueba</h3>
+                <p class="small muted">La masa determina la fuerza aplicada mediante el útil.</p>
+                <div class="tl-equation">F = m · g</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Rigidez de la tapa en el puente</h3>
+                <p class="small muted">La fuerza aplicada dividida por la flexión x, convertida a metros, da la rigidez K.</p>
+                <div class="tl-equation">K = F / x</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Masa modal efectiva</h3>
+                <p class="small muted">Derivada de la rigidez K y de la frecuencia desacoplada de la tapa f<sub>u</sub>.</p>
+                <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Puntuación de movilidad monopolar</h3>
+                <p class="small muted">Índice usado para comparar la capacidad de respuesta entre instrumentos.</p>
+                <div class="tl-equation">Puntuación de movilidad = 1000 / √(K · M<sub>eff</sub>)</div>
+              </div>
+            </section>
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="es">
+  <h2>Calculadora de movilidad monopolar</h2>
+  <p>Convierte mediciones estáticas con el útil de Gore o mediciones dinámicas mediante carga de masa en rigidez de la tapa, masa modal efectiva y una puntuación de movilidad monopolar.</p>
+  <p>La movilidad monopolar describe la facilidad con la que se mueve la tapa de una guitarra en su resonancia principal desacoplada en relación con su rigidez y su masa modal efectiva.</p>
+  <p>Comparar la movilidad entre instrumentos ayuda a entender la libertad de respuesta de cada tapa y la contribución de la rigidez y la masa.</p>
+  <ul>
+    <li>Mide la frecuencia desacoplada de la tapa con la boca sellada y las cuerdas silenciadas.</li>
+    <li>Mide la flexión del puente bajo una carga conocida o el cambio de frecuencia producido por una masa añadida conocida.</li>
+  </ul>
+  <p>Usa conjuntamente la rigidez, la masa efectiva y la movilidad calculadas al comparar instrumentos o planificar cambios medidos en varetas y placas.</p>
+  <p class="small muted">Creado por Rick Molloy a partir de los métodos de movilidad monopolar publicados por Trevor Gore y Gerard Gilet.</p>
+</section>
+        </section>
+      </main>
+
+      <footer class="tl-footer" data-tool-footer></footer>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../common/tool_document.js" defer></script>
+  <script src="../common/tool_document_file.js" defer></script>
+  <script src="../common/per_tab_tool_session.js" defer></script>
+  <script src="../common/offline_save_surface.js" defer></script>
+  <script src="monopole_save_surface.js" defer></script>
+  <script src="../common/notebook_rpc_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_connection_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_save_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_restore_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_restore.js" defer data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js" defer data-feature="notebook"></script>
+  <script src="monopole_save_modal.js" defer data-feature="notebook"></script>
+  <script src="monopole_save_summary.js" defer></script>
+  <script src="monopole_save_target.js" defer></script>
+  <script src="monopole_save_snapshot.js" defer></script>
+  <script src="main.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Idioma","currentLocale":"es","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/monopole_mobility/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/monopole_mobility/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

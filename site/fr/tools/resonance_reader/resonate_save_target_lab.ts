@@ -1,0 +1,213 @@
+import type {
+  ResonanceSaveActionRequest,
+  ResonanceSaveActionRunner,
+  ResonanceSaveSurface,
+} from "./resonate_save_contract.js";
+import {
+  resonanceCapturePlotPngBlobBuild,
+  resonanceCaptureStateJsonBuild,
+  resonanceCaptureWaveBlobBuild,
+} from "./resonate_capture_package.js";
+import { persistResonanceNotebookConnectDraft } from "./resonate_notebook_connect_draft.js";
+import { readNotebookConnectionForResonanceSave } from "./resonate_notebook_connection_client.js";
+import { listNotebookSubjectsForResonanceSave, saveNotebookResonanceCapture } from "./resonate_notebook_save_client.js";
+import { downloadResonanceCapturePackage } from "./resonate_save_package_download.js";
+import { openConnectedResonanceSaveModal } from "./resonate_save_modal.js";
+import { openResonanceSaveMenu } from "./resonate_save_menu.js";
+import { resonanceSaveSummaryBuild } from "./resonate_save_summary.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+
+export function resonanceSaveRunnerCreate(): ResonanceSaveActionRunner {
+  return {
+    readResonanceSaveSurface,
+    runResonanceSaveAction,
+  };
+}
+
+async function readResonanceSaveSurface(): Promise<ResonanceSaveSurface> {
+  const connection = await readNotebookConnectionForResonanceSave();
+  if (connection.accessState !== "lab-connected") {
+    return {
+      mode: "lab-disconnected",
+      label: resonanceLocalizedMessages.saveActionLabel,
+      accessState: connection.accessState,
+    };
+  }
+
+  return {
+    mode: "lab-connected",
+    label: resonanceLocalizedMessages.saveActionLabel,
+    workbookId: connection.workbookId,
+    notebookName: connection.notebookName,
+  };
+}
+
+async function runResonanceSaveAction(request: ResonanceSaveActionRequest): Promise<boolean> {
+  if (!hasWaveformCapture()) {
+    request.setStatus(resonanceLocalizedMessages.saveLoadFirstStatus);
+    return false;
+  }
+
+  return await resonanceSaveActionForSurface(readResonanceSaveSurface(), request);
+}
+
+async function resonanceSaveActionForSurface(
+  saveSurfacePromise: Promise<ResonanceSaveSurface>,
+  request: ResonanceSaveActionRequest,
+): Promise<boolean> {
+  const saveSurface = await saveSurfacePromise;
+  if (saveSurface.mode === "lab-connected") {
+    return await resonanceConnectedSaveActionRun(saveSurface, request);
+  }
+
+  if (saveSurface.mode !== "lab-disconnected") {
+    return false;
+  }
+
+  return await resonanceDisconnectedSaveActionRun(saveSurface, request);
+}
+
+async function resonanceConnectedSaveActionRun(
+  saveSurface: Extract<ResonanceSaveSurface, { mode: "lab-connected" }>,
+  request: ResonanceSaveActionRequest,
+): Promise<boolean> {
+  const subjects = await listNotebookSubjectsForResonanceSave(saveSurface.workbookId);
+  const recordingLabel = resonanceCaptureRecordingLabelRead(request.state);
+  const selection = await openConnectedResonanceSaveModal({
+    measureMode: request.state.measureMode,
+    notebookName: saveSurface.notebookName,
+    subjects,
+    summary: resonanceSaveSummaryBuild(request.state, recordingLabel),
+  });
+  if (!selection) {
+    return false;
+  }
+
+  const stateJson = JSON.stringify(resonanceCaptureStateJsonBuild({
+    toolVersion: resonanceReaderToolVersionRead(),
+    savedAtIso: new Date().toISOString(),
+    recordingLabel,
+    state: request.state,
+  }), null, 2);
+
+  const result = await saveNotebookResonanceCapture({
+    workbookId: saveSurface.workbookId,
+    subject: selection.subject,
+    event: selection.event,
+    package: {
+      recordingLabel,
+      stateJson,
+      wavBlob: resonanceCaptureWaveBlobBuild(request.state),
+      plotPngBlob: await resonanceCapturePlotPngBlobBuild(document.getElementById("plot_fft")),
+    },
+  });
+  request.setStatus(resonanceLocalizedMessages.saveSavedToNotebookTemplate.replace(
+    "{notebookName}",
+    saveSurface.notebookName || resonanceLocalizedMessages.saveDefaultNotebookName,
+  ));
+  request.state.lastNotebookSave = result;
+  return true;
+}
+
+async function resonanceDisconnectedSaveActionRun(
+  saveSurface: Extract<ResonanceSaveSurface, { mode: "lab-disconnected" }>,
+  request: ResonanceSaveActionRequest,
+): Promise<boolean> {
+  const action = request.action || await openResonanceDisconnectedSaveMenu(request.button, saveSurface);
+  if (action === "connect-notebook") {
+    if (!canRunNotebookConnectAction(saveSurface)) {
+      return false;
+    }
+    persistResonanceNotebookConnectDraft(
+      window,
+      request.state,
+      resonanceCaptureRecordingLabelRead(request.state),
+    );
+    window.location.assign(buildResonanceNotebookConnectUrl(window));
+    return false;
+  }
+  if (action !== "download-package") {
+    return false;
+  }
+
+  await downloadResonanceCapturePackage({
+    state: request.state,
+    recordingLabel: resonanceCaptureRecordingLabelRead(request.state),
+    plotElement: document.getElementById("plot_fft"),
+  });
+  request.setStatus(resonanceLocalizedMessages.savePackageDownloadedStatus);
+  return true;
+}
+
+function buildResonanceNotebookConnectUrl(runtime: Window): string {
+  const returnTo = readResonanceNotebookReturnTo(runtime);
+  if (!returnTo) {
+    return "/notebook/";
+  }
+
+  return `/notebook/?return_to=${encodeURIComponent(returnTo)}`;
+}
+
+function readResonanceNotebookReturnTo(runtime: Window): string {
+  const pathname = String(runtime?.location?.pathname || "").trim();
+  const search = String(runtime?.location?.search || "").trim();
+  const value = `${pathname}${search}`;
+
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "";
+  }
+
+  return value;
+}
+
+async function openResonanceDisconnectedSaveMenu(
+  button: HTMLElement | null | undefined,
+  saveSurface: Extract<ResonanceSaveSurface, { mode: "lab-disconnected" }>,
+): Promise<string | null> {
+  return await openResonanceSaveMenu({
+    anchor: button,
+    items: buildResonanceDisconnectedSaveMenuItems(saveSurface),
+  });
+}
+
+function buildResonanceDisconnectedSaveMenuItems(
+  saveSurface: Extract<ResonanceSaveSurface, { mode: "lab-disconnected" }>,
+) {
+  const items = [
+    {
+      key: "download-package",
+      label: resonanceLocalizedMessages.saveDownloadPackageLabel,
+      description: resonanceLocalizedMessages.saveDownloadPackageDescription,
+    },
+  ];
+
+  if (canRunNotebookConnectAction(saveSurface)) {
+    items.push({
+      key: "connect-notebook",
+      label: resonanceLocalizedMessages.saveConnectNotebookLabel,
+      description: resonanceLocalizedMessages.saveConnectNotebookDescription,
+    });
+  }
+
+  return items;
+}
+
+function canRunNotebookConnectAction(saveSurface: ResonanceSaveSurface): boolean {
+  return saveSurface.mode === "lab-disconnected" && saveSurface.accessState === "signed_in_no_workbook";
+}
+
+function hasWaveformCapture(): boolean {
+  return Boolean((window as any).FFTState?.currentWave);
+}
+
+function resonanceCaptureRecordingLabelRead(state: Record<string, any>): string {
+  return String(state.recordingLabel || recordingMenuLabelRead() || "resonance-capture");
+}
+
+function resonanceReaderToolVersionRead(): string {
+  return (document.documentElement?.dataset?.toolVersion || "dev").trim() || "dev";
+}
+
+function recordingMenuLabelRead(): string {
+  return document.getElementById("take_overlay_menu")?.textContent?.trim() || "";
+}

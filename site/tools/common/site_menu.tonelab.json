@@ -1,0 +1,54 @@
+{
+  "hideWhenEmpty": true,
+  "items": [
+    {
+      "label": "Rick Molloy Guitars",
+      "href": "/",
+      "className": "hero-menu-home"
+    },
+    {
+      "label": "Lab Home",
+      "href": "/lab/"
+    },
+    {
+      "label": "Resonance Reader",
+      "href": "/lab/tools/resonance_reader/"
+    },
+    {
+      "label": "Four Degrees of Freedom Model",
+      "href": "/lab/tools/dof_model/"
+    },
+    {
+      "label": "Monopole Mobility",
+      "href": "/lab/tools/monopole_mobility/"
+    },
+    {
+      "label": "Plate Thickness",
+      "href": "/lab/tools/plate_thickness/"
+    },
+    {
+      "label": "Fret Scale & Bridge Compensation",
+      "href": "/lab/tools/fret_calculator/"
+    },
+    {
+      "label": "Guitar Setup Calculator",
+      "href": "/lab/tools/guitar_setup_calculator/"
+    },
+    {
+      "label": "Flexural Rigidity",
+      "href": "/lab/tools/flexural_rigidity/"
+    },
+    {
+      "label": "Brace Designer",
+      "href": "/lab/tools/brace_calc/"
+    },
+    {
+      "label": "FIT Design Workspace",
+      "href": "/lab/tools/fit_design/"
+    },
+    {
+      "label": "Luthier's Notebook",
+      "href": "/lab/notebook/"
+    }
+  ]
+}

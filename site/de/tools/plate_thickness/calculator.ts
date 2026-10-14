@@ -1,0 +1,228 @@
+/*
+© 2025 Rick Molloy. All rights reserved.
+
+Panel thickness calculator core math. Shared between the UI and Vitest.
+*/
+
+(() => {
+  type RequiredKeys =
+    | "bodyLength"
+    | "lowerBout"
+    | "panelMass"
+    | "panelHeight"
+    | "panelLength"
+    | "panelWidth"
+    | "longFreq"
+    | "crossFreq"
+    | "twistFreq"
+    | "targetFreq";
+
+  interface PlateInputs {
+    bodyLength: number; // meters
+    lowerBout: number; // meters
+    panelMass: number; // kg
+    panelHeight: number; // meters (thickness guess)
+    panelLength: number; // meters
+    panelWidth: number; // meters
+    longFreq: number; // Hz
+    crossFreq: number; // Hz
+    twistFreq: number; // Hz
+    targetFreq: number; // Hz
+  }
+
+  interface PlateSolution {
+    density: number;
+    thickness: number;
+    thicknessMm: number;
+    projectedMassKg: number;
+    projectedMassG: number;
+    EL: number;
+    EC: number;
+    GLC: number;
+    ELoverEC: number;
+  }
+
+  interface PlateMaterialProperties {
+    density: number;
+    EL: number;
+    EC: number;
+    GLC: number;
+    ELoverEC: number;
+  }
+
+  interface PlateMaterialMeasurementInputs {
+    panelMass: number;
+    panelHeight: number;
+    panelLength: number;
+    panelWidth: number;
+    longFreq: number;
+    crossFreq: number;
+    twistFreq: number;
+  }
+
+  interface TargetFrequencyInputs {
+    bodyLength: number;
+    lowerBout: number;
+    thickness: number;
+    density: number;
+    EL: number;
+    EC: number;
+    GLC: number;
+  }
+
+  type PlateThicknessErrorCode =
+    | "positive-number-required"
+    | "thickness-computation-failed";
+
+  class PlateThicknessCalculationError extends Error {
+    readonly code: PlateThicknessErrorCode;
+    readonly field?: string;
+
+    constructor(code: PlateThicknessErrorCode, message: string, field?: string) {
+      super(message);
+      this.name = "PlateThicknessCalculationError";
+      this.code = code;
+      this.field = field;
+    }
+  }
+
+  const YOUNGS_FACTOR = 0.94146;
+  const SHEAR_FACTOR = 1.21585;
+  const THICKNESS_FACTOR = 0.95977;
+
+  function assertPositive(value: unknown, label: string): asserts value is number {
+    if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+      throw new PlateThicknessCalculationError(
+        "positive-number-required",
+        `${label} must be a finite, positive number.`,
+        label,
+      );
+    }
+  }
+
+  function calculateDensity(massKg: number, heightM: number, lengthM: number, widthM: number): number {
+    assertPositive(massKg, "mass");
+    assertPositive(heightM, "panel height");
+    assertPositive(lengthM, "panel length");
+    assertPositive(widthM, "panel width");
+    return massKg / (heightM * lengthM * widthM);
+  }
+
+  function calculateYoungsModulus(density: number, span: number, frequency: number, thickness: number): number {
+    assertPositive(density, "density");
+    assertPositive(span, "span");
+    assertPositive(frequency, "frequency");
+    assertPositive(thickness, "thickness");
+    return (YOUNGS_FACTOR * density * Math.pow(span, 4) * Math.pow(frequency, 2)) / Math.pow(thickness, 2);
+  }
+
+  function calculateShearModulus(density: number, spanL: number, spanW: number, frequency: number, thickness: number): number {
+    assertPositive(density, "density");
+    assertPositive(spanL, "span length");
+    assertPositive(spanW, "span width");
+    assertPositive(frequency, "frequency");
+    assertPositive(thickness, "thickness");
+    return (SHEAR_FACTOR * density * Math.pow(spanL, 2) * Math.pow(spanW, 2) * Math.pow(frequency, 2)) / Math.pow(thickness, 2);
+  }
+
+  function computePlateMaterialPropertiesFromMeasurements(params: PlateMaterialMeasurementInputs): PlateMaterialProperties {
+    const density = calculateDensity(params.panelMass, params.panelHeight, params.panelLength, params.panelWidth);
+    const EL = calculateYoungsModulus(density, params.panelLength, params.longFreq, params.panelHeight);
+    const EC = calculateYoungsModulus(density, params.panelWidth, params.crossFreq, params.panelHeight);
+    const GLC = calculateShearModulus(density, params.panelLength, params.panelWidth, params.twistFreq, params.panelHeight);
+    return {
+      density,
+      EL,
+      EC,
+      GLC,
+      ELoverEC: EL / EC,
+    };
+  }
+
+  function calculateTargetFrequency(params: TargetFrequencyInputs): number {
+    assertPositive(params.bodyLength, "bodyLength");
+    assertPositive(params.lowerBout, "lowerBout");
+    assertPositive(params.thickness, "thickness");
+    assertPositive(params.density, "density");
+    assertPositive(params.EL, "EL");
+    assertPositive(params.EC, "EC");
+    assertPositive(params.GLC, "GLC");
+
+    const ratio = params.bodyLength / params.lowerBout;
+    const stiffness = Math.sqrt(
+      params.EL +
+      Math.pow(ratio, 4) * params.EC +
+      Math.pow(ratio, 2) * (0.02857 * params.EL + 1.12 * params.GLC)
+    );
+    return (params.thickness * stiffness) / (THICKNESS_FACTOR * Math.pow(params.bodyLength, 2) * Math.sqrt(params.density));
+  }
+
+  function computePlateSolution(params: PlateInputs): PlateSolution {
+    const required: RequiredKeys[] = [
+      "bodyLength",
+      "lowerBout",
+      "panelMass",
+      "panelHeight",
+      "panelLength",
+      "panelWidth",
+      "longFreq",
+      "crossFreq",
+      "twistFreq",
+      "targetFreq",
+    ];
+    required.forEach((key) => assertPositive(params[key], key));
+
+    const material = computePlateMaterialPropertiesFromMeasurements({
+      panelMass: params.panelMass,
+      panelHeight: params.panelHeight,
+      panelLength: params.panelLength,
+      panelWidth: params.panelWidth,
+      longFreq: params.longFreq,
+      crossFreq: params.crossFreq,
+      twistFreq: params.twistFreq,
+    });
+
+    const ratio = params.bodyLength / params.lowerBout;
+    const omega = params.targetFreq;
+    const numerator = THICKNESS_FACTOR * omega * Math.pow(params.bodyLength, 2) * Math.sqrt(material.density);
+
+    const coupling = Math.pow(ratio, 4) * material.EC + Math.pow(ratio, 2) * (0.02857 * material.EL + 1.12 * material.GLC);
+    const denominator = Math.sqrt(material.EL + coupling);
+    const thickness = numerator / denominator;
+
+    if (!Number.isFinite(thickness)) {
+      throw new PlateThicknessCalculationError(
+        "thickness-computation-failed",
+        "Unable to compute thickness with the provided inputs.",
+      );
+    }
+
+    const projectedMass = material.density * thickness * params.panelLength * params.panelWidth;
+
+    return {
+      density: material.density,
+      thickness, // meters
+      thicknessMm: thickness * 1000,
+      projectedMassKg: projectedMass,
+      projectedMassG: projectedMass * 1000,
+      EL: material.EL,
+      EC: material.EC,
+      GLC: material.GLC,
+      ELoverEC: material.ELoverEC,
+    };
+  }
+
+  const PlateThickness = {
+    calculateDensity,
+    calculateYoungsModulus,
+    calculateShearModulus,
+    computePlateMaterialPropertiesFromMeasurements,
+    calculateTargetFrequency,
+    computePlateSolution,
+  };
+
+  (typeof window !== "undefined" ? window : (globalThis as any)).PlateThickness = PlateThickness;
+  if (typeof module !== "undefined" && (module as any).exports) {
+    (module as any).exports = PlateThickness;
+  }
+})();

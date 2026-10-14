@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grosor de la placa | The Lab de Rick Molloy Guitars</title>
+  <link rel="stylesheet" href="../common/tool_footer.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/layout.css">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <meta name="description" content="Estime el grosor objetivo de una tapa o un fondo a partir de las dimensiones, la masa, las frecuencias de los modos de vibración y el modo objetivo del instrumento terminado.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/es/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/plate_thickness/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/plate_thickness/">
+</head>
+
+<body data-plate-default-preset="obrien_om_ss">
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Abrir el menú del sitio">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Secciones del sitio" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Grosor de la placa</h1>
+          </div>
+          <div class="hero-actions">
+</div>
+        </div>
+      </section>
+
+      <section class="card-surface plate-tool-surface">
+        <main class="tl-content plate-thickness-page">
+          <section class="card pad tl-card tl-card-output plate-results-section">
+            <div class="plate-surface-header">
+              <div class="plate-surface-heading">
+                <h2>Resultados</h2>
+                <p class="small muted">Los resultados se actualizan automáticamente al introducir las mediciones.</p>
+              </div>
+            </div>
+            <div class="results-grid plate-results-grid">
+              <div class="result-card result-card-primary">
+                <div class="label">Grosor calculado</div>
+                <div id="result_thickness" class="value tl-primary-result">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">Masa proyectada de la placa</div>
+                <div id="result_mass" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">Densidad ρ</div>
+                <div id="result_density" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>L</sub></div>
+                <div id="result_el" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>C</sub></div>
+                <div id="result_ec" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">E<sub>L</sub> / E<sub>C</sub></div>
+                <div id="result_ratio" class="value">—</div>
+              </div>
+              <div class="result-card">
+                <div class="label">G<sub>LC</sub></div>
+                <div id="result_shear" class="value">—</div>
+              </div>
+            </div>
+            <p id="result_status" class="status">Live: computed from current inputs</p>
+          </section>
+
+          <section class="card pad tl-card tl-card-controls plate-inputs-section">
+            <div class="plate-surface-header">
+              <div class="plate-surface-heading">
+                <h2>Entradas</h2>
+                <p class="small muted">Introduzca el objetivo, la placa actual y los modos medidos.</p>
+              </div>
+              <div class="tl-action-row plate-action-row">
+                <button id="load_results" class="ghost-btn btn-small tl-save-action" type="button">Cargar JSON</button>
+                <button id="save_results" class="ghost-btn btn-small tl-save-action" type="button">Descargar JSON</button>
+                <button id="reset_inputs" class="ghost-btn btn-small" type="button">Restablecer valores predeterminados</button>
+                <input id="load_results_file" type="file" accept="application/json,.json" hidden>
+              </div>
+            </div>
+
+            <div class="plate-preset-row">
+              <label class="plate-fit-field plate-fit-field-preset">
+                <span class="field-label">Preajuste</span>
+                <select id="body_preset">
+                  <option value="gore_medium_ss">Gore Medium SS</option>
+                  <option value="obrien_om_ss" selected>O'Brien OM SS</option>
+                  <option value="martin_om_ss">Martin OM SS</option>
+                  <option value="obrien_classical">O'Brien Classical</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="plate-input-grid plate-input-grid-regrouped">
+              <div class="input-block plate-input-block plate-input-block-target">
+                <h3 class="input-block__title">Especificación objetivo</h3>
+                <p class="small muted input-block__copy">Objetivos de diseño para la caja y la respuesta de la placa terminada.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Frecuencia principal objetivo (Hz)</span>
+                    <input type="number" step="0.1" min="20" data-field="target_freq" value="75">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Anchura del lóbulo inferior (mm)</span>
+                    <input type="number" step="1" min="200" data-field="lower_bout" value="381">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Longitud de la caja de la guitarra (mm)</span>
+                    <input type="number" step="1" min="200" data-field="body_length" value="494">
+                  </label>
+                </form>
+              </div>
+
+              <div class="input-block plate-input-block plate-input-block-panel">
+                <h3 class="input-block__title">Placa actual</h3>
+                <p class="small muted input-block__copy">Mediciones de la placa que está evaluando ahora.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Longitud de la placa (mm)</span>
+                    <input type="number" step="1" min="200" data-field="panel_length" value="555">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Anchura de la placa (mm)</span>
+                    <input type="number" step="1" min="200" data-field="panel_width" value="227">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Grosor de la placa (mm)</span>
+                    <input type="number" step="0.1" min="1" data-field="panel_height" value="4.1">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Masa de la placa (g)</span>
+                    <input type="number" step="0.1" min="10" data-field="panel_mass" value="211.4">
+                  </label>
+                </form>
+              </div>
+
+              <div class="input-block plate-input-block plate-input-block-modes">
+                <h3 class="input-block__title">Modos medidos</h3>
+                <p class="small muted input-block__copy">Lecturas modales más recientes de la placa o valores introducidos manualmente.</p>
+                <form class="plate-fit-controls">
+                  <label class="plate-fit-field">
+                    <span class="field-label">Modo longitudinal a la veta f<sub>L</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="long_freq" value="74">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Modo transversal a la veta f<sub>C</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="cross_freq" value="109">
+                  </label>
+                  <label class="plate-fit-field">
+                    <span class="field-label">Modo de torsión f<sub>T</sub> (Hz)</span>
+                    <input type="number" step="0.1" min="10" data-field="twist_freq" value="42">
+                  </label>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <section class="tl-content tl-content-secondary">
+    <header class="card pad tl-card tl-card-info">
+      <h1>Calculadora del grosor objetivo de la placa</h1>
+      <p class="tl-card-desc">Use esta herramienta para estimar el grosor de una tapa o un fondo a partir de sus dimensiones, masa y frecuencias de vibración, con el fin de obtener una rigidez uniforme y una respuesta acústica predecible.</p>
+      <p class="tl-card-desc">Esta calculadora se basa en el libro Design de Gore &amp; Gilet (secciones 4.5.2–4.5.3) y se ha validado con sus tablas de referencia.</p>
+      <details class="tl-accordion">
+        <summary>Resumen y mediciones necesarias</summary>
+        <p class="tl-card-desc">El objetivo no es el grosor, sino la rigidez. Una de las formas más directas de estimar la rigidez de una placa de guitarra es medir sus frecuencias modales.</p>
+        <div class="before-columns">
+          <div class="before-card">
+            <h3>Cómo usar esta herramienta</h3>
+            <ol class="tl-steps">
+              <li>Prepare la placa para que quede lisa, rectangular y con un grosor uniforme.</li>
+              <li>Golpee la placa para identificar los modos longitudinal, transversal y de torsión.</li>
+              <li>Introduzca sus mediciones en los controles siguientes.</li>
+              <li>Revise el grosor objetivo recomendado.</li>
+            </ol>
+          </div>
+          <div class="before-card">
+            <h3>Mediciones necesarias</h3>
+            <ul class="tl-list">
+              <li>Longitud de la caja de la guitarra y anchura del lóbulo inferior (mm)</li>
+              <li>Longitud, anchura y grosor de la placa (mm)</li>
+              <li>Masa de la placa (g)</li>
+              <li>Frecuencias de vibración: longitudinal, transversal y torsión (Hz)</li>
+              <li>Frecuencia modal objetivo de la tapa o el fondo terminados (Hz)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="before-card">
+          <h3>Precisión y solución de problemas</h3>
+          <p class="tl-card-desc">Mida la frecuencia fundamental de cada modo (un FFT ayuda). Un grosor irregular o un lijado basto pueden desplazar las frecuencias de vibración; el cepillado o el raspado ofrecen las lecturas más fiables.</p>
+          <p class="tl-card-desc">Si el grosor recomendado parece inusualmente fino, vuelva a medir las frecuencias de vibración y compárelas con los ejemplos del libro de Gore &amp; Gilet. Deberían estar en el mismo orden de magnitud. Si no es así, envíenos sus valores mediante el formulario siguiente y los revisaremos.</p>
+        </div>
+      </details>
+    </header>
+    <section class="card pad tl-card tl-card-info">
+      <h2>Cómo funciona el cálculo</h2>
+      <p class="tl-card-desc">Esta calculadora se basa en Gore &amp; Gilet, vol. 1 (secciones 4.5.2–4.5.3), y en las tablas de ejemplo del libro Design. Convierte la geometría, la masa y las frecuencias de vibración de la placa en propiedades de rigidez y determina el grosor correspondiente a la frecuencia modal objetivo.</p>
+
+      <div class="tl-eq-block">
+        <h3>Densidad (ρ)</h3>
+        <p class="small muted">Se obtiene de la masa y las dimensiones de la placa sin trabajar.</p>
+        <div class="tl-equation">ρ =
+          <span class="tl-eq-frac"><span class="tl-eq-num">m</span><span class="tl-eq-den">h · l · w</span></span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Módulos de Young (E<sub>L</sub>, E<sub>C</sub>)</h3>
+        <p class="small muted">Rigidez longitudinal y transversal a la veta, calculada a partir de la densidad, la geometría y las frecuencias de vibración.</p>
+        <div class="tl-equation">
+          E = 0.94146 ·
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">ρ · l<sup>4</sup> · f<sup>2</sup></span>
+            <span class="tl-eq-den">h<sup>2</sup></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Módulo de cortante (G<sub>LC</sub>)</h3>
+        <p class="small muted">Resistencia a la torsión, obtenida a partir del modo de torsión.</p>
+        <div class="tl-equation">
+          G = 1.21585 ·
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">ρ · l<sup>2</sup> · w<sup>2</sup> · f<sup>2</sup></span>
+            <span class="tl-eq-den">h<sup>2</sup></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="tl-eq-block">
+        <h3>Grosor objetivo (h)</h3>
+        <p class="small muted">El grosor con el que la placa alcanzará la frecuencia modal elegida.</p>
+        <div class="tl-equation">
+          h =
+          <span class="tl-eq-frac">
+            <span class="tl-eq-num">0.95977 · f · a<sup>2</sup> · √ρ</span>
+            <span class="tl-eq-den">√(E<sub>L</sub> + (a/b)<sup>4</sup> · E<sub>C</sub> + (a/b)<sup>2</sup> · (0.02857 ·
+              E<sub>L</sub> + 1.12 · G<sub>LC</sub>))</span>
+          </span>
+        </div>
+      </div>
+
+      <p class="small muted">Consejo para la URL: añada <code>?long=80&amp;cross=120&amp;twisting=45</code> para rellenar previamente los modos al compartir resultados.</p>
+    </section>
+    <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="es">
+  <h2>Grosor de la placa</h2>
+  <p>Estime el grosor de una tapa o un fondo a partir de sus dimensiones, masa y frecuencias de los modos de vibración para buscar una rigidez uniforme y una respuesta acústica predecible.</p>
+  <p>Esta calculadora convierte la geometría, la masa y las frecuencias de los modos longitudinal, transversal y de torsión de la placa en propiedades de rigidez y un grosor objetivo.</p>
+  <p>El grosor es solo una aproximación a la rigidez. Medir cada placa permite responder a la madera que tiene delante en vez de copiar una dimensión nominal.</p>
+  <ul>
+    <li>Introduzca la longitud, la anchura, el grosor y la masa de la placa, además de las tres frecuencias modales.</li>
+    <li>Introduzca las dimensiones de la caja de la guitarra y la frecuencia principal objetivo de la placa terminada.</li>
+  </ul>
+  <p>Use el grosor calculado como objetivo inicial basado en mediciones y confirme la respuesta de la placa a medida que retira material.</p>
+  <p class="small muted">Creada por Rick Molloy a partir de los métodos de propiedades de placas y grosor objetivo publicados por Trevor Gore y Gerard Gilet.</p>
+</section>
+          </section>
+        </main>
+      </section>
+
+      <footer class="tl-footer" data-tool-footer></footer>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js"></script>
+  <script src="../common/tool_footer_loader.js"></script>
+  <script src="../common/tool_document.js"></script>
+  <script src="../common/tool_document_file.js"></script>
+  <script src="../common/per_tab_tool_session.js"></script>
+  <script src="../common/offline_save_surface.js"></script>
+  <script src="calculator.js"></script>
+  <script src="plate_thickness_save_surface.js"></script>
+  <script src="../common/notebook_rpc_client.js" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_connection_client.js" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_save_client.js" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_restore_client.js" data-feature="notebook"></script>
+  <script src="plate_thickness_notebook_restore.js" data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js" data-feature="notebook"></script>
+  <script src="plate_thickness_save_modal.js" data-feature="notebook"></script>
+  <script src="plate_thickness_save_target.js"></script>
+  <script src="plate_thickness_save_snapshot.js"></script>
+  <script src="query_params.js"></script>
+  <script src="main.js"></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Idioma","currentLocale":"es","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/plate_thickness/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/plate_thickness/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/plate_thickness/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/plate_thickness/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/plate_thickness/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/plate_thickness/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

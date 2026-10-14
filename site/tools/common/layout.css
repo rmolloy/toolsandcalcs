@@ -1,0 +1,204 @@
+@import url("./theme_profile.css?rev=1d50c39bd456");
+
+:root {
+  /* device token for behavioral hooks */
+  --tl-device: desktop;
+
+  /* container sizing */
+  --tl-topbar-h: 60px;
+  --tl-page-max: 1600px;
+  --tl-page-max-wide: min(1800px, 90vw);
+  --tl-page-pad: 20px;
+  --tl-grid-gap: 16px;
+  --tl-section-gap: 14px;
+
+  /* controls sizing */
+  --tl-controls-min: 260px;
+  --tl-controls-max: 320px;
+
+  /* plot sizing */
+  --plot-fft-h: 400px;
+  --plot-mid-h: 320px;
+  --plot-thin-h: 160px;
+  --plot-fft-h-mobile: 40vh;
+}
+
+@media (max-width: 1280px) {
+  :root {
+    --tl-device: tablet-landscape;
+    --tl-page-max: 1400px;
+    --tl-page-pad: 16px;
+    --tl-grid-gap: 12px;
+    --tl-section-gap: 12px;
+    --tl-controls-min: 240px;
+    --tl-controls-max: 280px;
+    --plot-fft-h: 320px;
+    --plot-mid-h: 280px;
+    --plot-thin-h: 140px;
+  }
+}
+
+@media (max-width: 900px) {
+  :root {
+    --tl-device: tablet-portrait;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --tl-device: phone;
+    --tl-page-pad: 10px;
+    --tl-grid-gap: 10px;
+    --tl-section-gap: 10px;
+    --plot-fft-h: 280px;
+    --plot-mid-h: 240px;
+    --plot-thin-h: 130px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .tl-page {
+    max-width: var(--tl-page-max-wide);
+  }
+}
+
+.tl-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  position: relative;
+  background: radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--blue, #56B4E9) 16%, transparent), transparent 35%),
+    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--orange, #E69F00) 16%, transparent), transparent 32%),
+    var(--bg, #0f1115);
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: -12%;
+  pointer-events: none;
+  z-index: -2;
+}
+
+body::before {
+  background:
+    radial-gradient(circle at 25% 14%, var(--atmo-nebula-blue), transparent 48%),
+    radial-gradient(circle at 52% 46%, var(--atmo-nebula-gold), transparent 44%),
+    radial-gradient(circle at 76% 30%, var(--atmo-nebula-cyan), transparent 46%);
+  filter: blur(24px);
+}
+
+body::after {
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--blue, #56B4E9) 18%, transparent), transparent 48%),
+    radial-gradient(circle at 49% 52%, color-mix(in srgb, var(--orange, #E69F00) 13%, transparent), transparent 40%),
+    radial-gradient(circle at 73% 56%, color-mix(in srgb, var(--green, #009E73) 10%, transparent), transparent 38%);
+  filter: blur(40px);
+}
+
+.tl-topbar {
+  position: sticky;
+  top: 0;
+  height: var(--tl-topbar-h);
+  z-index: 10;
+  background: var(--panel, #0f1115);
+  border-bottom: 1px solid var(--border-soft, rgba(255, 255, 255, 0.08));
+}
+
+.tl-page {
+  width: 100%;
+  margin: 0 auto;
+  max-width: var(--tl-page-max);
+  padding: var(--tl-page-pad);
+  box-sizing: border-box;
+  flex: 1 1 auto;
+}
+
+.tl-layout {
+  display: grid;
+  grid-template-columns: minmax(var(--tl-controls-min), var(--tl-controls-max)) 1fr;
+  gap: var(--tl-grid-gap);
+  align-items: start;
+}
+
+.tl-layout.tl-single {
+  grid-template-columns: 1fr;
+}
+
+.tl-controls {
+  position: relative;
+  overflow-y: auto;
+  max-height: calc(100vh - var(--tl-topbar-h) - var(--tl-page-pad));
+  transform: translateX(0);
+}
+
+.tl-controls.drawer-open {
+  transform: translateX(0);
+}
+
+.tl-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-section-gap);
+}
+
+.tl-output {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tl-section-gap);
+}
+
+.tl-plot-fft {
+  height: var(--plot-fft-h);
+}
+
+.tl-plot-mid {
+  height: var(--plot-mid-h);
+}
+
+.tl-plot-thin {
+  height: var(--plot-thin-h);
+}
+
+@media (max-width: 900px) {
+  .tl-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tl-controls {
+    position: fixed;
+    top: var(--tl-topbar-h);
+    left: 0;
+    width: min(var(--tl-controls-max), 80vw);
+    height: calc(100vh - var(--tl-topbar-h));
+    background: var(--tl-surface, var(--panel, #111));
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.25);
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    z-index: 1000;
+    padding: var(--tl-page-pad);
+    box-sizing: border-box;
+  }
+
+  .tl-controls.drawer-open {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .tl-topbar {
+    height: var(--tl-topbar-h);
+  }
+
+  .tl-plot-fft {
+    height: var(--plot-fft-h-mobile);
+    min-height: var(--plot-fft-h);
+  }
+}

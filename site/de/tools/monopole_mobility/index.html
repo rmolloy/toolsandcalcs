@@ -1,0 +1,294 @@
+<!--
+© 2025 Rick Molloy. All rights reserved.
+
+This tool builds on the monopole mobility measurement workflow described by Trevor Gore.
+Permission is granted to view and reference this file for educational use only.
+No redistribution, modification, or commercial use without written consent from the author.
+-->
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rechner für Monopol-Mobilität</title>
+  <link rel="stylesheet" href="../common/tool_footer.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../common/layout.css" />
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <link rel="canonical" href="https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/monopole_mobility/">
+</head>
+
+<body data-monopole-save-mode="offline">
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Website-Menü öffnen">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Bereiche der Website" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Rechner für Monopol-Mobilität</h1>
+          </div>
+          <div class="hero-actions">
+</div>
+        </div>
+      </section>
+
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output results">
+            <div class="results-header">
+              <h2>Berechnete Eigenschaften</h2>
+              <div class="results-meta">
+                <span id="instrument_display" class="badge" hidden>Rick Molloy OM (10/25/2025) • Stahlsaiten</span>
+                <span id="status" class="status muted">Live-Berechnung</span>
+              </div>
+            </div>
+            <div class="result-grid">
+              <article class="result-card highlighted">
+                <div class="label">Wert der Monopol-Mobilität</div>
+                <div class="value-row">
+                  <div id="mobilityScore" class="value">--</div>
+                  <span class="unit-inline">Wert</span>
+                </div>
+                <div class="note">1000 / √(K · M<sub>eff</sub>)</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Deckensteifigkeit K</div>
+                <div class="value-row">
+                  <div id="stiffness" class="value">--</div>
+                  <span class="unit-inline">N/m</span>
+                </div>
+                <div class="note">K = m·g / x</div>
+              </article>
+              <article class="result-card">
+                <div class="label">EFFEKTIVE MASSE M<sub>eff</sub></div>
+                <div class="value-row">
+                  <div id="effMass" class="value">--</div>
+                  <span class="unit-inline">g</span>
+                </div>
+                <div class="note">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </article>
+            </div>
+            <div class="muted small">
+              Niedrigere Werte bedeuten eine steifere und/oder schwerere Decke. Gitarren mit hohen Werten (&gt; 20 bei Stahlsaitengitarren, &gt; 30 bei klassischen Gitarren) benötigen wahrscheinlich eine Verbundbauweise, um langfristig standzuhalten.
+            </div>
+            <div id="warnings" class="muted small"></div>
+            <div class="muted small">
+              Die Deckensteifigkeit K und die effektive Masse M<sub>eff</sub> können in den 4‑DOF-Löser eingegeben werden, um die Luft-/Decken-/Bodenkopplung deiner Gitarre zu modellieren und realistische Änderungen an Beleistung oder Platten beim Ansteuern bestimmter Frequenzen aufzuzeigen.
+            </div>
+          </section>
+        </section>
+
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls controls">
+            <h2>Messwerte</h2>
+            <div id="monopole_mode_controls">
+              <div class="mode-toggle" role="group" aria-label="Berechnungsmodus auswählen">
+                <button id="mode_static" class="mode-btn active" type="button">
+                  Statischer Modus (Gore-Vorrichtung)
+                  <span class="help-text">Verwendet die mit einer Messuhr gemessene Auslenkung</span>
+                </button>
+                <button id="mode_dynamic" class="mode-btn" type="button" title="Der dynamische Modus verwendet zwei Frequenzmessungen anstelle einer Messuhr.">
+                  Dynamischer Modus (Massebelastung)
+                  <span class="help-text">Zwei FFT-Frequenzen, keine Auslenkung</span>
+                </button>
+              </div>
+              <div class="muted small" id="mode_hint_static" data-mode-note="static">Statischer Modus: Gib f<sub>u</sub>, die Messuhr-Auslenkung x und die Prüfmasse ein.</div>
+              <div class="muted small hidden" id="mode_hint_dynamic" data-mode-note="dynamic">Dynamischer Modus: Gib die unbelastete Frequenz f<sub>0</sub>, die belastete Frequenz f<sub>1</sub> und die Zusatzmasse in Gramm ein.</div>
+            </div>
+            <div id="monopole_identity_controls" hidden>
+              <label class="name-input">
+                Name der Gitarre oder Probe
+                <input id="instrument_name" type="text" value="Rick Molloy OM (10/25/2025)" />
+              </label>
+              <label class="type-input">
+                Bauart
+                <select id="instrument_type">
+                  <option value="steel" selected>Stahlsaiten</option>
+                  <option value="classical">Klassisch</option>
+                  <option value="other">Sonstige</option>
+                </select>
+              </label>
+            </div>
+            <div class="inputs mode-panel" id="staticInputs">
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="freq_field">Ungekoppelte Monopolfrequenz der Decke, f<sub>u</sub> (Hz)<span class="help-text">Verschlossenes Schallloch und gedämpfte Saiten</span></label>
+                  <input id="freq_field" class="value-input" type="number" min="90" max="220" step="0.1" value="153" />
+                </div>
+                <input id="freq" type="range" min="90" max="220" step="0.1" value="153" />
+              </div>
+
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="deflection_field">Stegauslenkung unter Prüflast, x (mm)<span class="help-text">Messuhr am Steg, vertikale Last</span></label>
+                  <input id="deflection_field" class="value-input" type="number" min="0.05" max="0.50" step="0.005" value="0.18" />
+                </div>
+                <input id="deflection" type="range" min="0.05" max="0.50" step="0.005" value="0.18" />
+              </div>
+
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="mass_field">Prüfmasse, m (kg)<span class="help-text">Last über den Schaft der Messuhr vertikal auf den Steg aufbringen</span></label>
+                  <input id="mass_field" class="value-input" type="number" min="0.30" max="1.80" step="0.01" value="1.02" />
+                </div>
+                <input id="mass" type="range" min="0.30" max="1.80" step="0.01" value="1.02" />
+              </div>
+            </div>
+            <div class="inputs mode-panel hidden" id="dynamicInputs">
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_f0_field">Ungekoppelte Deckenfrequenz, f<sub>0</sub> (Hz)<span class="help-text">Verschlossenes Schallloch und gedämpfte Saiten</span></label>
+                  <input id="dyn_f0_field" class="value-input" type="number" min="90" max="240" step="0.1" value="153" />
+                </div>
+                <input id="dyn_f0" type="range" min="90" max="240" step="0.1" value="153" />
+              </div>
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_f1_field">Belastete Frequenz, f<sub>1</sub> (Hz)<span class="help-text">Mit Zusatzmasse auf dem Steg</span></label>
+                  <input id="dyn_f1_field" class="value-input" type="number" min="70" max="230" step="0.1" value="141" />
+                </div>
+                <input id="dyn_f1" type="range" min="70" max="230" step="0.1" value="141" />
+              </div>
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_mass_field">Zusatzmasse (g)<span class="help-text" title="Der dynamische Modus nutzt die Frequenzänderung, wenn eine kleine Masse auf dem Steg angebracht wird.">Eine bekannte kleine Masse auf dem Steg verwenden</span></label>
+                  <input id="dyn_mass_field" class="value-input" type="number" min="2" max="80" step="0.5" value="20" />
+                </div>
+                <input id="dyn_mass" type="range" min="2" max="80" step="0.5" value="20" />
+              </div>
+            </div>
+            <div class="actions">
+              <button id="reset">Zurücksetzen</button>
+              <button id="copy" class="ghost">Ergebnisse kopieren</button>
+              <button id="load" class="ghost tl-save-action">JSON laden</button>
+              <button id="save" class="ghost tl-save-action">JSON herunterladen</button>
+              <input id="load_file" type="file" accept="application/json,.json" hidden />
+            </div>
+          </section>
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+          <header class="card pad tl-card tl-card-info">
+            <h2>Überblick und erforderliche Messungen</h2>
+            
+              <p class="tl-card-desc">
+                <strong>Mit diesem Werkzeug kannst du</strong> Messwerte deiner Monopol-Mobilitätsvorrichtung nach Gore in die Deckensteifigkeit K und die effektive modale Masse M<sub>eff</sub> umrechnen und anschließend den Monopol-Mobilitätswert einer Gitarre bestimmen, um Instrumente auf einer einheitlichen Grundlage zu vergleichen.
+              </p>
+              <p class="tl-card-desc">
+                <strong>Warum das wichtig ist:</strong> Die Monopol-Mobilität zeigt, wie frei die Decke bei ihrer Hauptresonanz Luft pumpt, und ist ein Maß dafür, wie reaktionsfreudig eine Gitarre über einen großen Frequenzbereich ist. Sie zeigt, wie viel Klang du bei einer bestimmten Anschlagskraft erhältst. Sie schützt nicht vor konstruktiven Problemen, zeigt aber, dass Decken mit geringer Masse und geringer Steifigkeit besser ansprechen, sofern sie dauerhaft standhalten.
+              </p>
+              <div class="sample-note badge">
+                Standarddatensatz: Rick Molloy OM (10/25/2025) (Fichte / Stahlsaiten, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
+              </div>
+              <details class="tl-accordion">
+                <summary>Überblick und erforderliche Messungen</summary>
+                <p class="tl-card-desc">
+                  Verschließe das Schallloch, dämpfe die Saiten und klopfe die Decke an, um die Frequenz f<sub>u</sub> der ungekoppelten Monopolresonanz zu finden. Belaste anschließend den Steg mit der Monopol-Mobilitätsvorrichtung mit einer bekannten Kraft und erfasse die Auslenkung x.
+                </p>
+                <div class="before-card">
+                  <h3>Erforderliche Messungen</h3>
+                  <ul class="tl-list">
+                    <li>Ungekoppelte Monopolfrequenz der Decke, f<sub>u</sub> (Hz)</li>
+                    <li>Stegauslenkung unter Prüflast, x (mm)</li>
+                    <li>Prüfmasse, m (kg)</li>
+                  </ul>
+                </div>
+                <div class="before-card">
+                  <h3>So verwendest du dieses Werkzeug</h3>
+                  <ol class="tl-steps">
+                    <li>Verschließe das Schallloch mit einer leichten, steifen Abdeckung, sodass der Korpus luftdicht ist.</li>
+                    <li>Dämpfe die Saiten, klopfe die Decke an und erfasse die ungekoppelte Deckenfrequenz f<sub>u</sub> mit deiner FFT-App.</li>
+                    <li>Montiere die Mobilitätsvorrichtung. Belaste sie über dem Steg mit einer bekannten Prüfmasse (m) und miss die Plattenauslenkung (x) in Millimetern.</li>
+                    <li>Gib f<sub>u</sub>, x und m ein. Der Rechner bestimmt K, M<sub>eff</sub> und die Mobilität.</li>
+                    <li>Prüfe den Wert und vergleiche ihn mit deinen eigenen Baudaten.</li>
+                  </ol>
+                </div>
+              </details>
+            </header>
+
+          
+            <section class="card pad tl-card tl-card-info tl-span-2">
+              <h2>So funktioniert dieses Werkzeug</h2>
+              <p class="tl-card-desc">
+                Dieses Werkzeug basiert auf der Monopol-Mobilitätsvorrichtung von Gore und Gilet (Band 1, Anhang AI 3). Der Rechner wandelt die Messwerte in die Deckensteifigkeit am Steg (K), die effektive modale Masse (M<sub>eff</sub>) und den standardisierten Monopol-Mobilitätswert um.
+              </p>
+              <div class="tl-eq-block">
+                <h3>Kraft aus der Prüfmasse</h3>
+                <p class="small muted">Die Masse bestimmt über die Vorrichtung die aufgebrachte Kraft.</p>
+                <div class="tl-equation">F = m · g</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Deckensteifigkeit am Steg</h3>
+                <p class="small muted">Die aufgebrachte Kraft geteilt durch die in Meter umgerechnete Auslenkung x ergibt die Steifigkeit K.</p>
+                <div class="tl-equation">K = F / x</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Effektive modale Masse</h3>
+                <p class="small muted">Aus der Steifigkeit K und der ungekoppelten Deckenfrequenz f<sub>u</sub> abgeleitet.</p>
+                <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Wert der Monopol-Mobilität</h3>
+                <p class="small muted">Kennwert zum Vergleich des Ansprechverhaltens verschiedener Instrumente.</p>
+                <div class="tl-equation">Mobilitätswert = 1000 / √(K · M<sub>eff</sub>)</div>
+              </div>
+            </section>
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="de">
+  <h2>Rechner für Monopol-Mobilität</h2>
+  <p>Wandelt statische Messungen mit der Gore-Vorrichtung oder dynamische Massebelastungsmessungen in Deckensteifigkeit, effektive modale Masse und einen Wert für die Monopol-Mobilität um.</p>
+  <p>Die Monopol-Mobilität beschreibt, wie leicht sich die Decke einer Gitarre bei ihrer wichtigsten ungekoppelten Resonanz im Verhältnis zu ihrer Steifigkeit und effektiven modalen Masse bewegt.</p>
+  <p>Der Vergleich der Mobilität verschiedener Instrumente hilft zu verstehen, wie frei jede Decke anspricht und wie Steifigkeit und Masse dazu beitragen.</p>
+  <ul>
+    <li>Miss die ungekoppelte Deckenfrequenz bei verschlossenem Schallloch und gedämpften Saiten.</li>
+    <li>Miss entweder die Stegauslenkung unter einer bekannten Prüflast oder die Frequenzverschiebung durch eine bekannte Zusatzmasse.</li>
+  </ul>
+  <p>Verwende die berechnete Steifigkeit, effektive Masse und Mobilität gemeinsam, wenn du Instrumente vergleichst oder messbare Änderungen an Beleistung und Platten planst.</p>
+  <p class="small muted">Erstellt von Rick Molloy auf Grundlage der von Trevor Gore und Gerard Gilet veröffentlichten Methoden zur Monopol-Mobilität.</p>
+</section>
+        </section>
+      </main>
+
+      <footer class="tl-footer" data-tool-footer></footer>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../common/tool_document.js" defer></script>
+  <script src="../common/tool_document_file.js" defer></script>
+  <script src="../common/per_tab_tool_session.js" defer></script>
+  <script src="../common/offline_save_surface.js" defer></script>
+  <script src="monopole_save_surface.js" defer></script>
+  <script src="../common/notebook_rpc_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_connection_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_save_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_restore_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_restore.js" defer data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js" defer data-feature="notebook"></script>
+  <script src="monopole_save_modal.js" defer data-feature="notebook"></script>
+  <script src="monopole_save_summary.js" defer></script>
+  <script src="monopole_save_target.js" defer></script>
+  <script src="monopole_save_snapshot.js" defer></script>
+  <script src="main.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Sprache","currentLocale":"de","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/monopole_mobility/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/monopole_mobility/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

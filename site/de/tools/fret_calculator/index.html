@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bundrechner und Stegkompensation | Griffbrett vor dem Zuschnitt auslegen</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/layout.css">
+  <meta name="description" content="Berechnen Sie Bundpositionen und Stegkompensation, um ein Griffbrett auszulegen oder die Mensurgeometrie vor dem Zuschnitt oder Setup zu prüfen.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/de/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+</head>
+
+<body>
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Seitenmenü öffnen">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Seitenbereiche" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Bundpositionen und Stegkompensation</h1>
+          </div>
+          <div class="hero-actions">
+          </div>
+        </div>
+      </section>
+
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output">
+            <h2>Ergebnisse</h2>
+            <div class="result-grid">
+              <article class="result-card">
+                <div class="label">Mensurlänge</div>
+                <div id="summary_scale" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Klassischer Rückversatz</div>
+                <div id="summary_classical" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Rückversatz der ersten Stahlsaite</div>
+                <div id="summary_steel_1" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Rückversatz der sechsten Stahlsaite</div>
+                <div id="summary_steel_6" class="value">—</div>
+              </article>
+            </div>
+            <p id="result_status" class="status">Live: computed from current scale length</p>
+          </section>
+
+          <section class="card pad tl-card tl-card-output">
+            <h2>Bundpositionen (gleichstufige Stimmung)</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Bund</th>
+                    <th>Abstand vom Sattel</th>
+                    <th>Bundabstand</th>
+                    <th>Restlänge bis zur Stegeinlage</th>
+                  </tr>
+                </thead>
+                <tbody id="fret_rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card pad tl-card tl-card-output">
+            <h2>Stegkompensation</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Saite / Ausführung</th>
+                    <th>Rückversatz</th>
+                    <th>Sattel bis Stegeinlage</th>
+                  </tr>
+                </thead>
+                <tbody id="comp_rows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls">
+            <h2>Eingaben</h2>
+            <div class="tl-control-stack">
+              <label class="field">
+                <span class="field-label">Mensurlänge</span>
+                <input id="scale_input" type="number" min="400" max="1000" step="1" value="650">
+              </label>
+              <label class="field">
+                <span class="field-label">Einheiten</span>
+                <select id="unit_select">
+                  <option value="mm" selected>mm</option>
+                  <option value="in">Zoll</option>
+                </select>
+              </label>
+              <div class="tl-action-row">
+                <button id="reset_btn" type="button">Standardwerte wiederherstellen</button>
+              </div>
+            </div>
+            <p class="small muted">
+              Die Abstände werden von der Sattelkante gemessen. Die Kompensationswerte werden aus dem Ausgangsmodell auf Ihre Mensur skaliert.
+            </p>
+          </section>
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+          <section class="card pad tl-card tl-card-info">
+            <h2>Funktionsweise</h2>
+            <p class="tl-card-desc">
+              Die Bundpositionen folgen der gleichstufigen Stimmung: Jeder Halbton teilt die Saitenlänge durch <code>2^(1/12)</code>.
+              Die Stegrückversätze werden von einer Referenzmensur von 650 mm skaliert: Bei der klassischen Gitarre wird eine gerade Stegeinlage zurückversetzt, bei Stahlsaiten gelten getrennte Werte für die erste und sechste Saite.
+            </p>
+          </section>
+
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="de">
+  <h2>Bundpositionen und Stegkompensation</h2>
+  <p>Berechnen Sie gleichstufige Bundpositionen und mensurabhängige Referenzwerte für den Stegrückversatz aus einer einzigen Mensurmessung.</p>
+  <p>Dieser Rechner legt gleichstufige Bundpositionen aus und zeigt Referenzwerte für den Stegrückversatz bei klassischen Gitarren und Stahlsaiteninstrumenten.</p>
+  <p>Eine klare Auslegungsreferenz hilft, die Bünde zu positionieren und die Lage der Stegeinlage vor dem Zuschnitt des Griffbretts oder dem Einbau des Stegs abzuschätzen.</p>
+  <ul>
+    <li>Geben Sie die schwingende Saitenlänge von der Sattelkante bis zur theoretischen Linie der Stegeinlage ein.</li>
+    <li>Wählen Sie Millimeter oder Zoll für die angezeigten Maße.</li>
+  </ul>
+  <p>Verwenden Sie die Bundabstände als Auslegungsmaße und die Stegrückversätze als Ausgangswerte, die am fertigen Instrument geprüft werden müssen.</p>
+  <p class="small muted">Erstellt von Rick Molloy.</p>
+</section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="main.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Sprache","currentLocale":"de","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/fret_calculator/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/fret_calculator/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/fret_calculator/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/fret_calculator/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/fret_calculator/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

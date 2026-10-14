@@ -1,0 +1,10 @@
+{
+  "name": "guitar-setup-library",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "node --experimental-strip-types --test action_geometry.test.ts measurement_rung.test.ts instrument_profiles.test.ts setup_model.test.ts gore_compensation.test.ts gore_book_model.test.ts gore_book_tables.test.ts gore_worksheet_parity.test.ts gore_action_model.test.ts empirical_compensation.test.ts tension_sources.test.mjs length_units.test.mjs setup_diagram.test.mjs setup_provenance.test.mjs setup_calculator.test.mjs",
+    "build": "bun build setup_model.ts --outfile setup_model.mjs --target browser --format esm"
+  }
+}

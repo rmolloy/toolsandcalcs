@@ -1,0 +1,30 @@
+{
+  "hideWhenEmpty": true,
+  "items": [
+    {
+      "label": "Rick Molloy Guitars",
+      "href": "/",
+      "className": "hero-menu-home"
+    },
+    {
+      "label": "Tools Home",
+      "href": "/"
+    },
+    {
+      "label": "Resonance Reader",
+      "href": "/tools/resonance_reader/"
+    },
+    {
+      "label": "Four Degrees of Freedom Model",
+      "href": "/tools/dof_model/"
+    },
+    {
+      "label": "Plate Thickness",
+      "href": "/tools/plate_thickness/"
+    },
+    {
+      "label": "Monopole Mobility",
+      "href": "/tools/monopole_mobility/"
+    }
+  ]
+}

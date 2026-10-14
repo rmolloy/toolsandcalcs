@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modell mit vier Freiheitsgraden | Das Labor von Rick Molloy Guitars</title>
+  <link rel="stylesheet" href="../common/tool_footer.css">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <link rel="canonical" href="https://rickmolloyguitars.com/de/lab/tools/dof_model/">
+  <link rel="stylesheet" href="../common/theme_profile.css">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/dof_model/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/dof_model/">
+</head>
+
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-row">
+        <div class="hero-controls-left">
+          <details class="hero-menu">
+            <summary class="hero-menu-trigger" aria-label="Seitenmenü öffnen">☰</summary>
+            <nav class="hero-menu-panel" aria-label="Seitenbereiche" data-site-menu data-menu-profile="lutherieacademy"></nav>
+          </details>
+          <h1>Modell mit vier Freiheitsgraden</h1>
+        </div>
+        <div class="hero-actions">
+          <button id="load_model" class="ghost-btn btn-small tl-save-action" type="button">Laden</button>
+          <button id="save_model" class="ghost-btn btn-small tl-save-action" type="button">Speichern</button>
+          <input id="load_model_file" type="file" accept="application/json,.json" hidden>
+<label class="toggle">
+            <input type="checkbox" id="toggle_overlay">
+            <span class="toggle-label">Vergleichen</span>
+            <span class="toggle-knob"></span>
+          </label>
+          <div class="mode-tabs" role="tablist">
+            <button class="tab-btn" data-order="1">1-DOF</button>
+            <button class="tab-btn" data-order="2">2-DOF</button>
+            <button class="tab-btn" data-order="3">3-DOF</button>
+            <button class="tab-btn tab-btn-active" data-order="4">4-DOF</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="card-surface">
+      <div class="plot-shell">
+        <div id="plot_dof" class="plot tl-resonance-primary-plot"></div>
+        <div id="plot_overlay" class="plot-overlay"></div>
+      </div>
+
+      <div class="dof-task-rail">
+        <div class="dof-task-tabs" role="tablist" aria-label="Freiheitsgrad-Aufgabenmodus">
+          <button class="task-tab-btn task-tab-btn-active" data-task-mode="edit" type="button">Modell bearbeiten</button>
+          <button class="task-tab-btn" data-task-mode="fit" type="button">Meine Gitarre anpassen</button>
+          <button class="task-tab-btn" data-task-mode="solve" type="button">Ziele lösen</button>
+        </div>
+        <button id="add_simple_source" class="task-tab-btn dof-add-peak-action" type="button">Peaks hinzufügen</button>
+      </div>
+
+      <div id="dof_cards_header" class="lfs-header dof-modes-header">
+        <div class="dof-cards-heading">
+          <h2 id="dof_cards_title">Aktuelles Modell</h2>
+          <p id="dof_cards_copy" class="muted small">Direkte Parameterbearbeitung für jeden Freiheitsgrad.</p>
+        </div>
+      </div>
+
+      <div class="mode-grid" id="dof_cards">
+        <!-- populated by script -->
+      </div>
+
+      <div class="dof-task-parking" aria-hidden="true">
+        <div id="dof_fit_panel_home"></div>
+        <section id="dof_fit_panel" class="dof-fit-panel" aria-label="Modell an Zielfrequenzen anpassen">
+          <div class="dof-fit-copy">
+            <h3>Meine Gitarre anpassen</h3>
+            <p class="muted small">Gib modale oder strukturelle Ziele ein und passe das Modell an diese Ziele an.</p>
+          </div>
+          <div class="dof-fit-controls">
+            <label class="dof-fit-field">
+              <span>Luft (Hz)</span>
+              <input id="fit_target_air" type="number" min="50" max="140" step="0.1" inputmode="decimal" placeholder="100">
+            </label>
+            <label class="dof-fit-field">
+              <span>Decke (Hz)</span>
+              <input id="fit_target_top" type="number" min="120" max="240" step="0.1" inputmode="decimal" placeholder="185">
+            </label>
+            <label class="dof-fit-field">
+              <span>Boden (Hz)</span>
+              <input id="fit_target_back" type="number" min="180" max="300" step="0.1" inputmode="decimal" placeholder="230">
+            </label>
+            <label class="dof-fit-field">
+              <span>Wirksame Deckenmasse (g)</span>
+              <input id="fit_target_mass_top" type="number" min="5" max="120" step="0.1" inputmode="decimal" placeholder="43">
+            </label>
+            <label class="dof-fit-field">
+              <span>Wirksame Deckensteifigkeit (N/m)</span>
+              <input id="fit_target_stiffness_top" type="number" min="10000" max="150000" step="100" inputmode="decimal" placeholder="42700">
+            </label>
+            <label class="dof-fit-field">
+              <span>Wirksame Bodenmasse (g)</span>
+              <input id="fit_target_mass_back" type="number" min="20" max="180" step="0.1" inputmode="decimal" placeholder="94">
+            </label>
+            <label class="dof-fit-field">
+              <span>Wirksame Bodensteifigkeit (N/m)</span>
+              <input id="fit_target_stiffness_back" type="number" min="50000" max="400000" step="100" inputmode="decimal" placeholder="130000">
+            </label>
+            <label class="dof-fit-field">
+              <span>Korpusvolumen (m³)</span>
+              <input id="fit_target_volume_air" type="number" min="0.01" max="0.025" step="0.0001" inputmode="decimal" placeholder="0.0141">
+            </label>
+            <label class="dof-fit-field">
+              <span>Schalllochdurchmesser (mm)</span>
+              <input id="fit_target_area_hole_diam" type="number" min="50" max="120" step="0.1" inputmode="decimal" placeholder="83.6">
+            </label>
+            <label class="dof-fit-field dof-fit-range-field">
+              <span>Höhenlage</span>
+              <span class="dof-fit-range-value" id="fit_altitude_value">0 m</span>
+              <input id="fit_altitude" type="range" min="0" max="3000" step="10" value="0" aria-describedby="fit_altitude_value">
+            </label>
+            <button id="btn_fit_guitar" class="ghost-btn btn-small" type="button">Meine Gitarre anpassen</button>
+            <button id="btn_fit_clear" class="ghost-btn btn-small" type="button">Leeren</button>
+          </div>
+          <p id="fit_status" class="muted small dof-fit-status"></p>
+        </section>
+
+        <div id="dof_solve_panel_home"></div>
+        <section id="dof_solve_panel" class="dof-guided-panel" aria-label="Zielrezept lösen">
+          <div class="dof-guided-copy">
+            <h3>Ziele lösen</h3>
+            <p class="muted small">Führe die aktuellen Ziele als Was-wäre-wenn-Rezept aus und prüfe die vorgeschlagenen strukturellen Änderungen.</p>
+          </div>
+          <label class="dof-guided-option">
+            <input id="fit_restrict_simple" type="checkbox" checked>
+            <span>Nur das Schallloch vergrößern und die Plattenmassen erhöhen.</span>
+          </label>
+          <div class="dof-guided-actions">
+            <button id="btn_solve_targets" class="ghost-btn btn-small" type="button">Ziele lösen</button>
+            <button id="btn_reset_whatif" class="ghost-btn btn-small" type="button">Was-wäre-wenn-Vergleich zurücksetzen</button>
+          </div>
+          <div id="whatif_summary" class="delta-summary">
+            <h3>Was-wäre-wenn-Rezept</h3>
+            <div class="delta-summary__body muted">Führe Ziele lösen aus, um vorgeschlagene Anpassungen zu sehen.</div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <footer class="tl-footer" data-tool-footer></footer>
+  </div>
+
+  <script src="../vendor/plotly/plotly-basic.min.js" defer></script>
+  <script src="../common/atmosphere.js" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../common/tool_document.js" defer></script>
+  <script src="../common/tool_document_file.js" defer></script>
+  <script src="../common/per_tab_tool_session.js" defer></script>
+  <script src="../common/offline_save_surface.js" defer></script>
+  <script src="../common/dof_solver_adapter.js" defer></script>
+  <script src="../common/overlay_segments.js" defer></script>
+  <script src="../common/solver_core.js" defer></script>
+  <script src="../common/4dof/model_core.js" defer></script>
+  <script src="../common/4dof/whatif_recipe_summary.js" defer></script>
+  <script src="dof_save_surface.js" defer></script>
+  <script src="../common/notebook_rpc_client.js" defer data-feature="notebook"></script>
+  <script src="dof_notebook_connection_client.js" defer data-feature="notebook"></script>
+  <script src="dof_notebook_save_client.js" defer data-feature="notebook"></script>
+  <script src="dof_notebook_restore_client.js" defer data-feature="notebook"></script>
+  <script src="dof_notebook_restore.js" defer data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js" defer data-feature="notebook"></script>
+  <script src="dof_save_modal.js" defer data-feature="notebook"></script>
+  <script src="dof_save_target.js" defer></script>
+  <script src="dof_save_snapshot.js" defer></script>
+  <script>
+    window.ToneLabDofMessages = Object.freeze({
+      airDampingLabel: "Luftdämpfung Rₐ",
+      airLabel: "Luft",
+      altitudeLabel: "Höhenlage (m)",
+      alwaysBadge: "Immer",
+      ambientTemperatureLabel: "Umgebungstemperatur (°C)",
+      backDampingLabel: "Dämpfung Rᵦ",
+      backLabel: "Boden",
+      backMassLabel: "Masse mᵦ (g)",
+      backRadiatingAreaLabel: "Abstrahlfläche Aᵦ (m²)",
+      backStiffnessLabel: "Steifigkeit kᵦ (N/m)",
+      cavityVolumeLabel: "Korpusvolumen (m³)",
+      drivingForceLabel: "Anregungskraft F (N)",
+      editCardsTitle: "Aktuelles Modell",
+      editCardsCopy: "Direkte Parameterbearbeitung für jeden Freiheitsgrad.",
+      environmentLabel: "Umgebung",
+      externalAlias: "Extern",
+      fitAirAlias: "Gemessene Mode + Korpus",
+      fitAirCopy: "Passe die Luftresonanz anhand der gemessenen Mode und der bereits bekannten Korpusdaten an.",
+      fitBackCopy: "Verankere die Bodenmode mit der beobachteten Frequenz und den verlässlichen wirksamen Bodeneigenschaften.",
+      fitBadge: "Anpassen",
+      fitCardsTitle: "Nach System anpassen",
+      fitCardsCopy: "Nutze gemessene Moden und bekannte Eingaben, um das aktuelle Modell abzuleiten.",
+      fitEnvironmentAlias: "Atmosphäre + Aktionen",
+      fitEnvironmentCopy: "Stelle die Höhenlage der Messung ein, führe die Anpassung aus und leere die Eingaben, wenn du neu beginnen möchtest.",
+      fitPlateAlias: "Gemessene Mode + Platte",
+      fitTopCopy: "Verankere die Deckenmode mit der beobachteten Frequenz und den verlässlichen wirksamen Deckeneigenschaften.",
+      inputsAlias: "Eingaben",
+      movingAirMassLabel: "Bewegte Luftmasse (g)",
+      plotBaseTraceLabel: "4FG-Basis",
+      plotComposedTraceLabel: "4FG + Quellen",
+      plotCurrentTraceLabel: "Aktuell",
+      plotFrequencyAxisLabel: "Frequenz (Hz)",
+      plotLevelAxisLabel: "Pegel (dB)",
+      plotResponseUnavailable: "Die Modellantwort ist nicht verfügbar.",
+      plotTargetTraceLabel: "Ziel",
+      saveConnectedLabel: "Speichern",
+      saveDefaultDisplayName: "Instrument",
+      saveDefaultNotebookName: "Notizbuch",
+      saveDialogLabel: "4FG-Modell speichern",
+      saveModelTitle: "4-FG-Modell",
+      saveSummaryAirModeLabel: "Luft T(1,1)₁",
+      saveSummaryBackModeLabel: "Boden T(1,1)₃",
+      saveSummaryFittedModelValueTemplate: "{order} FG · an Ziele angepasst",
+      saveSummaryModelLabel: "Modell",
+      saveSummaryModeledProvenance: "modelliert",
+      saveSummaryTopModeLabel: "Decke T(1,1)₂",
+      saveDownloadLabel: "Speichern",
+      saveDownloadHint: "Das Speichern im Notizbuch ist hier nicht verfügbar. Lade stattdessen das Modell herunter.",
+      saveSavedToNotebookTemplate: "In {notebookName} gespeichert.",
+      sidesAreaLabel: "Zargenfläche (m²)",
+      sidesDampingLabel: "Zargendämpfung",
+      sidesLabel: "Zargen",
+      sidesMassLabel: "Zargenmasse (g)",
+      sidesStiffnessLabel: "Zargensteifigkeit (N/m)",
+      simpleSourceAmplitudeLabel: "Amplitude (m²/kg)",
+      simpleSourceAmplitudeTerm: "Amplitude",
+      simpleSourceFrequencyLabel: "Frequenz (Hz)",
+      simpleSourceNameLabel: "Name",
+      simpleSourcePeakLabel: "Peak",
+      simpleSourceRemoveLabel: "Entfernen",
+      simpleSourceResponsePeakLabel: "Antwortpeak",
+      simpleSourcesTraceLabel: "Einfache Quellen",
+      solveAirAlias: "Zielmode + Korpus",
+      solveAirCopy: "Lege zuerst das Luftziel fest und forme dann die Korpusdaten, die es am unmittelbarsten verschieben.",
+      solveBackCopy: "Lege das Bodenziel und die wirksamen Bodeneigenschaften fest, die der Solver berücksichtigen soll.",
+      solveBadge: "Lösen",
+      solveCardsTitle: "Nach System lösen",
+      solveCardsCopy: "Lege Ziele und Einschränkungen fest und prüfe dann die vorgeschlagenen Änderungen.",
+      solveEnvironmentAlias: "Rezeptaktionen",
+      solveEnvironmentCopy: "Begrenze das Rezept, löse das Was-wäre-wenn-Szenario und prüfe die vorgeschlagenen strukturellen Änderungen.",
+      solvePlateAlias: "Zielmode + Platte",
+      solveTopCopy: "Lege das Deckenziel und die wirksamen Deckeneigenschaften fest, die die gewünschte Änderung bestimmen.",
+      soundholeAreaLabel: "Schalllochfläche (m²)",
+      statusCompareUnavailable: "Der Vergleichsmodus ist nicht verfügbar.",
+      statusComparisonReset: "Was-wäre-wenn-Vergleich zurückgesetzt.",
+      statusEnterTargetFrequency: "Gib mindestens eine Zielfrequenz ein.",
+      statusFitApplied: "Anpassung angewendet.",
+      statusNotebookEventRestored: "Notizbuchereignis wiederhergestellt.",
+      statusPackageLoaded: "JSON-Paket geladen.",
+      statusPackageLoadFailed: "Das JSON-Paket konnte nicht geladen werden.",
+      statusPackageDownloaded: "JSON-Paket heruntergeladen.",
+      statusSolveApplied: "Ziele lösen wurde als Was-wäre-wenn-Rezept angewendet.",
+      topDampingLabel: "Dämpfung Rₜ",
+      topLabel: "Decke",
+      topMassLabel: "Masse mₜ (g)",
+      topRadiatingAreaLabel: "Abstrahlfläche Aₜ (m²)",
+      topStiffnessLabel: "Steifigkeit kₜ (N/m)",
+      whatIfEmptyMessage: "Führe Ziele lösen aus, um vorgeschlagene Anpassungen zu sehen.",
+      whatIfDecreaseTemplate: "{field} um {amount} {unit} verringern",
+      whatIfBackPlateMassLabel: "Masse der Bodenplatte",
+      whatIfBackPlateStiffnessLabel: "Steifigkeit der Bodenplatte",
+      whatIfCavityVolumeLabel: "Korpusvolumen",
+      whatIfIncreaseTemplate: "{field} um {amount} {unit} erhöhen",
+      whatIfSoundholeAreaDeltaTemplate: " ({sign}{area} m²)",
+      whatIfSoundholeDiameterLabel: "Schalllochdurchmesser",
+      whatIfTargetLabel: "Ziel",
+      whatIfTopPlateMassLabel: "Masse der Deckenplatte",
+      whatIfTopPlateStiffnessLabel: "Steifigkeit der Deckenplatte"
+    });
+  </script>
+  <script src="main.browser.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Sprache","currentLocale":"de","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/dof_model/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/dof_model/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/dof_model/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/dof_model/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/dof_model/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/dof_model/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fret Scale and Bridge Compensation Calculator</title>
+  <link rel="stylesheet" href="styles.css?rev=1d50c39bd456">
+  <link rel="stylesheet" href="../common/layout.css?rev=1d50c39bd456">
+  <meta name="description" content="Calculate fret positions and bridge compensation so you can lay out a fretboard or check scale geometry before cutting or setup work.">
+  <link rel="canonical" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/fret_calculator/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/fret_calculator/">
+</head>
+
+<body>
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Fret Scale &amp; Bridge Compensation</h1>
+          </div>
+          <div class="hero-actions">
+          </div>
+        </div>
+      </section>
+
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output">
+            <h2>Results</h2>
+            <div class="result-grid">
+              <article class="result-card">
+                <div class="label">Scale length</div>
+                <div id="summary_scale" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Classical setback</div>
+                <div id="summary_classical" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Steel first string setback</div>
+                <div id="summary_steel_1" class="value">—</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Steel sixth string setback</div>
+                <div id="summary_steel_6" class="value">—</div>
+              </article>
+            </div>
+            <p id="result_status" class="status">Live: computed from current scale length</p>
+          </section>
+
+          <section class="card pad tl-card tl-card-output">
+            <h2>Fret Positions (Equal Temperament)</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fret</th>
+                    <th>Distance from Nut</th>
+                    <th>Fret to Fret</th>
+                    <th>Remaining to Saddle</th>
+                  </tr>
+                </thead>
+                <tbody id="fret_rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="card pad tl-card tl-card-output">
+            <h2>Bridge Compensation</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>String / Style</th>
+                    <th>Setback</th>
+                    <th>Nut to Saddle</th>
+                  </tr>
+                </thead>
+                <tbody id="comp_rows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls">
+            <h2>Inputs</h2>
+            <div class="tl-control-stack">
+              <label class="field">
+                <span class="field-label">Scale length</span>
+                <input id="scale_input" type="number" min="400" max="1000" step="1" value="650">
+              </label>
+              <label class="field">
+                <span class="field-label">Units</span>
+                <select id="unit_select">
+                  <option value="mm" selected>mm</option>
+                  <option value="in">inches</option>
+                </select>
+              </label>
+              <div class="tl-action-row">
+                <button id="reset_btn" type="button">Reset defaults</button>
+              </div>
+            </div>
+            <p class="small muted">
+              Distances are measured from the nut edge. Compensation values are scale-adjusted from your original model.
+            </p>
+          </section>
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+          <section class="card pad tl-card tl-card-info">
+            <h2>How It Works</h2>
+            <p class="tl-card-desc">
+              Fret locations use equal temperament: each semitone divides string length by <code>2^(1/12)</code>.
+              Bridge setbacks are scaled from a 650 mm reference: classical uses a straight saddle setback,
+              while steel-string uses separate first/sixth values.
+            </p>
+          </section>
+
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="en-US">
+  <h2>Fret Scale &amp; Bridge Compensation</h2>
+  <p>Calculate equal-tempered fret positions and scale-adjusted bridge setback references from one scale-length measurement.</p>
+  <p>This calculator lays out equal-tempered fret positions and shows reference bridge setback values for classical and steel-string instruments.</p>
+  <p>A clear layout reference helps you place frets and estimate the saddle position before cutting a fretboard or setting a bridge.</p>
+  <ul>
+    <li>Enter the vibrating string length from the nut edge to the theoretical saddle line.</li>
+    <li>Choose millimetres or inches for the displayed dimensions.</li>
+  </ul>
+  <p>Use the fret distances as layout dimensions and treat the bridge setbacks as starting references to verify on the finished instrument.</p>
+  <p class="small muted">Created by Rick Molloy.</p>
+</section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js?rev=1d50c39bd456" defer></script>
+  <script src="../common/page_fullscreen.js?rev=1d50c39bd456" defer></script>
+  <script src="../common/site_menu_loader.js?rev=1d50c39bd456" defer></script>
+  <script src="main.js?rev=1d50c39bd456" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=1d50c39bd456">
+  <script id="tool_locale_config" type="application/json">{"label":"Language","currentLocale":"en-US","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/fret_calculator/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/fret_calculator/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/fret_calculator/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/fret_calculator/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/fret_calculator/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/fret_calculator/"}]}</script>
+  <script src="../common/locale_preference.js?rev=1d50c39bd456" defer></script>
+  <script src="../common/locale_selector.js?rev=1d50c39bd456" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>

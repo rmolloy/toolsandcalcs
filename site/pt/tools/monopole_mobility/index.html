@@ -1,0 +1,294 @@
+<!--
+© 2025 Rick Molloy. All rights reserved.
+
+This tool builds on the monopole mobility measurement workflow described by Trevor Gore.
+Permission is granted to view and reference this file for educational use only.
+No redistribution, modification, or commercial use without written consent from the author.
+-->
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculadora de mobilidade monopolar</title>
+  <link rel="stylesheet" href="../common/tool_footer.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../common/layout.css" />
+  <link rel="stylesheet" href="../common/notebook_save_modal.css">
+  <link rel="canonical" href="https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="fr" href="https://rickmolloyguitars.com/fr/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/">
+  <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/monopole_mobility/">
+</head>
+
+<body data-monopole-save-mode="offline">
+  <div class="tl-app">
+    <div class="tl-page">
+      <section class="hero">
+        <div class="hero-row">
+          <div class="hero-controls-left">
+            <details class="hero-menu">
+              <summary class="hero-menu-trigger" aria-label="Abrir o menu do site">☰</summary>
+              <nav class="hero-menu-panel" aria-label="Secções do site" data-site-menu data-menu-profile="lutherieacademy"></nav>
+            </details>
+            <h1>Calculadora de mobilidade monopolar</h1>
+          </div>
+          <div class="hero-actions">
+</div>
+        </div>
+      </section>
+
+      <main class="tl-layout tl-layout-stacked">
+        <section class="tl-content tl-content-primary">
+          <section class="card pad tl-card tl-card-output results">
+            <div class="results-header">
+              <h2>Propriedades calculadas</h2>
+              <div class="results-meta">
+                <span id="instrument_display" class="badge" hidden>Rick Molloy OM (10/25/2025) • Cordas de aço</span>
+                <span id="status" class="status muted">Cálculo em tempo real</span>
+              </div>
+            </div>
+            <div class="result-grid">
+              <article class="result-card highlighted">
+                <div class="label">Índice de mobilidade monopolar</div>
+                <div class="value-row">
+                  <div id="mobilityScore" class="value">--</div>
+                  <span class="unit-inline">índice</span>
+                </div>
+                <div class="note">1000 / √(K · M<sub>eff</sub>)</div>
+              </article>
+              <article class="result-card">
+                <div class="label">Rigidez do tampo K</div>
+                <div class="value-row">
+                  <div id="stiffness" class="value">--</div>
+                  <span class="unit-inline">N/m</span>
+                </div>
+                <div class="note">K = m·g / x</div>
+              </article>
+              <article class="result-card">
+                <div class="label">MASSA EFETIVA M<sub>eff</sub></div>
+                <div class="value-row">
+                  <div id="effMass" class="value">--</div>
+                  <span class="unit-inline">g</span>
+                </div>
+                <div class="note">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </article>
+            </div>
+            <div class="muted small">
+              Índices mais baixos indicam um tampo mais rígido e/ou pesado. Guitarras com índices elevados (&gt; 20 para guitarras de cordas de aço, &gt; 30 para clássicas) provavelmente precisarão de construção em compósito para resistir ao longo do tempo.
+            </div>
+            <div id="warnings" class="muted small"></div>
+            <div class="muted small">
+              A rigidez do tampo K e a massa efetiva M<sub>eff</sub> podem ser introduzidas no solucionador 4‑DOF para modelar o acoplamento ar/tampo/fundo da sua guitarra e indicar alterações realistas nas travessas ou placas ao procurar frequências específicas.
+            </div>
+          </section>
+        </section>
+
+        <aside class="tl-controls">
+          <section class="card pad tl-card tl-card-controls controls">
+            <h2>Dados de medição</h2>
+            <div id="monopole_mode_controls">
+              <div class="mode-toggle" role="group" aria-label="Selecionar o modo de cálculo">
+                <button id="mode_static" class="mode-btn active" type="button">
+                  Modo estático (dispositivo de Gore)
+                  <span class="help-text">Utiliza a deflexão medida com um comparador</span>
+                </button>
+                <button id="mode_dynamic" class="mode-btn" type="button" title="O modo dinâmico utiliza duas leituras de frequência em vez de um comparador.">
+                  Modo dinâmico (carregamento de massa)
+                  <span class="help-text">Duas frequências FFT, sem deflexão</span>
+                </button>
+              </div>
+              <div class="muted small" id="mode_hint_static" data-mode-note="static">Modo estático: introduza f<sub>u</sub>, a deflexão x medida pelo comparador e a massa de teste.</div>
+              <div class="muted small hidden" id="mode_hint_dynamic" data-mode-note="dynamic">Modo dinâmico: introduza a frequência sem carga f<sub>0</sub>, a frequência carregada f<sub>1</sub> e a massa adicional em gramas.</div>
+            </div>
+            <div id="monopole_identity_controls" hidden>
+              <label class="name-input">
+                Nome da guitarra ou amostra
+                <input id="instrument_name" type="text" value="Rick Molloy OM (10/25/2025)" />
+              </label>
+              <label class="type-input">
+                Tipo de construção
+                <select id="instrument_type">
+                  <option value="steel" selected>Cordas de aço</option>
+                  <option value="classical">Clássica</option>
+                  <option value="other">Outra</option>
+                </select>
+              </label>
+            </div>
+            <div class="inputs mode-panel" id="staticInputs">
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="freq_field">Frequência monopolar desacoplada do tampo, f<sub>u</sub> (Hz)<span class="help-text">Boca vedada e cordas silenciadas</span></label>
+                  <input id="freq_field" class="value-input" type="number" min="90" max="220" step="0.1" value="153" />
+                </div>
+                <input id="freq" type="range" min="90" max="220" step="0.1" value="153" />
+              </div>
+
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="deflection_field">Deflexão do cavalete sob a carga de teste, x (mm)<span class="help-text">Comparador no cavalete, carga vertical</span></label>
+                  <input id="deflection_field" class="value-input" type="number" min="0.05" max="0.50" step="0.005" value="0.18" />
+                </div>
+                <input id="deflection" type="range" min="0.05" max="0.50" step="0.005" value="0.18" />
+              </div>
+
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="mass_field">Massa de teste, m (kg)<span class="help-text">Aplique a carga verticalmente sobre o cavalete através da haste do comparador</span></label>
+                  <input id="mass_field" class="value-input" type="number" min="0.30" max="1.80" step="0.01" value="1.02" />
+                </div>
+                <input id="mass" type="range" min="0.30" max="1.80" step="0.01" value="1.02" />
+              </div>
+            </div>
+            <div class="inputs mode-panel hidden" id="dynamicInputs">
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_f0_field">Frequência desacoplada do tampo, f<sub>0</sub> (Hz)<span class="help-text">Boca vedada e cordas silenciadas</span></label>
+                  <input id="dyn_f0_field" class="value-input" type="number" min="90" max="240" step="0.1" value="153" />
+                </div>
+                <input id="dyn_f0" type="range" min="90" max="240" step="0.1" value="153" />
+              </div>
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_f1_field">Frequência carregada, f<sub>1</sub> (Hz)<span class="help-text">Com massa adicional sobre o cavalete</span></label>
+                  <input id="dyn_f1_field" class="value-input" type="number" min="70" max="230" step="0.1" value="141" />
+                </div>
+                <input id="dyn_f1" type="range" min="70" max="230" step="0.1" value="141" />
+              </div>
+              <div class="slider-block">
+                <div class="slider-row row">
+                  <label for="dyn_mass_field">Massa adicional (g)<span class="help-text" title="O modo dinâmico utiliza a alteração da frequência quando se adiciona uma pequena massa ao cavalete.">Use uma massa pequena e conhecida colocada no cavalete</span></label>
+                  <input id="dyn_mass_field" class="value-input" type="number" min="2" max="80" step="0.5" value="20" />
+                </div>
+                <input id="dyn_mass" type="range" min="2" max="80" step="0.5" value="20" />
+              </div>
+            </div>
+            <div class="actions">
+              <button id="reset">Repor</button>
+              <button id="copy" class="ghost">Copiar resultados</button>
+              <button id="load" class="ghost tl-save-action">Carregar JSON</button>
+              <button id="save" class="ghost tl-save-action">Descarregar JSON</button>
+              <input id="load_file" type="file" accept="application/json,.json" hidden />
+            </div>
+          </section>
+        </aside>
+
+        <section class="tl-content tl-content-secondary">
+          <header class="card pad tl-card tl-card-info">
+            <h2>Visão geral e medições necessárias</h2>
+            
+              <p class="tl-card-desc">
+                <strong>Use esta ferramenta para</strong> converter as leituras do seu dispositivo de mobilidade monopolar ao estilo Gore em rigidez do tampo K e massa modal efetiva M<sub>eff</sub> e, em seguida, calcular o valor de mobilidade monopolar de uma guitarra para comparar instrumentos de forma consistente.
+              </p>
+              <p class="tl-card-desc">
+                <strong>Porque é importante:</strong> A mobilidade monopolar mostra a liberdade com que o tampo bombeia ar na sua ressonância principal e mede a capacidade de resposta de uma guitarra numa ampla gama de frequências. Indica a quantidade de som obtida para uma determinada força de ataque das cordas. Não protege contra problemas estruturais, mas mostra que tampos de baixa massa e baixa rigidez responderão melhor, desde que resistam ao longo do tempo.
+              </p>
+              <div class="sample-note badge">
+                Conjunto de dados predefinido: Rick Molloy OM (10/25/2025) (abeto / cordas de aço, m = 1.02 kg, x = 0.18 mm, f<sub>u</sub> = 153 Hz)
+              </div>
+              <details class="tl-accordion">
+                <summary>Visão geral e medições necessárias</summary>
+                <p class="tl-card-desc">
+                  Vede a boca, silencie as cordas e bata levemente no tampo para encontrar a frequência f<sub>u</sub> da ressonância monopolar desacoplada. Em seguida, use o dispositivo de mobilidade monopolar para aplicar uma força conhecida ao cavalete e registe a deflexão x.
+                </p>
+                <div class="before-card">
+                  <h3>Medições necessárias</h3>
+                  <ul class="tl-list">
+                    <li>Frequência monopolar desacoplada do tampo, f<sub>u</sub> (Hz)</li>
+                    <li>Deflexão do cavalete sob a carga de teste, x (mm)</li>
+                    <li>Massa de teste, m (kg)</li>
+                  </ul>
+                </div>
+                <div class="before-card">
+                  <h3>Como utilizar esta ferramenta</h3>
+                  <ol class="tl-steps">
+                    <li>Vede a boca com uma cobertura leve e rígida para tornar a caixa estanque ao ar.</li>
+                    <li>Silencie as cordas, bata levemente no tampo e registe a frequência desacoplada f<sub>u</sub> com a sua aplicação FFT.</li>
+                    <li>Monte o dispositivo de mobilidade. Aplique sobre o cavalete uma massa de teste conhecida (m) e meça a deflexão do painel (x) em milímetros.</li>
+                    <li>Introduza f<sub>u</sub>, x e m. A calculadora determina K, M<sub>eff</sub> e a mobilidade.</li>
+                    <li>Analise o índice e compare-o com os seus próprios registos de construção.</li>
+                  </ol>
+                </div>
+              </details>
+            </header>
+
+          
+            <section class="card pad tl-card tl-card-info tl-span-2">
+              <h2>Como funciona esta ferramenta</h2>
+              <p class="tl-card-desc">
+                Esta ferramenta baseia-se no dispositivo de mobilidade monopolar de Gore e Gilet (vol. 1, apêndice AI 3). A calculadora converte as medições em rigidez do tampo no cavalete (K), massa modal efetiva (M<sub>eff</sub>) e índice padrão de mobilidade monopolar.
+              </p>
+              <div class="tl-eq-block">
+                <h3>Força da massa de teste</h3>
+                <p class="small muted">A massa determina a força aplicada através do dispositivo.</p>
+                <div class="tl-equation">F = m · g</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Rigidez do tampo no cavalete</h3>
+                <p class="small muted">A força aplicada dividida pela deflexão x, convertida em metros, fornece a rigidez K.</p>
+                <div class="tl-equation">K = F / x</div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Massa modal efetiva</h3>
+                <p class="small muted">Derivada da rigidez K e da frequência desacoplada do tampo f<sub>u</sub>.</p>
+                <div class="tl-equation">M<sub>eff</sub> = K / (2π f<sub>u</sub>)<sup>2</sup></div>
+              </div>
+              <div class="tl-eq-block">
+                <h3>Índice de mobilidade monopolar</h3>
+                <p class="small muted">Índice utilizado para comparar a capacidade de resposta entre instrumentos.</p>
+                <div class="tl-equation">Índice de mobilidade = 1000 / √(K · M<sub>eff</sub>)</div>
+              </div>
+            </section>
+          <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="pt">
+  <h2>Calculadora de mobilidade monopolar</h2>
+  <p>Converte medições estáticas com o dispositivo de Gore ou medições dinâmicas por carregamento de massa em rigidez do tampo, massa modal efetiva e um índice de mobilidade monopolar.</p>
+  <p>A mobilidade monopolar descreve a facilidade com que o tampo de uma guitarra se move na sua principal ressonância desacoplada em relação à sua rigidez e massa modal efetiva.</p>
+  <p>Comparar a mobilidade entre instrumentos ajuda a compreender a liberdade de resposta de cada tampo e a contribuição da rigidez e da massa.</p>
+  <ul>
+    <li>Meça a frequência desacoplada do tampo com a boca vedada e as cordas silenciadas.</li>
+    <li>Meça a deflexão do cavalete sob uma carga de teste conhecida ou a alteração de frequência causada por uma massa adicional conhecida.</li>
+  </ul>
+  <p>Use em conjunto a rigidez, a massa efetiva e a mobilidade calculadas ao comparar instrumentos ou planear alterações medidas nas travessas e placas.</p>
+  <p class="small muted">Criado por Rick Molloy a partir dos métodos de mobilidade monopolar publicados por Trevor Gore e Gerard Gilet.</p>
+</section>
+        </section>
+      </main>
+
+      <footer class="tl-footer" data-tool-footer></footer>
+    </div>
+  </div>
+
+  <script src="../common/tool_fullscreen_navigation.js" defer></script>
+  <script src="../common/page_fullscreen.js" defer></script>
+  <script src="../common/site_menu_loader.js" defer></script>
+  <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../common/tool_document.js" defer></script>
+  <script src="../common/tool_document_file.js" defer></script>
+  <script src="../common/per_tab_tool_session.js" defer></script>
+  <script src="../common/offline_save_surface.js" defer></script>
+  <script src="monopole_save_surface.js" defer></script>
+  <script src="../common/notebook_rpc_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_connection_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_save_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_restore_client.js" defer data-feature="notebook"></script>
+  <script src="monopole_notebook_restore.js" defer data-feature="notebook"></script>
+  <script src="../common/notebook_save_modal.js" defer data-feature="notebook"></script>
+  <script src="monopole_save_modal.js" defer data-feature="notebook"></script>
+  <script src="monopole_save_summary.js" defer></script>
+  <script src="monopole_save_target.js" defer></script>
+  <script src="monopole_save_snapshot.js" defer></script>
+  <script src="main.js" defer></script>
+  <!-- localized-locale-selector:start -->
+  <link rel="stylesheet" href="../common/locale_selector.css">
+  <script id="tool_locale_config" type="application/json">{"label":"Idioma","currentLocale":"pt","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/monopole_mobility/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/monopole_mobility/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/monopole_mobility/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/monopole_mobility/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/monopole_mobility/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/monopole_mobility/"}]}</script>
+  <script src="../common/locale_preference.js" defer></script>
+  <script src="../common/locale_selector.js" defer></script>
+  <!-- localized-locale-selector:end -->
+</body>
+
+</html>
