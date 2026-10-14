@@ -11,10 +11,6 @@
       "href": "/lab/"
     },
     {
-      "label": "Notebook (Alpha)",
-      "href": "/lab/notebook/"
-    },
-    {
       "label": "Resonance Reader",
       "href": "/lab/tools/resonance_reader/"
     },
@@ -23,11 +19,15 @@
       "href": "/lab/tools/dof_model/"
     },
     {
+      "label": "Monopole Mobility",
+      "href": "/lab/tools/monopole_mobility/"
+    },
+    {
       "label": "Plate Thickness",
       "href": "/lab/tools/plate_thickness/"
     },
     {
-      "label": "Fret Calculator",
+      "label": "Fret Scale & Bridge Compensation",
       "href": "/lab/tools/fret_calculator/"
     },
     {
@@ -35,20 +35,20 @@
       "href": "/lab/tools/guitar_setup_calculator/"
     },
     {
+      "label": "Flexural Rigidity",
+      "href": "/lab/tools/flexural_rigidity/"
+    },
+    {
+      "label": "Brace Designer",
+      "href": "/lab/tools/brace_calc/"
+    },
+    {
       "label": "FIT Design Workspace",
       "href": "/lab/tools/fit_design/"
     },
     {
-      "label": "Monopole Mobility",
-      "href": "/lab/tools/monopole_mobility/"
-    },
-    {
-      "label": "Flexural Rigidity (Alpha)",
-      "href": "/lab/tools/flexural_rigidity/"
-    },
-    {
-      "label": "Brace Designer (Alpha)",
-      "href": "/lab/tools/brace_calc/"
+      "label": "Luthier's Notebook",
+      "href": "/lab/notebook/"
     }
   ]
 }

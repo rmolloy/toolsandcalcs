@@ -12,10 +12,12 @@ const WHAT_IF_RECIPE_FIELDS = [
         precision: 1,
         threshold: 0.1,
         transform: whatIfRecipeAreaToDiameterMm,
-        extra: function (baseValue, targetValue) {
+        extra: function (baseValue, targetValue, _deltaValue, messages) {
             var deltaArea = targetValue - baseValue;
             var sign = deltaArea >= 0 ? "+" : "-";
-            return " (" + sign + Math.abs(deltaArea).toFixed(5) + " m²)";
+            return messageValueRead(messages === null || messages === void 0 ? void 0 : messages.soundholeAreaDeltaTemplate, " ({sign}{area} m²)")
+                .replace("{sign}", sign)
+                .replace("{area}", Math.abs(deltaArea).toFixed(5));
         }
     }
 ];
@@ -24,7 +26,7 @@ function whatIfRecipeAreaToDiameterMm(area) {
         return NaN;
     return Math.sqrt((4 * area) / Math.PI) * 1000;
 }
-function buildWhatIfRecipeDeltaLine(field, baseRaw, targetRaw) {
+function buildWhatIfRecipeDeltaLine(field, baseRaw, targetRaw, messages) {
     var _a;
     var baseValue = baseRaw[field.id];
     var targetValue = targetRaw[field.id];
@@ -41,21 +43,36 @@ function buildWhatIfRecipeDeltaLine(field, baseRaw, targetRaw) {
     var deltaDisplay = targetDisplay - baseDisplay;
     if (Math.abs(deltaDisplay) < ((_a = field.threshold) !== null && _a !== void 0 ? _a : 0))
         return null;
-    var direction = deltaDisplay >= 0 ? "Increase" : "Decrease";
     var precision = typeof field.precision === "number" ? field.precision : 2;
     var amount = Math.abs(deltaDisplay).toFixed(precision);
-    var line = direction + " " + field.label + " by " + amount + " " + field.unit;
+    var line = whatIfRecipeLineBuild(field, amount, deltaDisplay, messages);
     if (field.extra) {
-        line += field.extra(baseValue, targetValue, deltaDisplay) || "";
+        line += field.extra(baseValue, targetValue, deltaDisplay, messages) || "";
     }
     return line;
 }
-function buildWhatIfRecipeSummaryLines(baseRaw, targetRaw) {
+function whatIfRecipeLineBuild(field, amount, delta, messages) {
+    var template = delta >= 0
+        ? messageValueRead(messages === null || messages === void 0 ? void 0 : messages.increaseTemplate, "Increase {field} by {amount} {unit}")
+        : messageValueRead(messages === null || messages === void 0 ? void 0 : messages.decreaseTemplate, "Decrease {field} by {amount} {unit}");
+    return template
+        .replace("{field}", whatIfRecipeFieldLabelRead(field, messages))
+        .replace("{amount}", amount)
+        .replace("{unit}", field.unit);
+}
+function whatIfRecipeFieldLabelRead(field, messages) {
+    var _a;
+    return messageValueRead((_a = messages === null || messages === void 0 ? void 0 : messages.fieldLabels) === null || _a === void 0 ? void 0 : _a[field.id], field.label);
+}
+function messageValueRead(candidate, fallback) {
+    return typeof candidate === "string" && candidate.trim() ? candidate : fallback;
+}
+function buildWhatIfRecipeSummaryLines(baseRaw, targetRaw, messages) {
     if (!baseRaw || !targetRaw)
         return null;
     var lines = WHAT_IF_RECIPE_FIELDS
         .map(function (field) {
-        return buildWhatIfRecipeDeltaLine(field, baseRaw, targetRaw);
+        return buildWhatIfRecipeDeltaLine(field, baseRaw, targetRaw, messages);
     })
         .filter(function (line) {
         return Boolean(line);

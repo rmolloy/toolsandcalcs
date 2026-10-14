@@ -19,16 +19,28 @@
       "href": "../dof_model/"
     },
     {
-      "label": "Plate Thickness",
-      "href": "../plate_thickness/"
-    },
-    {
       "label": "Monopole Mobility",
       "href": "../monopole_mobility/"
     },
     {
+      "label": "Plate Thickness",
+      "href": "../plate_thickness/"
+    },
+    {
+      "label": "Fret Scale & Bridge Compensation",
+      "href": "../fret_calculator/"
+    },
+    {
+      "label": "Guitar Setup Calculator",
+      "href": "../guitar_setup_calculator/"
+    },
+    {
       "label": "Flexural Rigidity",
       "href": "../flexural_rigidity/"
+    },
+    {
+      "label": "Brace Designer",
+      "href": "../brace_calc/"
     }
   ]
 }

@@ -1,0 +1,31 @@
+.tool-locale-selector {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  color: inherit;
+}
+
+.tool-locale-selector select {
+  width: auto;
+  min-height: var(--hero-control-height, 32px);
+  margin: 0;
+  border: var(--hero-control-border, 1px solid rgba(127, 127, 127, 0.45));
+  border-radius: var(--hero-control-radius, 999px);
+  background: var(--hero-control-bg, var(--panel, #fff));
+  color: var(--hero-control-text, var(--ink, #20242a));
+  padding: 0 12px;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tool-locale-selector select:focus-visible {
+  outline: 2px solid var(--orange, #e69f00);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .tool-locale-selector select {
+    max-width: 10rem;
+  }
+}

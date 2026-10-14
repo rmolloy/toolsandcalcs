@@ -7,6 +7,85 @@
 // for what was heard with descriptor pills, the numbers as they will appear
 // in the notebook, the files as a footnote, and Cancel beside Save.
 (() => {
+  // localized-runtime-messages:start
+  const notebookSaveMessages = Object.freeze({
+    locale: "en-US",
+    asKind: "as {kind}",
+    benchSubject: "Bench {kind}",
+    cancel: "Cancel",
+    changeSubject: "Change subject",
+    chooseSubject: "Choose a subject",
+    createSubject: "Create “{name}”",
+    descriptorBloom: "bloom",
+    descriptorBright: "bright",
+    descriptorDead: "dead",
+    descriptorDiesEarly: "dies early",
+    descriptorDull: "dull",
+    descriptorEven: "even",
+    descriptorHollow: "hollow",
+    descriptorLongRing: "long ring",
+    descriptorRinging: "ringing",
+    descriptorShortRing: "short ring",
+    descriptorSings: "sings",
+    descriptorStiff: "stiff",
+    descriptorTight: "tight",
+    descriptorWarm: "warm",
+    descriptorWobble: "wobble",
+    descriptorWoody: "woody",
+    dialogLabel: "Save to Notebook",
+    entryTitle: "Entry title",
+    findOrCreateSubject: "Find or create a subject",
+    heard: "Heard",
+    heardPlaceholder: "One line, before the numbers",
+    instrument: "Instrument",
+    nameExample: "Name it, for example {example}",
+    newSubjectKind: "New {kind} · rename any time",
+    nothingInNotebook: "Nothing in the notebook yet",
+    notebook: "Notebook",
+    provenanceCalculated: "calculated",
+    provenanceDefault: "default",
+    provenanceMeasured: "measured",
+    provenanceModeled: "modeled",
+    save: "Save",
+    saveToSubject: "Save to {subject}",
+    savedState: "Saved state",
+    subjectRequired: "Choose a subject or create one.",
+    subject: "Subject",
+    subtypeBraceStock: "Brace Stock",
+    subtypeGeneral: "General",
+    subtypePlateStock: "Plate Stock",
+    subtype: "Subtype",
+    toNotebook: "To {notebookName}",
+    typeAssembly: "Assembly",
+    typeAssemblies: "Assemblies",
+    typeBlank: "Blank",
+    typeBlanks: "Blanks",
+    typeBrace: "Brace",
+    typeBraces: "Braces",
+    typeFixture: "Fixture",
+    typeFixtures: "Fixtures",
+    typeGeneric: "Generic",
+    typeGenerics: "Generic",
+    typeGuitar: "Guitar",
+    typeGuitars: "Guitars",
+    typeInstrument: "Instrument",
+    typeInstruments: "Instruments",
+    typeJig: "Jig",
+    typeJigs: "Jigs",
+    typeMaterial: "Material",
+    typeMaterials: "Materials",
+    typePart: "Part",
+    typeParts: "Parts",
+    typePlate: "Plate",
+    typePlates: "Plates",
+    typeSetupComponent: "Setup Component",
+    typeSetupComponents: "Setup Components",
+    type: "Type",
+    whatYouHeard: "What you heard",
+  });
+  // localized-runtime-messages:end
+  void notebookSaveMessages;
+
   type NotebookSaveSubject = {
     subjectId?: string;
     displayName?: string;
@@ -28,7 +107,12 @@
   };
 
   type NotebookSaveListeningSettings = {
-    descriptors: string[];
+    descriptors: ListeningDescriptor[];
+  };
+
+  type ListeningDescriptor = {
+    value: string;
+    label: string;
   };
 
   type NotebookSaveModalArgs = {
@@ -71,6 +155,7 @@
   type SubjectTypeOption = {
     key: string;
     label: string;
+    groupLabel: string;
     subtypes: Array<{ key: string; label: string }>;
   };
 
@@ -80,28 +165,71 @@
   };
 
   const SUBJECT_TYPE_OPTIONS: SubjectTypeOption[] = [
-    { key: "GUITAR", label: "Guitar", subtypes: [{ key: "", label: "General" }] },
-    { key: "MATERIAL", label: "Material", subtypes: [{ key: "PLATE_STOCK", label: "Plate Stock" }, { key: "BRACE_STOCK", label: "Brace Stock" }] },
-    { key: "BLANK", label: "Blank", subtypes: [{ key: "", label: "General" }] },
-    { key: "PART", label: "Part", subtypes: [{ key: "", label: "General" }] },
-    { key: "PLATE", label: "Plate", subtypes: [{ key: "", label: "General" }] },
-    { key: "BRACE", label: "Brace", subtypes: [{ key: "", label: "General" }] },
-    { key: "ASSEMBLY", label: "Assembly", subtypes: [{ key: "", label: "General" }] },
-    { key: "INSTRUMENT", label: "Instrument", subtypes: [{ key: "", label: "General" }] },
-    { key: "SETUP_COMPONENT", label: "Setup Component", subtypes: [{ key: "", label: "General" }] },
-    { key: "JIG", label: "Jig", subtypes: [{ key: "", label: "General" }] },
-    { key: "FIXTURE", label: "Fixture", subtypes: [{ key: "", label: "General" }] },
-    { key: "GENERIC", label: "Generic", subtypes: [{ key: "", label: "General" }] },
+    subjectTypeOption("GUITAR", notebookSaveMessages.typeGuitar, notebookSaveMessages.typeGuitars),
+    subjectTypeOption("MATERIAL", notebookSaveMessages.typeMaterial, notebookSaveMessages.typeMaterials, [
+      { key: "PLATE_STOCK", label: notebookSaveMessages.subtypePlateStock },
+      { key: "BRACE_STOCK", label: notebookSaveMessages.subtypeBraceStock },
+    ]),
+    subjectTypeOption("BLANK", notebookSaveMessages.typeBlank, notebookSaveMessages.typeBlanks),
+    subjectTypeOption("PART", notebookSaveMessages.typePart, notebookSaveMessages.typeParts),
+    subjectTypeOption("PLATE", notebookSaveMessages.typePlate, notebookSaveMessages.typePlates),
+    subjectTypeOption("BRACE", notebookSaveMessages.typeBrace, notebookSaveMessages.typeBraces),
+    subjectTypeOption("ASSEMBLY", notebookSaveMessages.typeAssembly, notebookSaveMessages.typeAssemblies),
+    subjectTypeOption("INSTRUMENT", notebookSaveMessages.typeInstrument, notebookSaveMessages.typeInstruments),
+    subjectTypeOption("SETUP_COMPONENT", notebookSaveMessages.typeSetupComponent, notebookSaveMessages.typeSetupComponents),
+    subjectTypeOption("JIG", notebookSaveMessages.typeJig, notebookSaveMessages.typeJigs),
+    subjectTypeOption("FIXTURE", notebookSaveMessages.typeFixture, notebookSaveMessages.typeFixtures),
+    subjectTypeOption("GENERIC", notebookSaveMessages.typeGeneric, notebookSaveMessages.typeGenerics),
   ];
 
-  const GENERAL_SUBTYPE_OPTIONS = [{ key: "", label: "General" }];
-  const PROVENANCE_LABELS = ["measured", "modeled", "calculated", "default"];
-  const LISTENING_DESCRIPTOR_SETS: Record<string, string[]> = {
-    instrument: ["bloom", "sings", "even", "warm", "tight", "stiff", "hollow", "wobble", "dies early"],
-    stock: ["bright", "ringing", "long ring", "woody", "dull", "dead", "short ring"],
+  const GENERAL_SUBTYPE_OPTIONS = [{ key: "", label: notebookSaveMessages.subtypeGeneral }];
+  const PROVENANCE_LABELS: Record<string, string> = {
+    measured: notebookSaveMessages.provenanceMeasured,
+    modeled: notebookSaveMessages.provenanceModeled,
+    calculated: notebookSaveMessages.provenanceCalculated,
+    default: notebookSaveMessages.provenanceDefault,
   };
-  const SUBJECT_REQUIRED_MESSAGE = "Choose a subject or create one.";
+  const LISTENING_DESCRIPTOR_SETS: Record<string, ListeningDescriptor[]> = {
+    instrument: [
+      listeningDescriptor("bloom", notebookSaveMessages.descriptorBloom),
+      listeningDescriptor("sings", notebookSaveMessages.descriptorSings),
+      listeningDescriptor("even", notebookSaveMessages.descriptorEven),
+      listeningDescriptor("warm", notebookSaveMessages.descriptorWarm),
+      listeningDescriptor("tight", notebookSaveMessages.descriptorTight),
+      listeningDescriptor("stiff", notebookSaveMessages.descriptorStiff),
+      listeningDescriptor("hollow", notebookSaveMessages.descriptorHollow),
+      listeningDescriptor("wobble", notebookSaveMessages.descriptorWobble),
+      listeningDescriptor("dies early", notebookSaveMessages.descriptorDiesEarly),
+    ],
+    stock: [
+      listeningDescriptor("bright", notebookSaveMessages.descriptorBright),
+      listeningDescriptor("ringing", notebookSaveMessages.descriptorRinging),
+      listeningDescriptor("long ring", notebookSaveMessages.descriptorLongRing),
+      listeningDescriptor("woody", notebookSaveMessages.descriptorWoody),
+      listeningDescriptor("dull", notebookSaveMessages.descriptorDull),
+      listeningDescriptor("dead", notebookSaveMessages.descriptorDead),
+      listeningDescriptor("short ring", notebookSaveMessages.descriptorShortRing),
+    ],
+  };
   const LAST_SUBJECT_STORAGE_KEY = "tonelab.notebook.lastSubjectId";
+
+  function subjectTypeOption(
+    key: string,
+    label: string,
+    groupLabel: string,
+    subtypes?: Array<{ key: string; label: string }>,
+  ): SubjectTypeOption {
+    return {
+      key,
+      label,
+      groupLabel,
+      subtypes: subtypes || [{ key: "", label: notebookSaveMessages.subtypeGeneral }],
+    };
+  }
+
+  function listeningDescriptor(value: string, label: string): ListeningDescriptor {
+    return { value, label };
+  }
 
   function openNotebookSaveModal(args?: NotebookSaveModalArgs): Promise<NotebookSaveModalResult> {
     const settings = notebookSaveModalSettingsResolve(args);
@@ -121,20 +249,20 @@
   function notebookSaveModalSettingsResolve(args?: NotebookSaveModalArgs): NotebookSaveModalSettings {
     const source = args || {};
     const newSubject = source.newSubject || {};
-    const dialogLabel = String(source.dialogLabel || "Save to Notebook");
+    const dialogLabel = String(source.dialogLabel || notebookSaveMessages.dialogLabel);
     return {
       dialogLabel,
       title: String(source.title || titleDefaultFromDialogLabel(dialogLabel)),
       summary: summaryRowsResolve(source.summary),
       listening: listeningSettingsResolve(source.listening, String(newSubject.typeKey || "GUITAR")),
-      notebookName: String(source.notebookName || "Notebook"),
+      notebookName: String(source.notebookName || notebookSaveMessages.notebook),
       subjects: Array.isArray(source.subjects) ? source.subjects.filter((subject) => subject && typeof subject === "object") : [],
       defaultSubjectId: String(source.defaultSubjectId || ""),
       packageFiles: Array.isArray(source.packageFiles) && source.packageFiles.length ? source.packageFiles : ["state.json"],
       newSubject: {
         typeKey: String(newSubject.typeKey || "GUITAR"),
         subtypeKey: String(newSubject.subtypeKey || ""),
-        displayNamePlaceholder: String(newSubject.displayNamePlaceholder || "Instrument"),
+        displayNamePlaceholder: String(newSubject.displayNamePlaceholder || notebookSaveMessages.instrument),
         typeChoice: Boolean(newSubject.typeChoice),
       },
       eventExtras: source.eventExtras || {},
@@ -142,8 +270,9 @@
   }
 
   function titleDefaultFromDialogLabel(dialogLabel: string): string {
+    if (dialogLabel === notebookSaveMessages.dialogLabel) return notebookSaveMessages.savedState;
     const stripped = dialogLabel.replace(/^save\s+(to\s+)?/i, "").trim();
-    return stripped && stripped.toLowerCase() !== "notebook" ? stripped : "Saved state";
+    return stripped && stripped.toLowerCase() !== "notebook" ? stripped : notebookSaveMessages.savedState;
   }
 
   function summaryRowsResolve(rows: unknown): NotebookSaveSummaryRow[] {
@@ -159,9 +288,14 @@
 
   function listeningSettingsResolve(value: NotebookSaveModalArgs["listening"], subjectTypeKey: string): NotebookSaveListeningSettings {
     const source = value || {};
-    const custom = Array.isArray(source.descriptors) ? source.descriptors.map((item) => String(item).trim()).filter(Boolean) : [];
+    const custom = Array.isArray(source.descriptors)
+      ? source.descriptors
+        .map((item) => String(item).trim())
+        .filter(Boolean)
+        .map((item) => listeningDescriptor(item, item))
+      : [];
     const descriptorSet = source.descriptorSet || listeningDescriptorSetForSubjectType(subjectTypeKey);
-    return { descriptors: custom.length ? custom : notebookListeningDescriptorsRead(descriptorSet) };
+    return { descriptors: custom.length ? custom : notebookListeningDescriptorOptionsRead(descriptorSet) };
   }
 
   function listeningDescriptorSetForSubjectType(subjectTypeKey: string): string {
@@ -170,7 +304,7 @@
 
   function provenanceResolve(value: unknown): string {
     const label = String(value || "").trim().toLowerCase();
-    return PROVENANCE_LABELS.includes(label) ? label : "";
+    return Object.prototype.hasOwnProperty.call(PROVENANCE_LABELS, label) ? label : "";
   }
 
   // ---- default subject ----
@@ -219,7 +353,9 @@
   }
 
   function benchSubjectNameBuild(typeKey: string, subtypeKey: string): string {
-    return `Bench ${subjectKindLabelBuild(typeKey, subtypeKey).toLowerCase()}`;
+    return formatNotebookSaveMessage(notebookSaveMessages.benchSubject, {
+      kind: subjectKindLabelBuild(typeKey, subtypeKey).toLowerCase(),
+    });
   }
 
   function lastSubjectIdRead(): string {
@@ -252,25 +388,25 @@
       <div class="save-modal__backdrop" data-save-modal-close></div>
       <form class="save-modal__panel save-modal__entry" role="dialog" aria-modal="true" aria-label="${escapeHtml(settings.dialogLabel)}">
         <div class="save-modal__kicker">
-          <span class="save-modal__kicker-to">To ${escapeHtml(settings.notebookName)}</span>
+          <span class="save-modal__kicker-to">${escapeHtml(formatNotebookSaveMessage(notebookSaveMessages.toNotebook, { notebookName: settings.notebookName }))}</span>
           <time class="save-modal__kicker-when" datetime="${escapeHtml(new Date().toISOString())}">${escapeHtml(whenLabelBuild(new Date()))}</time>
         </div>
         ${subjectMarkupBuild(settings)}
-        <input type="text" name="event_summary" class="save-modal__title" value="${escapeHtml(settings.title)}" aria-label="Entry title" autocomplete="off">
+        <input type="text" name="event_summary" class="save-modal__title" value="${escapeHtml(settings.title)}" aria-label="${escapeHtml(notebookSaveMessages.entryTitle)}" autocomplete="off">
         ${listeningMarkupBuild(settings)}
         ${summaryMarkupBuild(settings)}
         <p class="save-modal__files">${settings.packageFiles.map((file) => escapeHtml(file)).join(" · ")}</p>
         <p class="save-modal__error" data-save-modal-error hidden></p>
         <footer class="save-modal__footer">
-          <button type="button" class="ghost-btn" data-save-modal-close>Cancel</button>
-          <button type="submit" class="primary-btn hero-control" data-save-modal-submit>Save</button>
+          <button type="button" class="ghost-btn" data-save-modal-close>${escapeHtml(notebookSaveMessages.cancel)}</button>
+          <button type="submit" class="primary-btn hero-control" data-save-modal-submit>${escapeHtml(notebookSaveMessages.save)}</button>
         </footer>
       </form>`;
   }
 
   function whenLabelBuild(date: Date): string {
     try {
-      return date.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+      return date.toLocaleString(notebookSaveMessages.locale, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
     } catch {
       return date.toISOString();
     }
@@ -279,14 +415,14 @@
   function subjectMarkupBuild(settings: NotebookSaveModalSettings): string {
     return `
         <div class="save-modal__subject" data-save-modal-picker>
-          <button type="button" class="save-modal__subject-name" data-save-modal-subject aria-haspopup="listbox" aria-expanded="false" title="Change subject"></button>
+          <button type="button" class="save-modal__subject-name" data-save-modal-subject aria-haspopup="listbox" aria-expanded="false" title="${escapeHtml(notebookSaveMessages.changeSubject)}"></button>
           <span class="save-modal__subject-kind" data-save-modal-subject-kind></span>
           <div class="save-modal__menu" data-save-modal-menu hidden>
-            <input type="search" name="subject_filter" placeholder="${escapeHtml(subjectFilterPlaceholderBuild(settings))}" aria-label="Find or create a subject" autocomplete="off">
+            <input type="search" name="subject_filter" placeholder="${escapeHtml(subjectFilterPlaceholderBuild(settings))}" aria-label="${escapeHtml(notebookSaveMessages.findOrCreateSubject)}" autocomplete="off">
             <div class="save-modal__options" role="listbox" data-save-modal-options>${subjectOptionsMarkupBuild(settings.subjects)}</div>
             <div class="save-modal__create" data-save-modal-create-row hidden>
-              <button type="button" class="save-modal__option save-modal__option--create" data-save-modal-create>Create “<span data-save-modal-create-name></span>”</button>
-              ${settings.newSubject.typeChoice ? subjectTypeChoiceMarkupBuild(settings.newSubject) : `<span class="save-modal__create-kind">as ${escapeHtml(subjectKindLabelBuild(settings.newSubject.typeKey, settings.newSubject.subtypeKey).toLowerCase())}</span>`}
+              <button type="button" class="save-modal__option save-modal__option--create" data-save-modal-create>${escapeHtml(formatNotebookSaveMessage(notebookSaveMessages.createSubject, { name: "" }))}</button>
+              ${settings.newSubject.typeChoice ? subjectTypeChoiceMarkupBuild(settings.newSubject) : `<span class="save-modal__create-kind">${escapeHtml(formatNotebookSaveMessage(notebookSaveMessages.asKind, { kind: subjectKindLabelBuild(settings.newSubject.typeKey, settings.newSubject.subtypeKey).toLowerCase() }))}</span>`}
             </div>
           </div>
         </div>`;
@@ -294,8 +430,10 @@
 
   function subjectFilterPlaceholderBuild(settings: NotebookSaveModalSettings): string {
     return settings.subjects.length
-      ? "Find or create a subject"
-      : `Name it, for example ${settings.newSubject.displayNamePlaceholder}`;
+      ? notebookSaveMessages.findOrCreateSubject
+      : formatNotebookSaveMessage(notebookSaveMessages.nameExample, {
+        example: settings.newSubject.displayNamePlaceholder,
+      });
   }
 
   function subjectOptionsMarkupBuild(subjects: NotebookSaveSubject[]): string {
@@ -324,32 +462,32 @@
     const typeKey = String(subject.typeKey || "").trim().toUpperCase();
     if (!typeKey) return "";
     const type = SUBJECT_TYPE_OPTIONS.find((option) => option.key === typeKey);
-    return type ? `${type.label}s` : typeKey.charAt(0) + typeKey.slice(1).toLowerCase().replace(/_/g, " ");
+    return type ? type.groupLabel : typeKey.charAt(0) + typeKey.slice(1).toLowerCase().replace(/_/g, " ");
   }
 
   function subjectKindLabelBuild(typeKey: string, subtypeKey: string): string {
     const type = SUBJECT_TYPE_OPTIONS.find((option) => option.key === String(typeKey || "").toUpperCase());
     const subtype = type?.subtypes.find((option) => option.key === String(subtypeKey || "").toUpperCase() && option.key);
-    return subtype ? `${subtype.label}` : type ? type.label : "Subject";
+    return subtype ? `${subtype.label}` : type ? type.label : notebookSaveMessages.subject;
   }
 
   function subjectTypeChoiceMarkupBuild(newSubject: NotebookSaveNewSubjectSettings): string {
     return `
               <span class="save-modal__create-kind">as</span>
-              <select name="type_key" aria-label="Type">${selectOptionsMarkupBuild(notebookSubjectTypeOptionsRead(), newSubject.typeKey)}</select>
-              <select name="subtype_key" aria-label="Subtype">${selectOptionsMarkupBuild(notebookSubjectSubtypeOptionsRead(newSubject.typeKey), newSubject.subtypeKey)}</select>`;
+              <select name="type_key" aria-label="${escapeHtml(notebookSaveMessages.type)}">${selectOptionsMarkupBuild(notebookSubjectTypeOptionsRead(), newSubject.typeKey)}</select>
+              <select name="subtype_key" aria-label="${escapeHtml(notebookSaveMessages.subtype)}">${selectOptionsMarkupBuild(notebookSubjectSubtypeOptionsRead(newSubject.typeKey), newSubject.subtypeKey)}</select>`;
   }
 
   function listeningMarkupBuild(settings: NotebookSaveModalSettings): string {
     return `
         <div class="save-modal__listening">
-          <label class="save-modal__heard"><span class="save-modal__heard-label">Heard</span><input type="text" name="heard_note" placeholder="One line, before the numbers" autocomplete="off"></label>
-          <div class="save-modal__pills" role="group" aria-label="What you heard">${settings.listening.descriptors.map(listeningPillMarkupBuild).join("")}</div>
+          <label class="save-modal__heard"><span class="save-modal__heard-label">${escapeHtml(notebookSaveMessages.heard)}</span><input type="text" name="heard_note" placeholder="${escapeHtml(notebookSaveMessages.heardPlaceholder)}" autocomplete="off"></label>
+          <div class="save-modal__pills" role="group" aria-label="${escapeHtml(notebookSaveMessages.whatYouHeard)}">${settings.listening.descriptors.map(listeningPillMarkupBuild).join("")}</div>
         </div>`;
   }
 
-  function listeningPillMarkupBuild(descriptor: string): string {
-    return `<button type="button" class="save-modal__pill" name="heard_descriptor" value="${escapeHtml(descriptor)}" aria-pressed="false">${escapeHtml(descriptor)}</button>`;
+  function listeningPillMarkupBuild(descriptor: ListeningDescriptor): string {
+    return `<button type="button" class="save-modal__pill" name="heard_descriptor" value="${escapeHtml(descriptor.value)}" aria-pressed="false">${escapeHtml(descriptor.label)}</button>`;
   }
 
   function summaryMarkupBuild(settings: NotebookSaveModalSettings): string {
@@ -362,7 +500,7 @@
   // is the expectation, a modeled, calculated or default one is worth a word.
   function summaryRowMarkupBuild(row: NotebookSaveSummaryRow): string {
     const provenance = row.provenance && row.provenance !== "measured"
-      ? `<span class="save-modal__provenance save-modal__provenance--${escapeHtml(row.provenance)}">${escapeHtml(row.provenance)}</span>`
+      ? `<span class="save-modal__provenance save-modal__provenance--${escapeHtml(row.provenance)}">${escapeHtml(PROVENANCE_LABELS[row.provenance])}</span>`
       : "";
     return `<div class="save-modal__summary-row"><dt>${escapeHtml(row.label)}</dt><dd>${escapeHtml(row.value)}</dd>${provenance}</div>`;
   }
@@ -472,9 +610,13 @@
       group.hidden = !group.querySelector("[data-save-modal-option]:not([hidden])");
     });
     const createRow = modal.querySelector<HTMLElement>("[data-save-modal-create-row]");
-    const createName = modal.querySelector<HTMLElement>("[data-save-modal-create-name]");
+    const create = modal.querySelector<HTMLElement>("[data-save-modal-create]");
     if (createRow) createRow.hidden = !needle || exactMatch;
-    if (createName) createName.textContent = String(text || "").trim();
+    if (create) {
+      create.textContent = formatNotebookSaveMessage(notebookSaveMessages.createSubject, {
+        name: String(text || "").trim(),
+      });
+    }
   }
 
   function pickerVisibleOptionsRead(modal: HTMLElement): HTMLButtonElement[] {
@@ -510,9 +652,13 @@
     const kind = modal.querySelector<HTMLElement>("[data-save-modal-subject-kind]");
     const submit = modal.querySelector<HTMLElement>("[data-save-modal-submit]");
     const name = subjectChoiceNameBuild(settings, picker.choice);
-    if (trigger) trigger.textContent = name ? `${name} ▾` : "Choose a subject ▾";
+    if (trigger) trigger.textContent = name ? `${name} ▾` : `${notebookSaveMessages.chooseSubject} ▾`;
     if (kind) kind.textContent = subjectChoiceKindBuild(settings, picker.choice);
-    if (submit) submit.textContent = name ? `Save to ${subjectShortNameBuild(name)}` : "Save";
+    if (submit) {
+      submit.textContent = name
+        ? formatNotebookSaveMessage(notebookSaveMessages.saveToSubject, { subject: subjectShortNameBuild(name) })
+        : notebookSaveMessages.save;
+    }
   }
 
   function subjectChoiceNameBuild(settings: NotebookSaveModalSettings, choice: NotebookSaveSubjectChoice | null): string {
@@ -522,10 +668,14 @@
   }
 
   function subjectChoiceKindBuild(settings: NotebookSaveModalSettings, choice: NotebookSaveSubjectChoice | null): string {
-    if (!choice) return settings.subjects.length ? "" : "Nothing in the notebook yet";
-    if ("newSubject" in choice) return `New ${subjectKindLabelBuild(choice.newSubject.typeKey, choice.newSubject.subtypeKey).toLowerCase()} · rename any time`;
+    if (!choice) return settings.subjects.length ? "" : notebookSaveMessages.nothingInNotebook;
+    if ("newSubject" in choice) {
+      return formatNotebookSaveMessage(notebookSaveMessages.newSubjectKind, {
+        kind: subjectKindLabelBuild(choice.newSubject.typeKey, choice.newSubject.subtypeKey).toLowerCase(),
+      });
+    }
     const subject = settings.subjects.find((item) => String(item.subjectId || "") === choice.subjectId);
-    return subject ? subjectKindLabelBuild(String(subject.typeKey || ""), String(subject.subtypeKey || "")).replace(/^Subject$/, "") : "";
+    return subject ? subjectKindLabelBuild(String(subject.typeKey || ""), String(subject.subtypeKey || "")).replace(new RegExp(`^${escapeRegExp(notebookSaveMessages.subject)}$`), "") : "";
   }
 
   function subjectShortNameBuild(name: string): string {
@@ -544,7 +694,7 @@
     form?.addEventListener("submit", (event) => {
       event.preventDefault();
       if (!picker.choice) {
-        errorRender(error, SUBJECT_REQUIRED_MESSAGE);
+        errorRender(error, notebookSaveMessages.subjectRequired);
         pickerToggle(modal, settings, picker, true);
         return;
       }
@@ -619,8 +769,13 @@
   }
 
   function notebookListeningDescriptorsRead(descriptorSet?: string): string[] {
+    return notebookListeningDescriptorOptionsRead(descriptorSet).map((descriptor) => descriptor.label);
+  }
+
+  function notebookListeningDescriptorOptionsRead(descriptorSet?: string): ListeningDescriptor[] {
     const key = String(descriptorSet || "instrument").trim().toLowerCase();
-    return [...(LISTENING_DESCRIPTOR_SETS[key] || LISTENING_DESCRIPTOR_SETS.instrument)];
+    return (LISTENING_DESCRIPTOR_SETS[key] || LISTENING_DESCRIPTOR_SETS.instrument)
+      .map((descriptor) => ({ ...descriptor }));
   }
 
   function escapeHtml(value: unknown): string {
@@ -629,6 +784,17 @@
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function formatNotebookSaveMessage(template: string, values: Record<string, string>): string {
+    return Object.entries(values).reduce(
+      (message, [key, value]) => message.split(`{${key}}`).join(value),
+      template,
+    );
   }
 
   const CommonNotebookSaveModal = {

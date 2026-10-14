@@ -1,4 +1,13 @@
 (function attachPageFullscreen() {
+  // localized-runtime-messages:start
+  const pageFullscreenMessages = Object.freeze({
+    enter: "Enter fullscreen",
+    exit: "Exit fullscreen",
+    failure: "Fullscreen could not be changed. Your current analysis is unchanged.",
+    unavailable: "Fullscreen unavailable in this browser or embedded page",
+  });
+  // localized-runtime-messages:end
+
   function pageFullscreenInitialize(document = window.document) {
     pageFullscreenControlMount(document);
     const button = document.querySelector("#btn_fullscreen");
@@ -64,7 +73,12 @@
     const enabled = state ? state.enabled : Boolean(document.fullscreenEnabled);
     button.disabled = !enabled;
     button.setAttribute("aria-pressed", String(active));
-    pageFullscreenLabelRender(button, enabled ? (active ? "Exit fullscreen" : "Enter fullscreen") : "Fullscreen unavailable in this browser or embedded page");
+    pageFullscreenLabelRender(
+      button,
+      enabled
+        ? (active ? pageFullscreenMessages.exit : pageFullscreenMessages.enter)
+        : pageFullscreenMessages.unavailable,
+    );
     pageFullscreenIconsRender(button, active);
     document.getElementById("fullscreen_status")?.replaceChildren();
   }
@@ -80,7 +94,7 @@
   }
 
   function pageFullscreenFailureReport(document, button) {
-    const message = "Fullscreen could not be changed. Your current analysis is unchanged.";
+    const message = pageFullscreenMessages.failure;
     button.title = message;
     document.getElementById("fullscreen_status")?.replaceChildren(message);
   }
