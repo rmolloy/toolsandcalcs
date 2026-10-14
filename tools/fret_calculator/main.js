@@ -5,6 +5,15 @@
 const MM_PER_INCH = 25.4;
 const DEFAULT_SCALE_MM = 650;
 const DEFAULT_FRET_COUNT = 24;
+// localized-runtime-messages:start
+const fretRuntimeMessages = Object.freeze({
+    classicalStraight: "Classical (straight)",
+    enterValidScaleLength: "Enter a valid scale length.",
+    liveComputedFromScaleLength: "Live: computed from current scale length",
+    steelFirstString: "Steel first string",
+    steelSixthString: "Steel sixth string",
+});
+// localized-runtime-messages:end
 (function initFretCalculator() {
     const scaleInput = document.getElementById("scale_input");
     const unitSelect = document.getElementById("unit_select");
@@ -29,7 +38,7 @@ const DEFAULT_FRET_COUNT = 24;
         const unit = readUnit();
         const scaleMm = scaleLengthReadInMillimeters(unit);
         if (!Number.isFinite(scaleMm) || scaleMm <= 0) {
-            status.textContent = "Enter a valid scale length.";
+            status.textContent = fretRuntimeMessages.enterValidScaleLength;
             return;
         }
         const frets = fretPositionsBuild(scaleMm, DEFAULT_FRET_COUNT);
@@ -38,7 +47,7 @@ const DEFAULT_FRET_COUNT = 24;
         summaryClassical.textContent = valueLabelBuild(compensation.classicalSetbackMm, unit);
         summarySteel1.textContent = valueLabelBuild(compensation.steelFirstSetbackMm, unit);
         summarySteel6.textContent = valueLabelBuild(compensation.steelSixthSetbackMm, unit);
-        status.textContent = "Live: computed from current scale length";
+        status.textContent = fretRuntimeMessages.liveComputedFromScaleLength;
         fretRows.innerHTML = frets.map((fret) => fretRowHtmlBuild(fret, unit)).join("");
         compRows.innerHTML = compensationRowsHtmlBuild(compensation, unit);
     }
@@ -86,9 +95,9 @@ function compensationRowsHtmlBuild(compensation, unit) {
     const steelScaleFirst = compensation.scaleMm + compensation.steelFirstSetbackMm;
     const steelScaleSixth = compensation.scaleMm + compensation.steelSixthSetbackMm;
     return [
-        rowHtmlBuild("Classical (straight)", compensation.classicalSetbackMm, classicalScale, unit),
-        rowHtmlBuild("Steel first string", compensation.steelFirstSetbackMm, steelScaleFirst, unit),
-        rowHtmlBuild("Steel sixth string", compensation.steelSixthSetbackMm, steelScaleSixth, unit),
+        rowHtmlBuild(fretRuntimeMessages.classicalStraight, compensation.classicalSetbackMm, classicalScale, unit),
+        rowHtmlBuild(fretRuntimeMessages.steelFirstString, compensation.steelFirstSetbackMm, steelScaleFirst, unit),
+        rowHtmlBuild(fretRuntimeMessages.steelSixthString, compensation.steelSixthSetbackMm, steelScaleSixth, unit),
     ].join("");
 }
 function rowHtmlBuild(label, setbackMm, nutToSaddleMm, unit) {
