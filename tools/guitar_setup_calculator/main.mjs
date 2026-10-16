@@ -13,7 +13,12 @@ import { createLengthUnitController } from "./length_unit_controller.mjs";
 import { createSparseActionEditor } from "./sparse_action_editor.mjs";
 import { createSetupResultPresenter } from "./setup_result_presenter.mjs";
 import { createSetupProfileEditor } from "./setup_profile_editor.mjs";
+import "../common/per_tab_tool_session.js";
+import { createSetupSessionPersistence } from "./setup_session_persistence.mjs";
+import { readSetupSessionView, restoreSetupSessionView } from "./setup_session_view.mjs";
+import { createScaleLengthEditor } from "./scale_length_editor.mjs";
 import { createSetupFormController } from "./setup_form_controller.mjs";
+import { createSetupStepNavigation } from "./setup_step_navigation.mjs";
 import { createStockSpecs } from "./stock_specs.mjs";
 import { readTensionCatalog } from "./tension_catalog_loader.mjs";
 import {
@@ -160,12 +165,18 @@ const tensionSourceLabels = Object.freeze({
   manufacturer: setupRuntimeMessages.manufacturer,
 });
 
+const setupSession = createSetupSessionPersistence(window, captureSetupSession);
+const restoredSession = setupSession.read();
 let setup = localizeProfileStringNames(
-  createDefaultSetup(),
+  restoredSession?.setup || createDefaultSetup(),
   setupRuntimeMessages.profileStringNames,
 );
 const lengthUnits = createLengthUnitController(document);
-const userEntryGroups = new Set();
+lengthUnits.select(restoredSession?.unit);
+const userEntryGroups = new Set(restoredSession?.userEntryGroups || []);
+const mechanicalFieldNames = ["unitMassKgPerMeter", "axialStiffnessN"];
+const pendingMechanicalFields = new Map();
+let isTensionCatalogPending = true;
 const tensionSourceOptions = {
   estimate: null,
   daddario_ej16: { manufacturer: "D'Addario", setCode: "EJ16" },
@@ -188,10 +199,7 @@ const setupModeMessages = new Map(
   ]),
 );
 const setupViewStatus = document.getElementById("setup_view_status");
-const instrumentProfile = document.getElementById("instrument_profile");
-const customCourseCount = document.getElementById("custom_course_count");
 const setupGeometrySvg = document.getElementById("setup_geometry_svg");
-const resultStatus = document.getElementById("result_status");
 const calculationBasis = document.getElementById("calculation_basis");
 const resultPresenter = createSetupResultPresenter({
   document,
@@ -214,7 +222,7 @@ const sparseActionEditor = createSparseActionEditor({
   removeReadingTitle: setupRuntimeMessages.removeReadingTitle,
   showInputError,
   onMeasurementsChanged: handleSparseActionChange,
-  onError: (error) => { resultStatus.textContent = readSetupErrorMessage(error); },
+  onError: (error) => showCalculationStatus(readSetupErrorMessage(error)),
 });
 const profileEditor = createSetupProfileEditor({
   axialStiffnessLabel: setupRuntimeMessages.axialStiffnessLabel,
@@ -247,7 +255,7 @@ const stockSpecs = createStockSpecs({
   lengthUnits,
   messages: setupRuntimeMessages.stockSpecMessages,
   onSelectProfile: (profileId) => selectInstrumentProfile(profileId),
-  onMeasure: () => showSetupMode("measure"),
+  onMeasure: resumeSetupMeasurements,
 });
 const setupForm = createSetupFormController({
   applyTensionCatalogToSetup,
@@ -263,40 +271,92 @@ const setupForm = createSetupFormController({
   tensionSourceOptions,
 });
 let hasRenderedResult = false;
+const scaleEditor = createScaleLengthEditor({
+  document, getSetup: () => setup, lengthUnits,
+  onChange: () => { userEntryGroups.add("scaleLength"); render(); },
+  onViewChange: render,
+  onInvalid: showCalculationStatus,
+  restoredView: restoredSession?.view,
+});
+scaleEditor.bind();
 
 profileEditor.renderInstrumentProfileOptions();
 profileEditor.renderStringInputs();
 setupForm.writeSetupToForm();
 stockSpecs.render(setup.instrumentProfileId);
 render();
+const stepNavigation = createSetupStepNavigation(document);
 setupModeButtons.forEach((button) => button.addEventListener("click", handleSetupModeChange));
-document.querySelectorAll("[data-length-unit-button]").forEach((button) => {
+document.querySelectorAll(".length-unit-control [data-length-unit-button]").forEach((button) => {
   button.addEventListener("click", handleLengthUnitChange);
 });
 form.addEventListener("input", handleFormChange);
 form.addEventListener("change", handleFormChange);
-instrumentProfile.addEventListener("change", handleFormChange);
-customCourseCount.addEventListener("input", handleFormChange);
 document.getElementById("customize_profile").addEventListener("click", profileEditor.showCustomProfileBuilder);
 document.getElementById("build_custom_profile").addEventListener("click", buildCustomProfile);
-document.getElementById("continue_to_radius").addEventListener("click", continueToRadius);
 sparseActionEditor.bind(() => setup);
+preserveRestoredMechanicalFields();
+restoreSetupSessionViewAndAttach();
 initializeTensionCatalog();
+
+function captureSetupSession() {
+  return {
+    setup: canonicalizeSessionStringNames(setup),
+    unit: lengthUnits.unit,
+    userEntryGroups,
+    step: stepNavigation.index,
+    view: { ...readSetupSessionView(document), ...scaleEditor.captureView() },
+  };
+}
+
+function canonicalizeSessionStringNames(candidate) {
+  if (candidate.instrumentProfileId === "custom") return candidate;
+  const names = setupRuntimeMessages.profileStringNames;
+  const canonicalNames = new Map([[names.highE, "High E"], [names.lowE, "Low E"]]);
+  return { ...candidate, strings: candidate.strings.map((string) => ({
+    ...string, name: canonicalNames.get(string.name) || string.name,
+  })) };
+}
+
+function restoreSetupSessionViewAndAttach() {
+  restoreSetupSessionView(document, restoredSession?.view, profileEditor);
+  if (restoredSession?.step) stepNavigation.select(restoredSession.step);
+  setupSession.attach();
+  registerSharedLengthUnits();
+}
+
+function registerSharedLengthUnits() {
+  if (!window.ToolLengthUnits) return;
+  window.ToolLengthUnits.register({ readUnit: () => lengthUnits.unit, applyUnit: applyLengthUnit });
+  document.querySelector('.length-unit-control')?.remove();
+}
 
 function handleSetupModeChange(event) {
   showSetupMode(event.currentTarget.dataset.setupModeButton);
 }
 
+function resumeSetupMeasurements() {
+  document.querySelector(".setup-reference-specs").open = false;
+  const selector = scaleEditor.mode === "single" ? '#common_scale_length' : '[data-string-field="scaleLengthMm"]';
+  document.querySelector(selector).focus();
+}
+
 function handleLengthUnitChange(event) {
-  const nextUnit = event.currentTarget.dataset.lengthUnitButton;
+  applyLengthUnit(event.currentTarget.dataset.lengthUnitButton);
+}
+
+function applyLengthUnit(nextUnit) {
   if (lengthUnits.isSelected(nextUnit)) return;
+  const disclosures = [...form.querySelectorAll('details')].map((details) => details.open);
   const sparseDraftMm = sparseActionEditor.readDraftMillimetres();
   lengthUnits.select(nextUnit);
+  scaleEditor.presentCommonLength();
   profileEditor.renderStringInputs();
   setupForm.writeSetupToForm();
   sparseActionEditor.restoreDraftMillimetres(sparseDraftMm);
   stockSpecs.render(setup.instrumentProfileId);
   render();
+  form.querySelectorAll('details').forEach((details, index) => { details.open = disclosures[index]; });
 }
 
 function showSetupMode(mode) {
@@ -332,6 +392,8 @@ function handleSparseActionChange() {
 function handleFormChange(event) {
   const input = event.target;
   if (!(input instanceof HTMLInputElement || input instanceof HTMLSelectElement)) return;
+  if (input.id === "instrument_profile" && event.type !== "change") return;
+  if (scaleEditor.contains(input)) return;
   clearInputError(input);
   if (sparseActionEditor.contains(input)) return;
   if (input.id === "instrument_profile" && input.value !== "custom") {
@@ -344,8 +406,10 @@ function handleFormChange(event) {
   }
   try {
     markUserEntry(input);
+    preservePendingMechanicalInput(input);
     setupForm.readInputIntoSetup(input);
     if (setupForm.changesMechanicalLookup(input)) {
+      forgetPendingMechanicalLookup(input);
       setupForm.writeMechanicalPropertiesToStringCards();
     }
     const calculationError = render();
@@ -354,13 +418,16 @@ function handleFormChange(event) {
   } catch (error) {
     const message = readSetupErrorMessage(error);
     showInputError(input, message);
-    resultStatus.textContent = message;
+    showCalculationStatus(message);
   }
   setupForm.updateRadiusFields();
 }
 
 function render() {
+  scaleEditor.render();
   try {
+    const scaleLengthError = scaleEditor.validationError;
+    if (scaleLengthError) throw scaleLengthError;
     const result = calculateSetup(setup);
     setupGeometrySvg.innerHTML = renderSetupDiagram({
       setup,
@@ -374,19 +441,23 @@ function render() {
       userEntryGroups,
       setupRuntimeMessages.provenanceMessages,
     );
-    resultStatus.textContent = setupRuntimeMessages.calculationComplete;
+    showCalculationStatus(setupRuntimeMessages.calculationComplete);
     hasRenderedResult = true;
     return null;
   } catch (error) {
     if (!hasRenderedResult) clearCalculatedOutput();
     calculationBasis.textContent = setupRuntimeMessages.calculationPaused;
-    resultStatus.textContent = readSetupErrorMessage(error);
+    showCalculationStatus(readSetupErrorMessage(error));
     return error;
   }
 }
 
 function readSetupErrorMessage(error) {
   return setupErrorMessages.get(error.message) ?? error.message;
+}
+
+function showCalculationStatus(message) {
+  document.querySelectorAll("[data-setup-status]").forEach((status) => { status.textContent = message; });
 }
 
 function formatFretRangeError(fretCount) {
@@ -489,14 +560,8 @@ function setProvenance(elementId, group) {
   badge.classList.toggle("user-entry", isUserEntry);
 }
 
-function continueToRadius() {
-  form.querySelector('[aria-labelledby="step-length-title"]').open = false;
-  const radiusStep = document.getElementById("radius_step");
-  radiusStep.open = true;
-  radiusStep.querySelector("summary").focus();
-}
-
 function selectInstrumentProfile(profileId) {
+  pendingMechanicalFields.clear();
   const catalog = setup.tensionCatalog;
   setup = localizeProfileStringNames(
     createSetupFromInstrumentProfile(profileId),
@@ -508,12 +573,14 @@ function selectInstrumentProfile(profileId) {
   }
   profileEditor.hideCustomProfileBuilder();
   profileEditor.renderStringInputs();
+  scaleEditor.reset();
   setupForm.writeSetupToForm();
   stockSpecs.render(setup.instrumentProfileId);
   render();
 }
 
 function localizeProfileStringNames(candidateSetup, stringNames) {
+  if (candidateSetup.instrumentProfileId === "custom") return candidateSetup;
   return {
     ...candidateSetup,
     strings: candidateSetup.strings.map((string) => ({
@@ -530,6 +597,7 @@ function localizedProfileStringName(name, stringNames) {
 }
 
 function buildCustomProfile() {
+  pendingMechanicalFields.clear();
   const membersByCourse = profileEditor.readCustomCourseMembers();
   setup = createCustomSetupFromCourseMembers({ baseSetup: setup, membersByCourse });
   userEntryGroups.add("stringSpecification");
@@ -549,22 +617,65 @@ function escapeMarkup(value) {
 
 async function initializeTensionCatalog() {
   try {
-    resultStatus.textContent = setupRuntimeMessages.tensionCatalogLoading;
+    showCalculationStatus(setupRuntimeMessages.tensionCatalogLoading);
     const catalog = await readTensionCatalog({
       embeddedCatalog: globalThis.__TONELAB_TENSION_CATALOG__ || null,
       requestCatalog: () => fetch("./tension_catalog.json"),
       unavailableMessage: setupRuntimeMessages.tensionCatalogUnavailable,
     });
-    setup = applyTensionCatalogToSetup(
-      setup,
-      catalog,
-      tensionSourceOptions[setupForm.tensionSourceIdForSetup()],
-    );
-    profileEditor.renderStringInputs();
-    setupForm.writeSetupToForm();
+    applyLoadedTensionCatalog(catalog);
     render();
   } catch (_error) {
-    resultStatus.textContent = setupRuntimeMessages.tensionEstimateFallback;
+    showCalculationStatus(setupRuntimeMessages.tensionEstimateFallback);
     render();
+  } finally {
+    isTensionCatalogPending = false;
+    pendingMechanicalFields.clear();
   }
+}
+
+function preserveRestoredMechanicalFields() {
+  if (!restoredSession) return;
+  setup.strings.forEach((_string, stringIndex) => {
+    mechanicalFieldNames.forEach((field) => rememberPendingMechanicalField(stringIndex, field));
+  });
+}
+
+function preservePendingMechanicalInput(input) {
+  if (!isTensionCatalogPending || !mechanicalFieldNames.includes(input.dataset.stringField)) return;
+  rememberPendingMechanicalField(Number(input.dataset.stringIndex), input.dataset.stringField);
+}
+
+function rememberPendingMechanicalField(stringIndex, field) {
+  pendingMechanicalFields.set(`${stringIndex}:${field}`, { stringIndex, field });
+}
+
+function forgetPendingMechanicalLookup(input) {
+  if (input.id === "tension_data_source") return pendingMechanicalFields.clear();
+  mechanicalFieldNames.forEach((field) => pendingMechanicalFields.delete(`${input.dataset.stringIndex}:${field}`));
+}
+
+function applyLoadedTensionCatalog(catalog) {
+  const preservedInputs = [...pendingMechanicalFields.values()].map(readPendingMechanicalInput);
+  setup = applyTensionCatalogToSetup(setup, catalog, tensionSourceOptions[setupForm.tensionSourceIdForSetup()]);
+  preservedInputs.forEach(restorePendingMechanicalValue);
+  setupForm.writeMechanicalPropertiesToStringCards();
+  preservedInputs.forEach(({ input, draft }) => { input.value = draft; });
+}
+
+function readPendingMechanicalInput({ stringIndex, field }) {
+  const input = form.querySelector(`[data-string-index="${stringIndex}"][data-string-field="${field}"]`);
+  const string = setup.strings[stringIndex];
+  return { stringIndex, field, value: string[field], tensionSource: string.tensionSource, input, draft: input.value };
+}
+
+function restorePendingMechanicalValue({ stringIndex, field, value, tensionSource }) {
+  const string = setup.strings[stringIndex];
+  string[field] = value;
+  if (field === "unitMassKgPerMeter") restorePendingMassSource(string, tensionSource);
+}
+
+function restorePendingMassSource(string, tensionSource) {
+  if (tensionSource === undefined) delete string.tensionSource;
+  else string.tensionSource = tensionSource;
 }
