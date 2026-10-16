@@ -16,6 +16,16 @@
   <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
+  <!-- shared-length-units:start -->
+  <link rel="stylesheet" href="../common/length_unit_control.css">
+  <script id="tool_length_unit_config" type="application/json">{"label":"Längeneinheiten"}</script>
+  <script src="../common/length_unit_preference.js"></script>
+  <script src="../common/canonical_length_fields.js"></script>
+  <script src="../common/length_unit_controller.js"></script>
+  <script src="../common/length_unit_frame_sync.js"></script>
+  <script src="../common/length_unit_navigation.js"></script>
+  <script src="../common/length_unit_control.js" defer></script>
+  <!-- shared-length-units:end -->
 </head>
 <body>
   <div class="tl-app">
@@ -30,31 +40,17 @@
             <h1>Gitarren-Setup-Rechner</h1>
           </div>
           <div class="hero-actions">
-            <span id="setup_view_status" class="status">Richtwerte</span>
+            <span id="setup_view_status" class="status">Messen</span>
           </div>
         </div>
       </section>
 
-      <main class="setup-page" data-setup-mode="specs">
+      <main class="setup-page" data-setup-mode="measure">
         <section class="card-surface setup-tool-surface">
-          <section class="card pad tl-card setup-profile-control" aria-labelledby="instrument-control-title">
-            <div class="setup-profile-control-heading"><p class="eyebrow">Instrument</p><h2 id="instrument-control-title">Ausgangs-Setup wählen</h2><p class="small muted">Profile liefern bearbeitbare Ausgangswerte. Sobald Sie Messwerte eingeben, haben diese Vorrang.</p></div>
-            <div class="profile-control-row">
-              <label class="profile-select-field"><span>Instrumentenprofil</span><select id="instrument_profile"></select></label>
-              <button id="customize_profile" type="button" class="secondary-button">Saitenchöre und Saitenzahl ändern</button>
-            </div>
-            <section id="custom_profile_builder" class="custom-profile-builder" hidden aria-labelledby="custom-profile-title">
-              <div><p class="eyebrow">Eigene Anordnung</p><h3 id="custom-profile-title">Saitenchöre und physische Saiten</h3><p class="small muted">Wählen Sie bis zu acht Saitenchöre. Jeder Chor kann eine oder zwei Saiten enthalten, insgesamt höchstens sechzehn physische Saiten.</p></div>
-              <label class="custom-course-count"><span>Saitenchöre</span><input id="custom_course_count" type="number" min="1" max="8" step="1"></label>
-              <div id="custom_course_members" class="custom-course-members"></div>
-              <button id="build_custom_profile" type="button" class="secondary-button">Eigene Anordnung verwenden</button>
-            </section>
-          </section>
-
           <div class="setup-view-toolbar">
-            <div class="setup-mode-control" role="group" aria-label="Gitarren-Setup-Ansicht">
-              <button type="button" class="setup-mode-button" data-setup-mode-button="specs" aria-pressed="true">Richtwerte</button>
-              <button id="measure_instrument" type="button" class="setup-mode-button" data-setup-mode-button="measure" aria-pressed="false">Messen</button>
+            <div class="setup-mode-control" hidden role="group" aria-label="Gitarren-Setup-Ansicht">
+              <button type="button" class="setup-mode-button" data-setup-mode-button="specs" aria-pressed="false">Richtwerte</button>
+              <button id="measure_instrument" type="button" class="setup-mode-button" data-setup-mode-button="measure" aria-pressed="true">Messen</button>
             </div>
             <div class="length-unit-control" role="group" aria-label="Maßeinheiten">
               <button type="button" class="length-unit-button" data-length-unit-button="mm" aria-pressed="true">mm</button>
@@ -62,47 +58,75 @@
             </div>
           </div>
 
-          <section id="stock_specs" class="card pad tl-card stock-specs" aria-labelledby="stock-specs-title">
-            <div class="stock-specs-heading">
-              <h2 id="stock-specs-title">Der Ausgangspunkt für jedes Setup</h2>
-              <p class="small muted">Typische Werte nach Instrument. Wählen Sie Ihres – Ihre Messwerte übernehmen anschließend.</p>
-            </div>
-            <div id="stock_spec_cards" class="stock-spec-cards"></div>
-            <div class="stock-steps-strip" aria-label="Die sechs Setup-Schritte">
-              <span class="stock-step"><em>1</em>Saiten</span>
-              <span class="stock-step"><em>2</em>Radius</span>
-              <span class="stock-step"><em>3</em>Halskrümmung</span>
-              <span class="stock-step"><em>4</em>Steg</span>
-              <span class="stock-step"><em>5</em>Sattel</span>
-              <span class="stock-step"><em>6</em>Intonation</span>
-              <span class="stock-steps-note">Die grobe Form – die Werkstattanweisungen enthalten die Einzelheiten.</span>
-            </div>
-            <div class="stock-specs-cta">
-              <button id="stock_specs_measure" type="button" class="primary-button">Dieses Instrument messen</button>
-              <p class="small muted">Typische Werte gelten, bis Sie sie ersetzen; in den Ergebnissen ist die jeweilige Quelle gekennzeichnet.</p>
-            </div>
-          </section>
-
-          <section class="card pad tl-card setup-geometry-card" aria-labelledby="geometry-title" data-nut-width-mm="5" data-saddle-insert-thickness="6">
-            <div class="setup-surface-header">
-              <div><p class="eyebrow">Physische Geometrie</p><h2 id="geometry-title">Vom Sattel zur Stegeinlage</h2><p class="small muted">Die Saitenlage ist der senkrechte Abstand von der Bundoberkante bis zur Saitenunterkante.</p></div>
-            </div>
-            <p id="calculation_basis" class="calculation-basis">Vorschau mit den Standardwerten des Profils. Geben Sie Ihre Messwerte ein, bevor Sie das Kompensationsmuster verwenden.</p>
-            <div class="setup-geometry-layout">
-              <div class="setup-geometry-figure">
-                <div id="setup_geometry_svg" aria-live="polite"></div>
-              </div>
-            </div>
-          </section>
-
-          <form id="setup_form" class="card pad tl-card tl-card-controls setup-inputs" hidden>
+          <form id="setup_form" class="card pad tl-card tl-card-controls setup-inputs">
             <div class="setup-surface-header">
               <div><p class="eyebrow">Messeingaben</p><h2>Setup in sechs Schritten</h2><p class="small muted">Wählen Sie ein Ausgangsprofil und ersetzen Sie dessen Standardwerte anschließend durch Ihre tatsächlichen Messwerte.</p></div>
             </div>
+            <div class="setup-calculation-status">
+              <p id="calculation_basis" class="calculation-basis">Vorschau mit den Standardwerten des Profils. Geben Sie Ihre Messwerte ein, bevor Sie das Kompensationsmuster verwenden.</p>
+              <span id="result_status" data-setup-status role="status">Bereit</span>
+            </div>
+            <nav id="setup_steps" class="setup-step-navigation" aria-label="Die sechs Setup-Schritte">
+              <button type="button" data-setup-step="0" aria-controls="setup_panel_0" aria-current="step"><span class="setup-step-index" aria-hidden="true">01</span><span>Saiten</span></button>
+              <button type="button" data-setup-step="1" aria-controls="setup_panel_1"><span class="setup-step-index" aria-hidden="true">02</span><span>Radius</span></button>
+              <button type="button" data-setup-step="2" aria-controls="setup_panel_2"><span class="setup-step-index" aria-hidden="true">03</span><span>Halskrümmung</span></button>
+              <button type="button" data-setup-step="3" aria-controls="setup_panel_3"><span class="setup-step-index" aria-hidden="true">04</span><span>Steg</span></button>
+              <button type="button" data-setup-step="4" aria-controls="setup_panel_4"><span class="setup-step-index" aria-hidden="true">05</span><span>Sattel</span></button>
+              <button type="button" data-setup-step="5" aria-controls="setup_panel_5"><span class="setup-step-index" aria-hidden="true">06</span><span>Intonation</span></button>
+            </nav>
             <div class="setup-step-list">
-              <details class="setup-step" open aria-labelledby="step-length-title">
-                <summary><span class="step-number">01</span><span><strong id="step-length-title">Saitenlänge</strong><small>Vom Bezugspunkt am Sattel bis zum Bezugspunkt an der Stegeinlage, für jede Saite.</small></span></summary>
+              <section id="setup_panel_0" class="setup-step" aria-labelledby="step-length-title">
+                <header class="setup-step-header"><span class="step-number">01</span><span><strong id="step-length-title" role="heading" aria-level="2" tabindex="-1">Saitenlänge</strong><small>Vom Bezugspunkt am Sattel bis zum Bezugspunkt an der Stegeinlage, für jede Saite.</small></span></header>
                 <div class="setup-step-body">
+                  <section class="card pad tl-card setup-profile-control" aria-labelledby="instrument-control-title">
+                    <div class="setup-profile-control-heading"><p class="eyebrow">Instrument</p><h2 id="instrument-control-title">Ausgangs-Setup wählen</h2><p class="small muted">Profile liefern bearbeitbare Ausgangswerte. Sobald Sie Messwerte eingeben, haben diese Vorrang.</p></div>
+                    <div class="profile-control-row">
+                      <label class="profile-select-field"><span>Instrumentenprofil</span><select id="instrument_profile"></select></label>
+                      <button id="customize_profile" type="button" class="secondary-button">Saitenchöre und Saitenzahl ändern</button>
+                    </div>
+                    <section id="setup_scale_controls" class="setup-scale-controls" data-invalid-message="Gib eine Mensurlänge größer als null ein.">
+                      <div class="scale-layout-choice" role="group" aria-label="Mensuranordnung">
+                        <button type="button" data-scale-mode="single" aria-pressed="true">Einheitliche Mensur</button>
+                        <button type="button" data-scale-mode="multi" aria-pressed="false">Multiscale</button>
+                      </div>
+                      <label id="common_scale_field"><span data-length-label="Mensurlänge">Mensurlänge (mm)</span><input id="common_scale_length" type="number" min="0.001" step="0.1" list="scale_starting_lengths"><small>Gilt für alle Saiten.</small><small>Wähle eine vorgeschlagene Länge oder gib eine eigene ein.</small></label>
+                      <datalist id="scale_starting_lengths"></datalist>
+                      <div id="single_scale_confirmation" class="scale-confirmation" hidden>
+                        <p>Diese Saiten haben unterschiedliche Längen. Wähle die Länge, die für alle gelten soll.</p>
+                        <label><span data-length-label="Mensurlänge">Mensurlänge (mm)</span><input id="confirmed_scale_length" type="number" min="0.001" step="0.1" list="scale_starting_lengths"></label>
+                        <div class="scale-layout-choice"><button id="apply_common_scale" type="button">Auf alle Saiten anwenden</button><button id="cancel_common_scale" type="button">Multiscale beibehalten</button></div>
+                      </div>
+                    </section>
+                    <section id="custom_profile_builder" class="custom-profile-builder" hidden aria-labelledby="custom-profile-title">
+                      <div><p class="eyebrow">Eigene Anordnung</p><h3 id="custom-profile-title">Saitenchöre und physische Saiten</h3><p class="small muted">Wählen Sie bis zu acht Saitenchöre. Jeder Chor kann eine oder zwei Saiten enthalten, insgesamt höchstens sechzehn physische Saiten.</p></div>
+                      <label class="custom-course-count"><span>Saitenchöre</span><input id="custom_course_count" type="number" min="1" max="8" step="1"></label>
+                      <div id="custom_course_members" class="custom-course-members"></div>
+                      <button id="build_custom_profile" type="button" class="secondary-button">Eigene Anordnung verwenden</button>
+                    </section>
+                  </section>
+                  <details class="setup-reference-specs">
+                    <summary>Richtwerte</summary>
+                    <section id="stock_specs" class="card pad tl-card stock-specs" aria-labelledby="stock-specs-title">
+                      <div class="stock-specs-heading">
+                        <h2 id="stock-specs-title">Der Ausgangspunkt für jedes Setup</h2>
+                        <p class="small muted">Typische Werte nach Instrument. Wählen Sie Ihres – Ihre Messwerte übernehmen anschließend.</p>
+                      </div>
+                      <div id="stock_spec_cards" class="stock-spec-cards"></div>
+                      <div class="stock-steps-strip" hidden aria-label="Die sechs Setup-Schritte">
+                        <span class="stock-step"><em>1</em>Saiten</span>
+                        <span class="stock-step"><em>2</em>Radius</span>
+                        <span class="stock-step"><em>3</em>Halskrümmung</span>
+                        <span class="stock-step"><em>4</em>Steg</span>
+                        <span class="stock-step"><em>5</em>Sattel</span>
+                        <span class="stock-step"><em>6</em>Intonation</span>
+                        <span class="stock-steps-note">Die grobe Form – die Werkstattanweisungen enthalten die Einzelheiten.</span>
+                      </div>
+                      <div class="stock-specs-cta">
+                        <button id="stock_specs_measure" type="button" class="primary-button">Dieses Instrument messen</button>
+                        <p class="small muted">Typische Werte gelten, bis Sie sie ersetzen; in den Ergebnissen ist die jeweilige Quelle gekennzeichnet.</p>
+                      </div>
+                    </section>
+                  </details>
                   <div class="string-source-control">
                     <label><span>Massendaten des Herstellers</span><select id="tension_data_source"><option value="daddario_ej16">D’Addario EJ16</option><option value="daddario_exl110">D’Addario EXL110 E-Gitarre</option><option value="daddario_ej38">D’Addario EJ38 12-saitig</option><option value="daddario_exl170">D’Addario EXL170 Bass</option><option value="daddario_ej45">D’Addario EJ45 Konzertgitarre</option><option value="daddario_ej65t">D’Addario EJ65T Tenor-Ukulele</option><option value="daddario_ej74">D’Addario EJ74 Mandoline</option><option value="stringjoy_nickel">Stringjoy blank / Nickel</option><option value="stringjoy_bronze">Stringjoy blank / Bronze</option><option value="estimate">Schätzung nach Saitenstärke</option></select></label>
                     <p class="step-note">Bei einer passenden Saite wird die veröffentlichte lineare Masse verwendet. Die Axialsteifigkeit wird aus dem Aufbau geschätzt, sofern Sie keinen Messwert eingeben.</p>
@@ -112,12 +136,11 @@
                     <label><span>Neutraler Bund bei ungleichen Saitenlängen</span><input id="fan_neutral_fret" type="number" min="0" max="30" step="1"></label>
                     <p class="step-note">Wird nur bei unterschiedlichen Saitenlängen verwendet; Sattel, Bünde und Stegeinlage fächern sich um diesen rechtwinkligen Bund auf.</p>
                   </div>
-                  <button id="continue_to_radius" type="button" class="secondary-button step-next-button">Weiter: Radius</button>
                 </div>
-              </details>
+              </section>
 
-              <details id="radius_step" class="setup-step" aria-labelledby="step-radius-title">
-                <summary><span class="step-number">02</span><span><strong id="step-radius-title">Radius</strong><small>Durchgehendes, Compound- oder flaches Griffbrett.</small></span></summary>
+              <section id="setup_panel_1" class="setup-step" aria-labelledby="step-radius-title" hidden>
+                <header class="setup-step-header"><span class="step-number">02</span><span><strong id="step-radius-title" role="heading" aria-level="2" tabindex="-1">Radius</strong><small>Durchgehendes, Compound- oder flaches Griffbrett.</small></span></header>
                 <div class="setup-step-body">
                   <div class="radius-choice">
                     <label><input type="radio" name="radius_kind" value="simple"><span><strong>Durchgehender Radius</strong><small>Ein Radius vom Sattel bis zum Steg.</small></span></label>
@@ -131,18 +154,18 @@
                   </div>
                   <p class="step-note">Millimeter: 12 in = 304,8 mm.</p>
                 </div>
-              </details>
+              </section>
 
-              <details class="setup-step" aria-labelledby="step-relief-title">
-                <summary><span class="step-number">03</span><span><strong id="step-relief-title">Halskrümmung</strong><small>Halskrümmung, gemessen als größter Abstand und zugehöriger Bund.</small></span></summary>
+              <section id="setup_panel_2" class="setup-step" aria-labelledby="step-relief-title" hidden>
+                <header class="setup-step-header"><span class="step-number">03</span><span><strong id="step-relief-title" role="heading" aria-level="2" tabindex="-1">Halskrümmung</strong><small>Halskrümmung, gemessen als größter Abstand und zugehöriger Bund.</small></span></header>
                 <div class="setup-step-body"><div class="field-row">
                   <label><span data-length-label="Halskrümmung">Halskrümmung (mm)</span><input id="relief_amount_mm" type="number" min="0" step="0.01"></label>
                   <label><span>Gemessen an Bund</span><input id="relief_peak_fret" type="number" min="2" step="1"></label>
                 </div><p class="step-note">Setzen Sie den Kapodaster am 1. Bund, halten Sie die Saite am letzten Bund und messen Sie am gewählten Bund von der Bundoberkante bis zur Saitenunterkante.</p></div>
-              </details>
+              </section>
 
-              <details class="setup-step" aria-labelledby="step-bridge-title">
-                <summary><span class="step-number">04</span><span><strong id="step-bridge-title">Saitenlage am Steg</strong><small>Kapodaster am 1. Bund setzen und anschließend am 12. Bund messen.</small></span></summary>
+              <section id="setup_panel_3" class="setup-step" aria-labelledby="step-bridge-title" hidden>
+                <header class="setup-step-header"><span class="step-number">04</span><span><strong id="step-bridge-title" role="heading" aria-level="2" tabindex="-1">Saitenlage am Steg</strong><small>Kapodaster am 1. Bund setzen und anschließend am 12. Bund messen.</small></span></header>
                 <div class="setup-step-body">
                   <div class="field-row field-row-two">
                     <label><span id="action_first_string_label">Erste Saite (mm)</span><input id="action_first_string_mm" type="number" min="0" step="0.01"></label>
@@ -160,21 +183,60 @@
                     <div id="sparse_action_readings" class="sparse-action-readings" aria-live="polite"></div>
                   </details>
                 </div>
-              </details>
+              </section>
 
-              <details class="setup-step" aria-labelledby="step-nut-title">
-                <summary><span class="step-number">05</span><span><strong id="step-nut-title">Saitenlage am Sattel</strong><small>Abstand der offenen Saite über dem 1. Bund.</small></span></summary>
+              <section id="setup_panel_4" class="setup-step" aria-labelledby="step-nut-title" hidden>
+                <header class="setup-step-header"><span class="step-number">05</span><span><strong id="step-nut-title" role="heading" aria-level="2" tabindex="-1">Saitenlage am Sattel</strong><small>Abstand der offenen Saite über dem 1. Bund.</small></span></header>
                 <div class="setup-step-body"><div class="field-row field-row-two">
                   <label><span id="nut_action_first_string_label">Erste Saite (mm)</span><input id="nut_action_first_string_mm" type="number" min="0" step="0.01"></label>
                   <label><span id="nut_action_last_string_label">Letzte Saite (mm)</span><input id="nut_action_last_string_mm" type="number" min="0" step="0.01"></label>
                 </div><p class="step-note">Messen Sie senkrecht von der Oberkante des 1. Bundes bis zur Unterkante jeder offenen äußeren Saite. Der Rechner addiert den jeweiligen Saitendurchmesser, damit die Saitenoberseiten dem gewählten Radius folgen.</p></div>
-              </details>
+              </section>
 
-              <details class="setup-step" aria-labelledby="step-intonation-title">
-                <summary><span class="step-number">06</span><span><strong id="step-intonation-title">Kompensation prüfen und Intonation kontrollieren</strong><small>Das Sattel- und Stegmuster verwenden und anschließend am tatsächlichen Instrument prüfen.</small></span></summary>
+              <section id="setup_panel_5" class="setup-step" aria-labelledby="step-intonation-title" hidden>
+                <header class="setup-step-header"><span class="step-number">06</span><span><strong id="step-intonation-title" role="heading" aria-level="2" tabindex="-1">Kompensation prüfen und Intonation kontrollieren</strong><small>Das Sattel- und Stegmuster verwenden und anschließend am tatsächlichen Instrument prüfen.</small></span></header>
                 <div class="setup-step-body">
                   <p class="step-note">Das berechnete Muster ist ein Ausgangspunkt für die Bearbeitung. Prüfen Sie jede gegriffene Saite mit einem Stroboskop-Stimmgerät, bevor Sie einen nicht rückgängig zu machenden Schnitt ausführen.</p>
                   <a class="result-link" href="#results-title">Kompensation für jede Saite anzeigen</a>
+                  <section class="card pad tl-card setup-geometry-card" aria-labelledby="geometry-title" data-nut-width-mm="5" data-saddle-insert-thickness="6">
+                    <div class="setup-surface-header">
+                      <div><p class="eyebrow">Physische Geometrie</p><h2 id="geometry-title">Vom Sattel zur Stegeinlage</h2><p class="small muted">Die Saitenlage ist der senkrechte Abstand von der Bundoberkante bis zur Saitenunterkante.</p></div>
+                    </div>
+                    <div class="setup-geometry-layout">
+                      <div class="setup-geometry-figure">
+                        <div id="setup_geometry_svg" aria-live="polite"></div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="card pad tl-card tl-card-output setup-results" aria-labelledby="results-title">
+                    <div class="results-heading"><div><p class="eyebrow">Berechnetes Ergebnis</p><h2 id="results-title">Setup und Intonation für jede Saite</h2></div><span data-setup-status>Bereit</span></div>
+                    <div class="table-wrap">
+                      <table>
+                        <thead><tr><th>Saite</th><th>Stärke</th><th>Länge</th><th>Saitenlage am Sattel · 1. Bund</th><th>Offene Saitenlage am 12. Bund</th><th>Sattelkomp.</th><th>Stegkomp.</th><th>Größter Fehler</th><th>Quelle der Zugkraftdaten</th></tr></thead>
+                        <tbody id="result_rows"></tbody>
+                      </table>
+                    </div>
+                    <div id="mobile_result_cards" class="mobile-result-cards" aria-label="Setup-Ergebnisse für jede Saite"></div>
+                    <p class="results-footnote">Die Gore-Kompensation ist aktiv. Das Profil der offenen Saitenlage verwendet die Kreis-, Ellipsen- und Liniengeometrie aus dem Buch und wird mit den eingegebenen Messwerten der Saitenlage kalibriert. Das vom Hersteller angegebene Saitengewicht ist für die Zugkraft der offenen Saite maßgeblich; die Axialsteifigkeit bleibt eine gekennzeichnete Schätzung, bis gemessene Steifigkeitsdaten vorliegen. Prüfen Sie die Werte vor der Bearbeitung mit einem Stroboskop-Stimmgerät am tatsächlichen Instrument.</p>
+                  </section>
+
+                  <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
+                    <p class="eyebrow">Messübersicht</p>
+                    <h2 id="measurement-rail-title">Aktuelles Setup</h2>
+                    <dl>
+                      <div><dt><span>Halskrümmung</span><small id="rail_relief_source" class="provenance-badge">Profilstandard</small></dt><dd id="rail_relief">0.25 mm @ fret 7</dd></div>
+                      <div><dt><span>Saitenlage am Sattel</span><small id="rail_nut_action_source" class="provenance-badge">Profilstandard</small></dt><dd id="rail_nut_action">—</dd></div>
+                      <div><dt><span>Ziel-Saitenlage</span><small id="rail_action_source" class="provenance-badge">Profilstandard</small></dt><dd id="rail_action">—</dd></div>
+                      <div><dt><span>Größter Intonationsfehler</span><small class="provenance-badge calculated">Berechnet</small></dt><dd id="rail_error">—</dd></div>
+                      <div><dt><span>Bereich der Sattelkompensation</span><small class="provenance-badge calculated">Berechnet</small></dt><dd id="rail_nut_compensation">—</dd></div>
+                      <div><dt><span>Bereich der Stegkompensation</span><small class="provenance-badge calculated">Berechnet</small></dt><dd id="rail_saddle_compensation">—</dd></div>
+                      <div><dt><span>Mensur</span><small id="rail_scale_source" class="provenance-badge">Profilstandard</small></dt><dd id="rail_scale_length">—</dd></div>
+                      <div><dt><span>Kompensationsverlauf</span><small class="provenance-badge calculated">Methode</small></dt><dd id="rail_calculation_path">Gore</dd></div>
+                    </dl>
+                    <p class="geometry-note"><strong>Die Saitenlage wird senkrecht gemessen.</strong> Breite und Rohlingmaße werden nicht als Saitenlagenmessungen verwendet.</p>
+                  </aside>
+
                   <details class="advanced-model-settings">
                     <summary>Erweiterte Einstellungen des Gore-Modells</summary>
                     <div class="field-row field-row-two">
@@ -184,38 +246,13 @@
                     <p class="step-note">Diese Werte legen fest, wie viel vom Instrument in den deterministischen Optimierer einbezogen wird.</p>
                   </details>
                 </div>
-              </details>
+              </section>
+            </div>
+            <div id="setup_step_actions" class="setup-step-actions">
+              <button id="setup_previous" type="button" class="secondary-button" disabled>Zurück</button>
+              <button id="setup_next" type="button" class="primary-button" data-continue-label="Weiter" data-review-label="Ergebnisse prüfen">Weiter</button>
             </div>
           </form>
-
-          <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
-            <p class="eyebrow">Messübersicht</p>
-            <h2 id="measurement-rail-title">Aktuelles Setup</h2>
-            <dl>
-              <div><dt><span>Halskrümmung</span><small id="rail_relief_source" class="provenance-badge">Profilstandard</small></dt><dd id="rail_relief">0.25 mm @ fret 7</dd></div>
-              <div><dt><span>Saitenlage am Sattel</span><small id="rail_nut_action_source" class="provenance-badge">Profilstandard</small></dt><dd id="rail_nut_action">—</dd></div>
-              <div><dt><span>Ziel-Saitenlage</span><small id="rail_action_source" class="provenance-badge">Profilstandard</small></dt><dd id="rail_action">—</dd></div>
-              <div><dt><span>Größter Intonationsfehler</span><small class="provenance-badge calculated">Berechnet</small></dt><dd id="rail_error">—</dd></div>
-              <div><dt><span>Bereich der Sattelkompensation</span><small class="provenance-badge calculated">Berechnet</small></dt><dd id="rail_nut_compensation">—</dd></div>
-              <div><dt><span>Bereich der Stegkompensation</span><small class="provenance-badge calculated">Berechnet</small></dt><dd id="rail_saddle_compensation">—</dd></div>
-              <div><dt><span>Mensur</span><small id="rail_scale_source" class="provenance-badge">Profilstandard</small></dt><dd id="rail_scale_length">—</dd></div>
-              <div><dt><span>Kompensationsverlauf</span><small class="provenance-badge calculated">Methode</small></dt><dd id="rail_calculation_path">Gore</dd></div>
-            </dl>
-            <p class="geometry-note"><strong>Die Saitenlage wird senkrecht gemessen.</strong> Breite und Rohlingmaße werden nicht als Saitenlagenmessungen verwendet.</p>
-          </aside>
-
-
-          <section class="card pad tl-card tl-card-output setup-results" aria-labelledby="results-title">
-            <div class="results-heading"><div><p class="eyebrow">Berechnetes Ergebnis</p><h2 id="results-title">Setup und Intonation für jede Saite</h2></div><span id="result_status" role="status">Bereit</span></div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Saite</th><th>Stärke</th><th>Länge</th><th>Saitenlage am Sattel · 1. Bund</th><th>Offene Saitenlage am 12. Bund</th><th>Sattelkomp.</th><th>Stegkomp.</th><th>Größter Fehler</th><th>Quelle der Zugkraftdaten</th></tr></thead>
-                <tbody id="result_rows"></tbody>
-              </table>
-            </div>
-            <div id="mobile_result_cards" class="mobile-result-cards" aria-label="Setup-Ergebnisse für jede Saite"></div>
-            <p class="results-footnote">Die Gore-Kompensation ist aktiv. Das Profil der offenen Saitenlage verwendet die Kreis-, Ellipsen- und Liniengeometrie aus dem Buch und wird mit den eingegebenen Messwerten der Saitenlage kalibriert. Das vom Hersteller angegebene Saitengewicht ist für die Zugkraft der offenen Saite maßgeblich; die Axialsteifigkeit bleibt eine gekennzeichnete Schätzung, bis gemessene Steifigkeitsdaten vorliegen. Prüfen Sie die Werte vor der Bearbeitung mit einem Stroboskop-Stimmgerät am tatsächlichen Instrument.</p>
-          </section>
 
           <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="de">
   <h2>Gitarren-Setup-Rechner</h2>

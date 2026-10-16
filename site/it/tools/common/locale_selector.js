@@ -75,7 +75,7 @@
   function localeSelectorPlace(document, label) {
     const actions = document.querySelector(".hero-actions, .fit-actions");
     if (!actions) return;
-    actions.insertBefore(label, actions.querySelector(".hero-help-link"));
+    actions.insertBefore(label, actions.querySelector(".hero-help-link, #btn_fullscreen"));
   }
 
   function localeSelectorAttach() {
@@ -83,10 +83,20 @@
     if (!preferenceApi) return;
     localeSelectorMount({
       document: globalScope.document,
-      preference: preferenceApi.localePreferenceCreate(globalScope.localStorage),
-      navigate: (href) => globalScope.location.assign(href),
+      preference: preferenceApi.localePreferenceCreate(localeStorageRead()),
+      navigate: localeDestinationNavigate,
       prepareNavigation: () => globalScope.ToolLocaleNavigation?.prepare?.(),
     });
+  }
+
+  function localeStorageRead() {
+    try { return globalScope.localStorage; }
+    catch { return null; }
+  }
+
+  function localeDestinationNavigate(href) {
+    const destination = globalScope.ToolLengthUnitNavigation?.destinationHref(href) || href;
+    globalScope.location.assign(destination);
   }
 
   const api = Object.freeze({ localeSelectorConfigRead, localeSelectorMount });

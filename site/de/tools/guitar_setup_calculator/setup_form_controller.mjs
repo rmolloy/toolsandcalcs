@@ -40,7 +40,7 @@ export function createSetupFormController({
     setValue("fan_neutral_fret", setup.fanNeutralFret);
     setLengthValue("extra_string_length_mm", setup.extraStringLengthMm);
     setValue("tension_data_source", tensionSourceIdForSetup());
-    for (const input of form.querySelectorAll("[data-string-index]")) {
+    for (const input of form.querySelectorAll("[data-string-index][data-string-field]")) {
       const string = setup.strings[Number(input.dataset.stringIndex)];
       const field = input.dataset.stringField;
       input.value = lengthUnits.isStringField(field)

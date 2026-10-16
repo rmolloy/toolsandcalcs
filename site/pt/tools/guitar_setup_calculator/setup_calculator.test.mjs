@@ -21,8 +21,8 @@ test("the setup page exposes the physical bench measurements", async () => {
   assert.match(page, /id="action_first_string_label"/);
   assert.match(page, /id="nut_action_last_string_label"/);
   assert.match(page, /id="fan_neutral_fret"/);
-  assert.match(page, /id="continue_to_radius"/);
-  assert.match(behavior, /continueToRadius/);
+  assert.match(page, /id="setup_next"/);
+  assert.match(behavior, /createSetupStepNavigation/);
   assert.match(behavior, /createSparseActionEditor/);
   assert.match(sparseActionEditor, /function addReading/);
   assert.match(sparseActionEditor, /actionMeasurements/);
@@ -43,17 +43,14 @@ test("the setup page uses the shared ToneLab tool shell", async () => {
   assert.match(page, /data-tool-footer/);
 });
 
-test("the setup page defaults to specs and exposes the measurement editor on request", async () => {
+test("the setup page starts with the guided measurement editor", async () => {
   const page = await readFile(new URL("./index.html", import.meta.url), "utf8");
   const behavior = await readFile(new URL("./main.mjs", import.meta.url), "utf8");
 
-  assert.match(page, /class="setup-page" data-setup-mode="specs"/);
-  assert.match(page, /id="measure_instrument"/);
-  assert.match(page, /id="setup_form"[^>]* hidden/);
-  assert.match(behavior, /showSetupMode/);
-  assert.match(behavior, /form\.hidden = !isMeasureMode/);
-  assert.match(behavior, /setupPage\.dataset\.setupMode/);
-  assert.match(behavior, /setupModeMessageRead\(setupPage\.dataset\.setupMode\)/);
+  assert.match(page, /class="setup-page" data-setup-mode="measure"/);
+  assert.match(page, /id="setup_steps"/);
+  assert.doesNotMatch(page, /id="setup_form"[^>]* hidden/);
+  assert.match(behavior, /createSetupStepNavigation\(document\)/);
 });
 
 test("the setup page defaults dimensional measurements to millimetres", async () => {
@@ -91,10 +88,10 @@ test("the setup page puts measurement inputs before calculated geometry and resu
   const lengthUnits = await readFile(new URL("./length_unit_controller.mjs", import.meta.url), "utf8");
   const resultPresenter = await readFile(new URL("./setup_result_presenter.mjs", import.meta.url), "utf8");
 
-  assert.ok(page.indexOf('id="geometry-title"') < page.indexOf('id="setup_form"'));
+  assert.ok(page.indexOf('id="setup_form"') < page.indexOf('id="geometry-title"'));
   assert.ok(page.indexOf('id="setup_form"') < page.indexOf('id="results-title"'));
   assert.ok(page.indexOf('id="geometry-title"') < page.indexOf('id="results-title"'));
-  assert.ok(page.indexOf('id="measurement-rail-title"') < page.indexOf('id="results-title"'));
+  assert.ok(page.indexOf('id="results-title"') < page.indexOf('id="measurement-rail-title"'));
   assert.match(page, /class="[^"]*setup-measurement-rail/);
   assert.match(page, /id="rail_action"/);
   assert.match(page, /id="rail_error"/);

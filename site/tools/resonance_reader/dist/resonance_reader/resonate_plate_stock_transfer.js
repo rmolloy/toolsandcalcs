@@ -1,4 +1,4 @@
-import { stockKindResolve } from "./resonate_stock_measurements.js?rev=88a3838e0e5a";
+import { stockKindResolve } from "./resonate_stock_measurements.js?rev=62b34eeddf93";
 export function plateStockTransferModesBuild(state, compatibleModes) {
     if (stockKindResolve(state) !== "plate_stock")
         return compatibleModes;

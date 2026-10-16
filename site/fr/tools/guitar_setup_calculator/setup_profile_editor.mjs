@@ -40,7 +40,7 @@ export function createSetupProfileEditor({
             <label><span>${nameLabel}</span><input data-string-index="${index}" data-string-field="name" type="text"></label>
             <label><span>${midiNoteLabel}</span><input data-string-index="${index}" data-string-field="openMidiNote" type="number" min="0" max="127" step="1"></label>
           ` : ""}
-          <label><span>${formatStringLengthLabel(lengthUnits.label())}</span><input data-string-index="${index}" data-string-field="scaleLengthMm" type="number" min="${lengthUnits.display(1)}" step="${lengthUnits.inputStep("scale")}"></label>
+          <label class="string-scale-field"><span>${formatStringLengthLabel(lengthUnits.label())}</span><input data-string-index="${index}" data-string-field="scaleLengthMm" type="number" min="${lengthUnits.display(1)}" step="${lengthUnits.inputStep("scale")}"></label>
           <label><span>${formatStringGaugeLabel(lengthUnits.label())}</span><input data-string-index="${index}" data-string-field="gaugeMm" type="number" min="${lengthUnits.display(0.05)}" step="${lengthUnits.inputStep("fine")}"></label>
           <label><span>${buildLabel}</span><select data-string-index="${index}" data-string-field="construction"><option value="plain">${plainConstructionLabel}</option><option value="wound">${woundConstructionLabel}</option></select></label>
         </div>

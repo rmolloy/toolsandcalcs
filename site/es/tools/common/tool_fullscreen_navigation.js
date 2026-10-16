@@ -37,6 +37,8 @@
     initialize() {
       if (this.initialized) return;
       this.initialized = true;
+      this.lengthUnitSync = this.runtime.ToolLengthUnitFrameSync?.createLengthUnitFrameSync(this, this.runtime.ToolLengthUnits);
+      this.lengthUnitSync?.attach();
       this.document.addEventListener("click", event => this.linkFollow(event));
       this.document.addEventListener("fullscreenchange", () => this.stateBroadcast());
       this.runtime.addEventListener("message", event => this.messageReceive(event));
@@ -160,6 +162,7 @@
 
     historyRestore() {
       if (this.parentState) return;
+      this.lengthUnitSync?.refreshRootHistory();
       const href = this.runtime.history.state?.toolFullscreenHref || this.historyHrefRead();
       if (!href) return;
       const target = toolDestinationRead(href, this.toolsRoot);
@@ -193,6 +196,7 @@
     }
 
     parentMessageReceive(message) {
+      if (message.type === "length-unit") this.lengthUnitSync?.receiveFromParent(message.unit);
       if (message.type === "state") {
         this.parentState = { active: message.active === true, enabled: message.enabled === true };
         this.document.dispatchEvent(new this.runtime.Event("tool-fullscreen-change"));
@@ -207,8 +211,10 @@
         entry.frame.title = entry.title;
         if (entry === this.activeFrame) this.document.title = entry.title;
         this.frameSend(entry, { type: "state", ...this.stateRead() });
+        this.lengthUnitSync?.sendCurrentToFrame(entry);
       }
       if (entry !== this.activeFrame) return;
+      if (message.type === "length-unit") this.lengthUnitSync?.receiveFromFrame(entry, message.unit);
       if (message.type === "navigate") this.navigate(message.href);
       if (message.type === "toggle") void this.frameToggle(entry);
     }

@@ -20,11 +20,11 @@
   }
 
   function pageFullscreenControlMount(document) {
-    if (document.getElementById("btn_fullscreen")) return;
     const actions = document.querySelector(".hero-actions, .fit-actions");
     if (!actions) return;
-    const button = pageFullscreenButtonCreate(document);
-    actions.insertBefore(button, actions.querySelector(".hero-help-link") || actions.firstChild);
+    const button = document.getElementById("btn_fullscreen") || pageFullscreenButtonCreate(document);
+    actions.appendChild(button);
+    if (document.getElementById("fullscreen_status")) return;
     const status = document.createElement("span");
     status.id = "fullscreen_status";
     status.className = "sr-only";

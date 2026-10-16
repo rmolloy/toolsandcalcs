@@ -16,6 +16,16 @@
   <link rel="alternate" hreflang="pt" href="https://rickmolloyguitars.com/pt/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
+  <!-- shared-length-units:start -->
+  <link rel="stylesheet" href="../common/length_unit_control.css">
+  <script id="tool_length_unit_config" type="application/json">{"label":"Unidades de longitud"}</script>
+  <script src="../common/length_unit_preference.js"></script>
+  <script src="../common/canonical_length_fields.js"></script>
+  <script src="../common/length_unit_controller.js"></script>
+  <script src="../common/length_unit_frame_sync.js"></script>
+  <script src="../common/length_unit_navigation.js"></script>
+  <script src="../common/length_unit_control.js" defer></script>
+  <!-- shared-length-units:end -->
 </head>
 <body>
   <div class="tl-app">
@@ -30,31 +40,17 @@
             <h1>Calculadora de ajuste de guitarra</h1>
           </div>
           <div class="hero-actions">
-            <span id="setup_view_status" class="status">Especificaciones de referencia</span>
+            <span id="setup_view_status" class="status">Medir</span>
           </div>
         </div>
       </section>
 
-      <main class="setup-page" data-setup-mode="specs">
+      <main class="setup-page" data-setup-mode="measure">
         <section class="card-surface setup-tool-surface">
-          <section class="card pad tl-card setup-profile-control" aria-labelledby="instrument-control-title">
-            <div class="setup-profile-control-heading"><p class="eyebrow">Instrumento</p><h2 id="instrument-control-title">Elige un ajuste inicial</h2><p class="small muted">Los perfiles proporcionan valores iniciales editables. Tus mediciones los sustituyen a medida que las introduces.</p></div>
-            <div class="profile-control-row">
-              <label class="profile-select-field"><span>Perfil del instrumento</span><select id="instrument_profile"></select></label>
-              <button id="customize_profile" type="button" class="secondary-button">Cambiar órdenes y número de cuerdas</button>
-            </div>
-            <section id="custom_profile_builder" class="custom-profile-builder" hidden aria-labelledby="custom-profile-title">
-              <div><p class="eyebrow">Configuración personalizada</p><h3 id="custom-profile-title">Órdenes y cuerdas físicas</h3><p class="small muted">Elige hasta ocho órdenes. Cada orden puede contener una o dos cuerdas, con un máximo de dieciséis cuerdas físicas.</p></div>
-              <label class="custom-course-count"><span>Órdenes</span><input id="custom_course_count" type="number" min="1" max="8" step="1"></label>
-              <div id="custom_course_members" class="custom-course-members"></div>
-              <button id="build_custom_profile" type="button" class="secondary-button">Usar estructura personalizada</button>
-            </section>
-          </section>
-
           <div class="setup-view-toolbar">
-            <div class="setup-mode-control" role="group" aria-label="Vista del ajuste de guitarra">
-              <button type="button" class="setup-mode-button" data-setup-mode-button="specs" aria-pressed="true">Especificaciones de referencia</button>
-              <button id="measure_instrument" type="button" class="setup-mode-button" data-setup-mode-button="measure" aria-pressed="false">Medir</button>
+            <div class="setup-mode-control" hidden role="group" aria-label="Vista del ajuste de guitarra">
+              <button type="button" class="setup-mode-button" data-setup-mode-button="specs" aria-pressed="false">Especificaciones de referencia</button>
+              <button id="measure_instrument" type="button" class="setup-mode-button" data-setup-mode-button="measure" aria-pressed="true">Medir</button>
             </div>
             <div class="length-unit-control" role="group" aria-label="Unidades de medida">
               <button type="button" class="length-unit-button" data-length-unit-button="mm" aria-pressed="true">mm</button>
@@ -62,47 +58,75 @@
             </div>
           </div>
 
-          <section id="stock_specs" class="card pad tl-card stock-specs" aria-labelledby="stock-specs-title">
-            <div class="stock-specs-heading">
-              <h2 id="stock-specs-title">El punto de partida de cada ajuste</h2>
-              <p class="small muted">Especificaciones de fábrica por instrumento. Elige el tuyo; tus mediciones las sustituirán.</p>
-            </div>
-            <div id="stock_spec_cards" class="stock-spec-cards"></div>
-            <div class="stock-steps-strip" aria-label="Los seis pasos del ajuste">
-              <span class="stock-step"><em>1</em>Cuerdas</span>
-              <span class="stock-step"><em>2</em>Radio</span>
-              <span class="stock-step"><em>3</em>Curvatura</span>
-              <span class="stock-step"><em>4</em>Puente</span>
-              <span class="stock-step"><em>5</em>Cejuela</span>
-              <span class="stock-step"><em>6</em>Octavación</span>
-              <span class="stock-steps-note">La forma general; las instrucciones de taller contienen los detalles.</span>
-            </div>
-            <div class="stock-specs-cta">
-              <button id="stock_specs_measure" type="button" class="primary-button">Medir este instrumento</button>
-              <p class="small muted">Las especificaciones de fábrica se usan hasta que las sustituyas, y los resultados indican el origen de cada dato.</p>
-            </div>
-          </section>
-
-          <section class="card pad tl-card setup-geometry-card" aria-labelledby="geometry-title" data-nut-width-mm="5" data-saddle-insert-thickness="6">
-            <div class="setup-surface-header">
-              <div><p class="eyebrow">Geometría física</p><h2 id="geometry-title">De la cejuela a la selleta</h2><p class="small muted">La acción es la distancia vertical desde la parte superior del traste hasta la parte inferior de la cuerda.</p></div>
-            </div>
-            <p id="calculation_basis" class="calculation-basis">Vista previa basada en los valores predeterminados del perfil. Introduce tus mediciones antes de usar el patrón de compensación.</p>
-            <div class="setup-geometry-layout">
-              <div class="setup-geometry-figure">
-                <div id="setup_geometry_svg" aria-live="polite"></div>
-              </div>
-            </div>
-          </section>
-
-          <form id="setup_form" class="card pad tl-card tl-card-controls setup-inputs" hidden>
+          <form id="setup_form" class="card pad tl-card tl-card-controls setup-inputs">
             <div class="setup-surface-header">
               <div><p class="eyebrow">Datos de medición</p><h2>Ajuste en seis pasos</h2><p class="small muted">Elige un perfil inicial y sustituye después sus valores predeterminados por las mediciones que realmente tomes.</p></div>
             </div>
+            <div class="setup-calculation-status">
+              <p id="calculation_basis" class="calculation-basis">Vista previa basada en los valores predeterminados del perfil. Introduce tus mediciones antes de usar el patrón de compensación.</p>
+              <span id="result_status" data-setup-status role="status">Listo</span>
+            </div>
+            <nav id="setup_steps" class="setup-step-navigation" aria-label="Los seis pasos del ajuste">
+              <button type="button" data-setup-step="0" aria-controls="setup_panel_0" aria-current="step"><span class="setup-step-index" aria-hidden="true">01</span><span>Cuerdas</span></button>
+              <button type="button" data-setup-step="1" aria-controls="setup_panel_1"><span class="setup-step-index" aria-hidden="true">02</span><span>Radio</span></button>
+              <button type="button" data-setup-step="2" aria-controls="setup_panel_2"><span class="setup-step-index" aria-hidden="true">03</span><span>Curvatura</span></button>
+              <button type="button" data-setup-step="3" aria-controls="setup_panel_3"><span class="setup-step-index" aria-hidden="true">04</span><span>Puente</span></button>
+              <button type="button" data-setup-step="4" aria-controls="setup_panel_4"><span class="setup-step-index" aria-hidden="true">05</span><span>Cejuela</span></button>
+              <button type="button" data-setup-step="5" aria-controls="setup_panel_5"><span class="setup-step-index" aria-hidden="true">06</span><span>Octavación</span></button>
+            </nav>
             <div class="setup-step-list">
-              <details class="setup-step" open aria-labelledby="step-length-title">
-                <summary><span class="step-number">01</span><span><strong id="step-length-title">Longitud de cuerda</strong><small>Desde la referencia de la cejuela hasta la referencia de la selleta, para cada cuerda.</small></span></summary>
+              <section id="setup_panel_0" class="setup-step" aria-labelledby="step-length-title">
+                <header class="setup-step-header"><span class="step-number">01</span><span><strong id="step-length-title" role="heading" aria-level="2" tabindex="-1">Longitud de cuerda</strong><small>Desde la referencia de la cejuela hasta la referencia de la selleta, para cada cuerda.</small></span></header>
                 <div class="setup-step-body">
+                  <section class="card pad tl-card setup-profile-control" aria-labelledby="instrument-control-title">
+                    <div class="setup-profile-control-heading"><p class="eyebrow">Instrumento</p><h2 id="instrument-control-title">Elige un ajuste inicial</h2><p class="small muted">Los perfiles proporcionan valores iniciales editables. Tus mediciones los sustituyen a medida que las introduces.</p></div>
+                    <div class="profile-control-row">
+                      <label class="profile-select-field"><span>Perfil del instrumento</span><select id="instrument_profile"></select></label>
+                      <button id="customize_profile" type="button" class="secondary-button">Cambiar órdenes y número de cuerdas</button>
+                    </div>
+                    <section id="setup_scale_controls" class="setup-scale-controls" data-invalid-message="Introduce una longitud de escala mayor que cero.">
+                      <div class="scale-layout-choice" role="group" aria-label="Disposición de escala">
+                        <button type="button" data-scale-mode="single" aria-pressed="true">Escala única</button>
+                        <button type="button" data-scale-mode="multi" aria-pressed="false">Multiescala</button>
+                      </div>
+                      <label id="common_scale_field"><span data-length-label="Longitud de escala">Longitud de escala (mm)</span><input id="common_scale_length" type="number" min="0.001" step="0.1" list="scale_starting_lengths"><small>Se aplica a todas las cuerdas.</small><small>Elige una longitud sugerida o introduce otra.</small></label>
+                      <datalist id="scale_starting_lengths"></datalist>
+                      <div id="single_scale_confirmation" class="scale-confirmation" hidden>
+                        <p>Estas cuerdas tienen longitudes diferentes. Elige la longitud que se aplicará a todas.</p>
+                        <label><span data-length-label="Longitud de escala">Longitud de escala (mm)</span><input id="confirmed_scale_length" type="number" min="0.001" step="0.1" list="scale_starting_lengths"></label>
+                        <div class="scale-layout-choice"><button id="apply_common_scale" type="button">Aplicar a todas las cuerdas</button><button id="cancel_common_scale" type="button">Mantener multiescala</button></div>
+                      </div>
+                    </section>
+                    <section id="custom_profile_builder" class="custom-profile-builder" hidden aria-labelledby="custom-profile-title">
+                      <div><p class="eyebrow">Configuración personalizada</p><h3 id="custom-profile-title">Órdenes y cuerdas físicas</h3><p class="small muted">Elige hasta ocho órdenes. Cada orden puede contener una o dos cuerdas, con un máximo de dieciséis cuerdas físicas.</p></div>
+                      <label class="custom-course-count"><span>Órdenes</span><input id="custom_course_count" type="number" min="1" max="8" step="1"></label>
+                      <div id="custom_course_members" class="custom-course-members"></div>
+                      <button id="build_custom_profile" type="button" class="secondary-button">Usar estructura personalizada</button>
+                    </section>
+                  </section>
+                  <details class="setup-reference-specs">
+                    <summary>Especificaciones de referencia</summary>
+                    <section id="stock_specs" class="card pad tl-card stock-specs" aria-labelledby="stock-specs-title">
+                      <div class="stock-specs-heading">
+                        <h2 id="stock-specs-title">El punto de partida de cada ajuste</h2>
+                        <p class="small muted">Especificaciones de fábrica por instrumento. Elige el tuyo; tus mediciones las sustituirán.</p>
+                      </div>
+                      <div id="stock_spec_cards" class="stock-spec-cards"></div>
+                      <div class="stock-steps-strip" hidden aria-label="Los seis pasos del ajuste">
+                        <span class="stock-step"><em>1</em>Cuerdas</span>
+                        <span class="stock-step"><em>2</em>Radio</span>
+                        <span class="stock-step"><em>3</em>Curvatura</span>
+                        <span class="stock-step"><em>4</em>Puente</span>
+                        <span class="stock-step"><em>5</em>Cejuela</span>
+                        <span class="stock-step"><em>6</em>Octavación</span>
+                        <span class="stock-steps-note">La forma general; las instrucciones de taller contienen los detalles.</span>
+                      </div>
+                      <div class="stock-specs-cta">
+                        <button id="stock_specs_measure" type="button" class="primary-button">Medir este instrumento</button>
+                        <p class="small muted">Las especificaciones de fábrica se usan hasta que las sustituyas, y los resultados indican el origen de cada dato.</p>
+                      </div>
+                    </section>
+                  </details>
                   <div class="string-source-control">
                     <label><span>Datos de masa del fabricante</span><select id="tension_data_source"><option value="daddario_ej16">D’Addario EJ16</option><option value="daddario_exl110">D’Addario EXL110 eléctrica</option><option value="daddario_ej38">D’Addario EJ38 de 12 cuerdas</option><option value="daddario_exl170">D’Addario EXL170 para bajo</option><option value="daddario_ej45">D’Addario EJ45 clásica</option><option value="daddario_ej65t">D’Addario EJ65T para ukelele tenor</option><option value="daddario_ej74">D’Addario EJ74 para mandolina</option><option value="stringjoy_nickel">Stringjoy lisas / níquel</option><option value="stringjoy_bronze">Stringjoy lisas / bronce</option><option value="estimate">Estimación por calibre</option></select></label>
                     <p class="step-note">Se usa la masa lineal publicada cuando hay una cuerda coincidente. La rigidez axial se estima a partir de la construcción salvo que introduzcas un valor medido.</p>
@@ -112,12 +136,11 @@
                     <label><span>Traste neutro para longitudes de cuerda desiguales</span><input id="fan_neutral_fret" type="number" min="0" max="30" step="1"></label>
                     <p class="step-note">Solo se usa cuando las longitudes de cuerda son distintas; la cejuela, los trastes y la selleta se abren en abanico alrededor de este traste perpendicular.</p>
                   </div>
-                  <button id="continue_to_radius" type="button" class="secondary-button step-next-button">Siguiente: radio</button>
                 </div>
-              </details>
+              </section>
 
-              <details id="radius_step" class="setup-step" aria-labelledby="step-radius-title">
-                <summary><span class="step-number">02</span><span><strong id="step-radius-title">Radio</strong><small>Diapasón con radio constante, compuesto o plano.</small></span></summary>
+              <section id="setup_panel_1" class="setup-step" aria-labelledby="step-radius-title" hidden>
+                <header class="setup-step-header"><span class="step-number">02</span><span><strong id="step-radius-title" role="heading" aria-level="2" tabindex="-1">Radio</strong><small>Diapasón con radio constante, compuesto o plano.</small></span></header>
                 <div class="setup-step-body">
                   <div class="radius-choice">
                     <label><input type="radio" name="radius_kind" value="simple"><span><strong>Radio constante</strong><small>Un solo radio desde la cejuela hasta el puente.</small></span></label>
@@ -131,18 +154,18 @@
                   </div>
                   <p class="step-note">Milímetros: 12 in = 304,8 mm.</p>
                 </div>
-              </details>
+              </section>
 
-              <details class="setup-step" aria-labelledby="step-relief-title">
-                <summary><span class="step-number">03</span><span><strong id="step-relief-title">Curvatura</strong><small>Curvatura del mástil, medida como valor máximo y traste.</small></span></summary>
+              <section id="setup_panel_2" class="setup-step" aria-labelledby="step-relief-title" hidden>
+                <header class="setup-step-header"><span class="step-number">03</span><span><strong id="step-relief-title" role="heading" aria-level="2" tabindex="-1">Curvatura</strong><small>Curvatura del mástil, medida como valor máximo y traste.</small></span></header>
                 <div class="setup-step-body"><div class="field-row">
                   <label><span data-length-label="Curvatura">Curvatura (mm)</span><input id="relief_amount_mm" type="number" min="0" step="0.01"></label>
                   <label><span>Medida en el traste</span><input id="relief_peak_fret" type="number" min="2" step="1"></label>
                 </div><p class="step-note">Coloca una cejilla en el traste 1, pisa la cuerda en el último traste y mide desde la parte superior del traste hasta la parte inferior de la cuerda en el traste seleccionado.</p></div>
-              </details>
+              </section>
 
-              <details class="setup-step" aria-labelledby="step-bridge-title">
-                <summary><span class="step-number">04</span><span><strong id="step-bridge-title">Acción en el puente</strong><small>Coloca una cejilla en el traste 1 y mide después en el traste 12.</small></span></summary>
+              <section id="setup_panel_3" class="setup-step" aria-labelledby="step-bridge-title" hidden>
+                <header class="setup-step-header"><span class="step-number">04</span><span><strong id="step-bridge-title" role="heading" aria-level="2" tabindex="-1">Acción en el puente</strong><small>Coloca una cejilla en el traste 1 y mide después en el traste 12.</small></span></header>
                 <div class="setup-step-body">
                   <div class="field-row field-row-two">
                     <label><span id="action_first_string_label">Primera cuerda (mm)</span><input id="action_first_string_mm" type="number" min="0" step="0.01"></label>
@@ -160,21 +183,60 @@
                     <div id="sparse_action_readings" class="sparse-action-readings" aria-live="polite"></div>
                   </details>
                 </div>
-              </details>
+              </section>
 
-              <details class="setup-step" aria-labelledby="step-nut-title">
-                <summary><span class="step-number">05</span><span><strong id="step-nut-title">Acción en la cejuela</strong><small>Altura de la cuerda al aire sobre el traste 1.</small></span></summary>
+              <section id="setup_panel_4" class="setup-step" aria-labelledby="step-nut-title" hidden>
+                <header class="setup-step-header"><span class="step-number">05</span><span><strong id="step-nut-title" role="heading" aria-level="2" tabindex="-1">Acción en la cejuela</strong><small>Altura de la cuerda al aire sobre el traste 1.</small></span></header>
                 <div class="setup-step-body"><div class="field-row field-row-two">
                   <label><span id="nut_action_first_string_label">Primera cuerda (mm)</span><input id="nut_action_first_string_mm" type="number" min="0" step="0.01"></label>
                   <label><span id="nut_action_last_string_label">Última cuerda (mm)</span><input id="nut_action_last_string_mm" type="number" min="0" step="0.01"></label>
                 </div><p class="step-note">Mide verticalmente desde la parte superior del traste 1 hasta la parte inferior de cada cuerda exterior al aire. La calculadora añade el diámetro de cada cuerda para que la parte superior de las cuerdas siga el radio seleccionado.</p></div>
-              </details>
+              </section>
 
-              <details class="setup-step" aria-labelledby="step-intonation-title">
-                <summary><span class="step-number">06</span><span><strong id="step-intonation-title">Revisar la compensación y comprobar la octavación</strong><small>Usa el patrón de cejuela y selleta y comprueba después el instrumento real.</small></span></summary>
+              <section id="setup_panel_5" class="setup-step" aria-labelledby="step-intonation-title" hidden>
+                <header class="setup-step-header"><span class="step-number">06</span><span><strong id="step-intonation-title" role="heading" aria-level="2" tabindex="-1">Revisar la compensación y comprobar la octavación</strong><small>Usa el patrón de cejuela y selleta y comprueba después el instrumento real.</small></span></header>
                 <div class="setup-step-body">
                   <p class="step-note">El patrón calculado es una referencia inicial para el corte. Comprueba cada cuerda pisada con un afinador estroboscópico antes de realizar un corte irreversible.</p>
                   <a class="result-link" href="#results-title">Ver la compensación cuerda por cuerda</a>
+                  <section class="card pad tl-card setup-geometry-card" aria-labelledby="geometry-title" data-nut-width-mm="5" data-saddle-insert-thickness="6">
+                    <div class="setup-surface-header">
+                      <div><p class="eyebrow">Geometría física</p><h2 id="geometry-title">De la cejuela a la selleta</h2><p class="small muted">La acción es la distancia vertical desde la parte superior del traste hasta la parte inferior de la cuerda.</p></div>
+                    </div>
+                    <div class="setup-geometry-layout">
+                      <div class="setup-geometry-figure">
+                        <div id="setup_geometry_svg" aria-live="polite"></div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="card pad tl-card tl-card-output setup-results" aria-labelledby="results-title">
+                    <div class="results-heading"><div><p class="eyebrow">Resultado calculado</p><h2 id="results-title">Ajuste y octavación cuerda por cuerda</h2></div><span data-setup-status>Listo</span></div>
+                    <div class="table-wrap">
+                      <table>
+                        <thead><tr><th>Cuerda</th><th>Calibre</th><th>Longitud</th><th>Acción en la cejuela · traste 1</th><th>Acción al aire en el traste 12</th><th>Comp. cejuela</th><th>Comp. selleta</th><th>Error máximo</th><th>Fuente de la tensión</th></tr></thead>
+                        <tbody id="result_rows"></tbody>
+                      </table>
+                    </div>
+                    <div id="mobile_result_cards" class="mobile-result-cards" aria-label="Resultados del ajuste cuerda por cuerda"></div>
+                    <p class="results-footnote">La compensación de Gore está activa. El perfil de acción de las cuerdas al aire usa la geometría de círculos, elipses y líneas del libro, calibrada con las mediciones de acción introducidas. La masa lineal del fabricante es la referencia para la tensión de la cuerda al aire; la rigidez axial continúa siendo una estimación identificada como tal hasta que se proporcionen datos de rigidez medidos. Comprueba el resultado con un afinador estroboscópico y el instrumento real antes de cortar.</p>
+                  </section>
+
+                  <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
+                    <p class="eyebrow">Resumen de mediciones</p>
+                    <h2 id="measurement-rail-title">Ajuste actual</h2>
+                    <dl>
+                      <div><dt><span>Curvatura</span><small id="rail_relief_source" class="provenance-badge">Valor predeterminado del perfil</small></dt><dd id="rail_relief">0.25 mm @ fret 7</dd></div>
+                      <div><dt><span>Acción en la cejuela</span><small id="rail_nut_action_source" class="provenance-badge">Valor predeterminado del perfil</small></dt><dd id="rail_nut_action">—</dd></div>
+                      <div><dt><span>Acción objetivo</span><small id="rail_action_source" class="provenance-badge">Valor predeterminado del perfil</small></dt><dd id="rail_action">—</dd></div>
+                      <div><dt><span>Error máximo de octavación</span><small class="provenance-badge calculated">Calculado</small></dt><dd id="rail_error">—</dd></div>
+                      <div><dt><span>Intervalo de compensación de la cejuela</span><small class="provenance-badge calculated">Calculado</small></dt><dd id="rail_nut_compensation">—</dd></div>
+                      <div><dt><span>Intervalo de compensación de la selleta</span><small class="provenance-badge calculated">Calculado</small></dt><dd id="rail_saddle_compensation">—</dd></div>
+                      <div><dt><span>Longitud de escala</span><small id="rail_scale_source" class="provenance-badge">Valor predeterminado del perfil</small></dt><dd id="rail_scale_length">—</dd></div>
+                      <div><dt><span>Patrón de compensación</span><small class="provenance-badge calculated">Método</small></dt><dd id="rail_calculation_path">Gore</dd></div>
+                    </dl>
+                    <p class="geometry-note"><strong>La acción se mide verticalmente.</strong> Las dimensiones de anchura y de las piezas no se usan como medidas de acción.</p>
+                  </aside>
+
                   <details class="advanced-model-settings">
                     <summary>Ajustes avanzados del modelo de Gore</summary>
                     <div class="field-row field-row-two">
@@ -184,38 +246,13 @@
                     <p class="step-note">Estos valores definen qué parte del instrumento se incluye en el optimizador determinista.</p>
                   </details>
                 </div>
-              </details>
+              </section>
+            </div>
+            <div id="setup_step_actions" class="setup-step-actions">
+              <button id="setup_previous" type="button" class="secondary-button" disabled>Atrás</button>
+              <button id="setup_next" type="button" class="primary-button" data-continue-label="Continuar" data-review-label="Revisar resultados">Continuar</button>
             </div>
           </form>
-
-          <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
-            <p class="eyebrow">Resumen de mediciones</p>
-            <h2 id="measurement-rail-title">Ajuste actual</h2>
-            <dl>
-              <div><dt><span>Curvatura</span><small id="rail_relief_source" class="provenance-badge">Valor predeterminado del perfil</small></dt><dd id="rail_relief">0.25 mm @ fret 7</dd></div>
-              <div><dt><span>Acción en la cejuela</span><small id="rail_nut_action_source" class="provenance-badge">Valor predeterminado del perfil</small></dt><dd id="rail_nut_action">—</dd></div>
-              <div><dt><span>Acción objetivo</span><small id="rail_action_source" class="provenance-badge">Valor predeterminado del perfil</small></dt><dd id="rail_action">—</dd></div>
-              <div><dt><span>Error máximo de octavación</span><small class="provenance-badge calculated">Calculado</small></dt><dd id="rail_error">—</dd></div>
-              <div><dt><span>Intervalo de compensación de la cejuela</span><small class="provenance-badge calculated">Calculado</small></dt><dd id="rail_nut_compensation">—</dd></div>
-              <div><dt><span>Intervalo de compensación de la selleta</span><small class="provenance-badge calculated">Calculado</small></dt><dd id="rail_saddle_compensation">—</dd></div>
-              <div><dt><span>Longitud de escala</span><small id="rail_scale_source" class="provenance-badge">Valor predeterminado del perfil</small></dt><dd id="rail_scale_length">—</dd></div>
-              <div><dt><span>Patrón de compensación</span><small class="provenance-badge calculated">Método</small></dt><dd id="rail_calculation_path">Gore</dd></div>
-            </dl>
-            <p class="geometry-note"><strong>La acción se mide verticalmente.</strong> Las dimensiones de anchura y de las piezas no se usan como medidas de acción.</p>
-          </aside>
-
-
-          <section class="card pad tl-card tl-card-output setup-results" aria-labelledby="results-title">
-            <div class="results-heading"><div><p class="eyebrow">Resultado calculado</p><h2 id="results-title">Ajuste y octavación cuerda por cuerda</h2></div><span id="result_status" role="status">Listo</span></div>
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>Cuerda</th><th>Calibre</th><th>Longitud</th><th>Acción en la cejuela · traste 1</th><th>Acción al aire en el traste 12</th><th>Comp. cejuela</th><th>Comp. selleta</th><th>Error máximo</th><th>Fuente de la tensión</th></tr></thead>
-                <tbody id="result_rows"></tbody>
-              </table>
-            </div>
-            <div id="mobile_result_cards" class="mobile-result-cards" aria-label="Resultados del ajuste cuerda por cuerda"></div>
-            <p class="results-footnote">La compensación de Gore está activa. El perfil de acción de las cuerdas al aire usa la geometría de círculos, elipses y líneas del libro, calibrada con las mediciones de acción introducidas. La masa lineal del fabricante es la referencia para la tensión de la cuerda al aire; la rigidez axial continúa siendo una estimación identificada como tal hasta que se proporcionen datos de rigidez medidos. Comprueba el resultado con un afinador estroboscópico y el instrumento real antes de cortar.</p>
-          </section>
 
           <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="es">
   <h2>Calculadora de ajuste de guitarra</h2>

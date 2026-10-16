@@ -1,11 +1,11 @@
-import { stockMeasurementsDraftApply, stockMeasurementsDraftBuild, stockKindResolve } from "./resonate_stock_measurements.js?rev=88a3838e0e5a";
-import { stockMeasurementsPromptOpen } from "./resonate_stock_measurements_prompt.js?rev=88a3838e0e5a";
-import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=88a3838e0e5a";
-import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=88a3838e0e5a";
-import { stockLongConfirmationApply, stockLongConfirmationClear, stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=88a3838e0e5a";
-import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js?rev=88a3838e0e5a";
-import { stockPeakContextDiffers } from "./resonate_stock_peak_context.js?rev=88a3838e0e5a";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=88a3838e0e5a";
+import { stockMeasurementsDraftApply, stockMeasurementsDraftBuild, stockKindResolve } from "./resonate_stock_measurements.js?rev=62b34eeddf93";
+import { stockMeasurementsPromptOpen } from "./resonate_stock_measurements_prompt.js?rev=62b34eeddf93";
+import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=62b34eeddf93";
+import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=62b34eeddf93";
+import { stockLongConfirmationApply, stockLongConfirmationClear, stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=62b34eeddf93";
+import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js?rev=62b34eeddf93";
+import { stockPeakContextDiffers } from "./resonate_stock_peak_context.js?rev=62b34eeddf93";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=62b34eeddf93";
 export function stockMeasurementsPanelInitialize(state, dependencies) {
     const panel = document.getElementById("stock_measurements");
     if (!panel || panel.dataset.bound)

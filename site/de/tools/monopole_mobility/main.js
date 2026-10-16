@@ -174,6 +174,41 @@ const buttons = {
 
 const saveRunner = readMonopoleSaveRunner();
 const perTabSession = readMonopolePerTabSession();
+const lengthFields = createMonopoleLengthFields();
+
+function createMonopoleLengthFields() {
+  return window.ToolCanonicalLengthFields?.createCanonicalLengthFields({
+    fields: {
+      deflection: {
+        input: fields.deflection,
+        relatedInputs: [sliders.deflection],
+        label: document.querySelector('label[for="deflection_field"]')?.firstChild,
+      },
+    },
+  });
+}
+
+function registerMonopoleLengthUnits() {
+  if (!lengthFields) return;
+  window.ToolLengthUnits?.register({
+    readUnit: () => lengthFields.unit,
+    applyUnit: applyMonopoleLengthUnit,
+  });
+}
+
+function applyMonopoleLengthUnit(unit) {
+  lengthFields.applyUnit(unit);
+  compute();
+}
+
+function readMonopoleDeflectionMm() {
+  return lengthFields ? lengthFields.read("deflection") : parseFloat(fields.deflection.value);
+}
+
+function readMonopoleInputText(input) {
+  if (input === fields.deflection && lengthFields) return lengthFields.readText("deflection");
+  return input.value;
+}
 
 const formatter = (options = {}) =>
   new Intl.NumberFormat(monopoleRuntimeMessages.locale, {
@@ -309,7 +344,7 @@ function compute() {
 
   const staticInputs = {
     freq: parseFloat(fields.freq.value),
-    deflection: parseFloat(fields.deflection.value),
+    deflection: readMonopoleDeflectionMm(),
     mass: parseFloat(fields.mass.value),
   };
 
@@ -379,7 +414,7 @@ function persistMonopolePerTabSession() {
 }
 
 function readMonopoleInputValues(source) {
-  return Object.fromEntries(Object.entries(source).map(([key, input]) => [key, input.value]));
+  return Object.fromEntries(Object.entries(source).map(([key, input]) => [key, readMonopoleInputText(input)]));
 }
 
 function restoreMonopolePerTabSession() {
@@ -397,6 +432,10 @@ function restoreMonopolePerTabSession() {
 
 function writeMonopoleInputValues(target, values) {
   Object.entries(values || {}).forEach(([key, value]) => {
+    if (target[key] === fields.deflection) {
+      writeMonopoleInputPair(sliders.deflection, fields.deflection, value);
+      return;
+    }
     if (target[key]) {
       target[key].value = String(value ?? "");
     }
@@ -430,10 +469,9 @@ function setOutputs(value) {
 
 function applyStaticDefaults() {
   sliders.freq.value = defaults.static.freq;
-  sliders.deflection.value = defaults.static.deflection;
+  writeMonopoleInputPair(sliders.deflection, fields.deflection, defaults.static.deflection);
   sliders.mass.value = defaults.static.mass;
   fields.freq.value = defaults.static.freq;
-  fields.deflection.value = defaults.static.deflection;
   fields.mass.value = defaults.static.mass;
 }
 
@@ -571,7 +609,7 @@ function readCurrentMonopoleDefaultsMatch() {
   if (currentMode === modes.STATIC) {
     return matchesStaticDefaults({
       freq: parseFloat(fields.freq.value),
-      deflection: parseFloat(fields.deflection.value),
+      deflection: readMonopoleDeflectionMm(),
       mass: parseFloat(fields.mass.value),
     });
   }
@@ -596,7 +634,7 @@ function readCurrentMonopoleSaveInputs() {
   if (currentMode === modes.STATIC) {
     return {
       freqHz: fields.freq.value,
-      deflectionMm: fields.deflection.value,
+      deflectionMm: readMonopoleInputText(fields.deflection),
       testMassKg: fields.mass.value,
     };
   }
@@ -678,6 +716,10 @@ function applyMonopoleDynamicSnapshotInputs(inputs) {
 }
 
 function writeMonopoleInputPair(slider, field, value) {
+  if (field === fields.deflection && lengthFields && Number.isFinite(parseFloat(value))) {
+    lengthFields.write("deflection", parseFloat(value));
+    return;
+  }
   const nextValue = String(value || "").trim();
   slider.value = nextValue;
   field.value = nextValue;
@@ -796,6 +838,7 @@ typeSelect.addEventListener("change", compute);
 applyStaticDefaults();
 applyDynamicDefaults();
 restoreMonopolePerTabSession();
+registerMonopoleLengthUnits();
 void initializeMonopoleSaveSurface();
 updateInstrumentLabel();
 setMode(currentMode);

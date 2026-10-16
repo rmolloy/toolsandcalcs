@@ -2,6 +2,7 @@
 /*
 © 2026 Rick Molloy. All rights reserved.
 */
+const sharedLengthUnits = globalThis.ToolLengthUnits;
 const MM_PER_INCH = 25.4;
 const DEFAULT_SCALE_MM = 650;
 const DEFAULT_FRET_COUNT = 24;
@@ -25,18 +26,44 @@ const fretRuntimeMessages = Object.freeze({
     const status = document.getElementById("result_status");
     const fretRows = document.getElementById("fret_rows");
     const compRows = document.getElementById("comp_rows");
-    scaleInput.addEventListener("input", render);
-    unitSelect.addEventListener("change", render);
+    let scaleMm = scaleLengthReadInMillimeters(readUnit());
+    scaleInput.addEventListener("input", readScaleAndRender);
+    unitSelect.addEventListener("change", writeScaleAndRender);
     resetBtn.addEventListener("click", resetDefaults);
     render();
+    registerSharedLengthUnits();
+    function registerSharedLengthUnits() {
+        var _a;
+        if (!sharedLengthUnits)
+            return;
+        sharedLengthUnits.register({ readUnit, applyUnit });
+        const localUnitField = (_a = unitSelect.closest) === null || _a === void 0 ? void 0 : _a.call(unitSelect, "label");
+        if (localUnitField)
+            localUnitField.style.display = "none";
+    }
+    function applyUnit(unit) {
+        unitSelect.value = unit;
+        writeScaleAndRender();
+    }
     function resetDefaults() {
-        scaleInput.value = String(DEFAULT_SCALE_MM);
-        unitSelect.value = "mm";
+        scaleMm = DEFAULT_SCALE_MM;
+        unitSelect.value = (sharedLengthUnits === null || sharedLengthUnits === void 0 ? void 0 : sharedLengthUnits.read()) || "mm";
+        writeScaleAndRender();
+    }
+    function readScaleAndRender() {
+        scaleMm = scaleLengthReadInMillimeters(readUnit());
+        render();
+    }
+    function writeScaleAndRender() {
+        const factor = readUnit() === "in" ? MM_PER_INCH : 1;
+        scaleInput.value = Number.isFinite(scaleMm) ? String(Number((scaleMm / factor).toFixed(6))) : "";
+        scaleInput.min = String(400 / factor);
+        scaleInput.max = String(1000 / factor);
+        scaleInput.step = readUnit() === "in" ? "0.01" : "1";
         render();
     }
     function render() {
         const unit = readUnit();
-        const scaleMm = scaleLengthReadInMillimeters(unit);
         if (!Number.isFinite(scaleMm) || scaleMm <= 0) {
             status.textContent = fretRuntimeMessages.enterValidScaleLength;
             return;
