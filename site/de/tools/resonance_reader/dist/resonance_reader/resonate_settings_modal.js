@@ -1,8 +1,8 @@
-import { SETTINGS_IDS } from "./resonate_settings_ids.js";
-import { settingsAudioInputBind, settingsAudioInputsRefresh, } from "./resonate_audio_input_select.js";
-import { settingsBooleanPatchBuild, settingsDebugPatchBuild, settingsProfileValueRead, settingsSmoothingValueRead, } from "./resonate_settings_model.js";
-import { settingsPipelineRefresh, } from "./resonate_settings_refresh.js";
-export { settingsBooleanPatchBuild, settingsDebugPatchBuild, settingsFiniteNumberPatchBuild, settingsNumberPatchBuild, settingsPositiveNumberPatchBuild, settingsProfilePatchBuild, settingsProfileValueRead, settingsSmoothingPatchBuild, } from "./resonate_settings_model.js";
+import { SETTINGS_IDS } from "./resonate_settings_ids.js?rev=ad8911223a7b";
+import { settingsAudioInputBind, settingsAudioInputsRefresh, } from "./resonate_audio_input_select.js?rev=ad8911223a7b";
+import { settingsBooleanPatchBuild, settingsDebugPatchBuild, settingsProfileValueRead, settingsSmoothingValueRead, } from "./resonate_settings_model.js?rev=ad8911223a7b";
+import { settingsPipelineRefresh, } from "./resonate_settings_refresh.js?rev=ad8911223a7b";
+export { settingsBooleanPatchBuild, settingsDebugPatchBuild, settingsFiniteNumberPatchBuild, settingsNumberPatchBuild, settingsPositiveNumberPatchBuild, settingsProfilePatchBuild, settingsProfileValueRead, settingsSmoothingPatchBuild, } from "./resonate_settings_model.js?rev=ad8911223a7b";
 export function settingsModalBind(deps) {
     const dialog = settingsDialogElementGet();
     const trigger = buttonElementGet(SETTINGS_IDS.trigger);

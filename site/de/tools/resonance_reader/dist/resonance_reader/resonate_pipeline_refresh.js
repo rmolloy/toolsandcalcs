@@ -1,5 +1,5 @@
-import { demoWaveBuildFromMeasureMode } from "./resonate_demo_wave.js";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+import { demoWaveBuildFromMeasureMode } from "./resonate_demo_wave.js?rev=ad8911223a7b";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=ad8911223a7b";
 export async function resonatePipelineRefreshAllFromState(deps) {
     deps.prepareBoundaries?.();
     if (!deps.state.currentWave) {

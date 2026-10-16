@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=ad8911223a7b";
 export function updateWaveTransportLabels() {
     const FFTAudio = window.FFTAudio;
     if (!FFTAudio)

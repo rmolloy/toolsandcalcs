@@ -1,6 +1,6 @@
-import { resolveColorRgbaFromRole } from "./resonate_color_roles.js";
-import { resonanceSpectrumLineWidthResolve } from "./resonate_debug_flags.js";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+import { resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=ad8911223a7b";
+import { resonanceSpectrumLineWidthResolve } from "./resonate_debug_flags.js?rev=ad8911223a7b";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=ad8911223a7b";
 const ENERGY_COLORS = {
     fundamental: resolveColorRgbaFromRole("stringFundamental", 0.9),
     secondPartial: resolveColorRgbaFromRole("secondPartial", 0.9),

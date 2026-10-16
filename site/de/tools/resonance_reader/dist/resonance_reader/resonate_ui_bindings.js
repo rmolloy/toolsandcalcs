@@ -1,20 +1,20 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
-import { settingsModalBind } from "./resonate_settings_modal.js";
-import { readResonanceIdleStatus, saveStateMarkCleanAndRender, saveStateMarkDirtyAndRender, saveStatePipelineDirtySubscriptionAttach, } from "./resonate_save_button.js";
-import { perTabSessionLifecyclePersistenceAttach, perTabSessionPersist, perTabSessionPersistenceExpose, } from "./resonate_per_tab_persistence.js";
-import { recordingMenuInitialWidthSync } from "./resonate_recording_menu.js";
-import { bindTakeOverlayControls, takeOverlayControlsRender, } from "./resonate_take_overlay_controls.js";
-import { bindImport } from "./resonate_import_control.js";
-import { bindRecord } from "./resonate_recording_control.js";
-import { bindWaveTransport } from "./resonate_wave_transport.js";
-import { restoreNotebookConnectDraftIntoUi, restoreNotebookEventIntoUi, restorePerTabSessionIntoUi, } from "./resonate_restore_ui.js";
-import { bindSaveAudio, refreshResonanceSaveSurfaceAndRender, } from "./resonate_save_control.js";
-import { bindMeasureMode } from "./resonate_measure_mode_control.js";
-import { resonanceToolVisibilityBind } from "./resonate_tool_visibility.js";
-export { importControlUsesNativeLabel, importFileInputPrepare, } from "./resonate_import_control.js";
-export { readResonanceIdleStatus } from "./resonate_save_button.js";
-export { restoreNotebookConnectDraftIntoUi } from "./resonate_restore_ui.js";
-export { measureModeChangeApply, measureModeChangeShouldRenderMock, measureModeChangeShouldReseedDemoWave, measureModeChangeShouldRunPipelineForDemoWave, measureModeStatePreserveCustomCardsOnly, measureModeStateResetForDemoWave, measureModeViewRangesReset, peakAnalysisSourceMeasureModeSync, } from "./resonate_measure_mode_control.js";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=ad8911223a7b";
+import { settingsModalBind } from "./resonate_settings_modal.js?rev=ad8911223a7b";
+import { readResonanceIdleStatus, saveStateMarkCleanAndRender, saveStateMarkDirtyAndRender, saveStatePipelineDirtySubscriptionAttach, } from "./resonate_save_button.js?rev=ad8911223a7b";
+import { perTabSessionLifecyclePersistenceAttach, perTabSessionPersist, perTabSessionPersistenceExpose, } from "./resonate_per_tab_persistence.js?rev=ad8911223a7b";
+import { recordingMenuInitialWidthSync } from "./resonate_recording_menu.js?rev=ad8911223a7b";
+import { bindTakeOverlayControls, takeOverlayControlsRender, } from "./resonate_take_overlay_controls.js?rev=ad8911223a7b";
+import { bindImport } from "./resonate_import_control.js?rev=ad8911223a7b";
+import { bindRecord } from "./resonate_recording_control.js?rev=ad8911223a7b";
+import { bindWaveTransport } from "./resonate_wave_transport.js?rev=ad8911223a7b";
+import { restoreNotebookConnectDraftIntoUi, restoreNotebookEventIntoUi, restorePerTabSessionIntoUi, } from "./resonate_restore_ui.js?rev=ad8911223a7b";
+import { bindSaveAudio, refreshResonanceSaveSurfaceAndRender, } from "./resonate_save_control.js?rev=ad8911223a7b";
+import { bindMeasureMode } from "./resonate_measure_mode_control.js?rev=ad8911223a7b";
+import { resonanceToolVisibilityBind } from "./resonate_tool_visibility.js?rev=ad8911223a7b";
+export { importControlUsesNativeLabel, importFileInputPrepare, } from "./resonate_import_control.js?rev=ad8911223a7b";
+export { readResonanceIdleStatus } from "./resonate_save_button.js?rev=ad8911223a7b";
+export { restoreNotebookConnectDraftIntoUi } from "./resonate_restore_ui.js?rev=ad8911223a7b";
+export { measureModeChangeApply, measureModeChangeShouldRenderMock, measureModeChangeShouldReseedDemoWave, measureModeChangeShouldRunPipelineForDemoWave, measureModeStatePreserveCustomCardsOnly, measureModeStateResetForDemoWave, measureModeViewRangesReset, peakAnalysisSourceMeasureModeSync, } from "./resonate_measure_mode_control.js?rev=ad8911223a7b";
 export function uiBindingsAttach(deps) {
     const attach = async () => {
         const restoredNotebookDraft = restoreNotebookConnectDraftIntoUi(deps);

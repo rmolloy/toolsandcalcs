@@ -1,5 +1,5 @@
-@import url("../common/styles.css");
-@import url("../common/theme_resonance_shared.css");
+@import url("../common/styles.css?rev=ad8911223a7b");
+@import url("../common/theme_resonance_shared.css?rev=ad8911223a7b");
 
 :root {
   --tl-topbar-h: 0px;

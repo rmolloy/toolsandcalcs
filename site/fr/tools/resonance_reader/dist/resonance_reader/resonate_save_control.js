@@ -1,6 +1,6 @@
-import { readResonanceIdleStatus, saveButtonElementGet, saveButtonRenderFromState, saveStateMarkCleanAndRender, saveStateRead, saveSurfaceHintWrite, saveSurfaceModeWrite, } from "./resonate_save_button.js";
-import { renderResonanceSaveHelp } from "./resonate_save_help.js";
-import { resonanceSaveRunnerCreate } from "./resonate_save_target.js";
+import { readResonanceIdleStatus, saveButtonElementGet, saveButtonRenderFromState, saveStateMarkCleanAndRender, saveStateRead, saveSurfaceHintWrite, saveSurfaceModeWrite, } from "./resonate_save_button.js?rev=ad8911223a7b";
+import { renderResonanceSaveHelp } from "./resonate_save_help.js?rev=ad8911223a7b";
+import { resonanceSaveRunnerCreate } from "./resonate_save_target.js?rev=ad8911223a7b";
 const resonanceSaveRunner = resonanceSaveRunnerCreate();
 export function bindSaveAudio(deps) {
     const btnSave = document.getElementById("btn_save_audio");

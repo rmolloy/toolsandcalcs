@@ -1,5 +1,5 @@
-import { renderPayloadBuildFromState } from "./resonate_render_events.js?rev=62b34eeddf93";
-import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js?rev=62b34eeddf93";
+import { renderPayloadBuildFromState } from "./resonate_render_events.js?rev=ad8911223a7b";
+import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js?rev=ad8911223a7b";
 const RESONANCE_NOTEBOOK_CONNECT_DRAFT_KEY = "resonanceNotebookConnectDraft";
 export function persistResonanceNotebookConnectDraft(runtime, state, recordingLabel) {
     const storage = readResonanceNotebookConnectDraftStorage(runtime);

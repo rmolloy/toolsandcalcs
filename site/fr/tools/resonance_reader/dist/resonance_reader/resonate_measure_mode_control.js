@@ -1,7 +1,7 @@
-import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
-import { measureModeNormalize } from "./resonate_mode_config.js";
-import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js";
+import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js?rev=ad8911223a7b";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=ad8911223a7b";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=ad8911223a7b";
+import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js?rev=ad8911223a7b";
 export function bindMeasureMode(deps) {
     measureModeStateSeedFromSelect(deps.state);
     energyTransferPanelSyncFromState(deps.state);
