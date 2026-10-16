@@ -1,5 +1,6 @@
 import {
   applyTensionCatalogToSetup,
+  calculateCompensationComparisonForString,
   calculateMaximumAbsoluteCentsError,
   calculateSetup,
   createCustomSetupFromCourseMembers,
@@ -12,6 +13,7 @@ import { renderSetupDiagram } from "./setup_diagram.mjs";
 import { createLengthUnitController } from "./length_unit_controller.mjs";
 import { createSparseActionEditor } from "./sparse_action_editor.mjs";
 import { createSetupResultPresenter } from "./setup_result_presenter.mjs";
+import { createSetupPitchErrorChart } from "./setup_pitch_error_chart.mjs";
 import { createSetupProfileEditor } from "./setup_profile_editor.mjs";
 import "../common/per_tab_tool_session.js";
 import { createSetupSessionPersistence } from "./setup_session_persistence.mjs";
@@ -76,6 +78,18 @@ const setupRuntimeMessages = Object.freeze({
   noAdditionalReadings: "Nessuna misura aggiuntiva.",
   oneStringLabel: "1 corda",
   plainConstructionLabel: "Liscia",
+  pitchErrorMessages: Object.freeze({
+    cents: "Cent",
+    courseStringLabel: "C{courseNumber} · {stringName}",
+    flat: "Calante",
+    fret: "Tasto",
+    nutAndSaddle: "Capotasto + traversino",
+    openReference: "Corda a vuoto · riaccordata a 0 cent",
+    saddleOnly: "Solo traversino",
+    scope: "Entrambi gli adattamenti usano i tasti 1–{lastFret}. Corda a vuoto riaccordata a 0 cent.",
+    sharp: "Crescente",
+    unavailable: "Grafico non disponibile; i risultati calcolati restano disponibili.",
+  }),
   woundConstructionLabel: "Avvolta",
   profileDefault: "Predefinito del profilo",
   profileLabels: Object.freeze({
@@ -208,6 +222,12 @@ const resultPresenter = createSetupResultPresenter({
   escapeMarkup,
   messages: setupRuntimeMessages.resultMessages,
 });
+const pitchErrorChart = createSetupPitchErrorChart({
+  document,
+  plotly: window.Plotly,
+  calculateComparison: calculateCompensationComparisonForString,
+  messages: setupRuntimeMessages.pitchErrorMessages,
+});
 const sparseActionEditor = createSparseActionEditor({
   document,
   emptyReadingsMessage: setupRuntimeMessages.noAdditionalReadings,
@@ -320,6 +340,7 @@ function canonicalizeSessionStringNames(candidate) {
 
 function restoreSetupSessionViewAndAttach() {
   restoreSetupSessionView(document, restoredSession?.view, profileEditor);
+  if (hasRenderedResult) pitchErrorChart.render(setup);
   if (restoredSession?.step) stepNavigation.select(restoredSession.step);
   setupSession.attach();
   registerSharedLengthUnits();
@@ -436,6 +457,7 @@ function render() {
       messages: setupRuntimeMessages.diagramMessages,
     });
     resultPresenter.render({ setup, result });
+    pitchErrorChart.render(setup);
     renderMeasurementProvenance();
     calculationBasis.textContent = describeCalculationBasis(
       userEntryGroups,
@@ -511,6 +533,7 @@ function formatStringGaugeLabel(unit) {
 function clearCalculatedOutput() {
   setupGeometrySvg.innerHTML = "";
   resultPresenter.clear();
+  pitchErrorChart.clear();
 }
 
 function showInputError(input, message) {

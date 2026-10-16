@@ -1,8 +1,8 @@
-import { waveformLabelResolveFromContext } from "./resonate_waveform_label.js?rev=ad8911223a7b";
-import { noteWindowRangeBuildFromSlice, noteWindowSliceFindByTime, noteSelectionWindowRequestedFromPlotlyClick, } from "./resonate_note_window_selection.js?rev=ad8911223a7b";
-import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=ad8911223a7b";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=ad8911223a7b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=ad8911223a7b";
+import { waveformLabelResolveFromContext } from "./resonate_waveform_label.js?rev=3f87131f64e6";
+import { noteWindowRangeBuildFromSlice, noteWindowSliceFindByTime, noteSelectionWindowRequestedFromPlotlyClick, } from "./resonate_note_window_selection.js?rev=3f87131f64e6";
+import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=3f87131f64e6";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=3f87131f64e6";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3f87131f64e6";
 let waveUpdatingShapes = false;
 const TAP_CLUSTER_GAP_MS = 950;
 const NOTE_CLUSTER_GAP_MS = 2600;

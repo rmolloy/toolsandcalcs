@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Calculateur de réglage de guitare | Déterminer la compensation du sillet de tête et du sillet de chevalet à partir de mesures</title>
-  <link rel="stylesheet" href="../common/tool_footer.css?rev=ad8911223a7b">
-  <link rel="stylesheet" href="styles.css?rev=ad8911223a7b">
-  <link rel="stylesheet" href="../common/layout.css?rev=ad8911223a7b">
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="styles.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/layout.css?rev=3f87131f64e6">
   <meta name="description" content="Saisissez chaque corde, le rayon de la touche, la courbure mesurée, le jeu au sillet de tête et l’action à la 12e frette avec un capodastre pour calculer la compensation de chaque corde au sillet de tête et au sillet de chevalet.">
   <link rel="canonical" href="https://rickmolloyguitars.com/fr/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
@@ -17,14 +17,14 @@
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
   <!-- shared-length-units:start -->
-  <link rel="stylesheet" href="../common/length_unit_control.css?rev=ad8911223a7b">
+  <link rel="stylesheet" href="../common/length_unit_control.css?rev=3f87131f64e6">
   <script id="tool_length_unit_config" type="application/json">{"label":"Unités de longueur"}</script>
-  <script src="../common/length_unit_preference.js?rev=ad8911223a7b"></script>
-  <script src="../common/canonical_length_fields.js?rev=ad8911223a7b"></script>
-  <script src="../common/length_unit_controller.js?rev=ad8911223a7b"></script>
-  <script src="../common/length_unit_frame_sync.js?rev=ad8911223a7b"></script>
-  <script src="../common/length_unit_navigation.js?rev=ad8911223a7b"></script>
-  <script src="../common/length_unit_control.js?rev=ad8911223a7b" defer></script>
+  <script src="../common/length_unit_preference.js?rev=3f87131f64e6"></script>
+  <script src="../common/canonical_length_fields.js?rev=3f87131f64e6"></script>
+  <script src="../common/length_unit_controller.js?rev=3f87131f64e6"></script>
+  <script src="../common/length_unit_frame_sync.js?rev=3f87131f64e6"></script>
+  <script src="../common/length_unit_navigation.js?rev=3f87131f64e6"></script>
+  <script src="../common/length_unit_control.js?rev=3f87131f64e6" defer></script>
   <!-- shared-length-units:end -->
 </head>
 <body>
@@ -221,6 +221,18 @@
                     <p class="results-footnote">La compensation de Gore est active. Le profil d’action à vide utilise la géométrie cercle/ellipse/droite du livre, étalonnée à partir des mesures d’action saisies. Le poids linéique du fabricant fait autorité pour la tension à vide ; la rigidité axiale reste une estimation signalée comme telle jusqu’à la saisie de données de rigidité mesurées. Vérifiez avec un accordeur stroboscopique et sur l’instrument réel avant toute taille.</p>
                   </section>
 
+                  <section class="card pad tl-card tl-card-output pitch-error-chart" aria-labelledby="pitch-error-title">
+                    <div class="pitch-error-heading">
+                      <div><p class="eyebrow">Résultat calculé</p><h2 id="pitch-error-title">Erreur de justesse prédite</h2><p class="small muted">Comparez la compensation d’une corde avec le même réglage.</p></div>
+                      <label class="pitch-error-string"><span>Corde</span><select id="pitch_error_string"></select></label>
+                    </div>
+                    <div class="pitch-error-legend"><span class="pitch-error-saddle">Sillet de chevalet seul</span><span class="pitch-error-joint">Sillet de tête + sillet de chevalet</span></div>
+                    <div id="pitch_error_plot" class="pitch-error-plot" role="img" aria-label="Erreur de justesse prédite" aria-describedby="pitch_error_scope pitch_error_help"></div>
+                    <p id="pitch_error_scope" class="small muted" aria-live="polite"></p>
+                    <p id="pitch_error_help" class="results-footnote">Au-dessus de zéro : trop aigu. En dessous : trop grave. La zone ombrée indique les frettes au-delà de la dernière frette de cet instrument.</p>
+                    <div class="pitch-error-values"><table><caption>Erreur de justesse par frette</caption><thead><tr><th scope="col">Frette</th><th scope="col">Sillet de chevalet seul (Cents)</th><th scope="col">Sillet de tête + sillet de chevalet (Cents)</th></tr></thead><tbody id="pitch_error_readings"></tbody></table></div>
+                  </section>
+
                   <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
                     <p class="eyebrow">Repères de mesure</p>
                     <h2 id="measurement-rail-title">Réglage actuel</h2>
@@ -276,16 +288,17 @@
       <footer class="tl-footer" data-tool-footer data-tool-privacy-href="/privacy/"></footer>
     </div>
   </div>
-  <script src="../common/tool_fullscreen_navigation.js?rev=ad8911223a7b" defer></script>
-  <script src="../common/page_fullscreen.js?rev=ad8911223a7b" defer></script>
-  <script src="../common/site_menu_loader.js?rev=ad8911223a7b" defer></script>
-  <script src="../common/tool_footer_loader.js?rev=ad8911223a7b" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/page_fullscreen.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/site_menu_loader.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=3f87131f64e6" defer></script>
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=3f87131f64e6"></script>
   <script type="module" src="main.mjs"></script>
   <!-- localized-locale-selector:start -->
-  <link rel="stylesheet" href="../common/locale_selector.css?rev=ad8911223a7b">
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=3f87131f64e6">
   <script id="tool_locale_config" type="application/json">{"label":"Langue","currentLocale":"fr","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/guitar_setup_calculator/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/guitar_setup_calculator/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/guitar_setup_calculator/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/guitar_setup_calculator/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/"}]}</script>
-  <script src="../common/locale_preference.js?rev=ad8911223a7b" defer></script>
-  <script src="../common/locale_selector.js?rev=ad8911223a7b" defer></script>
+  <script src="../common/locale_preference.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/locale_selector.js?rev=3f87131f64e6" defer></script>
   <!-- localized-locale-selector:end -->
 </body>
 </html>

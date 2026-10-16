@@ -1,14 +1,14 @@
-import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js?rev=ad8911223a7b";
-import { signalBoundaryDefault } from "./resonate_signal_boundary.js?rev=ad8911223a7b";
-import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js?rev=ad8911223a7b";
-import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js?rev=ad8911223a7b";
-import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js?rev=ad8911223a7b";
-import { emitArtifactEventFromState } from "./resonate_artifact_emit.js?rev=ad8911223a7b";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=ad8911223a7b";
-import { resonancePeakHoldEnabled, resonancePolymaxValidationEnabled, resonanceSpectrumAveragingModeResolve, resonanceSpectrumSmoothingBinsResolve, resonanceSpectrumSmoothingHzResolve, resonanceSpectrumSmoothingModeResolve, } from "./resonate_debug_flags.js?rev=ad8911223a7b";
-import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js?rev=ad8911223a7b";
-import { spectrumDbApply } from "./resonate_spectrum_db_scale.js?rev=ad8911223a7b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=ad8911223a7b";
+import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js?rev=3f87131f64e6";
+import { signalBoundaryDefault } from "./resonate_signal_boundary.js?rev=3f87131f64e6";
+import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js?rev=3f87131f64e6";
+import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js?rev=3f87131f64e6";
+import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js?rev=3f87131f64e6";
+import { emitArtifactEventFromState } from "./resonate_artifact_emit.js?rev=3f87131f64e6";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=3f87131f64e6";
+import { resonancePeakHoldEnabled, resonancePolymaxValidationEnabled, resonanceSpectrumAveragingModeResolve, resonanceSpectrumSmoothingBinsResolve, resonanceSpectrumSmoothingHzResolve, resonanceSpectrumSmoothingModeResolve, } from "./resonate_debug_flags.js?rev=3f87131f64e6";
+import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js?rev=3f87131f64e6";
+import { spectrumDbApply } from "./resonate_spectrum_db_scale.js?rev=3f87131f64e6";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3f87131f64e6";
 const FFT_SMOOTH_GAUSSIAN_BINS = 8;
 const SPECTRUM_AVERAGING_LIMITS = {
     "avg-4": 4,

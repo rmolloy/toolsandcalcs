@@ -1,4 +1,4 @@
-import { customMeasurementCardsBuildFromState } from "./resonate_custom_measurements.js?rev=ad8911223a7b";
+import { customMeasurementCardsBuildFromState } from "./resonate_custom_measurements.js?rev=3f87131f64e6";
 export function stageRefreshPostApply(args) {
     const cards = stageRefreshCardsBuild({
         analysis: args.analysis,

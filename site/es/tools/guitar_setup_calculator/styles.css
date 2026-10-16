@@ -1,5 +1,5 @@
-@import url("../common/styles.css?rev=ad8911223a7b");
-@import url("../common/theme_resonance_shared.css?rev=ad8911223a7b");
+@import url("../common/styles.css?rev=3f87131f64e6");
+@import url("../common/theme_resonance_shared.css?rev=3f87131f64e6");
 
 :root {
   --tl-topbar-h: 0px;
@@ -71,6 +71,17 @@ body { min-width: 320px; }
   color: #111820;
 }
 .setup-results { width: 100%; }
+.pitch-error-chart { position: relative; min-width: 0; }
+.pitch-error-heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.pitch-error-heading h2 { margin: 0; }
+.pitch-error-heading .small { margin: 5px 0 0; }
+.pitch-error-string { display: grid; gap: 5px; width: min(240px, 100%); min-width: 0; }
+.pitch-error-legend { display: flex; flex-wrap: wrap; gap: 10px 24px; margin-top: 18px; color: var(--ink); font-size: 12px; }
+.pitch-error-legend span { display: inline-flex; align-items: center; gap: 9px; }
+.pitch-error-legend span::before { content: ""; width: 30px; flex-shrink: 0; border-top: 2px solid #ffb454; }
+.pitch-error-legend .pitch-error-joint::before { border-top-color: #73c9e6; border-top-style: dashed; }
+.pitch-error-plot { width: 100%; min-width: 0; height: 300px; margin-top: 8px; }
+.pitch-error-values { position: absolute; width: 1px; min-width: 0; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .setup-inputs {
   display: grid;
   grid-template-columns: 176px minmax(0, 1fr);
