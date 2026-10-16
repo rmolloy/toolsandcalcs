@@ -204,6 +204,18 @@
                     <p class="results-footnote">Gore compensation is active. The open-string action profile uses the book's circle/ellipse/line geometry, calibrated by the entered action readings. Manufacturer unit weight is authoritative for open-string tension; axial stiffness remains a labelled estimate until measured stiffness data is supplied. Verify with a strobe and the actual instrument before cutting.</p>
                   </section>
 
+                  <section class="card pad tl-card tl-card-output pitch-error-chart" aria-labelledby="pitch-error-title">
+                    <div class="pitch-error-heading">
+                      <div><p class="eyebrow">Calculated result</p><h2 id="pitch-error-title">Predicted pitch error</h2><p class="small muted">Compare compensation for one string using the same setup.</p></div>
+                      <label class="pitch-error-string"><span>String</span><select id="pitch_error_string"></select></label>
+                    </div>
+                    <div class="pitch-error-legend"><span class="pitch-error-saddle">Saddle only</span><span class="pitch-error-joint">Nut + saddle</span></div>
+                    <div id="pitch_error_plot" class="pitch-error-plot" role="img" aria-label="Predicted pitch error" aria-describedby="pitch_error_scope pitch_error_help"></div>
+                    <p id="pitch_error_scope" class="small muted" aria-live="polite"></p>
+                    <p id="pitch_error_help" class="results-footnote">Above zero: sharp. Below zero: flat. Shading marks frets beyond this instrument’s last fret.</p>
+                    <div class="pitch-error-values"><table><caption>Pitch error by fret</caption><thead><tr><th scope="col">Fret</th><th scope="col">Saddle only (Cents)</th><th scope="col">Nut + saddle (Cents)</th></tr></thead><tbody id="pitch_error_readings"></tbody></table></div>
+                  </section>
+
                   <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
                     <p class="eyebrow">Measurement rail</p>
                     <h2 id="measurement-rail-title">Current setup</h2>
@@ -263,6 +275,7 @@
   <script src="../common/page_fullscreen.js" defer></script>
   <script src="../common/site_menu_loader.js" defer></script>
   <script src="../common/tool_footer_loader.js" defer></script>
+  <script src="../vendor/plotly/plotly-basic.min.js"></script>
   <script type="module" src="main.mjs"></script>
 </body>
 </html>
