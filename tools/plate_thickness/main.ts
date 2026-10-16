@@ -87,6 +87,9 @@ const plateThicknessRuntimeMessages = Object.freeze({
     const key = input.dataset.field;
     if (key) fields[key] = input;
   });
+  const lengthFieldKeys = new Set(["lower_bout", "body_length", "panel_length", "panel_width", "panel_height"]);
+  const lengthFields = createPlateLengthFields();
+  let solvedThicknessMm: number | null = null;
   const bodyPresetSelect = document.getElementById("body_preset") as HTMLSelectElement | null;
 
   const resultEls = {
@@ -118,7 +121,7 @@ const plateThicknessRuntimeMessages = Object.freeze({
   function readInputs() {
     const values: Record<string, number> = {};
     for (const [key, input] of Object.entries(fields)) {
-      const value = parseFloat(input.value);
+      const value = lengthFields && lengthFieldKeys.has(key) ? lengthFields.read(key) : parseFloat(input.value);
       values[key] = value;
     }
     return values;
@@ -132,7 +135,8 @@ const plateThicknessRuntimeMessages = Object.freeze({
   }
 
   function setResults(result: PlateSolution) {
-    if (resultEls.thickness) resultEls.thickness.textContent = `${format(result.thicknessMm, { digits: 2 })} mm`;
+    solvedThicknessMm = result.thicknessMm;
+    renderThicknessLength();
     if (resultEls.mass) resultEls.mass.textContent = `${format(result.projectedMassG, { digits: 1 })} g`;
     if (resultEls.density) resultEls.density.textContent = `${format(result.density, { digits: 1 })} kg/m³`;
     if (resultEls.EL) resultEls.EL.textContent = `${format(result.EL / 1e9, { digits: 2 })} GPa`;
@@ -143,6 +147,7 @@ const plateThicknessRuntimeMessages = Object.freeze({
   }
 
   function setError(message: string) {
+    solvedThicknessMm = null;
     if (resultEls.thickness) resultEls.thickness.textContent = "—";
     if (resultEls.mass) resultEls.mass.textContent = "—";
     if (resultEls.density) resultEls.density.textContent = "—";
@@ -204,12 +209,12 @@ const plateThicknessRuntimeMessages = Object.freeze({
     if (bodyPresetSelect) {
       bodyPresetSelect.value = bodyPresetKey;
     }
-    Object.entries(fields).forEach(([key, input]) => {
+    Object.entries(fields).forEach(([key]) => {
       const defaultKey = key;
       const value = defaults[camelCase(defaultKey) as DefaultKey];
       if (typeof value === "number") {
         const scaled = scaleForField(key, value);
-        input.value = Number.isFinite(scaled) ? formatNumber(scaled) : "";
+        writeCanonicalField(key, Number.isFinite(scaled) ? formatNumber(scaled) : "");
       }
     });
     applyBodyPresetGeometry(bodyPresetKey);
@@ -236,8 +241,8 @@ const plateThicknessRuntimeMessages = Object.freeze({
     const preset = bodyPresetGeometry[bodyPresetKey];
     if (!preset) return;
 
-    fields.body_length.value = formatNumber(preset.bodyLength);
-    fields.lower_bout.value = formatNumber(preset.lowerBout);
+    writeCanonicalField("body_length", formatNumber(preset.bodyLength));
+    writeCanonicalField("lower_bout", formatNumber(preset.lowerBout));
   }
 
   async function saveResults() {
@@ -261,15 +266,18 @@ const plateThicknessRuntimeMessages = Object.freeze({
 
   function applyQueryParams() {
     if (typeof window === "undefined" || !window.location) return;
-    const changed = queryParams.applyToFields(fields, window.location.search, formatNumber);
-    if (changed) run();
+    const canonicalFields = Object.fromEntries(Object.entries(readCurrentPlateThicknessSaveInputs()).map(([key, value]) => [key, { value }]));
+    const changed = queryParams.applyToFields(canonicalFields, window.location.search, String);
+    if (!changed) return;
+    Object.entries(canonicalFields).forEach(([key, input]) => writeCanonicalField(key, input.value));
+    run();
   }
 
   function applyLoadedPlateThicknessSnapshot(snapshot: { inputs?: Record<string, string> }) {
     const plan = (window as any).PlateThicknessSaveSnapshot.buildPlateThicknessSnapshotApplyPlan(snapshot, defaults);
     Object.entries(plan.fields).forEach(([key, value]) => {
       if (fields[key]) {
-        fields[key].value = String(value || "");
+        writeCanonicalField(key, String(value || ""));
       }
     });
     run();
@@ -300,7 +308,7 @@ const plateThicknessRuntimeMessages = Object.freeze({
 
     Object.entries(snapshot.fields || {}).forEach(([key, value]) => {
       if (fields[key]) {
-        fields[key].value = String(value ?? "");
+        writeCanonicalField(key, String(value ?? ""));
       }
     });
   }
@@ -321,13 +329,13 @@ const plateThicknessRuntimeMessages = Object.freeze({
 
   function readCurrentPlateThicknessSaveInputs() {
     return Object.fromEntries(
-      Object.entries(fields).map(([key, input]) => [key, input.value]),
+      Object.entries(fields).map(([key, input]) => [key, lengthFields && lengthFieldKeys.has(key) ? lengthFields.readText(key) : input.value]),
     );
   }
 
   function readCurrentPlateThicknessSaveResults() {
     return {
-      result_thickness: resultEls.thickness?.textContent || "",
+      result_thickness: solvedThicknessMm === null ? resultEls.thickness?.textContent || "" : `${format(solvedThicknessMm, { digits: 2 })} mm`,
       result_mass: resultEls.mass?.textContent || "",
       result_density: resultEls.density?.textContent || "",
       result_el: resultEls.EL?.textContent || "",
@@ -390,10 +398,12 @@ const plateThicknessRuntimeMessages = Object.freeze({
 
   async function initializePlateThicknessToolSurface() {
     if (await restoreNotebookEventIntoUi()) {
+      registerPlateLengthUnits();
       return;
     }
 
     await applyPlateThicknessSaveSurface();
+    registerPlateLengthUnits();
   }
 
   async function restoreNotebookEventIntoUi() {
@@ -422,6 +432,11 @@ const plateThicknessRuntimeMessages = Object.freeze({
       run();
     });
     input.addEventListener("change", () => {
+      if (lengthFields && lengthFieldKeys.has(input.dataset.field || "")) {
+        presentEditedLength(input.dataset.field!);
+        run();
+        return;
+      }
       const value = parseFloat(input.value);
       if (Number.isFinite(value)) {
         input.value = formatNumber(value);
@@ -442,6 +457,46 @@ const plateThicknessRuntimeMessages = Object.freeze({
 
   reset();
   void initializePlateThicknessToolSurface();
+
+  function createPlateLengthFields() {
+    const factory = (window as any).ToolCanonicalLengthFields?.createCanonicalLengthFields;
+    if (!factory) return null;
+    return factory({ fields: Object.fromEntries([...lengthFieldKeys].map((key) => [key, {
+      input: fields[key],
+      label: fields[key].closest?.("label")?.querySelector(".field-label"),
+    }])) });
+  }
+
+  function writeCanonicalField(key: string, text: string) {
+    if (lengthFields && lengthFieldKeys.has(key) && text.trim() !== "" && Number.isFinite(Number(text))) {
+      lengthFields.write(key, Number(text));
+      return;
+    }
+    fields[key].value = text;
+  }
+
+  function presentEditedLength(key: string) {
+    const canonicalMm = lengthFields.read(key);
+    if (Number.isFinite(canonicalMm)) lengthFields.write(key, canonicalMm);
+  }
+
+  function registerPlateLengthUnits() {
+    if (!lengthFields) return;
+    (window as any).ToolLengthUnits?.register({
+      readUnit: () => lengthFields.unit,
+      applyUnit: (unit: string) => {
+        lengthFields.applyUnit(unit);
+        renderThicknessLength();
+      },
+    });
+  }
+
+  function renderThicknessLength() {
+    if (!resultEls.thickness || solvedThicknessMm === null) return;
+    const unit = lengthFields?.unit || "mm";
+    const value = unit === "in" ? solvedThicknessMm / 25.4 : solvedThicknessMm;
+    resultEls.thickness.textContent = `${format(value, { digits: unit === "in" ? 4 : 2 })} ${unit}`;
+  }
 
   function formatNumber(value: number) {
     if (!Number.isFinite(value)) return "";
