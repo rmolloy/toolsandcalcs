@@ -1,0 +1,36 @@
+.tool-length-unit-control {
+  display: inline-flex;
+  align-items: center;
+  order: 70;
+  border: var(--hero-control-border, 1px solid rgba(127, 127, 127, 0.45));
+  border-radius: var(--hero-control-radius, 999px);
+  overflow: hidden;
+}
+.tool-length-unit-control[hidden] { display: none; }
+.tool-length-unit-control button {
+  min-width: 36px;
+  min-height: var(--hero-control-height, 32px);
+  margin: 0;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  line-height: 1;
+  color: var(--hero-control-text, var(--ink, #20242a));
+  background: var(--hero-control-bg, var(--panel, #fff));
+  cursor: pointer;
+}
+.tool-length-unit-control button[aria-pressed="true"] {
+  background: var(--orange, #e69f00);
+  color: #171717;
+}
+.tool-length-unit-control button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
+
+@media (max-width: 600px) {
+  .hero-row:has(.tool-length-unit-control:not([hidden])) > .hero-controls-left {
+    flex-basis: 100%;
+  }
+}
