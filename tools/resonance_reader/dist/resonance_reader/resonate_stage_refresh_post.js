@@ -1,4 +1,5 @@
 import { customMeasurementCardsBuildFromState } from "./resonate_custom_measurements.js";
+import { stockLongAssignmentCapture } from "./resonate_stock_long_confirmation.js";
 export function stageRefreshPostApply(args) {
     const cards = stageRefreshCardsBuild({
         analysis: args.analysis,
@@ -15,6 +16,7 @@ export function stageRefreshPostApply(args) {
     });
     args.state.lastModesDetected = args.modesDetected;
     args.state.lastModeCards = [...cards, ...customCards];
+    stockLongAssignmentCapture(args.state);
 }
 function stageRefreshCardsBuild(args) {
     const labelFromModeKey = (modeKey) => modeKey
