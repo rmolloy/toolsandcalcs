@@ -5,13 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Resonance Reader | Rick Molloy Guitars Labor</title>
-  <link rel="stylesheet" href="../common/tool_footer.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="styles.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/tool_guide.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=de0830708801">
+  <link rel="stylesheet" href="styles.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/tool_guide.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=de0830708801">
   <link rel="canonical" href="https://rickmolloyguitars.com/de/lab/tools/resonance_reader/">
-  <link rel="stylesheet" href="../common/theme_profile.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/theme_profile.css?rev=de0830708801">
   <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/resonance_reader/">
@@ -20,14 +20,14 @@
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
   <!-- shared-length-units:start -->
-  <link rel="stylesheet" href="../common/length_unit_control.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/length_unit_control.css?rev=de0830708801">
   <script id="tool_length_unit_config" type="application/json">{"label":"Längeneinheiten"}</script>
-  <script src="../common/length_unit_preference.js?rev=3f87131f64e6"></script>
-  <script src="../common/canonical_length_fields.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_controller.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_frame_sync.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_navigation.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_control.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/length_unit_preference.js?rev=de0830708801"></script>
+  <script src="../common/canonical_length_fields.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_controller.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_frame_sync.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_navigation.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_control.js?rev=de0830708801" defer></script>
   <!-- shared-length-units:end -->
 </head>
 
@@ -300,7 +300,7 @@
           <h4>Ein Ziel festlegen, ohne die Messung zu ändern</h4>
           <p>Im Instrument mit aktiviertem 4DOF-Modell können Sie mit <strong>Ziel festlegen</strong> eine Frequenz für einen modellierten Was-wäre-wenn-Vergleich eingeben. Geben Sie die Zielfrequenz ein und drücken Sie die Eingabetaste oder verlassen Sie das Feld. Drücken Sie Escape, um die Bearbeitung abzubrechen. Um ein Ziel zu entfernen, leeren Sie das Feld und drücken Sie die Eingabetaste. Keine dieser Aktionen weist den gemessenen Peak neu zu.</p>
           <h4>Ein anderen Peak im Peak / Q inspizieren</h4>
-          <p>Wählen Sie den gewünschten Klopfimpuls, klicken Sie dann auf einen Peak-Punkt oder verwenden Sie die Pfeile für den vorherigen und nächsten Peak. Dies ändert den inspizierten Peak, ändert jedoch nicht die Beschriftung Luft, Decke oder Boden. Für Platten- oder Leistenrohlinge bleibt auch eine bestätigte Längsmodus-Zuordnung unverändert. Um diese Bestätigung zu ersetzen, wählen Sie den korrekten Peak und wählen Sie <strong>Verwenden Sie … Hz als Längsmodus</strong> neben der Rohling-Zusammenfassung. <strong>Längsmodus löschen</strong> entfernt die Bestätigung.</p>
+          <p>Wählen Sie den gewünschten Anschlag und klicken Sie auf einen Peakpunkt oder verwenden Sie die Pfeile für den vorherigen und nächsten Peak. Dies ändert den untersuchten Peak; Luft, Decke und Boden werden nicht neu zugeordnet. Bei Platten- oder Leistenrohlingen folgt die Berechnung automatisch dem zugeordneten Längspeak. Ziehen Sie dessen Verbinder, um die Zuordnung zu korrigieren. Verwenden Sie <strong>… Hz als Längsmodus verwenden</strong> nur, wenn der Aufnahme kein Längsmodus zugeordnet ist.</p>
           <p>Wenn der erwartete Peak nicht sichtbar ist, überprüfen Sie den Frequenzbereich, den ausgewählten Klopfimpuls, die Unterstützung und die Klopfimpuls-Position. Eine manuelle Zuordnung kann eine Resonanz nicht wiederherstellen, die die Aufnahme nicht deutlich erfasst hat.</p>
         </details>
         <details class="tl-accordion">
@@ -350,6 +350,7 @@
         </details>
         <details class="tl-accordion" id="reader_help_plate">
           <summary>Plattenholz</summary>
+          <p>Halten Sie die Platte leicht an einem Knoten, wo sich die gewählte Schwingungsform am wenigsten bewegt, oder legen Sie sie an den Knotenstellen auf weiche Auflagen. Beginnen Sie für die Längsbiegung bei 22,4% der Länge von einem der Enden, für die Querbiegung bei 22,4% der Breite von einer der Seiten. Klopfen Sie abseits der Knoten nahe einem freien Rand auf die breite Fläche. Diese Positionen sind Näherungen für einfache Biegung eines gleichmäßigen rechteckigen Prüflings; die tatsächlichen Knotenlinien einer Platte können verschoben oder gekrümmt sein. Bestätigen Sie die physikalische Schwingungsform, statt sich auf die Reihenfolge der Peaks zu verlassen. Diese Hinweise gelten nicht für die Torsionsschwingung. Halten Sie für Q-Vergleiche den Kontaktdruck und das Auflagematerial konstant. Für zuverlässigere Q-Messungen verwenden Sie eine Vorrichtung mit flexiblen Schnurauflagen an den Knotenpositionen der gewählten Mode. Finger und Auflagen können Schwingungsenergie aufnehmen und den gemessenen Q-Wert senken. Vermeiden Sie Reiben, Hüpfen und Rahmenkontakt. Regen Sie die Probe einmal sauber an und lassen Sie sie unberührt ausschwingen. Wiederholen Sie bei gleichbleibender Auflage, Mikrofonposition und Eingangsverstärkung; prüfen Sie, ob die gewählte Resonanz isoliert und deutlich oberhalb des Hintergrundrauschens abklingt.</p>
           <p>Verwenden Sie „Plattenrohling“, um Biegemoden in einer Deck- oder Bodenplatte zu identifizieren, bevor eine Material- oder Dickenberechnung durchgeführt wird. Stützen und anregen Sie die Probe, damit die interessierende Mode sich bewegen kann; das Halten der Probe an der Stelle, an der diese Mode stark bewegt wird, kann ihre Antwort unterdrücken.</p>
           <ol class="tl-steps">
             <li>Aufnehmen oder Importieren der Platten-Klopfimpulse.</li>
@@ -362,15 +363,16 @@
         </details>
         <details class="tl-accordion" id="reader_help_brace">
           <summary>Leistenholz</summary>
+          <p>Halten Sie den Prüfling für die Längsbiegung leicht bei etwa 22,4% der Länge von einem der Enden oder verwenden Sie weiche Auflagen an beiden Positionen. Klopfen Sie nahe einem freien Ende, abseits der Auflagen, in der gewünschten Biegerichtung auf die Fläche. Spannen Sie den Prüfling nicht ein. Halten Sie für Q-Vergleiche den Kontaktdruck, das Auflagematerial und den Anschlagpunkt konstant. Für zuverlässigere Q-Messungen verwenden Sie eine Vorrichtung mit flexiblen Schnurauflagen an den Knotenpositionen der gewählten Mode. Finger und Auflagen können Schwingungsenergie aufnehmen und den gemessenen Q-Wert senken. Vermeiden Sie Reiben, Hüpfen und Rahmenkontakt. Regen Sie die Probe einmal sauber an und lassen Sie sie unberührt ausschwingen. Wiederholen Sie bei gleichbleibender Auflage, Mikrofonposition und Eingangsverstärkung; prüfen Sie, ob die gewählte Resonanz isoliert und deutlich oberhalb des Hintergrundrauschens abklingt.</p>
           <p>Verwenden Sie Leistenrohling, um das Holz zu charakterisieren, aus dem Sie Leisten schneiden werden, nicht um die fertigen Leistenabmessungen festzulegen. Beginnen Sie mit einer vernünftig gleichmäßigen rechteckigen Probe und lassen Sie sie frei genug biegen, um den Längsbiegemodus zu zeigen.</p>
           <ol class="tl-steps">
             <li>Aufnehmen oder Importieren der Einschläge. Die ursprüngliche Anzeige erstreckt sich bis 500 Hz; die automatische Längssuche liegt zwischen 100 und 500 Hz, kein Regel für jede Probe.</li>
             <li>Überprüfen Sie den vorgeschlagenen Längspeak. Ein starker, schmaler Peak ist ein Kandidat, keine physikalische Bestätigung.</li>
             <li>Wählen Sie Messungen hinzufügen und geben Sie Länge, Breite, Höhe in Biegerichtung und Masse der Probe ein.</li>
-            <li>Wählen Sie neben der Rohlingszusammenfassung … Hz als Längsmodus verwenden, um die vorgeschlagene Frequenz zu bestätigen. Für eine genauere Untersuchung wechseln Sie zu Peak / Q, wählen einen sauberen Einschlag und einen Peak aus und bestätigen ihn dort.</li>
+            <li>Die zugeordnete Längsfrequenz wird automatisch verwendet. Ziehen Sie den Verbinder des Längspeaks, um die Zuordnung zu korrigieren; untersuchen Sie sein Abklingen in Peak / Q.</li>
             <li>Überprüfen Sie Dichte, Längsmodul und Schallgeschwindigkeit. Mit dem Abgleich in Biegesteifigkeit fahren Sie mit den Leisten fort, die Sie herstellen möchten.</li>
           </ol>
-          <p>Sie können Messungen bearbeiten, die bestätigte Längszuordnung löschen oder eine andere Frequenz bestätigen. Behalten Sie keine Zuordnung bei, nur weil sie einen vernünftigen Modul ergeben hat. Diese Schätzung benötigt einen Längsbiegemodus, nicht die drei Plattenfrequenzen. Sie legt nicht die Festigkeit oder Langzeit-Sicherheit einer fertigen Leiste fest.</p>
+          <p>Bearbeiten Sie die Messungen oder ziehen Sie den Verbinder des Längspeaks, um seine Zuordnung zu korrigieren. Prüfen Sie, ob der Peak dem ersten Längsbiegemodus der Probe entspricht. Diese Schätzung benötigt einen Längsbiegemodus, nicht die drei Plattenfrequenzen. Sie belegt weder die Festigkeit noch die langfristige Sicherheit einer fertigen Leiste.</p>
         </details>
         <details class="tl-accordion" id="reader_help_peak">
           <summary>Peak / Q</summary>
@@ -391,7 +393,7 @@
           <p>Lassen Sie mehr Abstand zwischen den Klopfimpulsen, reduzieren Sie das Hintergrundrauschen und prüfen Sie einen anderen Klopfimpuls, statt ein Ergebnis zu erzwingen. Der Export der Peakdaten enthält den ausgewählten Peak und die verfügbaren Nachweise, einschließlich des Q-Werts aus der Abklinganalyse und der Anpassungsdiagnosen. Abweichungen zwischen spektralem Q und Abkling-Q sollten untersucht werden; wählen Sie nicht einfach den attraktiveren Wert.</p>
           <h4>Charakterisierter Rohling</h4>
           <p>„Messungen hinzufügen“ öffnet denselben Editor, der auch im Plattenrohling und Leistenrohling verwendet wird, auch wenn Sie hierher aus dem Instrument gekommen sind. Identifizieren Sie das Probenstück als Platten- oder Leistenrohling und geben Sie seine Abmessungen und Masse ein. „Ändern“ ermöglicht die Korrektur eines vorhandenen Probenstyps; „Anwenden“ löscht eine inkonsistente Längsmodus-Bestätigung. „Abbrechen“ belässt die gespeicherten Messungen und Bestätigung unverändert. Weder Aktion ändert die Analyseansicht.</p>
-          <p>Bestätigen Sie den ersten Längsbiegemodus der Probe mit <strong>… Hz als Längsmodus verwenden</strong>. Die Zusammenfassung zeigt die berechnete longitudinale Schallgeschwindigkeit und den dynamischen Elastizitätsmodul in Faserrichtung. Erweitern Sie sie für Dichte und bei Leistenrohlingen für das Proben-EI. Q ist kein Eingabewert für diese Schätzungen; ein ausgewählter Peak und sein Q allein reichen nicht aus.</p>
+          <p>Verwenden Sie den ersten Längsbiegemodus der Probe. Die zugeordnete <strong>Längsfrequenz</strong> steuert die Materialberechnung automatisch. Ist kein Längsmodus zugeordnet, wählen Sie den passenden Peak und einmal <strong>… Hz als Längsmodus verwenden</strong>. Die Zusammenfassung zeigt die berechnete longitudinale Schallgeschwindigkeit und den dynamischen Längsfasermodul; aufgeklappt zeigt sie Dichte und gegebenenfalls das EI der Probe. Q geht nicht in diese Schätzungen ein.</p>
           <p>Die Plattenabschätzung verwendet das frei-frei gelagerte Rechteckplattenmodell des Plattendickenrechners mit der Länge entlang der Faserrichtung. Der Längsmodus allein unterstützt nur die longitudinale Abschätzung; Quer- und Torsionsmodus bleiben für die vollständige Dickenberechnung erforderlich. Abmessungen einer fertigen Gitarre oder ein beliebiger Körperpeak charakterisieren das Holz nicht. Verwenden Sie eine geeignete Rohlingsprobe und überprüfen Sie den Modus physisch.</p>
         </details>
 
@@ -403,13 +405,13 @@
           <p>Bestätigen Sie Luft, Decke und Boden und aktivieren Sie dann das 4DOF-Modell, um das vereinfachte gekoppelte Modell anzupassen. <strong>Im 4DOF-Modell öffnen</strong> überträgt die verfügbaren angepassten Parameter in das spezialisierte Werkzeug. Ein gelöstes Was-wäre-wenn-Zielmodell hat Vorrang vor der Ausgangsanpassung; prüfen Sie daher, welches Szenario Sie übertragen möchten. Ohne Anpassung öffnet der Link das Werkzeug ohne angepasste Parameter.</p>
           <p>Ein Fit lässt Sie modellierte Änderungen untersuchen. Es misst die Massen und Steifigkeiten des Instruments nicht unabhängig.</p>
           <h4>Leistenrohling zur Plattendicke</h4>
-          <p><strong>Öffnen im Plattendicke-Rechner</strong> sendet bestätigte Längsmoduswerte, wenn verfügbar, andere kompatible Plattenfrequenzen und die von Ihnen angewendeten Messungen. Körperresonanzen werden nicht als Quer oder Torsion umbenannt. Ohne Messungen werden nur verfügbare Frequenzen gesendet. Standardeinstellungen am Ziel sind keine Messungen Ihres Leistenrohlings.</p>
+          <p><strong>Öffnen im Plattendicke-Rechner</strong> sendet zugeordnete Längsmoduswerte, wenn verfügbar, andere kompatible Plattenfrequenzen und die von Ihnen angewendeten Messungen. Körperresonanzen werden nicht als Quer oder Torsion umbenannt. Ohne Messungen werden nur verfügbare Frequenzen gesendet. Standardeinstellungen am Ziel sind keine Messungen Ihres Leistenrohlings.</p>
           <p>Der Rechner schätzt Dichte, Längs- und Quermodul, ihr Verhältnis und den Schubmodul, der von seinem Plattenmodell verwendet wird. Sie geben die beabsichtigten Körperabmessungen und die Zielresonanzfrequenz an, um Dicke und projizierte Masse zu berechnen. Die Übertragung wählt nicht das richtige Ziel für Ihr Instrument aus.</p>
           <h4>Leistenrohling zu Leiste-Rechner</h4>
-          <p><strong>Im Leistenrechner öffnen</strong> verwendet die bereits hier eingegebenen Messungen. Mit einem bestätigten Längsmodus und gültigen Messungen werden die berechnete Dichte und der Längsfasermodul übertragen. Andernfalls werden nur verfügbare Frequenzen gesendet. Geben Sie im Zielwerkzeug die Geometrie der Leiste ein, die Sie schneiden möchten; die geprüften Rohlingsabmessungen werden nicht stillschweigend als fertige Leistenabmessungen verwendet.</p>
+          <p><strong>Im Leistenrechner öffnen</strong> verwendet die bereits hier eingegebenen Messungen. Mit einem zugeordneten Längsmodus und gültigen Messungen werden die berechnete Dichte und der Längsfasermodul übertragen. Andernfalls werden nur verfügbare Frequenzen gesendet. Geben Sie im Zielwerkzeug die Geometrie der Leiste ein, die Sie schneiden möchten; die geprüften Rohlingsabmessungen werden nicht stillschweigend als fertige Leistenabmessungen verwendet.</p>
           <h4>Charakterisierter Leistenrohling zur Biegesteifigkeit</h4>
-          <p>Geben Sie in Leistenrohling oder Peak / Q die Probenmessungen ein und bestätigen Sie <strong>… Hz als Längsmodus verwenden</strong>. <strong>In Biegesteifigkeit abgleichen</strong> überträgt diese bestätigte Frequenz, Probenabmessungen und Masse, die Quellenbezeichnung sowie berechnete Dichte, Modul und Schallgeschwindigkeit.</p>
-          <p>Abgleichen vergleicht den Entwurf mit diesem Material und untersucht Anpassungen von Breite und Höhe. Prüfen Sie den Vorschlag vor der Anwendung. Das Zielwerkzeug berechnet EI aus Materialmodul und entworfener Geometrie; das EI des Rohlings ist nicht das EI jeder daraus geschnittenen Leiste. Die Untersuchung eines anderen Peaks ersetzt nicht stillschweigend Ihre bestätigte Längsmoduszuordnung.</p>
+          <p>Geben Sie in Leistenrohling oder Peak / Q die Probenmessungen ein. Die zugeordnete Längsfrequenz wird automatisch verwendet. <strong>In Biegesteifigkeit abgleichen</strong> überträgt diese Frequenz, Probenabmessungen und Masse, die Quellenbezeichnung sowie berechnete Dichte, Modul und Schallgeschwindigkeit.</p>
+          <p>Abgleichen vergleicht den Entwurf mit diesem Material und untersucht Anpassungen von Breite und Höhe. Prüfen Sie den Vorschlag vor der Anwendung. Das Zielwerkzeug berechnet EI aus Materialmodul und entworfener Geometrie; das EI des Rohlings ist nicht das EI jeder daraus geschnittenen Leiste. Die Untersuchung eines anderen Peaks ersetzt nicht stillschweigend Ihre zugeordnete Längsmoduszuordnung.</p>
         </details>
 
         <h3 id="reader_help_reference">Interpretation und Speicherung von Ergebnissen</h3>
@@ -638,38 +640,38 @@
     </form>
   </dialog>
 
-  <script src="../vendor/plotly/plotly-basic.min.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/atmosphere.js?rev=3f87131f64e6" defer></script>
-  <script src="../plate_thickness/calculator.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/solver_core.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/state.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/utils.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/audio.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/waveform.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/segmentation.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/fft_engine.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/fft_plot.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/4dof/model_core.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/per_tab_tool_session.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/tool_fullscreen_navigation.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/page_fullscreen.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/site_menu_loader.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/tool_footer_loader.js?rev=3f87131f64e6" defer></script>
-  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/main.js?rev=3f87131f64e6"></script>
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=de0830708801" defer></script>
+  <script src="../common/atmosphere.js?rev=de0830708801" defer></script>
+  <script src="../plate_thickness/calculator.js?rev=de0830708801" defer></script>
+  <script src="../common/solver_core.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/state.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/utils.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/audio.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/waveform.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/segmentation.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/fft_engine.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/fft_plot.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=de0830708801" defer></script>
+  <script src="../common/4dof/model_core.js?rev=de0830708801" defer></script>
+  <script src="../common/per_tab_tool_session.js?rev=de0830708801" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js?rev=de0830708801" defer></script>
+  <script src="../common/page_fullscreen.js?rev=de0830708801" defer></script>
+  <script src="../common/site_menu_loader.js?rev=de0830708801" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=de0830708801" defer></script>
+  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/main.js?rev=de0830708801"></script>
   <!-- localized-locale-selector:start -->
-  <link rel="stylesheet" href="../common/locale_selector.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=de0830708801">
   <script id="tool_locale_config" type="application/json">{"label":"Sprache","currentLocale":"de","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/resonance_reader/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/resonance_reader/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/resonance_reader/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/resonance_reader/"}]}</script>
-  <script src="../common/locale_preference.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/locale_selector.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/locale_preference.js?rev=de0830708801" defer></script>
+  <script src="../common/locale_selector.js?rev=de0830708801" defer></script>
   <!-- localized-locale-selector:end -->
 </body>
 

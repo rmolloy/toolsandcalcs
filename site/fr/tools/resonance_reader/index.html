@@ -5,13 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Resonance Reader | Le Laboratoire chez Rick Molloy Guitars</title>
-  <link rel="stylesheet" href="../common/tool_footer.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="styles.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/tool_guide.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=de0830708801">
+  <link rel="stylesheet" href="styles.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/tool_guide.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=de0830708801">
   <link rel="canonical" href="https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/">
-  <link rel="stylesheet" href="../common/theme_profile.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/theme_profile.css?rev=de0830708801">
   <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/resonance_reader/">
@@ -20,14 +20,14 @@
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
   <!-- shared-length-units:start -->
-  <link rel="stylesheet" href="../common/length_unit_control.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/length_unit_control.css?rev=de0830708801">
   <script id="tool_length_unit_config" type="application/json">{"label":"Unités de longueur"}</script>
-  <script src="../common/length_unit_preference.js?rev=3f87131f64e6"></script>
-  <script src="../common/canonical_length_fields.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_controller.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_frame_sync.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_navigation.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_control.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/length_unit_preference.js?rev=de0830708801"></script>
+  <script src="../common/canonical_length_fields.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_controller.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_frame_sync.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_navigation.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_control.js?rev=de0830708801" defer></script>
   <!-- shared-length-units:end -->
 </head>
 
@@ -300,7 +300,7 @@
           <h4>Définir une cible sans modifier la mesure</h4>
           <p>Dans Instrument avec le Modèle 4DOF activé, <strong>Définir cible</strong> entre une fréquence pour une comparaison modélisée hypothétique. Tapez la cible et appuyez sur Entrée ou quittez le champ pour l'appliquer. Appuyez sur Échap pour annuler une modification. Pour supprimer une cible, videz son champ et appuyez sur Entrée. Aucune de ces actions ne réaffecte le pic mesuré.</p>
           <h4>Inspecter un autre pic dans Pic / Q</h4>
-          <p>Sélectionnez le coup voulu, puis cliquez sur un point de pic ou utilisez les flèches précédente et suivante. Cela change le pic inspecté sans réaffecter Air, Table ou Dos. Pour une ébauche de plaque ou de barre, l'affectation longitudinale confirmée reste également inchangée. Pour remplacer cette confirmation, sélectionnez le bon pic et choisissez <strong>Utiliser … Hz comme mode longitudinal</strong> à côté du résumé de l'ébauche. <strong>Effacer le mode longitudinal</strong> supprime la confirmation.</p>
+          <p>Sélectionnez le coup souhaité, puis cliquez sur un point de pic ou utilisez les flèches de pic précédent et suivant. Cela change le pic inspecté ; les modes Air, Table et Fond ne sont pas réattribués. Pour les plaques ou les ébauches de barres, le calcul suit automatiquement le pic longitudinal attribué. Faites glisser son connecteur pour corriger l’attribution. Utilisez <strong>Utiliser … Hz comme Longitudinal</strong> uniquement si aucun mode longitudinal n’est attribué à la prise.</p>
           <p>Si le pic que vous attendez n'est pas visible, vérifiez la plage de fréquence, le tap sélectionné, le support et la position du tap. Une affectation manuelle ne peut pas récupérer une résonance que l'enregistrement n'a pas capturée clairement.</p>
         </details>
         <details class="tl-accordion">
@@ -350,6 +350,7 @@
         </details>
         <details class="tl-accordion" id="reader_help_plate">
           <summary>Bois de plaque</summary>
+          <p>Tenez légèrement la plaque sur un nœud, là où le mode choisi bouge le moins, ou posez-la sur des supports souples aux positions nodales. Pour la flexion longitudinale, commencez à 22,4% de la longueur depuis une extrémité ; pour la flexion transversale, à 22,4% de la largeur depuis un côté. Frappez la grande face loin des nœuds, près d’un bord libre. Ces positions approchent la flexion simple d’une pièce rectangulaire uniforme ; les nœuds réels d’une plaque peuvent se déplacer ou se courber. Confirmez le mode physique sans vous fier à l’ordre des pics. Ces indications ne s’appliquent pas au mode de torsion. Pour comparer Q, conservez la même pression de contact et le même matériau de support. Pour mesurer Q de façon plus fiable, utilisez un montage avec des cordelettes souples aux positions nodales du mode choisi. Les doigts et les supports peuvent absorber les vibrations et réduire le Q mesuré. Évitez les frottements, les rebonds et le contact avec le cadre. Donnez un seul coup net et laissez l’échantillon vibrer sans le toucher. Répétez en gardant les mêmes supports, la même position du microphone et le même gain ; vérifiez que la résonance choisie présente une décroissance nette et isolée au-dessus du bruit de fond.</p>
           <p>Utilisez Ébauche de plaque pour identifier les modes de flexion d'une table ou d'un dos avant un calcul de matériau ou d'épaisseur. Soutenez et excitez l'échantillon de façon à laisser bouger le mode étudié ; tenir l'échantillon à un endroit où ce mode se déplace fortement peut atténuer sa réponse.</p>
           <ol class="tl-steps">
             <li>Enregistrez ou importez les tapotements de la plaque.</li>
@@ -362,15 +363,16 @@
         </details>
         <details class="tl-accordion" id="reader_help_brace">
           <summary>Bois pour barres</summary>
+          <p>Pour la flexion longitudinale, tenez légèrement la pièce à environ 22,4% de sa longueur depuis une extrémité, ou utilisez des supports souples aux deux positions. Frappez la face dans la direction de flexion souhaitée près d’une extrémité libre, loin des supports. Ne serrez pas la pièce dans un étau. Pour comparer Q, conservez la même pression de contact, le même matériau de support et le même point de frappe. Pour mesurer Q de façon plus fiable, utilisez un montage avec des cordelettes souples aux positions nodales du mode choisi. Les doigts et les supports peuvent absorber les vibrations et réduire le Q mesuré. Évitez les frottements, les rebonds et le contact avec le cadre. Donnez un seul coup net et laissez l’échantillon vibrer sans le toucher. Répétez en gardant les mêmes supports, la même position du microphone et le même gain ; vérifiez que la résonance choisie présente une décroissance nette et isolée au-dessus du bruit de fond.</p>
           <p>Utilisez Ébauche de barre pour caractériser le bois dans lequel vous découperez les barres, et non pour définir les dimensions finales de celles-ci. Commencez avec un échantillon rectangulaire raisonnablement uniforme et laissez-le fléchir assez librement pour révéler le mode de flexion longitudinale.</p>
           <ol class="tl-steps">
             <li>Enregistrez ou importez les coups. L'affichage initial s'étend jusqu'à 500 Hz ; la recherche longitudinale automatique se situe entre 100 et 500 Hz, ce qui n'est pas une règle valable pour tous les échantillons.</li>
             <li>Vérifiez le pic longitudinal suggéré. Un pic fort et étroit est un candidat, mais pas une confirmation physique.</li>
             <li>Sélectionnez Ajouter des mesures et entrez la longueur, largeur, hauteur de l'échantillon dans la direction de flexion et sa masse.</li>
-            <li>Sélectionnez Utiliser … Hz comme mode longitudinal à côté du résumé de l'ébauche de barre pour confirmer la fréquence suggérée. Pour une inspection plus précise, passez à Pic / Q, sélectionnez un coup propre et un pic, puis confirmez-le dans cette vue.</li>
+            <li>La fréquence longitudinale attribuée est utilisée automatiquement. Faites glisser le connecteur du pic longitudinal pour la corriger ; inspectez sa décroissance dans Pic / Q.</li>
             <li>Examinez la densité, le module longitudinal et la vitesse du son. Faire correspondre dans Rigidité flexionnelle poursuit le travail avec les barres que vous souhaitez fabriquer.</li>
           </ol>
-          <p>Vous pouvez modifier les mesures, effacer l'affectation longitudinale confirmée ou confirmer un autre pic. Ne conservez pas une affectation simplement parce qu'elle produit un module plausible. Cette estimation nécessite un mode de flexion longitudinale, pas les trois fréquences de plaque. Elle ne détermine ni la résistance ni la sécurité à long terme d'une barre finie.</p>
+          <p>Modifiez les mesures ou faites glisser le connecteur du pic longitudinal pour corriger son attribution. Vérifiez qu’il s’agit du premier mode de flexion longitudinale de l’échantillon. Cette estimation nécessite un mode longitudinal, pas les trois fréquences de plaque. Elle ne détermine ni la résistance ni la sécurité à long terme d’une barre finie.</p>
         </details>
         <details class="tl-accordion" id="reader_help_peak">
           <summary>Pic / Q</summary>
@@ -391,7 +393,7 @@
           <p>Laissez plus d'espace entre les tapotements, réduisez le bruit de fond et vérifiez un autre tapotement plutôt que d'imposer une réponse. L'exportation des données de pic conserve le pic sélectionné et les preuves disponibles, y compris le Q dérivé de la décroissance et les diagnostics d'ajustement. Un désaccord entre le Q spectral et le Q de décroissance est quelque chose à investiguer, et non une raison de choisir le nombre le plus attrayant.</p>
           <h4>Stock caractérisé</h4>
           <p>Ajouter des mesures ouvre le même éditeur que dans Ébauche de plaque et Ébauche de barre, même si vous arrivez depuis Instrument. Identifiez l'échantillon comme ébauche de plaque ou de barre et saisissez ses dimensions et sa masse. Modifier permet de corriger un type d'échantillon existant ; Appliquer efface une confirmation longitudinale incompatible. Annuler laisse les mesures et la confirmation enregistrées inchangées. Aucune de ces actions ne modifie la vue d'analyse.</p>
-          <p>Confirmez le premier mode de flexion longitudinale de l'échantillon avec <strong>Utiliser … Hz comme mode longitudinal</strong>. Le résumé affiche la vitesse du son longitudinale calculée et le module d'Young longitudinal dynamique. Développez-le pour afficher la densité et, pour une ébauche de barre, l'EI de l'échantillon. Q n'entre pas dans ces estimations ; un pic sélectionné et son Q ne suffisent pas à eux seuls.</p>
+          <p>Utilisez le premier mode de flexion longitudinale de l’échantillon. La fréquence <strong>Longitudinale</strong> attribuée pilote automatiquement le calcul du matériau. Si aucun mode longitudinal n’est attribué, sélectionnez le pic approprié et choisissez une fois <strong>Utiliser … Hz comme Longitudinal</strong>. Le résumé affiche la vitesse du son longitudinale et le module d’Young longitudinal dynamique calculés ; développez-le pour voir la densité et l’EI de l’échantillon lorsqu’ils sont disponibles. Q n’intervient pas dans ces estimations.</p>
           <p>L'estimation de la plaque utilise le modèle rectangulaire libre-libre du calculateur d'épaisseur de plaque, avec la longueur dans le sens des fibres. Le mode longitudinal seul permet l'estimation longitudinale ; les modes transversal et de torsion restent nécessaires au calcul complet de l'épaisseur. Les dimensions d'une guitare finie ou un pic arbitraire du corps ne caractérisent pas le bois. Utilisez une ébauche adaptée et vérifiez physiquement le mode.</p>
         </details>
 
@@ -403,13 +405,13 @@
           <p>Confirmez l'air, le dessus et le dos, puis activez le modèle 4-DOF pour ajuster le modèle couplé simplifié. <strong>Ouvrir dans le modèle 4-DOF</strong> transfère les paramètres ajustés disponibles vers l'outil dédié. Un modèle cible résolu pour une hypothèse prend priorité sur l'ajustement de base, vérifiez donc quel scénario vous souhaitez transférer. Sans ajustement, le lien ouvre l'outil sans paramètres ajustés.</p>
           <p>Une adaptation permet d'explorer des changements modélisés. Elle ne mesure pas indépendamment les masses et raideurs de l'instrument.</p>
           <h4>Ébauche de plaque vers calculateur d'épaisseur</h4>
-          <p><strong>Ouvrir dans le calculateur d'épaisseur de plaque</strong> transmet le mode longitudinal confirmé s'il est disponible, les autres fréquences de plaque compatibles et les mesures d'échantillon appliquées. Les résonances du corps ne sont pas renommées Transversal ou Torsion. Sans mesures, seules les fréquences disponibles sont transmises. Les valeurs par défaut de l'outil de destination ne sont pas des mesures de votre plaque.</p>
+          <p><strong>Ouvrir dans le calculateur d'épaisseur de plaque</strong> transmet le mode longitudinal attribué s'il est disponible, les autres fréquences de plaque compatibles et les mesures d'échantillon appliquées. Les résonances du corps ne sont pas renommées Transversal ou Torsion. Sans mesures, seules les fréquences disponibles sont transmises. Les valeurs par défaut de l'outil de destination ne sont pas des mesures de votre plaque.</p>
           <p>La calculatrice estime la densité, les modules de rigidité longitudinale et transversale, leur rapport et le module de cisaillement utilisé par son modèle de plaque. Vous fournissez les dimensions corporelles souhaitées et la fréquence cible pour calculer l'épaisseur et la masse projetée. Le transfert ne choisit pas la bonne fréquence cible pour votre instrument.</p>
           <h4>Ébauche de barre vers calculateur de barre</h4>
-          <p><strong>Ouvrir dans le calculateur de barre</strong> utilise les mesures déjà saisies ici. Avec un mode longitudinal confirmé et des mesures valides, il transmet la densité calculée et le module longitudinal dans le sens des fibres. Sinon, il envoie uniquement les fréquences disponibles. Saisissez dans l'outil de destination la géométrie de la barre que vous souhaitez découper ; les dimensions de l'ébauche testée ne sont pas reprises silencieusement comme dimensions de la barre finie.</p>
+          <p><strong>Ouvrir dans le calculateur de barre</strong> utilise les mesures déjà saisies ici. Avec un mode longitudinal attribué et des mesures valides, il transmet la densité calculée et le module longitudinal dans le sens des fibres. Sinon, il envoie uniquement les fréquences disponibles. Saisissez dans l'outil de destination la géométrie de la barre que vous souhaitez découper ; les dimensions de l'ébauche testée ne sont pas reprises silencieusement comme dimensions de la barre finie.</p>
           <h4>Ébauche de barre caractérisée vers Rigidité flexionnelle</h4>
-          <p>Dans Ébauche de barre ou Pic / Q, saisissez les mesures de l'échantillon et confirmez <strong>Utiliser … Hz comme mode longitudinal</strong>. <strong>Faire correspondre dans Rigidité flexionnelle</strong> transmet cette fréquence confirmée, les dimensions et la masse de l'échantillon, l'étiquette source ainsi que la densité, le module et la vitesse du son calculés.</p>
-          <p>Faire correspondre compare le plan à ce matériau et explore les ajustements de largeur et de hauteur. Examinez la proposition avant de l'appliquer. L'outil de destination calcule EI à partir du module du matériau et de la géométrie conçue ; l'EI de l'ébauche n'est pas celui de chaque barre qui en sera découpée. L'inspection d'un autre pic ne remplace pas silencieusement votre affectation longitudinale confirmée.</p>
+          <p>Dans Ébauche de barre ou Pic / Q, saisissez les mesures de l’échantillon. La fréquence longitudinale attribuée est utilisée automatiquement. <strong>Faire correspondre dans Rigidité en flexion</strong> transmet cette fréquence, les dimensions et la masse de l’échantillon, l’étiquette de source ainsi que la densité, le module et la vitesse du son calculés.</p>
+          <p>Faire correspondre compare le plan à ce matériau et explore les ajustements de largeur et de hauteur. Examinez la proposition avant de l'appliquer. L'outil de destination calcule EI à partir du module du matériau et de la géométrie conçue ; l'EI de l'ébauche n'est pas celui de chaque barre qui en sera découpée. L'inspection d'un autre pic ne remplace pas silencieusement votre affectation longitudinale attribuée.</p>
         </details>
 
         <h3 id="reader_help_reference">Interpréter et conserver les résultats</h3>
@@ -638,38 +640,38 @@
     </form>
   </dialog>
 
-  <script src="../vendor/plotly/plotly-basic.min.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/atmosphere.js?rev=3f87131f64e6" defer></script>
-  <script src="../plate_thickness/calculator.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/solver_core.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/state.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/utils.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/audio.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/waveform.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/segmentation.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/fft_engine.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/fft_plot.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/4dof/model_core.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/per_tab_tool_session.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/tool_fullscreen_navigation.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/page_fullscreen.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/site_menu_loader.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/tool_footer_loader.js?rev=3f87131f64e6" defer></script>
-  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/main.js?rev=3f87131f64e6"></script>
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=de0830708801" defer></script>
+  <script src="../common/atmosphere.js?rev=de0830708801" defer></script>
+  <script src="../plate_thickness/calculator.js?rev=de0830708801" defer></script>
+  <script src="../common/solver_core.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/state.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/utils.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/audio.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/waveform.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/segmentation.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/fft_engine.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/fft_plot.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=de0830708801" defer></script>
+  <script src="../common/4dof/model_core.js?rev=de0830708801" defer></script>
+  <script src="../common/per_tab_tool_session.js?rev=de0830708801" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js?rev=de0830708801" defer></script>
+  <script src="../common/page_fullscreen.js?rev=de0830708801" defer></script>
+  <script src="../common/site_menu_loader.js?rev=de0830708801" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=de0830708801" defer></script>
+  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/main.js?rev=de0830708801"></script>
   <!-- localized-locale-selector:start -->
-  <link rel="stylesheet" href="../common/locale_selector.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=de0830708801">
   <script id="tool_locale_config" type="application/json">{"label":"Langue","currentLocale":"fr","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/resonance_reader/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/resonance_reader/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/resonance_reader/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/resonance_reader/"}]}</script>
-  <script src="../common/locale_preference.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/locale_selector.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/locale_preference.js?rev=de0830708801" defer></script>
+  <script src="../common/locale_selector.js?rev=de0830708801" defer></script>
   <!-- localized-locale-selector:end -->
 </body>
 

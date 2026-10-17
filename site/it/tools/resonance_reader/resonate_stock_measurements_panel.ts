@@ -2,10 +2,12 @@ import { stockMeasurementsDraftApply, stockMeasurementsDraftBuild, stockKindReso
 import { stockMeasurementsPromptOpen } from "./resonate_stock_measurements_prompt.js";
 import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js";
 import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js";
-import { stockLongConfirmationApply, stockLongConfirmationClear, stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js";
+import { stockLongAssignmentCapture, stockLongConfirmationApply, stockLongConfirmationClear, stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js";
 import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js";
 import { stockPeakContextDiffers } from "./resonate_stock_peak_context.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+import { renderStockSupportGuidance } from "./resonate_stock_support_guidance.js";
+import { stockLongAssignedModeResolve } from "./resonate_stock_long_assignment.js";
 
 type SelectedPeak = { key: string; freq: number | null } | null;
 type Dependencies = { selectedPeak: () => SelectedPeak; render: () => void; transfer: () => void };
@@ -42,6 +44,7 @@ export function stockMeasurementsPanelRender(state: Record<string, any>, selecte
       ${draft.kind ? stockLongActionsBuild(state, stockLongCandidateResolve(state, selectedPeak)) : ""}
     </div>
     ${draft.kind ? stockMaterialDetailsBuild(state) : ""}`;
+  content.querySelector(".brace-stock-estimate__actions")?.before(renderStockSupportGuidance(draft) ?? "");
   const details = content.querySelector("details");
   if (details) details.open = Boolean(detailsOpen);
 }
@@ -57,7 +60,10 @@ export function stockLongCandidateResolve(state: Record<string, any>, selectedPe
 async function stockMeasurementsActionApply(state: Record<string, any>, action: string, dependencies: Dependencies) {
   if (action === "edit") {
     const draft = await stockMeasurementsPromptOpen(state);
-    if (draft) stockMeasurementsDraftApply(state, draft);
+    if (draft) {
+      stockMeasurementsDraftApply(state, draft);
+      stockLongAssignmentCapture(state);
+    }
   }
   if (action === "confirm") stockLongConfirm(state, stockLongCandidateResolve(state, dependencies.selectedPeak()));
   if (action === "clear") stockLongConfirmationClear(state);
@@ -73,6 +79,11 @@ function stockLongConfirm(state: Record<string, any>, selected: SelectedPeak) {
 }
 
 function stockLongActionsBuild(state: Record<string, any>, selected: SelectedPeak) {
+  return stockLongManualActionsBuild(state, selected) + stockLongTransferActionBuild(state);
+}
+
+function stockLongManualActionsBuild(state: Record<string, any>, selected: SelectedPeak) {
+  if (stockLongAssignedModeResolve(state)) return "";
   const confirmation = stockLongConfirmationResolve(state);
   const frequency = selected?.freq;
   const different = confirmation?.peakKey !== selected?.key || confirmation?.frequencyHz !== frequency;
@@ -84,10 +95,13 @@ function stockLongActionsBuild(state: Record<string, any>, selected: SelectedPea
   const clear = confirmation
     ? stockActionMarkupBuild("clear", resonanceLocalizedMessages.stockMeasurementsClearLong)
     : "";
-  const transfer = stockKindResolve(state) === "brace_stock" && braceStockEstimateResolveFromState(state).status === "ready"
+  return confirm + clear;
+}
+
+function stockLongTransferActionBuild(state: Record<string, any>) {
+  return stockKindResolve(state) === "brace_stock" && braceStockEstimateResolveFromState(state).status === "ready"
     ? stockActionMarkupBuild("transfer", resonanceLocalizedMessages.stockMeasurementsMatchFlexuralRigidity)
     : "";
-  return confirm + clear + transfer;
 }
 
 function stockMaterialDetailsBuild(state: Record<string, any>) {

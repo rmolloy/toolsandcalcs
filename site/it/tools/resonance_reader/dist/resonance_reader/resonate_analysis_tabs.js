@@ -1,6 +1,6 @@
-import { plateMaterialPanelVisibleForMeasureMode } from "./resonate_plate_material_panel.js?rev=3f87131f64e6";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3f87131f64e6";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=3f87131f64e6";
+import { plateMaterialPanelVisibleForMeasureMode } from "./resonate_plate_material_panel.js?rev=de0830708801";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=de0830708801";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=de0830708801";
 const DEFAULT_ANALYSIS_TAB = "peak_analysis";
 const WAVEFORM_NAVIGATOR_COPY = {
     title: resonanceLocalizedMessages.waveformNavigatorTitle,

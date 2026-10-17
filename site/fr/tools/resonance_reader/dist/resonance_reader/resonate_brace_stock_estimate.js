@@ -1,10 +1,11 @@
-import { braceStockMaterialBuildFromMeasurements, braceStockMeasurementsValid, } from "./resonate_brace_stock_material.js?rev=3f87131f64e6";
+import { braceStockMaterialBuildFromMeasurements, braceStockMeasurementsValid, } from "./resonate_brace_stock_material.js?rev=de0830708801";
+import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=de0830708801";
 export function braceStockEstimateResolveFromState(state) {
     const measurements = state.braceStockMeasurements;
     if (!measurements || !braceStockMeasurementsValid(measurements)) {
         return { status: "incomplete", measurements: measurements ?? null, confirmation: null, material: null };
     }
-    const confirmation = state.braceStockConfirmedLongMode;
+    const confirmation = stockLongConfirmationResolve(state);
     if (confirmation?.mode !== "long" || !Number.isFinite(confirmation.frequencyHz)) {
         return { status: "needs-confirmation", measurements, confirmation: null, material: null };
     }

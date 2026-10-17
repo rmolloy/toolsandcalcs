@@ -1,6 +1,7 @@
 import type { ModeDetection } from "./resonate_mode_detection.js";
 import type { ModeCard } from "./resonate_types.js";
 import { customMeasurementCardsBuildFromState } from "./resonate_custom_measurements.js";
+import { stockLongAssignmentCapture } from "./resonate_stock_long_confirmation.js";
 
 type AnalysisShape = {
   noteAndCentsFromFreq: (freq: number | null) => { note: string | null; cents: number | null };
@@ -32,6 +33,7 @@ export function stageRefreshPostApply(args: {
   });
   args.state.lastModesDetected = args.modesDetected;
   args.state.lastModeCards = [...cards, ...customCards];
+  stockLongAssignmentCapture(args.state);
 }
 
 function stageRefreshCardsBuild(args: {

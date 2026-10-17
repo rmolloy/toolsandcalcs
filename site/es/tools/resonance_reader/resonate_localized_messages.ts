@@ -1,4 +1,9 @@
 export type ResonanceLocalizedMessages = {
+  stockSupportLongRatio: string;
+  stockSupportLongDistance: string;
+  stockSupportCrossRatio: string;
+  stockSupportCrossDistance: string;
+  stockSupportHelpLink: string;
   braceEstimateClearLong: string;
   braceEstimateDensityLabel: string;
   braceEstimateEditMeasurements: string;
@@ -378,7 +383,7 @@ const ENGLISH_RESONANCE_MESSAGES: ResonanceLocalizedMessages = Object.freeze({
   pipelineWaveformRenderDiagnosticsTemplate: " yMax={yMax} maxAbs={maxAbs}",
   modeCardsAddCustomAriaLabel: "Add custom measurement",
   modeCardsAddMode: "Add Mode",
-  modeCardsConfirmedLong: "Confirmed Long",
+  modeCardsConfirmedLong: "Long",
   modeCardsDeleteCustomTitle: "Delete custom measurement",
   modeCardsNoPeak: "No peak",
   modeCardsCustomFallbackLabel: "Custom",
@@ -540,10 +545,10 @@ const ENGLISH_RESONANCE_MESSAGES: ResonanceLocalizedMessages = Object.freeze({
   stockMeasurementsEnterPositive: "Enter four positive measurements.",
   stockMeasurementsEdit: "Edit measurements",
   stockMeasurementsKindChangeConsequence:
-    "Applying this specimen change clears confirmed Long.",
+    "Applying this specimen change clears its Long assignment.",
   stockMeasurementsLengthLabel: "Length (mm)",
-  stockMeasurementsLongModeUnconfirmed: "Long mode not confirmed.",
-  stockMeasurementsLongModeUnconfirmedPanel: "Long mode not confirmed",
+  stockMeasurementsLongModeUnconfirmed: "Long mode not assigned.",
+  stockMeasurementsLongModeUnconfirmedPanel: "Long mode not assigned",
   stockMeasurementsMatchFlexuralRigidity: "Match in Flexural Rigidity",
   stockMeasurementsMassLabel: "Mass (g)",
   stockMeasurementsPlateAssumption:
@@ -551,20 +556,25 @@ const ENGLISH_RESONANCE_MESSAGES: ResonanceLocalizedMessages = Object.freeze({
   stockMeasurementsPlateHeightLabel: "Thickness (mm)",
   stockMeasurementsPlateKind: "Plate",
   stockMeasurementsReadyPreviewTemplate:
-    "Draft calculation · Confirmed Long {frequencyHz} Hz · Calculated longitudinal sound speed {soundSpeedMps} m/s · Calculated E {youngsModulusGPa} GPa · Density {densityKgM3} kg/m³",
+    "Draft calculation · Long {frequencyHz} Hz · Calculated longitudinal sound speed {soundSpeedMps} m/s · Calculated E {youngsModulusGPa} GPa · Density {densityKgM3} kg/m³",
   stockMeasurementsReadyDetailsTemplate:
     "Free-free bending assumption · Calculated density {densityKgM3} kg/m³{rigidity}",
   stockMeasurementsReadySummaryTemplate:
-    "Confirmed Long {frequencyHz} Hz · Calculated longitudinal sound speed {soundSpeedMps} m/s · Calculated E {youngsModulusGPa} GPa · Free-free bending",
+    "Long {frequencyHz} Hz · Calculated longitudinal sound speed {soundSpeedMps} m/s · Calculated E {youngsModulusGPa} GPa · Free-free bending",
   stockMeasurementsRigidityTemplate: " · Specimen EI {rigidityNm2} N·m²",
   stockMeasurementsSpecimenLabel: "Specimen",
   stockMeasurementsSummaryTemplate:
     "L {lengthMm} × W {widthMm} × H {heightMm} mm · {massG} g",
   stockMeasurementsTitle: "Stock measurements",
   stockMeasurementsUseAsLongTemplate: "Use {frequencyHz} Hz as Long",
-  stockMeasurementsConfirmedLongTemplate: "Confirmed Long {frequencyHz} Hz",
+  stockMeasurementsConfirmedLongTemplate: "Long {frequencyHz} Hz",
   stockMeasurementsWidthLabel: "Width (mm)",
   stockPeakLabel: "Peak",
+  stockSupportLongRatio: "Hold or support lightly 22.4% of the length from either end for Long.",
+  stockSupportLongDistance: "Hold or support lightly {distanceMm} mm from either end for Long.",
+  stockSupportCrossRatio: "For Cross, hold or support lightly 22.4% of the width from either side.",
+  stockSupportCrossDistance: "For Cross, hold or support lightly {distanceMm} mm from either side.",
+  stockSupportHelpLink: "How to hold, tap & measure Q accurately",
   settingsAudioDefaultMicrophone: "Default microphone",
   settingsAudioMicrophoneTemplate: "Microphone {number}",
   settingsRefreshFailedStatus: "FFT settings updated. Refresh failed.",

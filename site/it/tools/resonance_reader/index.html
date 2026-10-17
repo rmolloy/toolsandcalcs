@@ -5,13 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Resonance Reader | Il Laboratorio di Rick Molloy Guitars</title>
-  <link rel="stylesheet" href="../common/tool_footer.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="styles.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/tool_guide.css?rev=3f87131f64e6">
-  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=de0830708801">
+  <link rel="stylesheet" href="styles.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/tool_guide.css?rev=de0830708801">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=de0830708801">
   <link rel="canonical" href="https://rickmolloyguitars.com/it/lab/tools/resonance_reader/">
-  <link rel="stylesheet" href="../common/theme_profile.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/theme_profile.css?rev=de0830708801">
   <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/resonance_reader/">
@@ -20,14 +20,14 @@
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
   <!-- shared-length-units:start -->
-  <link rel="stylesheet" href="../common/length_unit_control.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/length_unit_control.css?rev=de0830708801">
   <script id="tool_length_unit_config" type="application/json">{"label":"Unità di lunghezza"}</script>
-  <script src="../common/length_unit_preference.js?rev=3f87131f64e6"></script>
-  <script src="../common/canonical_length_fields.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_controller.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_frame_sync.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_navigation.js?rev=3f87131f64e6"></script>
-  <script src="../common/length_unit_control.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/length_unit_preference.js?rev=de0830708801"></script>
+  <script src="../common/canonical_length_fields.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_controller.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_frame_sync.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_navigation.js?rev=de0830708801"></script>
+  <script src="../common/length_unit_control.js?rev=de0830708801" defer></script>
   <!-- shared-length-units:end -->
 </head>
 
@@ -300,7 +300,7 @@
           <h4>Imposta un obiettivo senza modificare la misurazione</h4>
           <p>In Strumento con 4DOF Model abilitato, <strong>Imposta obiettivo</strong> inserisce una frequenza per un confronto modellato. Digita la frequenza e premi Invio o lascia il campo per applicarla. Premi Esc per annullare una modifica. Per rimuovere un obiettivo, svuota il campo e premi Invio. Nessuna di queste azioni riassegna il picco misurato.</p>
           <h4>Ispeziona un diverso picco in Peak / Q</h4>
-          <p>Seleziona il colpo desiderato, quindi fai clic su un punto di picco o usa le frecce precedente e successiva. Questo cambia il picco ispezionato senza riassegnare Aria, Tavola o Fondo. Per il grezzo di tavola o di catena, anche l'assegnazione longitudinale confermata resta invariata. Per sostituirla, seleziona il picco corretto e scegli <strong>Usa … Hz come modo longitudinale</strong> accanto al riepilogo del grezzo. <strong>Rimuovi modo longitudinale</strong> elimina la conferma.</p>
+          <p>Seleziona il colpo desiderato, poi fai clic su un punto di picco o usa le frecce del picco precedente e successivo. Questo cambia il picco esaminato; non riassegna Aria, Tavola o Fondo. Per tavole o grezzi di catene, il calcolo segue automaticamente il picco longitudinale assegnato. Trascina il suo connettore per correggere l’assegnazione. Usa <strong>Usa … Hz come Longitudinale</strong> solo quando alla registrazione non è assegnato alcun modo longitudinale.</p>
           <p>Se il picco atteso non è visibile, controlla l'intervallo di frequenza, il colpo selezionato, il supporto e la posizione del colpo. Un'assegnazione manuale non può recuperare una risonanza che la registrazione non ha catturato chiaramente.</p>
         </details>
         <details class="tl-accordion">
@@ -350,6 +350,7 @@
         </details>
         <details class="tl-accordion" id="reader_help_plate">
           <summary>Legno per tavola</summary>
+          <p>Tenere delicatamente la tavola in corrispondenza di un nodo, dove il modo scelto si muove meno, oppure appoggiarla su supporti morbidi nelle posizioni nodali. Per la flessione longitudinale, partire dal 22,4% della lunghezza da una delle estremità; per quella trasversale, dal 22,4% della larghezza da uno dei lati. Percuotere la faccia larga lontano dai nodi, vicino a un bordo libero. Queste posizioni approssimano la flessione semplice di un campione rettangolare uniforme; i nodi reali di una tavola possono spostarsi o incurvarsi. Confermare il modo fisico senza affidarsi all’ordine dei picchi. Queste istruzioni non valgono per il modo torsionale. Per confrontare Q, mantenere costanti la pressione di contatto e il materiale di appoggio. Per misurare Q in modo più affidabile, usa un telaio con supporti di corda flessibile nelle posizioni nodali del modo selezionato. Le dita e i supporti possono assorbire vibrazioni e ridurre il Q misurato. Evita sfregamenti, rimbalzi e contatti con il telaio. Dai un solo colpo netto e lascia vibrare il campione senza toccarlo. Ripeti mantenendo costanti supporti, posizione del microfono e guadagno; verifica che la risonanza selezionata abbia un decadimento chiaro e isolato sopra il rumore di fondo.</p>
           <p>Usa Grezzo per tavola per identificare i modi di flessione in una tavola armonica o in un fondo prima di calcolare il materiale o lo spessore. Sostieni ed eccita il campione in modo che il modo di interesse possa muoversi; tenerlo dove quel modo si muove intensamente può attenuarne la risposta.</p>
           <ol class="tl-steps">
             <li>Registra o importa i colpi sulla piastra.</li>
@@ -362,15 +363,16 @@
         </details>
         <details class="tl-accordion" id="reader_help_brace">
           <summary>Legno per catene</summary>
+          <p>Per la flessione longitudinale, tenere delicatamente il campione a circa il 22,4% della lunghezza da una delle estremità, oppure usare supporti morbidi in entrambe le posizioni. Percuotere la faccia nella direzione di flessione desiderata vicino a un’estremità libera, lontano dai supporti. Non bloccare il campione in una morsa. Per confrontare Q, mantenere costanti la pressione di contatto, il materiale di appoggio e il punto di percussione. Per misurare Q in modo più affidabile, usa un telaio con supporti di corda flessibile nelle posizioni nodali del modo selezionato. Le dita e i supporti possono assorbire vibrazioni e ridurre il Q misurato. Evita sfregamenti, rimbalzi e contatti con il telaio. Dai un solo colpo netto e lascia vibrare il campione senza toccarlo. Ripeti mantenendo costanti supporti, posizione del microfono e guadagno; verifica che la risonanza selezionata abbia un decadimento chiaro e isolato sopra il rumore di fondo.</p>
           <p>Utilizza Grezzo per Catena per caratterizzare il legno da cui taglierai le catene, non per impostare le dimensioni delle catene finite. Inizia con un campione rettangolare abbastanza uniforme e lascialo piegare liberamente abbastanza da rivelare la modalità di flessione longitudinale.</p>
           <ol class="tl-steps">
             <li>Registra o importa i colpi. La visualizzazione iniziale arriva a 500 Hz; la ricerca longitudinale automatica è compresa tra 100 e 500 Hz, ma non è una regola per ogni campione.</li>
             <li>Controlla il picco longitudinale suggerito. Un picco forte e stretto è un candidato, non una conferma fisica.</li>
             <li>Scegli Aggiungi misurazioni e inserisci lunghezza, larghezza, altezza nel senso della flessione e massa.</li>
-            <li>Scegli Usa … Hz come modo longitudinale accanto al riepilogo del grezzo per confermare la frequenza suggerita. Per un'ispezione più accurata, passa a Picco / Q, seleziona un colpo pulito e un picco, quindi confermalo in quella vista.</li>
+            <li>La frequenza longitudinale assegnata viene usata automaticamente. Trascina il connettore del picco longitudinale per correggerla; esamina il suo decadimento in Picco / Q.</li>
             <li>Rivedi densità, modulo di flessione e velocità del suono. L'equivalenza in Rigidezza Flessionale continua con le catene che intendi realizzare.</li>
           </ol>
-          <p>Puoi modificare le misurazioni, cancellare l'assegnazione longitudinale confermata o confermare un altro picco. Non mantenere un'assegnazione solo perché ha prodotto un modulo plausibile. Questa stima richiede un modo di flessione longitudinale, non le tre frequenze della tavola. Non stabilisce la resistenza o la sicurezza a lungo termine di una catena finita.</p>
+          <p>Modifica le misurazioni o trascina il connettore del picco longitudinale per correggerne l’assegnazione. Verifica che il picco sia il primo modo di flessione longitudinale del campione. Questa stima richiede un modo longitudinale, non le tre frequenze della tavola. Non stabilisce la resistenza né la sicurezza a lungo termine di una catena finita.</p>
         </details>
         <details class="tl-accordion" id="reader_help_peak">
           <summary>Picco / Q</summary>
@@ -391,7 +393,7 @@
           <p>Lascia più spazio tra i colpi, riduci il rumore di fondo e controlla un altro colpo invece di forzare una risposta. Esporta i dati del picco conserva il picco selezionato e le prove disponibili, inclusi Q derivato dalla decadenza e diagnosi di adattamento. Discrepanza tra Q spettrale e Q di decadenza è qualcosa da indagare, non un motivo per scegliere il numero più attraente.</p>
           <h4>Stock caratterizzato</h4>
           <p>Aggiungi misurazioni apre lo stesso editor usato in Grezzo per tavola e Grezzo per catena, anche quando arrivi da Strumento. Identifica il campione come grezzo per tavola o per catena e inserisci dimensioni e massa. Modifica permette di correggere un tipo di campione esistente; Applica cancella una conferma longitudinale incompatibile. Annulla lascia invariate le misurazioni salvate e la conferma. Nessuna azione modifica la vista di analisi.</p>
-          <p>Conferma il primo modo di flessione longitudinale del campione con <strong>Usa … Hz come modo longitudinale</strong>. Il riepilogo mostra la velocità longitudinale del suono calcolata e il modulo di Young dinamico lungo fibra. Espandilo per vedere la densità e, per un grezzo da catena, l'EI del campione. Q non entra in queste stime; un picco selezionato e il suo Q da soli non sono sufficienti.</p>
+          <p>Usa il primo modo di flessione longitudinale del campione. La frequenza <strong>Longitudinale</strong> assegnata guida automaticamente il calcolo del materiale. Se non è assegnato alcun modo longitudinale, seleziona il picco appropriato e scegli una volta <strong>Usa … Hz come Longitudinale</strong>. Il riepilogo mostra la velocità longitudinale del suono e il modulo di Young longitudinale dinamico calcolati; espandilo per vedere la densità e l’EI del campione quando disponibili. Q non entra in queste stime.</p>
           <p>La stima della tavola usa il modello rettangolare libero-libero del Calcolatore dello spessore della tavola, con la lunghezza lungo fibra. Il modo longitudinale da solo sostiene la stima longitudinale; i modi trasversale e di torsione restano necessari per il calcolo completo dello spessore. Le dimensioni di una chitarra finita o un picco arbitrario del corpo non caratterizzano il legno. Usa un campione adatto e verifica fisicamente il modo.</p>
         </details>
 
@@ -403,13 +405,13 @@
           <p>Conferma aria, top e fondo, quindi abilita il modello 4DOF per adattare il modello semplificato accoppiato. <strong>Apri nel modello 4-DOF</strong> trasferisce i parametri adattati disponibili nel strumento dedicato. Un modello target what-if risolto ha priorità sull'adattamento di base, quindi verifica quale scenario intendi trasferire. Senza un adattamento, il collegamento apre lo strumento senza parametri adattati.</p>
           <p>Un fit ti permette di esplorare modifiche modellate. Non misura indipendentemente le masse e le rigidità dello strumento.</p>
           <h4>Grezzo per catena a spessore della piastra</h4>
-          <p><strong>Apri nel Calcolatore dello spessore della tavola</strong> invia il modo longitudinale confermato, se disponibile, le altre frequenze compatibili della tavola e le misurazioni applicate al campione. Le risonanze del corpo non vengono rinominate Trasversale o Torsione. Senza misurazioni, invia solo le frequenze disponibili. I valori predefiniti dello strumento di destinazione non sono misure della tua tavola.</p>
+          <p><strong>Apri nel Calcolatore dello spessore della tavola</strong> invia il modo longitudinale assegnato, se disponibile, le altre frequenze compatibili della tavola e le misurazioni applicate al campione. Le risonanze del corpo non vengono rinominate Trasversale o Torsione. Senza misurazioni, invia solo le frequenze disponibili. I valori predefiniti dello strumento di destinazione non sono misure della tua tavola.</p>
           <p>La calcolatrice stima densità, moduli longitudinale e trasversale, il loro rapporto e il modulo di taglio utilizzato dal suo modello di piastra. Fornisci le dimensioni corporee intese e la frequenza target per calcolare lo spessore e la massa proiettata. Il trasferimento non sceglie la giusta frequenza target per il tuo strumento.</p>
           <h4>Calcolatore di catena dal grezzo per catena</h4>
-          <p><strong>Apri nel Calcolatore di catene</strong> usa le misurazioni già inserite qui. Con un modo longitudinale confermato e misurazioni valide, trasferisce la densità calcolata e il modulo lungo fibra. Altrimenti invia solo le frequenze disponibili. Inserisci nello strumento di destinazione la geometria della catena che intendi tagliare; le dimensioni del grezzo testato non vengono usate silenziosamente come dimensioni della catena finita.</p>
+          <p><strong>Apri nel Calcolatore di catene</strong> usa le misurazioni già inserite qui. Con un modo longitudinale assegnato e misurazioni valide, trasferisce la densità calcolata e il modulo lungo fibra. Altrimenti invia solo le frequenze disponibili. Inserisci nello strumento di destinazione la geometria della catena che intendi tagliare; le dimensioni del grezzo testato non vengono usate silenziosamente come dimensioni della catena finita.</p>
           <h4>Grezzo per catena caratterizzato a Rigidezza flessionale</h4>
-          <p>In Grezzo per catena o Picco / Q, inserisci le misurazioni del campione e conferma <strong>Usa … Hz come modo longitudinale</strong>. <strong>Confronta in Rigidezza flessionale</strong> trasferisce la frequenza confermata, le dimensioni e la massa del campione, l'etichetta sorgente e la densità, il modulo e la velocità del suono calcolati.</p>
-          <p>Confronta paragona il progetto con questo materiale ed esplora le regolazioni di larghezza e altezza. Valuta la proposta prima di applicarla. Lo strumento di destinazione calcola EI dal modulo del materiale e dalla geometria progettata; l'EI del grezzo non è l'EI di ogni catena ricavata da esso. Ispezionare un altro picco non sostituisce silenziosamente l'assegnazione longitudinale confermata.</p>
+          <p>In Grezzo per catene o Picco / Q, inserisci le misurazioni del campione. La frequenza longitudinale assegnata viene usata automaticamente. <strong>Confronta in Rigidità flessionale</strong> trasferisce quella frequenza, le dimensioni e la massa del campione, l’etichetta della fonte e la densità, il modulo e la velocità del suono calcolati.</p>
+          <p>Confronta paragona il progetto con questo materiale ed esplora le regolazioni di larghezza e altezza. Valuta la proposta prima di applicarla. Lo strumento di destinazione calcola EI dal modulo del materiale e dalla geometria progettata; l'EI del grezzo non è l'EI di ogni catena ricavata da esso. Ispezionare un altro picco non sostituisce silenziosamente l'assegnazione longitudinale assegnata.</p>
         </details>
 
         <h3 id="reader_help_reference">Interpretazione e conservazione dei risultati</h3>
@@ -638,38 +640,38 @@
     </form>
   </dialog>
 
-  <script src="../vendor/plotly/plotly-basic.min.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/atmosphere.js?rev=3f87131f64e6" defer></script>
-  <script src="../plate_thickness/calculator.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/solver_core.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/state.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/utils.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/audio.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/waveform.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/segmentation.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/fft_engine.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/fft_plot.js?rev=3f87131f64e6" defer></script>
-  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/4dof/model_core.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/per_tab_tool_session.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/tool_fullscreen_navigation.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/page_fullscreen.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/site_menu_loader.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/tool_footer_loader.js?rev=3f87131f64e6" defer></script>
-  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=3f87131f64e6"></script>
-  <script type="module" src="dist/resonance_reader/main.js?rev=3f87131f64e6"></script>
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=de0830708801" defer></script>
+  <script src="../common/atmosphere.js?rev=de0830708801" defer></script>
+  <script src="../plate_thickness/calculator.js?rev=de0830708801" defer></script>
+  <script src="../common/solver_core.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/state.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/utils.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/audio.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/waveform.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/segmentation.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/fft_engine.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/fft_plot.js?rev=de0830708801" defer></script>
+  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=de0830708801" defer></script>
+  <script src="../common/4dof/model_core.js?rev=de0830708801" defer></script>
+  <script src="../common/per_tab_tool_session.js?rev=de0830708801" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js?rev=de0830708801" defer></script>
+  <script src="../common/page_fullscreen.js?rev=de0830708801" defer></script>
+  <script src="../common/site_menu_loader.js?rev=de0830708801" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=de0830708801" defer></script>
+  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=de0830708801"></script>
+  <script type="module" src="dist/resonance_reader/main.js?rev=de0830708801"></script>
   <!-- localized-locale-selector:start -->
-  <link rel="stylesheet" href="../common/locale_selector.css?rev=3f87131f64e6">
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=de0830708801">
   <script id="tool_locale_config" type="application/json">{"label":"Lingua","currentLocale":"it","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/resonance_reader/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/resonance_reader/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/resonance_reader/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/resonance_reader/"}]}</script>
-  <script src="../common/locale_preference.js?rev=3f87131f64e6" defer></script>
-  <script src="../common/locale_selector.js?rev=3f87131f64e6" defer></script>
+  <script src="../common/locale_preference.js?rev=de0830708801" defer></script>
+  <script src="../common/locale_selector.js?rev=de0830708801" defer></script>
   <!-- localized-locale-selector:end -->
 </body>
 
