@@ -793,10 +793,7 @@ body { padding: 28px; }
   order: 4;
 }
 .card-surface[data-measure-mode="peak_analysis"] .stock-measurements {
-  order: 4;
-}
-@media (max-width: 640px) {
-  .card-surface[data-measure-mode="peak_analysis"] .stock-measurements { order: 1; }
+  order: 3;
 }
 .card-surface[data-measure-mode="peak_analysis"] .measure-action-row {
   order: 5;
@@ -905,6 +902,19 @@ body { padding: 28px; }
   color: rgba(230, 233, 239, 0.76);
   font-size: var(--type-caption-size);
   line-height: var(--type-caption-line);
+}
+
+.stock-support-guidance {
+  flex: 1 1 22rem;
+  min-width: 0;
+}
+
+.stock-support-guidance a {
+  text-underline-offset: 3px;
+}
+
+.stock-support-guidance + .brace-stock-estimate__actions {
+  margin-left: 0;
 }
 
 .brace-stock-estimate__metrics,
