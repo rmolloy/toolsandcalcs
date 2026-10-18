@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=2c871654a0c5";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=aab423209ba9";
 export const RESONATE_STARTUP_RUNNER_FLAG = {
     name: "resonate_startup_runner",
     owner: "resonate",
