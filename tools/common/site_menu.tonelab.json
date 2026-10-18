@@ -35,6 +35,10 @@
       "href": "/lab/tools/guitar_setup_calculator/"
     },
     {
+      "label": "Intonation Explorer",
+      "href": "/lab/tools/intonation_explorer/"
+    },
+    {
       "label": "Flexural Rigidity",
       "href": "/lab/tools/flexural_rigidity/"
     },
