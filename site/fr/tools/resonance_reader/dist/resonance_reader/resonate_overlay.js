@@ -1,5 +1,5 @@
-import { adaptParamsToSolver, computeResponseSafe } from "./resonate_solver_fit.js?rev=de0830708801";
-import { seriesValuesSampleAtFrequencies } from "../common/series_sampling.js?rev=de0830708801";
+import { adaptParamsToSolver, computeResponseSafe } from "./resonate_solver_fit.js?rev=1d7203985d25";
+import { seriesValuesSampleAtFrequencies } from "../common/series_sampling.js?rev=1d7203985d25";
 export function responseOverlayFromSolver(rawParams, freqs) {
     const resp = computeResponseSafe(adaptParamsToSolver(rawParams));
     if (!resp?.total?.length)
