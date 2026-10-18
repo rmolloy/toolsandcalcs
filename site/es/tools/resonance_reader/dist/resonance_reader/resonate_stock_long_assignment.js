@@ -1,6 +1,6 @@
-import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=957cdb0b4694";
-import { stockKindResolve } from "./resonate_stock_measurements.js?rev=957cdb0b4694";
-import { braceStockLongModeConfirmationBuild } from "./resonate_brace_stock_confirmation.js?rev=957cdb0b4694";
+import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=2c871654a0c5";
+import { stockKindResolve } from "./resonate_stock_measurements.js?rev=2c871654a0c5";
+import { braceStockLongModeConfirmationBuild } from "./resonate_brace_stock_confirmation.js?rev=2c871654a0c5";
 export function stockLongAssignedModeResolve(state) {
     if (stockKindResolve(state) !== peakAnalysisSourceMeasureModeResolve(state))
         return undefined;

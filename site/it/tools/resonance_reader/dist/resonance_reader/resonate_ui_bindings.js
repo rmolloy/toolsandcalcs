@@ -1,20 +1,20 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=957cdb0b4694";
-import { settingsModalBind } from "./resonate_settings_modal.js?rev=957cdb0b4694";
-import { readResonanceIdleStatus, saveStateMarkCleanAndRender, saveStateMarkDirtyAndRender, saveStatePipelineDirtySubscriptionAttach, } from "./resonate_save_button.js?rev=957cdb0b4694";
-import { perTabSessionLifecyclePersistenceAttach, perTabSessionPersist, perTabSessionPersistenceExpose, } from "./resonate_per_tab_persistence.js?rev=957cdb0b4694";
-import { recordingMenuInitialWidthSync } from "./resonate_recording_menu.js?rev=957cdb0b4694";
-import { bindTakeOverlayControls, takeOverlayControlsRender, } from "./resonate_take_overlay_controls.js?rev=957cdb0b4694";
-import { bindImport } from "./resonate_import_control.js?rev=957cdb0b4694";
-import { bindRecord } from "./resonate_recording_control.js?rev=957cdb0b4694";
-import { bindWaveTransport } from "./resonate_wave_transport.js?rev=957cdb0b4694";
-import { restoreNotebookConnectDraftIntoUi, restoreNotebookEventIntoUi, restorePerTabSessionIntoUi, } from "./resonate_restore_ui.js?rev=957cdb0b4694";
-import { bindSaveAudio, refreshResonanceSaveSurfaceAndRender, } from "./resonate_save_control.js?rev=957cdb0b4694";
-import { bindMeasureMode } from "./resonate_measure_mode_control.js?rev=957cdb0b4694";
-import { resonanceToolVisibilityBind } from "./resonate_tool_visibility.js?rev=957cdb0b4694";
-export { importControlUsesNativeLabel, importFileInputPrepare, } from "./resonate_import_control.js?rev=957cdb0b4694";
-export { readResonanceIdleStatus } from "./resonate_save_button.js?rev=957cdb0b4694";
-export { restoreNotebookConnectDraftIntoUi } from "./resonate_restore_ui.js?rev=957cdb0b4694";
-export { measureModeChangeApply, measureModeChangeShouldRenderMock, measureModeChangeShouldReseedDemoWave, measureModeChangeShouldRunPipelineForDemoWave, measureModeStatePreserveCustomCardsOnly, measureModeStateResetForDemoWave, measureModeViewRangesReset, peakAnalysisSourceMeasureModeSync, } from "./resonate_measure_mode_control.js?rev=957cdb0b4694";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=2c871654a0c5";
+import { settingsModalBind } from "./resonate_settings_modal.js?rev=2c871654a0c5";
+import { readResonanceIdleStatus, saveStateMarkCleanAndRender, saveStateMarkDirtyAndRender, saveStatePipelineDirtySubscriptionAttach, } from "./resonate_save_button.js?rev=2c871654a0c5";
+import { perTabSessionLifecyclePersistenceAttach, perTabSessionPersist, perTabSessionPersistenceExpose, } from "./resonate_per_tab_persistence.js?rev=2c871654a0c5";
+import { recordingMenuInitialWidthSync } from "./resonate_recording_menu.js?rev=2c871654a0c5";
+import { bindTakeOverlayControls, takeOverlayControlsRender, } from "./resonate_take_overlay_controls.js?rev=2c871654a0c5";
+import { bindImport } from "./resonate_import_control.js?rev=2c871654a0c5";
+import { bindRecord } from "./resonate_recording_control.js?rev=2c871654a0c5";
+import { bindWaveTransport } from "./resonate_wave_transport.js?rev=2c871654a0c5";
+import { restoreNotebookConnectDraftIntoUi, restoreNotebookEventIntoUi, restorePerTabSessionIntoUi, } from "./resonate_restore_ui.js?rev=2c871654a0c5";
+import { bindSaveAudio, refreshResonanceSaveSurfaceAndRender, } from "./resonate_save_control.js?rev=2c871654a0c5";
+import { bindMeasureMode } from "./resonate_measure_mode_control.js?rev=2c871654a0c5";
+import { resonanceToolVisibilityBind } from "./resonate_tool_visibility.js?rev=2c871654a0c5";
+export { importControlUsesNativeLabel, importFileInputPrepare, } from "./resonate_import_control.js?rev=2c871654a0c5";
+export { readResonanceIdleStatus } from "./resonate_save_button.js?rev=2c871654a0c5";
+export { restoreNotebookConnectDraftIntoUi } from "./resonate_restore_ui.js?rev=2c871654a0c5";
+export { measureModeChangeApply, measureModeChangeShouldRenderMock, measureModeChangeShouldReseedDemoWave, measureModeChangeShouldRunPipelineForDemoWave, measureModeStatePreserveCustomCardsOnly, measureModeStateResetForDemoWave, measureModeViewRangesReset, peakAnalysisSourceMeasureModeSync, } from "./resonate_measure_mode_control.js?rev=2c871654a0c5";
 export function uiBindingsAttach(deps) {
     const attach = async () => {
         const restoredNotebookDraft = restoreNotebookConnectDraftIntoUi(deps);
