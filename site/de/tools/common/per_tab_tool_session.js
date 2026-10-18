@@ -12,7 +12,7 @@
     if (perTabToolSessionResetConfirmedConsume(globalScope, storage)) {
       perTabToolSessionStateClear(storage, toolId, version);
     } else if (hasStoredState && perTabToolSessionReloaded(globalScope) && !perTabToolSessionResetHandledRead(globalScope)) {
-      perTabToolSessionResetConfirmationShow(globalScope, storage, toolId, version);
+      perTabToolSessionResetConfirmationShow(globalScope, storage, toolId, version, options.resetLabels);
     }
 
     return {
@@ -82,7 +82,7 @@
     runtime[RESET_CONFIRMATION_HANDLED_KEY] = true;
   }
 
-  function perTabToolSessionResetConfirmationShow(runtime, storage, toolId, version) {
+  function perTabToolSessionResetConfirmationShow(runtime, storage, toolId, version, labels) {
     const document = runtime?.document;
     if (!document || document.getElementById("per_tab_session_reset_confirmation")) {
       return;
@@ -99,12 +99,12 @@
       confirmation.className = "per-tab-session-reset-confirmation";
       confirmation.setAttribute("role", "alertdialog");
       confirmation.setAttribute("aria-modal", "true");
-      confirmation.setAttribute("aria-label", "Reset temporary data");
-      message.textContent = "Reset temporary data for this page?";
+      confirmation.setAttribute("aria-label", labels?.title || "Reset temporary data");
+      message.textContent = labels?.question || "Reset temporary data for this page?";
       keepButton.type = "button";
-      keepButton.textContent = "Keep data";
+      keepButton.textContent = labels?.keep || "Keep data";
       resetButton.type = "button";
-      resetButton.textContent = "Reset data";
+      resetButton.textContent = labels?.reset || "Reset data";
       keepButton.addEventListener("click", () => {
         perTabToolSessionResetHandledWrite(runtime);
         confirmation.remove();

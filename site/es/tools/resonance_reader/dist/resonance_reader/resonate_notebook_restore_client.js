@@ -1,5 +1,5 @@
-import "../common/notebook_rpc_client.js?rev=1d7203985d25";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=1d7203985d25";
+import "../common/notebook_rpc_client.js?rev=957cdb0b4694";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=957cdb0b4694";
 export async function readNotebookRestorePayloadForResonance(workbookId, eventId, fetchImpl) {
     return await readSharedNotebookRpcClient().readNotebookRestorePayload(workbookId, eventId, {
         fetchImpl: fetchImpl || null,

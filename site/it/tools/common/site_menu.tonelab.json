@@ -35,6 +35,10 @@
       "href": "/it/lab/tools/guitar_setup_calculator/"
     },
     {
+      "label": "Esploratore d’intonazione",
+      "href": "/it/lab/tools/intonation_explorer/"
+    },
+    {
       "label": "Calcolatore della rigidezza flessionale (EI)",
       "href": "/it/lab/tools/flexural_rigidity/"
     },

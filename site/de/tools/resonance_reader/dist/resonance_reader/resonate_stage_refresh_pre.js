@@ -1,4 +1,4 @@
-import { resonanceFftMinSamplesResolve, resonanceFftWindowResolve, resonanceTapAveragingEnabled } from "./resonate_debug_flags.js?rev=1d7203985d25";
+import { resonanceFftMinSamplesResolve, resonanceFftWindowResolve, resonanceTapAveragingEnabled } from "./resonate_debug_flags.js?rev=957cdb0b4694";
 export async function stageRefreshPreRun(args) {
     const engine = args.fftFactory({});
     const taps = args.signal.detectTaps(args.wave, args.sampleRate);

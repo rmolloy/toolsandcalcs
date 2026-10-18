@@ -35,6 +35,10 @@
       "href": "/de/lab/tools/guitar_setup_calculator/"
     },
     {
+      "label": "Intonations-Explorer",
+      "href": "/de/lab/tools/intonation_explorer/"
+    },
+    {
       "label": "Biegesteifigkeitsrechner (EI)",
       "href": "/de/lab/tools/flexural_rigidity/"
     },

@@ -6,8 +6,11 @@ export interface ReliefMeasurement {
   reliefMm: number;
 }
 
-export interface BenchActionMeasurements extends ReliefMeasurement {
+export interface CapoActionGeometry extends ReliefMeasurement {
   actionMeasurementFretNumber: number;
+}
+
+export interface BenchActionMeasurements extends CapoActionGeometry {
   actionAtMeasurementWithCapoMm: number;
   nutActionAtFirstFretMm: number;
 }
@@ -220,24 +223,35 @@ export function calculateSaddleStringHeightMm(
   measurements: BenchActionMeasurements,
 ): number {
   validateBenchActionMeasurements(measurements);
-  const capoPositionMm = calculateFretPositionMm(
-    measurements.scaleLengthMm,
-    measurements.capoFretNumber,
-  );
-  const measurementPositionMm = calculateFretPositionMm(
-    measurements.scaleLengthMm,
-    measurements.actionMeasurementFretNumber,
-  );
   const fretHeightAtMeasurementMm = -calculateReliefBelowReferenceMm(
     measurements,
     measurements.actionMeasurementFretNumber,
   );
-  const measurementProgress = (measurementPositionMm - capoPositionMm)
-    / (measurements.scaleLengthMm - capoPositionMm);
+  const measurementProgress = calculateProgressFromCapoToActionMeasurement(measurements);
   return (
     measurements.actionAtMeasurementWithCapoMm
     + fretHeightAtMeasurementMm
   ) / measurementProgress;
+}
+
+function calculateProgressFromCapoToActionMeasurement(
+  measurements: CapoActionGeometry,
+): number {
+  const capoPositionMm = calculateFretPositionMm(measurements.scaleLengthMm, measurements.capoFretNumber);
+  const measurementPositionMm = calculateFretPositionMm(measurements.scaleLengthMm, measurements.actionMeasurementFretNumber);
+  return (measurementPositionMm - capoPositionMm) / (measurements.scaleLengthMm - capoPositionMm);
+}
+
+export function calculateCapoedActionFromSaddleHeightMm(
+  measurements: CapoActionGeometry,
+  saddleStringHeightMm: number,
+): number {
+  validateCapoActionGeometry(measurements);
+  requireFinite(saddleStringHeightMm, "saddleStringHeightMm");
+  const reliefMm = calculateReliefBelowReferenceMm(measurements, measurements.actionMeasurementFretNumber);
+  const actionMm = saddleStringHeightMm * calculateProgressFromCapoToActionMeasurement(measurements) + reliefMm;
+  requireNonNegative(actionMm, "derived capoed action");
+  return actionMm;
 }
 
 export function calculateNutStringHeightMm(
@@ -263,6 +277,21 @@ export function calculateActionProfileFromBenchMeasurements(
     measurements,
     saddleStringHeightMm,
   );
+  return calculateActionProfileFromStringHeights(
+    measurements,
+    nutStringHeightMm,
+    saddleStringHeightMm,
+  );
+}
+
+export function calculateActionProfileFromStringHeights(
+  measurements: ReliefMeasurement,
+  nutStringHeightMm: number,
+  saddleStringHeightMm: number,
+): CalculatedActionPoint[] {
+  validateReliefMeasurement(measurements);
+  requireFinite(nutStringHeightMm, "nutStringHeightMm");
+  requireFinite(saddleStringHeightMm, "saddleStringHeightMm");
   return Array.from(
     { length: measurements.heldFretNumber + 1 },
     (_, fretNumber) => calculateActionPoint({
@@ -303,7 +332,7 @@ function calculateActionPoint({
   nutStringHeightMm,
   saddleStringHeightMm,
 }: {
-  measurements: BenchActionMeasurements;
+  measurements: ReliefMeasurement;
   fretNumber: number;
   nutStringHeightMm: number;
   saddleStringHeightMm: number;
@@ -491,11 +520,7 @@ function calculateEllipticalReliefShape(
 function validateBenchActionMeasurements(
   measurements: BenchActionMeasurements,
 ): void {
-  validateReliefMeasurement(measurements);
-  requirePositiveInteger(
-    measurements.actionMeasurementFretNumber,
-    "actionMeasurementFretNumber",
-  );
+  validateCapoActionGeometry(measurements);
   requireNonNegative(
     measurements.actionAtMeasurementWithCapoMm,
     "actionAtMeasurementWithCapoMm",
@@ -504,6 +529,11 @@ function validateBenchActionMeasurements(
     measurements.nutActionAtFirstFretMm,
     "nutActionAtFirstFretMm",
   );
+}
+
+function validateCapoActionGeometry(measurements: CapoActionGeometry): void {
+  validateReliefMeasurement(measurements);
+  requirePositiveInteger(measurements.actionMeasurementFretNumber, "actionMeasurementFretNumber");
   if (measurements.capoFretNumber !== 1) {
     throw new RangeError("capoFretNumber must be 1 for bench action geometry");
   }
