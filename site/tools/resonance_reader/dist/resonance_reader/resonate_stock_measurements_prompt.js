@@ -1,8 +1,8 @@
-import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js?rev=aab423209ba9";
-import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=aab423209ba9";
-import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=aab423209ba9";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=aab423209ba9";
-import { stockKindResolve, stockMeasurementsDraftApply, stockMeasurementsDraftBuild } from "./resonate_stock_measurements.js?rev=aab423209ba9";
+import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js?rev=4baad6ed228b";
+import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=4baad6ed228b";
+import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=4baad6ed228b";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=4baad6ed228b";
+import { stockKindResolve, stockMeasurementsDraftApply, stockMeasurementsDraftBuild } from "./resonate_stock_measurements.js?rev=4baad6ed228b";
 const FIELDS = [
     ["stockLengthMm", resonanceLocalizedMessages.stockMeasurementsLengthLabel],
     ["stockWidthMm", resonanceLocalizedMessages.stockMeasurementsWidthLabel],
