@@ -1,11 +1,11 @@
-import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js?rev=4baad6ed228b";
-import { emitModeOverrideRequested } from "./resonate_override_commands.js?rev=4baad6ed228b";
-import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js?rev=4baad6ed228b";
-import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=4baad6ed228b";
-import { overlayShouldRenderForMeasureMode } from "./resonate_overlay_gate.js?rev=4baad6ed228b";
-import { overlaySegmentsBuildFromArrays } from "../common/overlay_segments.js?rev=4baad6ed228b";
-import { resonanceSpectrumAxisLimitsResolve, resonanceSpectrumLineWidthResolve, resonanceSpectrumXAxisScaleResolve, resonanceSpectrumYAxisModeResolve, } from "./resonate_debug_flags.js?rev=4baad6ed228b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=4baad6ed228b";
+import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js?rev=3519feba01d2";
+import { emitModeOverrideRequested } from "./resonate_override_commands.js?rev=3519feba01d2";
+import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js?rev=3519feba01d2";
+import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=3519feba01d2";
+import { overlayShouldRenderForMeasureMode } from "./resonate_overlay_gate.js?rev=3519feba01d2";
+import { overlaySegmentsBuildFromArrays } from "../common/overlay_segments.js?rev=3519feba01d2";
+import { resonanceSpectrumAxisLimitsResolve, resonanceSpectrumLineWidthResolve, resonanceSpectrumXAxisScaleResolve, resonanceSpectrumYAxisModeResolve, } from "./resonate_debug_flags.js?rev=3519feba01d2";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3519feba01d2";
 const MOCK_OVERLAY = {
     min: 85,
     max: 260,

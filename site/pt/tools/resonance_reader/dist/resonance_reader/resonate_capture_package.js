@@ -1,6 +1,6 @@
-import { renderPayloadBuildFromState } from "./resonate_render_events.js?rev=4baad6ed228b";
-import { buildToolDocumentHeader } from "../common/tool_document.js?rev=4baad6ed228b";
-import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js?rev=4baad6ed228b";
+import { renderPayloadBuildFromState } from "./resonate_render_events.js?rev=3519feba01d2";
+import { buildToolDocumentHeader } from "../common/tool_document.js?rev=3519feba01d2";
+import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js?rev=3519feba01d2";
 export async function resonanceCapturePackageZipBlobBuild(args) {
     const [stateBlob, wavBlob, plotBlob] = await Promise.all([
         resonanceCaptureStateBlobBuild(args),

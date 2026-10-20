@@ -1,5 +1,5 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=4baad6ed228b";
-import { resonanceFftInputScopeResolve } from "./resonate_debug_flags.js?rev=4baad6ed228b";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=3519feba01d2";
+import { resonanceFftInputScopeResolve } from "./resonate_debug_flags.js?rev=3519feba01d2";
 export function sliceCurrentWaveFromState(state) {
     const src = state.currentWave;
     if (!src)
