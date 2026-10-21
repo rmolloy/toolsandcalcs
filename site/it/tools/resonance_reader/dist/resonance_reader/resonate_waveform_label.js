@@ -1,5 +1,5 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=b5b8fa4adb00";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=b5b8fa4adb00";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=4a9544c40f78";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=4a9544c40f78";
 const TAP_CLASSIFY_CENTS_THRESHOLD = 15;
 const TAP_CLASSIFY_BINS_THRESHOLD = 2;
 function centsDistanceAbs(freqA, freqB) {

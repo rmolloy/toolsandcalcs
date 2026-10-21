@@ -8,27 +8,27 @@ import {
   createSetupFromInstrumentProfile,
   estimateStringMechanicalProperties,
   INSTRUMENT_PROFILES,
-} from "./setup_model.mjs";
-import { renderSetupDiagram } from "./setup_diagram.mjs";
-import { createLengthUnitController } from "./length_unit_controller.mjs";
-import { createSparseActionEditor } from "./sparse_action_editor.mjs";
-import { createSetupResultPresenter } from "./setup_result_presenter.mjs";
-import { createSetupPitchErrorChart } from "./setup_pitch_error_chart.mjs";
-import { createSetupProfileEditor } from "./setup_profile_editor.mjs";
-import "../common/per_tab_tool_session.js";
-import { createSetupSessionPersistence } from "./setup_session_persistence.mjs";
-import { readSetupSessionView, restoreSetupSessionView } from "./setup_session_view.mjs";
-import { createScaleLengthEditor } from "./scale_length_editor.mjs";
-import { createSetupFormController } from "./setup_form_controller.mjs";
-import { createSetupStepNavigation } from "./setup_step_navigation.mjs";
-import { createSetupProfileReference } from "./setup_profile_reference.mjs";
-import { createSetupProfileSelection } from "./setup_profile_selection.mjs";
-import { readTensionCatalog } from "./tension_catalog_loader.mjs";
+} from "./setup_model.mjs?rev=4a9544c40f78";
+import { renderSetupDiagram } from "./setup_diagram.mjs?rev=4a9544c40f78";
+import { createLengthUnitController } from "./length_unit_controller.mjs?rev=4a9544c40f78";
+import { createSparseActionEditor } from "./sparse_action_editor.mjs?rev=4a9544c40f78";
+import { createSetupResultPresenter } from "./setup_result_presenter.mjs?rev=4a9544c40f78";
+import { createSetupPitchErrorChart } from "./setup_pitch_error_chart.mjs?rev=4a9544c40f78";
+import { createSetupProfileEditor } from "./setup_profile_editor.mjs?rev=4a9544c40f78";
+import "../common/per_tab_tool_session.js?rev=4a9544c40f78";
+import { createSetupSessionPersistence } from "./setup_session_persistence.mjs?rev=4a9544c40f78";
+import { readSetupSessionView, restoreSetupSessionView } from "./setup_session_view.mjs?rev=4a9544c40f78";
+import { createScaleLengthEditor } from "./scale_length_editor.mjs?rev=4a9544c40f78";
+import { createSetupFormController } from "./setup_form_controller.mjs?rev=4a9544c40f78";
+import { createSetupStepNavigation } from "./setup_step_navigation.mjs?rev=4a9544c40f78";
+import { createSetupProfileReference } from "./setup_profile_reference.mjs?rev=4a9544c40f78";
+import { createSetupProfileSelection } from "./setup_profile_selection.mjs?rev=4a9544c40f78";
+import { readTensionCatalog } from "./tension_catalog_loader.mjs?rev=4a9544c40f78";
 import {
   describeActionProvenance,
   describeCalculationBasis,
   provenanceGroupForInput,
-} from "./setup_provenance.mjs";
+} from "./setup_provenance.mjs?rev=4a9544c40f78";
 
 // localized-runtime-messages:start
 const setupRuntimeMessages = Object.freeze({
