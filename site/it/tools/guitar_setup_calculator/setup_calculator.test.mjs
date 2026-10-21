@@ -8,7 +8,8 @@ test("the setup page exposes the physical bench measurements", async () => {
   const sparseActionEditor = await readFile(new URL("./sparse_action_editor.mjs", import.meta.url), "utf8");
 
   assert.match(page, /Relief/);
-  assert.match(page, /Capo fret 1, then measure at fret 12/);
+  assert.match(page, /12th-fret action/);
+  assert.match(page, /Capo at fret 1\. Measure from the top of fret 12 to the bottom of the string\./);
   assert.match(page, /Action at nut/);
   assert.match(page, /id="action_first_string_mm"/);
   assert.match(page, /id="action_last_string_mm"/);
@@ -39,7 +40,7 @@ test("the setup page uses the shared ToneLab tool shell", async () => {
   assert.match(page, /class="card-surface setup-tool-surface"/);
   assert.match(page, /tl-card-output setup-results/);
   assert.match(page, /tl-card-controls setup-inputs/);
-  assert.equal((page.match(/class="setup-step"/g) || []).length, 6);
+  assert.equal((page.match(/class="setup-step"/g) || []).length, 4);
   assert.match(page, /data-tool-footer/);
 });
 
@@ -50,7 +51,7 @@ test("the setup page starts with the guided measurement editor", async () => {
   assert.match(page, /class="setup-page" data-setup-mode="measure"/);
   assert.match(page, /id="setup_steps"/);
   assert.doesNotMatch(page, /id="setup_form"[^>]* hidden/);
-  assert.match(behavior, /createSetupStepNavigation\(document\)/);
+  assert.match(behavior, /createSetupStepNavigation\(document, \{ 2: 1, 3: 1 \}\)/);
 });
 
 test("the setup page defaults dimensional measurements to millimetres", async () => {

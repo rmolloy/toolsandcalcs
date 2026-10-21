@@ -21,7 +21,8 @@ import { readSetupSessionView, restoreSetupSessionView } from "./setup_session_v
 import { createScaleLengthEditor } from "./scale_length_editor.mjs";
 import { createSetupFormController } from "./setup_form_controller.mjs";
 import { createSetupStepNavigation } from "./setup_step_navigation.mjs";
-import { createStockSpecs } from "./stock_specs.mjs";
+import { createSetupProfileReference } from "./setup_profile_reference.mjs";
+import { createSetupProfileSelection } from "./setup_profile_selection.mjs";
 import { readTensionCatalog } from "./tension_catalog_loader.mjs";
 import {
   describeActionProvenance,
@@ -79,6 +80,17 @@ const setupRuntimeMessages = Object.freeze({
   oneStringLabel: "1 string",
   plainConstructionLabel: "Plain",
   pitchErrorMessages: Object.freeze({
+    download: "Download plot as a png",
+    zoom: "Zoom",
+    pan: "Pan",
+    boxSelect: "Box Select",
+    lassoSelect: "Lasso Select",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    autoscale: "Autoscale",
+    resetAxes: "Reset axes",
+    settings: "Graph settings",
+    invalidRange: "Minimum must be less than maximum.",
     cents: "Cents",
     courseStringLabel: "C{courseNumber} · {stringName}",
     flat: "Flat",
@@ -270,12 +282,16 @@ const profileEditor = createSetupProfileEditor({
   unitMassLabel: setupRuntimeMessages.unitMassLabel,
   woundConstructionLabel: setupRuntimeMessages.woundConstructionLabel,
 });
-const stockSpecs = createStockSpecs({
+const profileReference = createSetupProfileReference({
   document,
+  instrumentProfiles: INSTRUMENT_PROFILES,
   lengthUnits,
-  messages: setupRuntimeMessages.stockSpecMessages,
-  onSelectProfile: (profileId) => selectInstrumentProfile(profileId),
-  onMeasure: resumeSetupMeasurements,
+});
+const profileSelection = createSetupProfileSelection({
+  hasUserEntries: () => userEntryGroups.size > 0 || scaleEditor.validationError !== null,
+  confirmReplacement: () => window.confirm(document.getElementById("instrument_profile").dataset.replacePrompt),
+  restoreSelection: () => { document.getElementById("instrument_profile").value = setup.instrumentProfileId; },
+  selectProfile: selectInstrumentProfile,
 });
 const setupForm = createSetupFormController({
   applyTensionCatalogToSetup,
@@ -303,9 +319,9 @@ scaleEditor.bind();
 profileEditor.renderInstrumentProfileOptions();
 profileEditor.renderStringInputs();
 setupForm.writeSetupToForm();
-stockSpecs.render(setup.instrumentProfileId);
+profileReference.render(setup.instrumentProfileId);
 render();
-const stepNavigation = createSetupStepNavigation(document);
+const stepNavigation = createSetupStepNavigation(document, { 2: 1, 3: 1 });
 setupModeButtons.forEach((button) => button.addEventListener("click", handleSetupModeChange));
 document.querySelectorAll(".length-unit-control [data-length-unit-button]").forEach((button) => {
   button.addEventListener("click", handleLengthUnitChange);
@@ -356,12 +372,6 @@ function handleSetupModeChange(event) {
   showSetupMode(event.currentTarget.dataset.setupModeButton);
 }
 
-function resumeSetupMeasurements() {
-  document.querySelector(".setup-reference-specs").open = false;
-  const selector = scaleEditor.mode === "single" ? '#common_scale_length' : '[data-string-field="scaleLengthMm"]';
-  document.querySelector(selector).focus();
-}
-
 function handleLengthUnitChange(event) {
   applyLengthUnit(event.currentTarget.dataset.lengthUnitButton);
 }
@@ -375,7 +385,7 @@ function applyLengthUnit(nextUnit) {
   profileEditor.renderStringInputs();
   setupForm.writeSetupToForm();
   sparseActionEditor.restoreDraftMillimetres(sparseDraftMm);
-  stockSpecs.render(setup.instrumentProfileId);
+  profileReference.render(setup.instrumentProfileId);
   render();
   form.querySelectorAll('details').forEach((details, index) => { details.open = disclosures[index]; });
 }
@@ -418,7 +428,7 @@ function handleFormChange(event) {
   clearInputError(input);
   if (sparseActionEditor.contains(input)) return;
   if (input.id === "instrument_profile" && input.value !== "custom") {
-    selectInstrumentProfile(input.value);
+    profileSelection.request(input.value);
     return;
   }
   if (input.id === "custom_course_count") {
@@ -446,6 +456,7 @@ function handleFormChange(event) {
 
 function render() {
   scaleEditor.render();
+  renderInputProvenance();
   try {
     const scaleLengthError = scaleEditor.validationError;
     if (scaleLengthError) throw scaleLengthError;
@@ -562,8 +573,14 @@ function renderMeasurementProvenance() {
   setProvenance("rail_scale_source", "scaleLength");
 }
 
-function setActionProvenance() {
-  const badge = document.getElementById("rail_action_source");
+function renderInputProvenance() {
+  setProvenance("radius_input_source", "radius");
+  setProvenance("relief_input_source", "relief");
+  setActionProvenance("bridge_input_source");
+}
+
+function setActionProvenance(elementId = "rail_action_source") {
+  const badge = document.getElementById(elementId);
   badge.textContent = describeActionProvenance(
     userEntryGroups,
     setupRuntimeMessages.provenanceMessages,
@@ -598,7 +615,7 @@ function selectInstrumentProfile(profileId) {
   profileEditor.renderStringInputs();
   scaleEditor.reset();
   setupForm.writeSetupToForm();
-  stockSpecs.render(setup.instrumentProfileId);
+  profileReference.render(setup.instrumentProfileId);
   render();
 }
 
@@ -624,6 +641,7 @@ function buildCustomProfile() {
   const membersByCourse = profileEditor.readCustomCourseMembers();
   setup = createCustomSetupFromCourseMembers({ baseSetup: setup, membersByCourse });
   userEntryGroups.add("stringSpecification");
+  profileReference.render(setup.instrumentProfileId);
   profileEditor.renderStringInputs();
   setupForm.writeSetupToForm();
   render();

@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Guitar Setup Calculator | Cut Nut and Saddle Compensation from Measured Setup</title>
-  <link rel="stylesheet" href="../common/tool_footer.css?rev=3519feba01d2">
-  <link rel="stylesheet" href="styles.css?rev=3519feba01d2">
-  <link rel="stylesheet" href="../common/layout.css?rev=3519feba01d2">
+  <title>Nut &amp; Saddle Compensation Calculator | Estimate Per-String Offsets</title>
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=90c36258c883">
+  <link rel="stylesheet" href="styles.css?rev=90c36258c883">
+  <link rel="stylesheet" href="../common/layout.css?rev=90c36258c883">
   <meta name="description" content="Enter each string, the fingerboard radius, measured relief, nut clearance, and capoed 12th-fret action to calculate a string-by-string nut and saddle compensation pattern.">
   <link rel="canonical" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
@@ -17,14 +17,14 @@
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
   <!-- shared-length-units:start -->
-  <link rel="stylesheet" href="../common/length_unit_control.css?rev=3519feba01d2">
+  <link rel="stylesheet" href="../common/length_unit_control.css?rev=90c36258c883">
   <script id="tool_length_unit_config" type="application/json">{"label":"Length units"}</script>
-  <script src="../common/length_unit_preference.js?rev=3519feba01d2"></script>
-  <script src="../common/canonical_length_fields.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_controller.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_frame_sync.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_navigation.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_control.js?rev=3519feba01d2" defer></script>
+  <script src="../common/length_unit_preference.js?rev=90c36258c883"></script>
+  <script src="../common/canonical_length_fields.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_controller.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_frame_sync.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_navigation.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_control.js?rev=90c36258c883" defer></script>
   <!-- shared-length-units:end -->
 </head>
 <body>
@@ -37,7 +37,7 @@
               <summary class="hero-menu-trigger" aria-label="Open site menu">☰</summary>
               <nav class="hero-menu-panel" aria-label="Site sections" data-site-menu data-menu-profile="lutherieacademy"></nav>
             </details>
-            <h1>Guitar Setup Calculator</h1>
+            <h1>Nut &amp; Saddle Compensation Calculator</h1>
           </div>
           <div class="hero-actions">
             <span id="setup_view_status" class="status">Measure</span>
@@ -48,7 +48,7 @@
       <main class="setup-page" data-setup-mode="measure">
         <section class="card-surface setup-tool-surface">
           <div class="setup-view-toolbar">
-            <div class="setup-mode-control" hidden role="group" aria-label="Guitar setup view">
+            <div class="setup-mode-control" hidden role="group" aria-label="Compensation calculator view">
               <button type="button" class="setup-mode-button" data-setup-mode-button="specs" aria-pressed="false">Reference specs</button>
               <button id="measure_instrument" type="button" class="setup-mode-button" data-setup-mode-button="measure" aria-pressed="true">Measure</button>
             </div>
@@ -60,19 +60,17 @@
 
           <form id="setup_form" class="card pad tl-card tl-card-controls setup-inputs">
             <div class="setup-surface-header">
-              <div><p class="eyebrow">Measurement inputs</p><h2>Six-step setup</h2><p class="small muted">Choose a starting profile, then replace its defaults with the measurements you actually take.</p></div>
+              <div><p class="eyebrow">Measurement inputs</p><h2>Four-step setup</h2><p class="small muted">Choose a starting profile, then replace its defaults with the measurements you actually take.</p></div>
             </div>
             <div class="setup-calculation-status">
               <p id="calculation_basis" class="calculation-basis">Preview from profile defaults. Enter your measurements before using the compensation pattern.</p>
               <span id="result_status" data-setup-status role="status">Ready</span>
             </div>
-            <nav id="setup_steps" class="setup-step-navigation" aria-label="The six setup steps">
+            <nav id="setup_steps" class="setup-step-navigation" aria-label="The four setup steps">
               <button type="button" data-setup-step="0" aria-controls="setup_panel_0" aria-current="step"><span class="setup-step-index" aria-hidden="true">01</span><span>Strings</span></button>
-              <button type="button" data-setup-step="1" aria-controls="setup_panel_1"><span class="setup-step-index" aria-hidden="true">02</span><span>Radius</span></button>
-              <button type="button" data-setup-step="2" aria-controls="setup_panel_2"><span class="setup-step-index" aria-hidden="true">03</span><span>Relief</span></button>
-              <button type="button" data-setup-step="3" aria-controls="setup_panel_3"><span class="setup-step-index" aria-hidden="true">04</span><span>Bridge</span></button>
-              <button type="button" data-setup-step="4" aria-controls="setup_panel_4"><span class="setup-step-index" aria-hidden="true">05</span><span>Nut</span></button>
-              <button type="button" data-setup-step="5" aria-controls="setup_panel_5"><span class="setup-step-index" aria-hidden="true">06</span><span>Intonation</span></button>
+              <button type="button" data-setup-step="1" aria-controls="setup_panel_1"><span class="setup-step-index" aria-hidden="true">02</span><span>Neck &amp; action</span></button>
+              <button type="button" data-setup-step="4" aria-controls="setup_panel_4"><span class="setup-step-index" aria-hidden="true">03</span><span>Nut action</span></button>
+              <button type="button" data-setup-step="5" aria-controls="setup_panel_5"><span class="setup-step-index" aria-hidden="true">04</span><span>Review</span></button>
             </nav>
             <div class="setup-step-list">
               <section id="setup_panel_0" class="setup-step" aria-labelledby="step-length-title">
@@ -81,9 +79,22 @@
                   <section class="card pad tl-card setup-profile-control" aria-labelledby="instrument-control-title">
                     <div class="setup-profile-control-heading"><p class="eyebrow">Instrument</p><h2 id="instrument-control-title">Choose a starting setup</h2><p class="small muted">Profiles supply editable starting values. Your measurements take over as you enter them.</p></div>
                     <div class="profile-control-row">
-                      <label class="profile-select-field"><span>Instrument profile</span><select id="instrument_profile"></select></label>
+                      <label class="profile-select-field"><span>Instrument profile</span><select id="instrument_profile" data-replace-prompt="Replace your entered values with this profile’s defaults? Cancel keeps your current setup."></select></label>
                       <button id="customize_profile" type="button" class="secondary-button">Change courses and string count</button>
                     </div>
+                    <details class="setup-reference-specs" open>
+                      <summary>Profile starting values</summary>
+                      <div id="profile_reference" data-structure="Strings: {stringCount} · Courses: {courseCount}" data-relief="{relief} @ fret {fretNumber}" data-outer-action="First: {first} · Last: {last}">
+                        <p id="profile_reference_structure" class="small muted"></p>
+                        <dl class="profile-reference-values">
+                          <div><dt>Relief</dt><dd id="profile_reference_relief"></dd></div>
+                          <div><dt>Action @ 12th fret <small>capo 1, fret 12</small></dt><dd id="profile_reference_bridge"></dd></div>
+                          <div><dt>Action at nut <small>open, fret 1</small></dt><dd id="profile_reference_nut"></dd></div>
+                        </dl>
+                      </div>
+                      <p id="profile_reference_unavailable" class="small muted" hidden>Custom setup: review your values in the following steps.</p>
+                      <p class="small muted">Defaults for the selected profile, not measurements. Edit them in the following steps.</p>
+                    </details>
                     <section id="setup_scale_controls" class="setup-scale-controls" data-invalid-message="Enter a scale length greater than zero.">
                       <div class="scale-layout-choice" role="group" aria-label="Scale layout">
                         <button type="button" data-scale-mode="single" aria-pressed="true">Single scale</button>
@@ -104,29 +115,6 @@
                       <button id="build_custom_profile" type="button" class="secondary-button">Use custom structure</button>
                     </section>
                   </section>
-                  <details class="setup-reference-specs">
-                    <summary>Reference specs</summary>
-                    <section id="stock_specs" class="card pad tl-card stock-specs" aria-labelledby="stock-specs-title">
-                      <div class="stock-specs-heading">
-                        <h2 id="stock-specs-title">Where every setup starts</h2>
-                        <p class="small muted">Stock specs by instrument. Pick yours — your measurements take over from there.</p>
-                      </div>
-                      <div id="stock_spec_cards" class="stock-spec-cards"></div>
-                      <div class="stock-steps-strip" hidden aria-label="The six setup steps">
-                        <span class="stock-step"><em>1</em>Strings</span>
-                        <span class="stock-step"><em>2</em>Radius</span>
-                        <span class="stock-step"><em>3</em>Relief</span>
-                        <span class="stock-step"><em>4</em>Bridge</span>
-                        <span class="stock-step"><em>5</em>Nut</span>
-                        <span class="stock-step"><em>6</em>Intonation</span>
-                        <span class="stock-steps-note">The rough shape — the workshop instructions carry the detail.</span>
-                      </div>
-                      <div class="stock-specs-cta">
-                        <button id="stock_specs_measure" type="button" class="primary-button">Measure this instrument</button>
-                        <p class="small muted">Stock specs stand in until you replace them, and the results say which is which.</p>
-                      </div>
-                    </section>
-                  </details>
                   <div class="string-source-control">
                     <label><span>Manufacturer mass data</span><select id="tension_data_source"><option value="daddario_ej16">D’Addario EJ16</option><option value="daddario_exl110">D’Addario EXL110 electric</option><option value="daddario_ej38">D’Addario EJ38 12-string</option><option value="daddario_exl170">D’Addario EXL170 bass</option><option value="daddario_ej45">D’Addario EJ45 classical</option><option value="daddario_ej65t">D’Addario EJ65T tenor ukulele</option><option value="daddario_ej74">D’Addario EJ74 mandolin</option><option value="stringjoy_nickel">Stringjoy plain / nickel</option><option value="stringjoy_bronze">Stringjoy plain / bronze</option><option value="estimate">Gauge estimate</option></select></label>
                     <p class="step-note">Published unit mass is used when a string matches. Axial stiffness is estimated from construction unless you enter a measured value.</p>
@@ -139,8 +127,11 @@
                 </div>
               </section>
 
-              <section id="setup_panel_1" class="setup-step" aria-labelledby="step-radius-title" hidden>
-                <header class="setup-step-header"><span class="step-number">02</span><span><strong id="step-radius-title" role="heading" aria-level="2" tabindex="-1">Radius</strong><small>Simple, compound, or flat fingerboard.</small></span></header>
+              <section id="setup_panel_1" class="setup-step" aria-labelledby="step-neck-action-title" hidden>
+                <header class="setup-step-header"><span class="step-number">02</span><span><strong id="step-neck-action-title" role="heading" aria-level="2" tabindex="-1">Neck &amp; action</strong><small>Confirm radius, relief and capoed 12th-fret action.</small></span></header>
+                <div class="setup-neck-measurements">
+                <section id="setup_radius_section" class="setup-measurement-section" aria-labelledby="step-radius-title">
+                <header class="setup-measurement-header"><h3 id="step-radius-title">Radius</h3><small id="radius_input_source" class="provenance-badge">Profile default</small></header>
                 <div class="setup-step-body">
                   <div class="radius-choice">
                     <label><input type="radio" name="radius_kind" value="simple"><span><strong>Simple radius</strong><small>One radius from nut to bridge.</small></span></label>
@@ -156,16 +147,17 @@
                 </div>
               </section>
 
-              <section id="setup_panel_2" class="setup-step" aria-labelledby="step-relief-title" hidden>
-                <header class="setup-step-header"><span class="step-number">03</span><span><strong id="step-relief-title" role="heading" aria-level="2" tabindex="-1">Relief</strong><small>Neck curve, measured as a peak and fret.</small></span></header>
+              <section id="setup_panel_2" class="setup-measurement-section" aria-labelledby="step-relief-title">
+                <header class="setup-measurement-header"><h3 id="step-relief-title">Relief</h3><small id="relief_input_source" class="provenance-badge">Profile default</small></header>
                 <div class="setup-step-body"><div class="field-row">
                   <label><span data-length-label="Relief">Relief (mm)</span><input id="relief_amount_mm" type="number" min="0" step="0.01"></label>
                   <label><span>Measured at fret</span><input id="relief_peak_fret" type="number" min="2" step="1"></label>
                 </div><p class="step-note">Capo fret 1, hold the string at the last fret, and measure from fret top to string bottom at the selected fret.</p></div>
               </section>
 
-              <section id="setup_panel_3" class="setup-step" aria-labelledby="step-bridge-title" hidden>
-                <header class="setup-step-header"><span class="step-number">04</span><span><strong id="step-bridge-title" role="heading" aria-level="2" tabindex="-1">Action at bridge</strong><small>Capo fret 1, then measure at fret 12.</small></span></header>
+              <section id="setup_panel_3" class="setup-measurement-section" aria-labelledby="step-bridge-title">
+                <header class="setup-measurement-header"><h3 id="step-bridge-title">12th-fret action</h3><small id="bridge_input_source" class="provenance-badge">Profile default</small></header>
+                <p class="step-note">Capo at fret 1. Measure from the top of fret 12 to the bottom of the string.</p>
                 <div class="setup-step-body">
                   <div class="field-row field-row-two">
                     <label><span id="action_first_string_label">First string (mm)</span><input id="action_first_string_mm" type="number" min="0" step="0.01"></label>
@@ -185,8 +177,11 @@
                 </div>
               </section>
 
+                </div>
+              </section>
+
               <section id="setup_panel_4" class="setup-step" aria-labelledby="step-nut-title" hidden>
-                <header class="setup-step-header"><span class="step-number">05</span><span><strong id="step-nut-title" role="heading" aria-level="2" tabindex="-1">Action at nut</strong><small>Open-string clearance above fret 1.</small></span></header>
+                <header class="setup-step-header"><span class="step-number">03</span><span><strong id="step-nut-title" role="heading" aria-level="2" tabindex="-1">Action at nut</strong><small>Open-string clearance above fret 1.</small></span></header>
                 <div class="setup-step-body"><div class="field-row field-row-two">
                   <label><span id="nut_action_first_string_label">First string (mm)</span><input id="nut_action_first_string_mm" type="number" min="0" step="0.01"></label>
                   <label><span id="nut_action_last_string_label">Last string (mm)</span><input id="nut_action_last_string_mm" type="number" min="0" step="0.01"></label>
@@ -194,7 +189,7 @@
               </section>
 
               <section id="setup_panel_5" class="setup-step" aria-labelledby="step-intonation-title" hidden>
-                <header class="setup-step-header"><span class="step-number">06</span><span><strong id="step-intonation-title" role="heading" aria-level="2" tabindex="-1">Review compensation and verify intonation</strong><small>Use the nut and saddle pattern, then verify the real instrument.</small></span></header>
+                <header class="setup-step-header"><span class="step-number">04</span><span><strong id="step-intonation-title" role="heading" aria-level="2" tabindex="-1">Review compensation and verify intonation</strong><small>Use the nut and saddle pattern, then verify the real instrument.</small></span></header>
                 <div class="setup-step-body">
                   <p class="step-note">The calculated pattern is a starting cut reference. Check each fretted string with a strobe tuner before making an irreversible cut.</p>
                   <a class="result-link" href="#results-title">View string-by-string compensation</a>
@@ -224,13 +219,24 @@
                   <section class="card pad tl-card tl-card-output pitch-error-chart" aria-labelledby="pitch-error-title">
                     <div class="pitch-error-heading">
                       <div><p class="eyebrow">Calculated result</p><h2 id="pitch-error-title">Predicted pitch error</h2><p class="small muted">Compare compensation for one string using the same setup.</p></div>
-                      <label class="pitch-error-string"><span>String</span><select id="pitch_error_string"></select></label>
+                      <div class="pitch-error-actions"><label class="pitch-error-string"><span>String</span><select id="pitch_error_string"></select></label><button id="pitch_error_settings_open" type="button">Graph settings</button></div>
                     </div>
-                    <div class="pitch-error-legend"><span class="pitch-error-saddle">Saddle only</span><span class="pitch-error-joint">Nut + saddle</span></div>
-                    <div id="pitch_error_plot" class="pitch-error-plot" role="img" aria-label="Predicted pitch error" aria-describedby="pitch_error_scope pitch_error_help"></div>
+                    <div id="pitch_error_plot" class="pitch-error-plot" role="group" aria-label="Predicted pitch error" aria-describedby="pitch_error_scope pitch_error_help"></div>
                     <p id="pitch_error_scope" class="small muted" aria-live="polite"></p>
                     <p id="pitch_error_help" class="results-footnote">Above zero: sharp. Below zero: flat. Shading marks frets beyond this instrument’s last fret.</p>
                     <div class="pitch-error-values"><table><caption>Pitch error by fret</caption><thead><tr><th scope="col">Fret</th><th scope="col">Saddle only (Cents)</th><th scope="col">Nut + saddle (Cents)</th></tr></thead><tbody id="pitch_error_readings"></tbody></table></div>
+                    <dialog id="pitch_error_settings" class="pitch-error-settings" aria-labelledby="pitch_error_settings_title" aria-describedby="pitch_error_settings_help">
+                      <h2 id="pitch_error_settings_title">Graph settings</h2>
+                      <p id="pitch_error_settings_help" class="small muted">View only: these limits do not change the optimization range. Leave blank for automatic limits. Frets and cents use linear scales.</p>
+                      <div class="pitch-error-axis-fields">
+                        <label><span>Minimum fret</span><input id="pitch_error_fret_min" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Maximum fret</span><input id="pitch_error_fret_max" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Minimum cents</span><input id="pitch_error_cents_min" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Maximum cents</span><input id="pitch_error_cents_max" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                      </div>
+                      <p id="pitch_error_range_error" role="status" class="small"></p>
+                      <div class="pitch-error-dialog-actions"><button id="pitch_error_reset_view" type="button">Reset view</button><button id="pitch_error_settings_close" type="button">Done</button></div>
+                    </dialog>
                   </section>
 
                   <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
@@ -267,9 +273,9 @@
           </form>
 
           <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="en-US">
-  <h2>Guitar Setup Calculator</h2>
+  <h2>Nut &amp; Saddle Compensation Calculator</h2>
   <p>Use this tool to turn the setup you measured into string-by-string nut height and compensation targets you can verify on the instrument.</p>
-  <p>The calculator keeps six setup decisions in order: string length, radius, relief, bridge action, nut action, and intonation. Each result stays tied to the physical string that produced it.</p>
+  <p>The calculator groups six setup decisions into four screens: strings, neck and action, nut action, and compensation review. Each result stays tied to the physical string that produced it.</p>
   <p>A setup can feel right and still pull selected fretted notes sharp. The calculation estimates how the measured string path changes tension, then shows where the nut and saddle witness points need to move.</p>
   <ul>
     <li>Scale length for every physical string</li>
@@ -288,17 +294,17 @@
       <footer class="tl-footer" data-tool-footer data-tool-privacy-href="/privacy/"></footer>
     </div>
   </div>
-  <script src="../common/tool_fullscreen_navigation.js?rev=3519feba01d2" defer></script>
-  <script src="../common/page_fullscreen.js?rev=3519feba01d2" defer></script>
-  <script src="../common/site_menu_loader.js?rev=3519feba01d2" defer></script>
-  <script src="../common/tool_footer_loader.js?rev=3519feba01d2" defer></script>
-  <script src="../vendor/plotly/plotly-basic.min.js?rev=3519feba01d2"></script>
+  <script src="../common/tool_fullscreen_navigation.js?rev=90c36258c883" defer></script>
+  <script src="../common/page_fullscreen.js?rev=90c36258c883" defer></script>
+  <script src="../common/site_menu_loader.js?rev=90c36258c883" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=90c36258c883" defer></script>
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=90c36258c883"></script>
   <script type="module" src="main.mjs"></script>
   <!-- localized-locale-selector:start -->
-  <link rel="stylesheet" href="../common/locale_selector.css?rev=3519feba01d2">
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=90c36258c883">
   <script id="tool_locale_config" type="application/json">{"label":"Language","currentLocale":"en-US","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/guitar_setup_calculator/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/guitar_setup_calculator/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/guitar_setup_calculator/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/guitar_setup_calculator/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/"}]}</script>
-  <script src="../common/locale_preference.js?rev=3519feba01d2" defer></script>
-  <script src="../common/locale_selector.js?rev=3519feba01d2" defer></script>
+  <script src="../common/locale_preference.js?rev=90c36258c883" defer></script>
+  <script src="../common/locale_selector.js?rev=90c36258c883" defer></script>
   <!-- localized-locale-selector:end -->
 </body>
 </html>

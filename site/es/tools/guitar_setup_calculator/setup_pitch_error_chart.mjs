@@ -1,4 +1,5 @@
-import { createPitchErrorPlot } from './setup_pitch_error_plot.mjs';
+import { createPitchErrorPlot, createPitchErrorSpacing } from './setup_pitch_error_plot.mjs';
+import { createPitchErrorView } from './setup_pitch_error_view.mjs';
 
 export function createSetupPitchErrorChart({ document, plotly, calculateComparison, messages }) {
   const selector = document.getElementById('pitch_error_string');
@@ -6,6 +7,7 @@ export function createSetupPitchErrorChart({ document, plotly, calculateComparis
   const scope = document.getElementById('pitch_error_scope');
   const readings = document.getElementById('pitch_error_readings');
   let validSetup;
+  const view = createPitchErrorView({ document, plotly, plot, messages, redraw: renderSelectedString });
 
   function render(setup) {
     validSetup = structuredClone({ ...setup, tensionCatalog: null });
@@ -55,8 +57,11 @@ export function createSetupPitchErrorChart({ document, plotly, calculateComparis
 
   function renderPlot(comparison) {
     if (!plotly?.react) return showPlotUnavailable();
-    const figure = createPitchErrorPlot({ comparison, fretCount: validSetup.fretCount, messages });
-    plotly.react(plot, figure.data, figure.layout, figure.config).catch(showPlotUnavailable);
+    const figure = createPitchErrorPlot({ comparison, fretCount: validSetup.fretCount, messages,
+      width: plot.clientWidth || document.defaultView.innerWidth });
+    view.apply(figure);
+    figure.config.toImageButtonOptions = { filename: `pitch-error-string-${Number(selector.value) + 1}` };
+    plotly.react(plot, figure.data, figure.layout, figure.config).then(view.bind).catch(showPlotUnavailable);
   }
 
   function showPlotUnavailable() {
@@ -64,7 +69,10 @@ export function createSetupPitchErrorChart({ document, plotly, calculateComparis
   }
 
   function resizeVisiblePlot() {
-    if (plot.clientWidth > 0 && plot._fullLayout) plotly.Plots.resize(plot);
+    if (plot.clientWidth <= 0 || !plot._fullLayout) return;
+    const spacing = createPitchErrorSpacing(plot.clientWidth, plot._fullLayout.xaxis?.range);
+    plotly.relayout?.(plot, { 'margin.t': spacing.top, 'xaxis.dtick': spacing.fretStep });
+    plotly.Plots.resize(plot);
   }
 
   function handleStringSelection(event) {
@@ -74,6 +82,7 @@ export function createSetupPitchErrorChart({ document, plotly, calculateComparis
 
   function clear() {
     plotly?.purge(plot);
+    view.clear();
     readings.replaceChildren();
     scope.textContent = '';
   }

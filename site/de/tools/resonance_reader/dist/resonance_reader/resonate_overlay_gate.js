@@ -1,4 +1,4 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=3519feba01d2";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=90c36258c883";
 export function overlayToggleShouldRender(el) {
     return Boolean(el?.checked);
 }

@@ -1,8 +1,8 @@
-import { recordToggleFromMic } from "./resonate_recording_control.js?rev=3519feba01d2";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3519feba01d2";
-import { spectrumTonePresentationClear } from "./resonate_spectrum_render.js?rev=3519feba01d2";
-import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js?rev=3519feba01d2";
-import { updateWaveTransportLabels } from "./resonate_transport_labels.js?rev=3519feba01d2";
+import { recordToggleFromMic } from "./resonate_recording_control.js?rev=90c36258c883";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=90c36258c883";
+import { spectrumTonePresentationClear } from "./resonate_spectrum_render.js?rev=90c36258c883";
+import { toneControllerCreateFromWindow } from "./resonate_tone_controller.js?rev=90c36258c883";
+import { updateWaveTransportLabels } from "./resonate_transport_labels.js?rev=90c36258c883";
 export function bindWaveTransport(deps) {
     bindToneControl(deps.state);
     const btnRecord = document.getElementById("btn_wave_record");

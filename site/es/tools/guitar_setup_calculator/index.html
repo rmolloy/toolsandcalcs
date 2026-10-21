@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calculadora de ajuste de guitarra | Calcula la compensación de cejuela y selleta a partir del ajuste medido</title>
-  <link rel="stylesheet" href="../common/tool_footer.css?rev=3519feba01d2">
-  <link rel="stylesheet" href="styles.css?rev=3519feba01d2">
-  <link rel="stylesheet" href="../common/layout.css?rev=3519feba01d2">
+  <title>Calculadora de compensación de cejuela y selleta | Estima los desplazamientos de cada cuerda</title>
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=90c36258c883">
+  <link rel="stylesheet" href="styles.css?rev=90c36258c883">
+  <link rel="stylesheet" href="../common/layout.css?rev=90c36258c883">
   <meta name="description" content="Introduce cada cuerda, el radio del diapasón, la curvatura medida, la altura en la cejuela y la acción en el traste 12 con cejilla para calcular un patrón de compensación de cejuela y selleta cuerda por cuerda.">
   <link rel="canonical" href="https://rickmolloyguitars.com/es/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
@@ -17,14 +17,14 @@
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
   <!-- shared-length-units:start -->
-  <link rel="stylesheet" href="../common/length_unit_control.css?rev=3519feba01d2">
+  <link rel="stylesheet" href="../common/length_unit_control.css?rev=90c36258c883">
   <script id="tool_length_unit_config" type="application/json">{"label":"Unidades de longitud"}</script>
-  <script src="../common/length_unit_preference.js?rev=3519feba01d2"></script>
-  <script src="../common/canonical_length_fields.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_controller.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_frame_sync.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_navigation.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_control.js?rev=3519feba01d2" defer></script>
+  <script src="../common/length_unit_preference.js?rev=90c36258c883"></script>
+  <script src="../common/canonical_length_fields.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_controller.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_frame_sync.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_navigation.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_control.js?rev=90c36258c883" defer></script>
   <!-- shared-length-units:end -->
 </head>
 <body>
@@ -37,7 +37,7 @@
               <summary class="hero-menu-trigger" aria-label="Abrir el menú del sitio">☰</summary>
               <nav class="hero-menu-panel" aria-label="Secciones del sitio" data-site-menu data-menu-profile="lutherieacademy"></nav>
             </details>
-            <h1>Calculadora de ajuste de guitarra</h1>
+            <h1>Calculadora de compensación de cejuela y selleta</h1>
           </div>
           <div class="hero-actions">
             <span id="setup_view_status" class="status">Medir</span>
@@ -48,7 +48,7 @@
       <main class="setup-page" data-setup-mode="measure">
         <section class="card-surface setup-tool-surface">
           <div class="setup-view-toolbar">
-            <div class="setup-mode-control" hidden role="group" aria-label="Vista del ajuste de guitarra">
+            <div class="setup-mode-control" hidden role="group" aria-label="Vista de la calculadora de compensación">
               <button type="button" class="setup-mode-button" data-setup-mode-button="specs" aria-pressed="false">Especificaciones de referencia</button>
               <button id="measure_instrument" type="button" class="setup-mode-button" data-setup-mode-button="measure" aria-pressed="true">Medir</button>
             </div>
@@ -60,19 +60,17 @@
 
           <form id="setup_form" class="card pad tl-card tl-card-controls setup-inputs">
             <div class="setup-surface-header">
-              <div><p class="eyebrow">Datos de medición</p><h2>Ajuste en seis pasos</h2><p class="small muted">Elige un perfil inicial y sustituye después sus valores predeterminados por las mediciones que realmente tomes.</p></div>
+              <div><p class="eyebrow">Datos de medición</p><h2>Ajuste en cuatro pasos</h2><p class="small muted">Elige un perfil inicial y sustituye después sus valores predeterminados por las mediciones que realmente tomes.</p></div>
             </div>
             <div class="setup-calculation-status">
               <p id="calculation_basis" class="calculation-basis">Vista previa basada en los valores predeterminados del perfil. Introduce tus mediciones antes de usar el patrón de compensación.</p>
               <span id="result_status" data-setup-status role="status">Listo</span>
             </div>
-            <nav id="setup_steps" class="setup-step-navigation" aria-label="Los seis pasos del ajuste">
+            <nav id="setup_steps" class="setup-step-navigation" aria-label="Los cuatro pasos de ajuste">
               <button type="button" data-setup-step="0" aria-controls="setup_panel_0" aria-current="step"><span class="setup-step-index" aria-hidden="true">01</span><span>Cuerdas</span></button>
-              <button type="button" data-setup-step="1" aria-controls="setup_panel_1"><span class="setup-step-index" aria-hidden="true">02</span><span>Radio</span></button>
-              <button type="button" data-setup-step="2" aria-controls="setup_panel_2"><span class="setup-step-index" aria-hidden="true">03</span><span>Curvatura</span></button>
-              <button type="button" data-setup-step="3" aria-controls="setup_panel_3"><span class="setup-step-index" aria-hidden="true">04</span><span>Puente</span></button>
-              <button type="button" data-setup-step="4" aria-controls="setup_panel_4"><span class="setup-step-index" aria-hidden="true">05</span><span>Cejuela</span></button>
-              <button type="button" data-setup-step="5" aria-controls="setup_panel_5"><span class="setup-step-index" aria-hidden="true">06</span><span>Octavación</span></button>
+              <button type="button" data-setup-step="1" aria-controls="setup_panel_1"><span class="setup-step-index" aria-hidden="true">02</span><span>Mástil y acción</span></button>
+              <button type="button" data-setup-step="4" aria-controls="setup_panel_4"><span class="setup-step-index" aria-hidden="true">03</span><span>Acción en cejuela</span></button>
+              <button type="button" data-setup-step="5" aria-controls="setup_panel_5"><span class="setup-step-index" aria-hidden="true">04</span><span>Revisar</span></button>
             </nav>
             <div class="setup-step-list">
               <section id="setup_panel_0" class="setup-step" aria-labelledby="step-length-title">
@@ -81,9 +79,22 @@
                   <section class="card pad tl-card setup-profile-control" aria-labelledby="instrument-control-title">
                     <div class="setup-profile-control-heading"><p class="eyebrow">Instrumento</p><h2 id="instrument-control-title">Elige un ajuste inicial</h2><p class="small muted">Los perfiles proporcionan valores iniciales editables. Tus mediciones los sustituyen a medida que las introduces.</p></div>
                     <div class="profile-control-row">
-                      <label class="profile-select-field"><span>Perfil del instrumento</span><select id="instrument_profile"></select></label>
+                      <label class="profile-select-field"><span>Perfil del instrumento</span><select id="instrument_profile" data-replace-prompt="¿Reemplazar los valores introducidos por los predeterminados de este perfil? Cancelar conserva la configuración actual."></select></label>
                       <button id="customize_profile" type="button" class="secondary-button">Cambiar órdenes y número de cuerdas</button>
                     </div>
+                    <details class="setup-reference-specs" open>
+                      <summary>Valores iniciales del perfil</summary>
+                      <div id="profile_reference" data-structure="Cuerdas: {stringCount} · Órdenes: {courseCount}" data-relief="{relief} en el traste {fretNumber}" data-outer-action="Primera: {first} · Última: {last}">
+                        <p id="profile_reference_structure" class="small muted"></p>
+                        <dl class="profile-reference-values">
+                          <div><dt>Curvatura</dt><dd id="profile_reference_relief"></dd></div>
+                          <div><dt>Acción en el traste 12 <small>cejilla en 1, traste 12</small></dt><dd id="profile_reference_bridge"></dd></div>
+                          <div><dt>Acción en la cejuela <small>al aire, traste 1</small></dt><dd id="profile_reference_nut"></dd></div>
+                        </dl>
+                      </div>
+                      <p id="profile_reference_unavailable" class="small muted" hidden>Configuración personalizada: revisa tus valores en los siguientes pasos.</p>
+                      <p class="small muted">Valores predeterminados del perfil seleccionado, no mediciones. Edítalos en los siguientes pasos.</p>
+                    </details>
                     <section id="setup_scale_controls" class="setup-scale-controls" data-invalid-message="Introduce una longitud de escala mayor que cero.">
                       <div class="scale-layout-choice" role="group" aria-label="Disposición de escala">
                         <button type="button" data-scale-mode="single" aria-pressed="true">Escala única</button>
@@ -104,29 +115,6 @@
                       <button id="build_custom_profile" type="button" class="secondary-button">Usar estructura personalizada</button>
                     </section>
                   </section>
-                  <details class="setup-reference-specs">
-                    <summary>Especificaciones de referencia</summary>
-                    <section id="stock_specs" class="card pad tl-card stock-specs" aria-labelledby="stock-specs-title">
-                      <div class="stock-specs-heading">
-                        <h2 id="stock-specs-title">El punto de partida de cada ajuste</h2>
-                        <p class="small muted">Especificaciones de fábrica por instrumento. Elige el tuyo; tus mediciones las sustituirán.</p>
-                      </div>
-                      <div id="stock_spec_cards" class="stock-spec-cards"></div>
-                      <div class="stock-steps-strip" hidden aria-label="Los seis pasos del ajuste">
-                        <span class="stock-step"><em>1</em>Cuerdas</span>
-                        <span class="stock-step"><em>2</em>Radio</span>
-                        <span class="stock-step"><em>3</em>Curvatura</span>
-                        <span class="stock-step"><em>4</em>Puente</span>
-                        <span class="stock-step"><em>5</em>Cejuela</span>
-                        <span class="stock-step"><em>6</em>Octavación</span>
-                        <span class="stock-steps-note">La forma general; las instrucciones de taller contienen los detalles.</span>
-                      </div>
-                      <div class="stock-specs-cta">
-                        <button id="stock_specs_measure" type="button" class="primary-button">Medir este instrumento</button>
-                        <p class="small muted">Las especificaciones de fábrica se usan hasta que las sustituyas, y los resultados indican el origen de cada dato.</p>
-                      </div>
-                    </section>
-                  </details>
                   <div class="string-source-control">
                     <label><span>Datos de masa del fabricante</span><select id="tension_data_source"><option value="daddario_ej16">D’Addario EJ16</option><option value="daddario_exl110">D’Addario EXL110 eléctrica</option><option value="daddario_ej38">D’Addario EJ38 de 12 cuerdas</option><option value="daddario_exl170">D’Addario EXL170 para bajo</option><option value="daddario_ej45">D’Addario EJ45 clásica</option><option value="daddario_ej65t">D’Addario EJ65T para ukelele tenor</option><option value="daddario_ej74">D’Addario EJ74 para mandolina</option><option value="stringjoy_nickel">Stringjoy lisas / níquel</option><option value="stringjoy_bronze">Stringjoy lisas / bronce</option><option value="estimate">Estimación por calibre</option></select></label>
                     <p class="step-note">Se usa la masa lineal publicada cuando hay una cuerda coincidente. La rigidez axial se estima a partir de la construcción salvo que introduzcas un valor medido.</p>
@@ -139,8 +127,11 @@
                 </div>
               </section>
 
-              <section id="setup_panel_1" class="setup-step" aria-labelledby="step-radius-title" hidden>
-                <header class="setup-step-header"><span class="step-number">02</span><span><strong id="step-radius-title" role="heading" aria-level="2" tabindex="-1">Radio</strong><small>Diapasón con radio constante, compuesto o plano.</small></span></header>
+              <section id="setup_panel_1" class="setup-step" aria-labelledby="step-neck-action-title" hidden>
+                <header class="setup-step-header"><span class="step-number">02</span><span><strong id="step-neck-action-title" role="heading" aria-level="2" tabindex="-1">Mástil y acción</strong><small>Confirma el radio, el relieve y la acción en el traste 12 con cejilla.</small></span></header>
+                <div class="setup-neck-measurements">
+                <section id="setup_radius_section" class="setup-measurement-section" aria-labelledby="step-radius-title">
+                <header class="setup-measurement-header"><h3 id="step-radius-title">Radio</h3><small id="radius_input_source" class="provenance-badge">Valor predeterminado del perfil</small></header>
                 <div class="setup-step-body">
                   <div class="radius-choice">
                     <label><input type="radio" name="radius_kind" value="simple"><span><strong>Radio constante</strong><small>Un solo radio desde la cejuela hasta el puente.</small></span></label>
@@ -156,16 +147,17 @@
                 </div>
               </section>
 
-              <section id="setup_panel_2" class="setup-step" aria-labelledby="step-relief-title" hidden>
-                <header class="setup-step-header"><span class="step-number">03</span><span><strong id="step-relief-title" role="heading" aria-level="2" tabindex="-1">Curvatura</strong><small>Curvatura del mástil, medida como valor máximo y traste.</small></span></header>
+              <section id="setup_panel_2" class="setup-measurement-section" aria-labelledby="step-relief-title">
+                <header class="setup-measurement-header"><h3 id="step-relief-title">Curvatura</h3><small id="relief_input_source" class="provenance-badge">Valor predeterminado del perfil</small></header>
                 <div class="setup-step-body"><div class="field-row">
                   <label><span data-length-label="Curvatura">Curvatura (mm)</span><input id="relief_amount_mm" type="number" min="0" step="0.01"></label>
                   <label><span>Medida en el traste</span><input id="relief_peak_fret" type="number" min="2" step="1"></label>
                 </div><p class="step-note">Coloca una cejilla en el traste 1, pisa la cuerda en el último traste y mide desde la parte superior del traste hasta la parte inferior de la cuerda en el traste seleccionado.</p></div>
               </section>
 
-              <section id="setup_panel_3" class="setup-step" aria-labelledby="step-bridge-title" hidden>
-                <header class="setup-step-header"><span class="step-number">04</span><span><strong id="step-bridge-title" role="heading" aria-level="2" tabindex="-1">Acción en el puente</strong><small>Coloca una cejilla en el traste 1 y mide después en el traste 12.</small></span></header>
+              <section id="setup_panel_3" class="setup-measurement-section" aria-labelledby="step-bridge-title">
+                <header class="setup-measurement-header"><h3 id="step-bridge-title">Acción en el traste 12</h3><small id="bridge_input_source" class="provenance-badge">Valor predeterminado del perfil</small></header>
+                <p class="step-note">Coloca una cejilla en el traste 1. Mide desde la parte superior del traste 12 hasta la parte inferior de la cuerda.</p>
                 <div class="setup-step-body">
                   <div class="field-row field-row-two">
                     <label><span id="action_first_string_label">Primera cuerda (mm)</span><input id="action_first_string_mm" type="number" min="0" step="0.01"></label>
@@ -185,8 +177,11 @@
                 </div>
               </section>
 
+                </div>
+              </section>
+
               <section id="setup_panel_4" class="setup-step" aria-labelledby="step-nut-title" hidden>
-                <header class="setup-step-header"><span class="step-number">05</span><span><strong id="step-nut-title" role="heading" aria-level="2" tabindex="-1">Acción en la cejuela</strong><small>Altura de la cuerda al aire sobre el traste 1.</small></span></header>
+                <header class="setup-step-header"><span class="step-number">03</span><span><strong id="step-nut-title" role="heading" aria-level="2" tabindex="-1">Acción en la cejuela</strong><small>Altura de la cuerda al aire sobre el traste 1.</small></span></header>
                 <div class="setup-step-body"><div class="field-row field-row-two">
                   <label><span id="nut_action_first_string_label">Primera cuerda (mm)</span><input id="nut_action_first_string_mm" type="number" min="0" step="0.01"></label>
                   <label><span id="nut_action_last_string_label">Última cuerda (mm)</span><input id="nut_action_last_string_mm" type="number" min="0" step="0.01"></label>
@@ -194,7 +189,7 @@
               </section>
 
               <section id="setup_panel_5" class="setup-step" aria-labelledby="step-intonation-title" hidden>
-                <header class="setup-step-header"><span class="step-number">06</span><span><strong id="step-intonation-title" role="heading" aria-level="2" tabindex="-1">Revisar la compensación y comprobar la octavación</strong><small>Usa el patrón de cejuela y selleta y comprueba después el instrumento real.</small></span></header>
+                <header class="setup-step-header"><span class="step-number">04</span><span><strong id="step-intonation-title" role="heading" aria-level="2" tabindex="-1">Revisar la compensación y comprobar la octavación</strong><small>Usa el patrón de cejuela y selleta y comprueba después el instrumento real.</small></span></header>
                 <div class="setup-step-body">
                   <p class="step-note">El patrón calculado es una referencia inicial para el corte. Comprueba cada cuerda pisada con un afinador estroboscópico antes de realizar un corte irreversible.</p>
                   <a class="result-link" href="#results-title">Ver la compensación cuerda por cuerda</a>
@@ -224,13 +219,24 @@
                   <section class="card pad tl-card tl-card-output pitch-error-chart" aria-labelledby="pitch-error-title">
                     <div class="pitch-error-heading">
                       <div><p class="eyebrow">Resultado calculado</p><h2 id="pitch-error-title">Error de afinación previsto</h2><p class="small muted">Compara la compensación de una cuerda con el mismo ajuste.</p></div>
-                      <label class="pitch-error-string"><span>Cuerda</span><select id="pitch_error_string"></select></label>
+                      <div class="pitch-error-actions"><label class="pitch-error-string"><span>Cuerda</span><select id="pitch_error_string"></select></label><button id="pitch_error_settings_open" type="button">Ajustes del gráfico</button></div>
                     </div>
-                    <div class="pitch-error-legend"><span class="pitch-error-saddle">Solo selleta</span><span class="pitch-error-joint">Cejuela + selleta</span></div>
-                    <div id="pitch_error_plot" class="pitch-error-plot" role="img" aria-label="Error de afinación previsto" aria-describedby="pitch_error_scope pitch_error_help"></div>
+                    <div id="pitch_error_plot" class="pitch-error-plot" role="group" aria-label="Error de afinación previsto" aria-describedby="pitch_error_scope pitch_error_help"></div>
                     <p id="pitch_error_scope" class="small muted" aria-live="polite"></p>
                     <p id="pitch_error_help" class="results-footnote">Por encima de cero: agudo. Por debajo: grave. El sombreado indica trastes más allá del último traste del instrumento.</p>
                     <div class="pitch-error-values"><table><caption>Error de afinación por traste</caption><thead><tr><th scope="col">Traste</th><th scope="col">Solo selleta (Cents)</th><th scope="col">Cejuela + selleta (Cents)</th></tr></thead><tbody id="pitch_error_readings"></tbody></table></div>
+                    <dialog id="pitch_error_settings" class="pitch-error-settings" aria-labelledby="pitch_error_settings_title" aria-describedby="pitch_error_settings_help">
+                      <h2 id="pitch_error_settings_title">Ajustes del gráfico</h2>
+                      <p id="pitch_error_settings_help" class="small muted">Solo visualización: estos límites no cambian el intervalo de optimización. Deje los campos vacíos para usar límites automáticos. Los trastes y los cents usan escalas lineales.</p>
+                      <div class="pitch-error-axis-fields">
+                        <label><span>Traste mínimo</span><input id="pitch_error_fret_min" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Traste máximo</span><input id="pitch_error_fret_max" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Cents mínimos</span><input id="pitch_error_cents_min" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Cents máximos</span><input id="pitch_error_cents_max" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                      </div>
+                      <p id="pitch_error_range_error" role="status" class="small"></p>
+                      <div class="pitch-error-dialog-actions"><button id="pitch_error_reset_view" type="button">Restablecer vista</button><button id="pitch_error_settings_close" type="button">Listo</button></div>
+                    </dialog>
                   </section>
 
                   <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
@@ -267,9 +273,9 @@
           </form>
 
           <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="es">
-  <h2>Calculadora de ajuste de guitarra</h2>
+  <h2>Calculadora de compensación de cejuela y selleta</h2>
   <p>Usa esta herramienta para convertir el ajuste que has medido en objetivos de altura en la cejuela y compensación cuerda por cuerda que puedas comprobar en el instrumento.</p>
-  <p>La calculadora mantiene en orden seis decisiones del ajuste: longitud de cuerda, radio, curvatura, acción en el puente, acción en la cejuela y octavación. Cada resultado permanece asociado a la cuerda física que lo produjo.</p>
+  <p>La calculadora agrupa seis decisiones de ajuste en cuatro pantallas: cuerdas, mástil y acción, acción en cejuela y revisión de compensación. Cada resultado corresponde a la cuerda física que lo produjo.</p>
   <p>Un ajuste puede resultar cómodo y aun así hacer que algunas notas pisadas suenen agudas. El cálculo estima cómo el recorrido medido de la cuerda cambia la tensión y muestra dónde deben desplazarse los puntos de apoyo de la cejuela y la selleta.</p>
   <ul>
     <li>Longitud de escala de cada cuerda física</li>
@@ -288,17 +294,17 @@
       <footer class="tl-footer" data-tool-footer data-tool-privacy-href="/privacy/"></footer>
     </div>
   </div>
-  <script src="../common/tool_fullscreen_navigation.js?rev=3519feba01d2" defer></script>
-  <script src="../common/page_fullscreen.js?rev=3519feba01d2" defer></script>
-  <script src="../common/site_menu_loader.js?rev=3519feba01d2" defer></script>
-  <script src="../common/tool_footer_loader.js?rev=3519feba01d2" defer></script>
-  <script src="../vendor/plotly/plotly-basic.min.js?rev=3519feba01d2"></script>
+  <script src="../common/tool_fullscreen_navigation.js?rev=90c36258c883" defer></script>
+  <script src="../common/page_fullscreen.js?rev=90c36258c883" defer></script>
+  <script src="../common/site_menu_loader.js?rev=90c36258c883" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=90c36258c883" defer></script>
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=90c36258c883"></script>
   <script type="module" src="main.mjs"></script>
   <!-- localized-locale-selector:start -->
-  <link rel="stylesheet" href="../common/locale_selector.css?rev=3519feba01d2">
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=90c36258c883">
   <script id="tool_locale_config" type="application/json">{"label":"Idioma","currentLocale":"es","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/guitar_setup_calculator/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/guitar_setup_calculator/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/guitar_setup_calculator/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/guitar_setup_calculator/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/"}]}</script>
-  <script src="../common/locale_preference.js?rev=3519feba01d2" defer></script>
-  <script src="../common/locale_selector.js?rev=3519feba01d2" defer></script>
+  <script src="../common/locale_preference.js?rev=90c36258c883" defer></script>
+  <script src="../common/locale_selector.js?rev=90c36258c883" defer></script>
   <!-- localized-locale-selector:end -->
 </body>
 </html>

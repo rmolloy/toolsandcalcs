@@ -1,4 +1,4 @@
-import { braceStockMaterialBuildFromMeasurements, } from "./resonate_brace_stock_material.js?rev=3519feba01d2";
+import { braceStockMaterialBuildFromMeasurements, } from "./resonate_brace_stock_material.js?rev=90c36258c883";
 const MODE_TO_PARAM = {
     long: "long",
     cross: "cross",

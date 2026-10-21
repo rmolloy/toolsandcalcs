@@ -1,11 +1,23 @@
-export function createPitchErrorPlot({ comparison, fretCount, messages }) {
+export function createPitchErrorPlot({ comparison, fretCount, messages, width = 1024 }) {
   const curves = [comparison.saddleOnly.centsErrorByFret, comparison.nutAndSaddle.centsErrorByFret];
   const displayedLastFret = Math.max(24, fretCount);
   return {
     data: createPitchErrorTraces(curves, messages),
-    layout: createPitchErrorLayout(curves, fretCount, displayedLastFret, messages),
-    config: { responsive: true, displayModeBar: false, displaylogo: false, scrollZoom: false },
+    layout: createPitchErrorLayout(curves, fretCount, displayedLastFret, messages, width),
+    config: {
+      responsive: true, displayModeBar: true, displaylogo: false, scrollZoom: false,
+      locale: 'intonation', locales: { intonation: { dictionary: createControlDictionary(messages) } },
+    },
   };
+}
+
+function createControlDictionary(messages) {
+  return Object.fromEntries([
+    ['Download plot as a png', messages.download], ['Zoom', messages.zoom], ['Pan', messages.pan],
+    ['Box Select', messages.boxSelect], ['Lasso Select', messages.lassoSelect],
+    ['Zoom in', messages.zoomIn], ['Zoom out', messages.zoomOut],
+    ['Autoscale', messages.autoscale], ['Reset axes', messages.resetAxes],
+  ].filter(([, value]) => value));
 }
 
 function createPitchErrorTraces(curves, messages) {
@@ -34,35 +46,50 @@ function createOpenStringReferenceTrace(messages) {
   };
 }
 
-function createPitchErrorLayout(curves, fretCount, displayedLastFret, messages) {
+export function createPitchErrorSpacing(width, range = [-0.3, 24.3]) {
+  const intervals = Math.max(2, Math.floor((width - 62) / 64));
+  const rawStep = Math.max(1, (Math.floor(range[1]) - Math.ceil(range[0])) / intervals);
+  return { top: width <= 600 ? 112 : 72, fretStep: 2 ** Math.ceil(Math.log2(rawStep)) };
+}
+
+function createPitchErrorLayout(curves, fretCount, displayedLastFret, messages, width) {
   return {
     paper_bgcolor: "transparent", plot_bgcolor: "transparent",
     font: { color: "#c7d4e2", family: "system-ui, sans-serif", size: 12 },
-    margin: { l: 58, r: 18, t: 18, b: 48 }, height: 300,
-    showlegend: false, dragmode: false, hovermode: "x unified",
-    xaxis: createFretAxis(displayedLastFret, messages),
+    margin: { l: 44, r: 18, t: createPitchErrorSpacing(width).top, b: 42 }, height: 380,
+    showlegend: true, legend: { orientation: "h", x: 0, y: 1.04, yanchor: "bottom" },
+    dragmode: "zoom", hovermode: "x unified",
+    xaxis: createFretAxis(displayedLastFret, messages, width),
     yaxis: createCentsAxis(curves, messages),
     shapes: createUnavailableFretRegion(fretCount, displayedLastFret),
     annotations: createPitchDirectionLabels(messages),
   };
 }
 
-function createFretAxis(displayedLastFret, messages) {
+function createFretAxis(displayedLastFret, messages, width) {
   return {
     title: { text: messages.fret, standoff: 8 }, range: [-0.3, displayedLastFret + 0.3],
-    dtick: 4, fixedrange: true, showgrid: false, zeroline: false,
+    tickmode: "linear", dtick: createPitchErrorSpacing(width, [-0.3, displayedLastFret + 0.3]).fretStep, tickformat: "d",
+    fixedrange: false, automargin: true, showgrid: false, zeroline: false,
     showline: true, linecolor: "#617286", ticks: "outside", tickcolor: "#617286",
   };
 }
 
 function createCentsAxis(curves, messages) {
-  const limit = Math.ceil(Math.max(5, ...curves.flat().map(Math.abs)) * 1.15 / 5) * 5;
   return {
-    title: { text: messages.cents, standoff: 8 }, range: [-limit, limit],
-    fixedrange: true, gridcolor: "rgba(137,157,180,0.12)",
+    title: { text: messages.cents, standoff: 8 }, range: calculateCentsRangeFromCurves(curves),
+    fixedrange: false, automargin: true, gridcolor: "rgba(137,157,180,0.12)",
     zeroline: true, zerolinecolor: "#b7c7d7", zerolinewidth: 1.5,
-    tickformat: "+.0f", nticks: 5,
+    tickformat: "+.3~g", nticks: 5,
   };
+}
+
+function calculateCentsRangeFromCurves(curves) {
+  const values = curves.flat().filter(Number.isFinite);
+  const minimum = Math.min(0, ...values);
+  const maximum = Math.max(0, ...values);
+  const padding = Math.max(1, maximum - minimum) * 0.2;
+  return [minimum - padding, maximum + padding];
 }
 
 function createUnavailableFretRegion(fretCount, displayedLastFret) {

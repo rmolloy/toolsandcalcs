@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Calcolatore per il setup della chitarra | Compensazione di capotasto e selletta dalle misure</title>
-  <link rel="stylesheet" href="../common/tool_footer.css?rev=3519feba01d2">
-  <link rel="stylesheet" href="styles.css?rev=3519feba01d2">
-  <link rel="stylesheet" href="../common/layout.css?rev=3519feba01d2">
+  <title>Calcolatore di compensazione di capotasto e selletta | Stima gli spostamenti di ogni corda</title>
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=90c36258c883">
+  <link rel="stylesheet" href="styles.css?rev=90c36258c883">
+  <link rel="stylesheet" href="../common/layout.css?rev=90c36258c883">
   <meta name="description" content="Inserisci ogni corda, il raggio della tastiera, la curvatura misurata, la distanza al capotasto e l’action al 12º tasto con capotasto mobile per calcolare la compensazione di ogni corda al capotasto e alla selletta.">
   <link rel="canonical" href="https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
@@ -17,14 +17,14 @@
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/">
   <!-- shared-length-units:start -->
-  <link rel="stylesheet" href="../common/length_unit_control.css?rev=3519feba01d2">
+  <link rel="stylesheet" href="../common/length_unit_control.css?rev=90c36258c883">
   <script id="tool_length_unit_config" type="application/json">{"label":"Unità di lunghezza"}</script>
-  <script src="../common/length_unit_preference.js?rev=3519feba01d2"></script>
-  <script src="../common/canonical_length_fields.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_controller.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_frame_sync.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_navigation.js?rev=3519feba01d2"></script>
-  <script src="../common/length_unit_control.js?rev=3519feba01d2" defer></script>
+  <script src="../common/length_unit_preference.js?rev=90c36258c883"></script>
+  <script src="../common/canonical_length_fields.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_controller.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_frame_sync.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_navigation.js?rev=90c36258c883"></script>
+  <script src="../common/length_unit_control.js?rev=90c36258c883" defer></script>
   <!-- shared-length-units:end -->
 </head>
 <body>
@@ -37,7 +37,7 @@
               <summary class="hero-menu-trigger" aria-label="Apri il menu del sito">☰</summary>
               <nav class="hero-menu-panel" aria-label="Sezioni del sito" data-site-menu data-menu-profile="lutherieacademy"></nav>
             </details>
-            <h1>Calcolatore per il setup della chitarra</h1>
+            <h1>Calcolatore di compensazione di capotasto e selletta</h1>
           </div>
           <div class="hero-actions">
             <span id="setup_view_status" class="status">Misura</span>
@@ -48,7 +48,7 @@
       <main class="setup-page" data-setup-mode="measure">
         <section class="card-surface setup-tool-surface">
           <div class="setup-view-toolbar">
-            <div class="setup-mode-control" hidden role="group" aria-label="Vista del setup della chitarra">
+            <div class="setup-mode-control" hidden role="group" aria-label="Vista del calcolatore di compensazione">
               <button type="button" class="setup-mode-button" data-setup-mode-button="specs" aria-pressed="false">Specifiche di riferimento</button>
               <button id="measure_instrument" type="button" class="setup-mode-button" data-setup-mode-button="measure" aria-pressed="true">Misura</button>
             </div>
@@ -60,19 +60,17 @@
 
           <form id="setup_form" class="card pad tl-card tl-card-controls setup-inputs">
             <div class="setup-surface-header">
-              <div><p class="eyebrow">Input di misura</p><h2>Setup in sei fasi</h2><p class="small muted">Scegli un profilo iniziale, poi sostituisci i valori predefiniti con le misure che rilevi realmente.</p></div>
+              <div><p class="eyebrow">Input di misura</p><h2>Setup in quattro passaggi</h2><p class="small muted">Scegli un profilo iniziale, poi sostituisci i valori predefiniti con le misure che rilevi realmente.</p></div>
             </div>
             <div class="setup-calculation-status">
               <p id="calculation_basis" class="calculation-basis">Anteprima basata sui valori predefiniti del profilo. Inserisci le tue misure prima di usare lo schema di compensazione.</p>
               <span id="result_status" data-setup-status role="status">Pronto</span>
             </div>
-            <nav id="setup_steps" class="setup-step-navigation" aria-label="Le sei fasi del setup">
+            <nav id="setup_steps" class="setup-step-navigation" aria-label="I quattro passaggi del setup">
               <button type="button" data-setup-step="0" aria-controls="setup_panel_0" aria-current="step"><span class="setup-step-index" aria-hidden="true">01</span><span>Corde</span></button>
-              <button type="button" data-setup-step="1" aria-controls="setup_panel_1"><span class="setup-step-index" aria-hidden="true">02</span><span>Raggio</span></button>
-              <button type="button" data-setup-step="2" aria-controls="setup_panel_2"><span class="setup-step-index" aria-hidden="true">03</span><span>Curvatura</span></button>
-              <button type="button" data-setup-step="3" aria-controls="setup_panel_3"><span class="setup-step-index" aria-hidden="true">04</span><span>Ponte</span></button>
-              <button type="button" data-setup-step="4" aria-controls="setup_panel_4"><span class="setup-step-index" aria-hidden="true">05</span><span>Capotasto</span></button>
-              <button type="button" data-setup-step="5" aria-controls="setup_panel_5"><span class="setup-step-index" aria-hidden="true">06</span><span>Intonazione</span></button>
+              <button type="button" data-setup-step="1" aria-controls="setup_panel_1"><span class="setup-step-index" aria-hidden="true">02</span><span>Manico e action</span></button>
+              <button type="button" data-setup-step="4" aria-controls="setup_panel_4"><span class="setup-step-index" aria-hidden="true">03</span><span>Action al capotasto</span></button>
+              <button type="button" data-setup-step="5" aria-controls="setup_panel_5"><span class="setup-step-index" aria-hidden="true">04</span><span>Verifica</span></button>
             </nav>
             <div class="setup-step-list">
               <section id="setup_panel_0" class="setup-step" aria-labelledby="step-length-title">
@@ -81,9 +79,22 @@
                   <section class="card pad tl-card setup-profile-control" aria-labelledby="instrument-control-title">
                     <div class="setup-profile-control-heading"><p class="eyebrow">Strumento</p><h2 id="instrument-control-title">Scegli un setup iniziale</h2><p class="small muted">I profili forniscono valori iniziali modificabili. Le tue misure diventano autorevoli man mano che le inserisci.</p></div>
                     <div class="profile-control-row">
-                      <label class="profile-select-field"><span>Profilo dello strumento</span><select id="instrument_profile"></select></label>
+                      <label class="profile-select-field"><span>Profilo dello strumento</span><select id="instrument_profile" data-replace-prompt="Sostituire i valori inseriti con quelli predefiniti di questo profilo? Annulla mantiene la configurazione attuale."></select></label>
                       <button id="customize_profile" type="button" class="secondary-button">Modifica cori e numero di corde</button>
                     </div>
+                    <details class="setup-reference-specs" open>
+                      <summary>Valori iniziali del profilo</summary>
+                      <div id="profile_reference" data-structure="Corde: {stringCount} · Cori: {courseCount}" data-relief="{relief} al tasto {fretNumber}" data-outer-action="Prima: {first} · Ultima: {last}">
+                        <p id="profile_reference_structure" class="small muted"></p>
+                        <dl class="profile-reference-values">
+                          <div><dt>Curvatura</dt><dd id="profile_reference_relief"></dd></div>
+                          <div><dt>Action al 12º tasto <small>capotasto mobile 1, tasto 12</small></dt><dd id="profile_reference_bridge"></dd></div>
+                          <div><dt>Action al capotasto <small>corda libera, tasto 1</small></dt><dd id="profile_reference_nut"></dd></div>
+                        </dl>
+                      </div>
+                      <p id="profile_reference_unavailable" class="small muted" hidden>Configurazione personalizzata: controlla i valori nei passaggi successivi.</p>
+                      <p class="small muted">Valori predefiniti del profilo selezionato, non misurazioni. Modificali nei passaggi successivi.</p>
+                    </details>
                     <section id="setup_scale_controls" class="setup-scale-controls" data-invalid-message="Inserisci una lunghezza della scala maggiore di zero.">
                       <div class="scale-layout-choice" role="group" aria-label="Configurazione della scala">
                         <button type="button" data-scale-mode="single" aria-pressed="true">Scala unica</button>
@@ -104,29 +115,6 @@
                       <button id="build_custom_profile" type="button" class="secondary-button">Usa struttura personalizzata</button>
                     </section>
                   </section>
-                  <details class="setup-reference-specs">
-                    <summary>Specifiche di riferimento</summary>
-                    <section id="stock_specs" class="card pad tl-card stock-specs" aria-labelledby="stock-specs-title">
-                      <div class="stock-specs-heading">
-                        <h2 id="stock-specs-title">Dove inizia ogni setup</h2>
-                        <p class="small muted">Specifiche tipiche per strumento. Scegli il tuo — poi saranno le tue misure a diventare autorevoli.</p>
-                      </div>
-                      <div id="stock_spec_cards" class="stock-spec-cards"></div>
-                      <div class="stock-steps-strip" hidden aria-label="Le sei fasi del setup">
-                        <span class="stock-step"><em>1</em>Corde</span>
-                        <span class="stock-step"><em>2</em>Raggio</span>
-                        <span class="stock-step"><em>3</em>Curvatura</span>
-                        <span class="stock-step"><em>4</em>Ponte</span>
-                        <span class="stock-step"><em>5</em>Capotasto</span>
-                        <span class="stock-step"><em>6</em>Intonazione</span>
-                        <span class="stock-steps-note">La forma generale — le istruzioni di laboratorio forniscono i dettagli.</span>
-                      </div>
-                      <div class="stock-specs-cta">
-                        <button id="stock_specs_measure" type="button" class="primary-button">Misura questo strumento</button>
-                        <p class="small muted">Le specifiche tipiche valgono finché non le sostituisci, e i risultati indicano l’origine di ciascun valore.</p>
-                      </div>
-                    </section>
-                  </details>
                   <div class="string-source-control">
                     <label><span>Dati di massa del produttore</span><select id="tension_data_source"><option value="daddario_ej16">D’Addario EJ16</option><option value="daddario_exl110">D’Addario EXL110 elettrica</option><option value="daddario_ej38">D’Addario EJ38 12 corde</option><option value="daddario_exl170">D’Addario EXL170 basso</option><option value="daddario_ej45">D’Addario EJ45 classica</option><option value="daddario_ej65t">D’Addario EJ65T ukulele tenore</option><option value="daddario_ej74">D’Addario EJ74 mandolino</option><option value="stringjoy_nickel">Stringjoy liscia / nichel</option><option value="stringjoy_bronze">Stringjoy liscia / bronzo</option><option value="estimate">Stima dal calibro</option></select></label>
                     <p class="step-note">La massa lineare pubblicata viene usata quando una corda corrisponde. La rigidezza assiale è stimata dalla costruzione, a meno che non venga inserito un valore misurato.</p>
@@ -139,8 +127,11 @@
                 </div>
               </section>
 
-              <section id="setup_panel_1" class="setup-step" aria-labelledby="step-radius-title" hidden>
-                <header class="setup-step-header"><span class="step-number">02</span><span><strong id="step-radius-title" role="heading" aria-level="2" tabindex="-1">Raggio</strong><small>Tastiera con raggio semplice, compound o piatta.</small></span></header>
+              <section id="setup_panel_1" class="setup-step" aria-labelledby="step-neck-action-title" hidden>
+                <header class="setup-step-header"><span class="step-number">02</span><span><strong id="step-neck-action-title" role="heading" aria-level="2" tabindex="-1">Manico e action</strong><small>Verifica raggio, relief e action al 12º tasto con capotasto mobile.</small></span></header>
+                <div class="setup-neck-measurements">
+                <section id="setup_radius_section" class="setup-measurement-section" aria-labelledby="step-radius-title">
+                <header class="setup-measurement-header"><h3 id="step-radius-title">Raggio</h3><small id="radius_input_source" class="provenance-badge">Predefinito del profilo</small></header>
                 <div class="setup-step-body">
                   <div class="radius-choice">
                     <label><input type="radio" name="radius_kind" value="simple"><span><strong>Raggio semplice</strong><small>Un solo raggio dal capotasto al ponte.</small></span></label>
@@ -156,16 +147,17 @@
                 </div>
               </section>
 
-              <section id="setup_panel_2" class="setup-step" aria-labelledby="step-relief-title" hidden>
-                <header class="setup-step-header"><span class="step-number">03</span><span><strong id="step-relief-title" role="heading" aria-level="2" tabindex="-1">Curvatura</strong><small>Curvatura del manico, misurata come valore massimo e tasto.</small></span></header>
+              <section id="setup_panel_2" class="setup-measurement-section" aria-labelledby="step-relief-title">
+                <header class="setup-measurement-header"><h3 id="step-relief-title">Curvatura</h3><small id="relief_input_source" class="provenance-badge">Predefinito del profilo</small></header>
                 <div class="setup-step-body"><div class="field-row">
                   <label><span data-length-label="Curvatura">Curvatura (mm)</span><input id="relief_amount_mm" type="number" min="0" step="0.01"></label>
                   <label><span>Misurata al tasto</span><input id="relief_peak_fret" type="number" min="2" step="1"></label>
                 </div><p class="step-note">Metti un capotasto mobile al tasto 1, tieni premuta la corda all’ultimo tasto e misura dalla sommità del tasto alla parte inferiore della corda sul tasto selezionato.</p></div>
               </section>
 
-              <section id="setup_panel_3" class="setup-step" aria-labelledby="step-bridge-title" hidden>
-                <header class="setup-step-header"><span class="step-number">04</span><span><strong id="step-bridge-title" role="heading" aria-level="2" tabindex="-1">Action al ponte</strong><small>Metti un capotasto mobile al tasto 1, poi misura al tasto 12.</small></span></header>
+              <section id="setup_panel_3" class="setup-measurement-section" aria-labelledby="step-bridge-title">
+                <header class="setup-measurement-header"><h3 id="step-bridge-title">Action al 12º tasto</h3><small id="bridge_input_source" class="provenance-badge">Predefinito del profilo</small></header>
+                <p class="step-note">Metti un capotasto mobile al 1º tasto. Misura dalla sommità del 12º tasto al lato inferiore della corda.</p>
                 <div class="setup-step-body">
                   <div class="field-row field-row-two">
                     <label><span id="action_first_string_label">Prima corda (mm)</span><input id="action_first_string_mm" type="number" min="0" step="0.01"></label>
@@ -185,8 +177,11 @@
                 </div>
               </section>
 
+                </div>
+              </section>
+
               <section id="setup_panel_4" class="setup-step" aria-labelledby="step-nut-title" hidden>
-                <header class="setup-step-header"><span class="step-number">05</span><span><strong id="step-nut-title" role="heading" aria-level="2" tabindex="-1">Action al capotasto</strong><small>Distanza della corda libera sopra il tasto 1.</small></span></header>
+                <header class="setup-step-header"><span class="step-number">03</span><span><strong id="step-nut-title" role="heading" aria-level="2" tabindex="-1">Action al capotasto</strong><small>Distanza della corda libera sopra il tasto 1.</small></span></header>
                 <div class="setup-step-body"><div class="field-row field-row-two">
                   <label><span id="nut_action_first_string_label">Prima corda (mm)</span><input id="nut_action_first_string_mm" type="number" min="0" step="0.01"></label>
                   <label><span id="nut_action_last_string_label">Ultima corda (mm)</span><input id="nut_action_last_string_mm" type="number" min="0" step="0.01"></label>
@@ -194,7 +189,7 @@
               </section>
 
               <section id="setup_panel_5" class="setup-step" aria-labelledby="step-intonation-title" hidden>
-                <header class="setup-step-header"><span class="step-number">06</span><span><strong id="step-intonation-title" role="heading" aria-level="2" tabindex="-1">Esamina la compensazione e verifica l’intonazione</strong><small>Usa lo schema di capotasto e selletta, poi verifica lo strumento reale.</small></span></header>
+                <header class="setup-step-header"><span class="step-number">04</span><span><strong id="step-intonation-title" role="heading" aria-level="2" tabindex="-1">Esamina la compensazione e verifica l’intonazione</strong><small>Usa lo schema di capotasto e selletta, poi verifica lo strumento reale.</small></span></header>
                 <div class="setup-step-body">
                   <p class="step-note">Lo schema calcolato è un riferimento iniziale per il taglio. Controlla ogni corda premuta con un accordatore stroboscopico prima di eseguire un taglio irreversibile.</p>
                   <a class="result-link" href="#results-title">Vedi la compensazione corda per corda</a>
@@ -224,13 +219,24 @@
                   <section class="card pad tl-card tl-card-output pitch-error-chart" aria-labelledby="pitch-error-title">
                     <div class="pitch-error-heading">
                       <div><p class="eyebrow">Risultato calcolato</p><h2 id="pitch-error-title">Errore di intonazione previsto</h2><p class="small muted">Confronta la compensazione di una corda con lo stesso assetto.</p></div>
-                      <label class="pitch-error-string"><span>Corda</span><select id="pitch_error_string"></select></label>
+                      <div class="pitch-error-actions"><label class="pitch-error-string"><span>Corda</span><select id="pitch_error_string"></select></label><button id="pitch_error_settings_open" type="button">Impostazioni del grafico</button></div>
                     </div>
-                    <div class="pitch-error-legend"><span class="pitch-error-saddle">Solo traversino</span><span class="pitch-error-joint">Capotasto + traversino</span></div>
-                    <div id="pitch_error_plot" class="pitch-error-plot" role="img" aria-label="Errore di intonazione previsto" aria-describedby="pitch_error_scope pitch_error_help"></div>
+                    <div id="pitch_error_plot" class="pitch-error-plot" role="group" aria-label="Errore di intonazione previsto" aria-describedby="pitch_error_scope pitch_error_help"></div>
                     <p id="pitch_error_scope" class="small muted" aria-live="polite"></p>
                     <p id="pitch_error_help" class="results-footnote">Sopra lo zero: crescente. Sotto: calante. L’area ombreggiata indica tasti oltre l’ultimo tasto dello strumento.</p>
                     <div class="pitch-error-values"><table><caption>Errore di intonazione per tasto</caption><thead><tr><th scope="col">Tasto</th><th scope="col">Solo traversino (Cent)</th><th scope="col">Capotasto + traversino (Cent)</th></tr></thead><tbody id="pitch_error_readings"></tbody></table></div>
+                    <dialog id="pitch_error_settings" class="pitch-error-settings" aria-labelledby="pitch_error_settings_title" aria-describedby="pitch_error_settings_help">
+                      <h2 id="pitch_error_settings_title">Impostazioni del grafico</h2>
+                      <p id="pitch_error_settings_help" class="small muted">Solo visualizzazione: questi limiti non cambiano l’intervallo di ottimizzazione. Lasciare i campi vuoti per i limiti automatici. Tasti e cents usano scale lineari.</p>
+                      <div class="pitch-error-axis-fields">
+                        <label><span>Tasto minimo</span><input id="pitch_error_fret_min" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Tasto massimo</span><input id="pitch_error_fret_max" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Cents minimi</span><input id="pitch_error_cents_min" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                        <label><span>Cents massimi</span><input id="pitch_error_cents_max" type="number" inputmode="decimal" step="any" placeholder="Auto" aria-describedby="pitch_error_range_error"></label>
+                      </div>
+                      <p id="pitch_error_range_error" role="status" class="small"></p>
+                      <div class="pitch-error-dialog-actions"><button id="pitch_error_reset_view" type="button">Ripristina vista</button><button id="pitch_error_settings_close" type="button">Fine</button></div>
+                    </dialog>
                   </section>
 
                   <aside class="card pad tl-card setup-measurement-rail" aria-labelledby="measurement-rail-title">
@@ -267,9 +273,9 @@
           </form>
 
           <section class="card pad tl-card tool-discovery" data-localized-tool-discovery lang="it">
-  <h2>Calcolatore per il setup della chitarra</h2>
+  <h2>Calcolatore di compensazione di capotasto e selletta</h2>
   <p>Usa questo strumento per trasformare il setup misurato in obiettivi di altezza al capotasto e compensazione per ogni corda, da verificare sullo strumento.</p>
-  <p>Il calcolatore mantiene in ordine sei decisioni di setup: lunghezza delle corde, raggio, curvatura, action al ponte, action al capotasto e intonazione. Ogni risultato rimane associato alla corda fisica che lo ha prodotto.</p>
+  <p>Il calcolatore raggruppa sei decisioni di setup in quattro schermate: corde, manico e action, action al capotasto e verifica della compensazione. Ogni risultato resta associato alla corda fisica corrispondente.</p>
   <p>Un setup può sembrare corretto e tuttavia rendere acute alcune note premute. Il calcolo stima come il percorso misurato della corda modifica la tensione, quindi mostra quanto devono spostarsi i punti di appoggio al capotasto e alla selletta.</p>
   <ul>
     <li>Diapason per ogni corda fisica</li>
@@ -288,17 +294,17 @@
       <footer class="tl-footer" data-tool-footer data-tool-privacy-href="/privacy/"></footer>
     </div>
   </div>
-  <script src="../common/tool_fullscreen_navigation.js?rev=3519feba01d2" defer></script>
-  <script src="../common/page_fullscreen.js?rev=3519feba01d2" defer></script>
-  <script src="../common/site_menu_loader.js?rev=3519feba01d2" defer></script>
-  <script src="../common/tool_footer_loader.js?rev=3519feba01d2" defer></script>
-  <script src="../vendor/plotly/plotly-basic.min.js?rev=3519feba01d2"></script>
+  <script src="../common/tool_fullscreen_navigation.js?rev=90c36258c883" defer></script>
+  <script src="../common/page_fullscreen.js?rev=90c36258c883" defer></script>
+  <script src="../common/site_menu_loader.js?rev=90c36258c883" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=90c36258c883" defer></script>
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=90c36258c883"></script>
   <script type="module" src="main.mjs"></script>
   <!-- localized-locale-selector:start -->
-  <link rel="stylesheet" href="../common/locale_selector.css?rev=3519feba01d2">
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=90c36258c883">
   <script id="tool_locale_config" type="application/json">{"label":"Lingua","currentLocale":"it","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/guitar_setup_calculator/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/guitar_setup_calculator/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/guitar_setup_calculator/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/guitar_setup_calculator/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/guitar_setup_calculator/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/guitar_setup_calculator/"}]}</script>
-  <script src="../common/locale_preference.js?rev=3519feba01d2" defer></script>
-  <script src="../common/locale_selector.js?rev=3519feba01d2" defer></script>
+  <script src="../common/locale_preference.js?rev=90c36258c883" defer></script>
+  <script src="../common/locale_selector.js?rev=90c36258c883" defer></script>
   <!-- localized-locale-selector:end -->
 </body>
 </html>

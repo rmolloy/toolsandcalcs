@@ -55,6 +55,7 @@ class ScaleLengthEditor {
     this.mode = 'single';
     this.pending = false;
     this.clearCommonLengthDraft();
+    this.presentCommonLength();
     this.render();
   }
 
