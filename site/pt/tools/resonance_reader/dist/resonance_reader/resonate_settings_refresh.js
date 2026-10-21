@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=90c36258c883";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=b5b8fa4adb00";
 export function settingsPipelineRefresh(deps) {
     if (!deps.state.currentWave) {
         deps.setStatus(resonanceLocalizedMessages.settingsUpdatedStatus);
