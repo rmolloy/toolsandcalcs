@@ -511,6 +511,21 @@
               </select>
             </label>
             <label class="settings-field">
+              <span class="settings-label-row">Q method<span class="settings-help" tabindex="0" data-tooltip="Chooses how Q is calculated. Spectral uses peak width; decay fits each tap's ring-down. Unavailable decay fits do not fall back to spectral Q.">?</span></span>
+              <select id="settings_q_method">
+                <option value="spectral">Spectral</option>
+                <option value="decay">Decay</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Decay Q across taps<span class="settings-help" tabindex="0" data-tooltip="Uses accepted taps whose onsets lie in the selected analysis window. P75 is the default: the interpolated 75th percentile. Median selects the middle value; maximum selects the highest accepted Q. Used only with Decay Q.">?</span></span>
+              <select id="settings_q_aggregation">
+                <option value="median">Median</option>
+                <option value="max">Maximum</option>
+                <option value="p75">75th percentile (P75)</option>
+              </select>
+            </label>
+            <label class="settings-field">
               <span class="settings-label-row">Display Range<span class="settings-help" tabindex="0" data-tooltip="Sets the horizontal frequency span shown on the main spectrum. Classic FFT uses a tighter 20-1000 Hz view.">?</span></span>
               <select id="settings_fft_display_range">
                 <option value="">Profile default</option>

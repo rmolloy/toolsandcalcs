@@ -1,4 +1,5 @@
 import { SETTINGS_IDS } from "./resonate_settings_ids.js";
+import { qSettingsControlsBind, qSettingsControlsReset, qSettingsControlsSync } from "./resonate_q_settings_controls.js";
 import { settingsAudioInputBind, settingsAudioInputsRefresh, } from "./resonate_audio_input_select.js";
 import { settingsBooleanPatchBuild, settingsDebugPatchBuild, settingsProfileValueRead, settingsSmoothingValueRead, } from "./resonate_settings_model.js";
 import { settingsPipelineRefresh, } from "./resonate_settings_refresh.js";
@@ -10,6 +11,7 @@ export function settingsModalBind(deps) {
         return;
     trigger.addEventListener("click", () => {
         settingsControlsSyncFromRuntime();
+        qSettingsControlsSync(deps.state);
         void settingsAudioInputsRefresh();
         settingsDialogOpen(dialog);
     });
@@ -17,8 +19,10 @@ export function settingsModalBind(deps) {
         void settingsAudioInputsRefresh();
     });
     settingsAudioInputBind();
+    qSettingsControlsBind(deps);
     buttonElementGet(SETTINGS_IDS.reset)?.addEventListener("click", () => {
         settingsDebugApiGet()?.reset?.();
+        qSettingsControlsReset(deps.state);
         settingsControlsSyncFromRuntime();
         settingsPipelineRefresh(deps);
     });

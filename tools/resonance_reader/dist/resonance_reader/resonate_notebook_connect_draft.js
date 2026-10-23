@@ -1,5 +1,6 @@
 import { renderPayloadBuildFromState } from "./resonate_render_events.js";
 import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js";
+import { qSettingsResolve } from "./resonate_q_settings.js";
 const RESONANCE_NOTEBOOK_CONNECT_DRAFT_KEY = "resonanceNotebookConnectDraft";
 export function persistResonanceNotebookConnectDraft(runtime, state, recordingLabel) {
     const storage = readResonanceNotebookConnectDraftStorage(runtime);
@@ -31,6 +32,7 @@ export function restoreResonanceNotebookConnectDraftState(state, draft) {
         return false;
     }
     state.measureMode = draft.measureMode;
+    state.qSettings = draft.qSettings ? qSettingsResolve({ qSettings: draft.qSettings }) : undefined;
     state.recordingLabel = draft.recordingLabel;
     state.plateMaterialMeasurements = cloneResonanceNotebookConnectDraftValue(draft.plateMaterialMeasurements);
     state.stockMeasurementKind = draft.stockMeasurementKind ?? null;
@@ -57,6 +59,7 @@ function buildResonanceNotebookConnectDraft(runtime, state, recordingLabel) {
         returnTo: readResonanceNotebookConnectDraftReturnTo(runtime),
         recordingLabel: String(recordingLabel || "").trim(),
         measureMode: String(state.measureMode || "").trim(),
+        ...(state.qSettings ? { qSettings: qSettingsResolve(state) } : {}),
         renderPayload: cloneResonanceNotebookConnectDraftValue(renderPayloadBuildFromState(state)),
         plateMaterialMeasurements: cloneResonanceNotebookConnectDraftValue(state.plateMaterialMeasurements ?? null),
         ...cloneResonanceNotebookConnectDraftValue(stockMeasurementsEvidenceBuild(state)),
@@ -74,6 +77,7 @@ function buildResonanceNotebookConnectDraftFromSavedDocument(savedDocument) {
         returnTo: "",
         recordingLabel: String(savedDocument.recordingLabel || "").trim(),
         measureMode: String(savedDocument.measureMode || "").trim(),
+        qSettings: savedDocument.qSettings,
         renderPayload: cloneResonanceNotebookConnectDraftValue(savedDocument.renderPayload),
         plateMaterialMeasurements: cloneResonanceNotebookConnectDraftValue(savedDocument.plateMaterialMeasurements ?? null),
         ...cloneResonanceNotebookConnectDraftValue(stockMeasurementsEvidenceBuild(savedDocument)),
