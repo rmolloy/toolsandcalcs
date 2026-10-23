@@ -1,5 +1,5 @@
-import { restoreResonanceSavedStateDocument } from "./resonate_notebook_connect_draft.js?rev=4a9544c40f78";
-import { readNotebookRestorePayloadForResonance } from "./resonate_notebook_restore_client.js?rev=4a9544c40f78";
+import { restoreResonanceSavedStateDocument } from "./resonate_notebook_connect_draft.js?rev=77822e68554b";
+import { readNotebookRestorePayloadForResonance } from "./resonate_notebook_restore_client.js?rev=77822e68554b";
 export async function restoreResonanceNotebookEventIntoState(args) {
     const request = readResonanceNotebookRestoreRequest(args.runtime);
     if (!request) {

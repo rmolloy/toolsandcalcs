@@ -1,6 +1,7 @@
-import { renderPayloadBuildFromState } from "./resonate_render_events.js?rev=4a9544c40f78";
-import { buildToolDocumentHeader } from "../common/tool_document.js?rev=4a9544c40f78";
-import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js?rev=4a9544c40f78";
+import { renderPayloadBuildFromState } from "./resonate_render_events.js?rev=77822e68554b";
+import { buildToolDocumentHeader } from "../common/tool_document.js?rev=77822e68554b";
+import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js?rev=77822e68554b";
+import { qSettingsResolve } from "./resonate_q_settings.js?rev=77822e68554b";
 export async function resonanceCapturePackageZipBlobBuild(args) {
     const [stateBlob, wavBlob, plotBlob] = await Promise.all([
         resonanceCaptureStateBlobBuild(args),
@@ -28,6 +29,7 @@ export function resonanceCaptureStateJsonBuild(args) {
         toolVersion: args.toolVersion,
         savedAt: args.savedAtIso,
         measureMode: String(args.state.measureMode ?? ""),
+        ...(args.state.qSettings ? { qSettings: qSettingsResolve(args.state) } : {}),
         recordingLabel: args.recordingLabel,
         renderPayload: renderPayloadBuildFromState(args.state),
         currentWave: buildResonanceCaptureStoredWave(resonanceCaptureWaveResolve(args.state)),

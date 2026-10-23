@@ -22,6 +22,7 @@ const STATE_KEYS = [
     "takeOverlays",
     "recordingLabel",
     "measureMode",
+    "qSettings",
     "customMeasurements",
     "plateMaterialMeasurements",
     "stockMeasurementKind",

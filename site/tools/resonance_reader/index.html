@@ -5,13 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Resonance Reader | The Lab at Rick Molloy Guitars</title>
-  <link rel="stylesheet" href="../common/tool_footer.css?rev=4a9544c40f78">
-  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=4a9544c40f78">
-  <link rel="stylesheet" href="styles.css?rev=4a9544c40f78">
-  <link rel="stylesheet" href="../common/tool_guide.css?rev=4a9544c40f78">
-  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=4a9544c40f78">
+  <link rel="stylesheet" href="../common/tool_footer.css?rev=77822e68554b">
+  <link rel="stylesheet" href="../common/resonance_plot_surface.css?rev=77822e68554b">
+  <link rel="stylesheet" href="styles.css?rev=77822e68554b">
+  <link rel="stylesheet" href="../common/tool_guide.css?rev=77822e68554b">
+  <link rel="stylesheet" href="../common/notebook_save_modal.css?rev=77822e68554b">
   <link rel="canonical" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
-  <link rel="stylesheet" href="../common/theme_profile.css?rev=4a9544c40f78">
+  <link rel="stylesheet" href="../common/theme_profile.css?rev=77822e68554b">
   <link rel="alternate" hreflang="en-US" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="es" href="https://rickmolloyguitars.com/es/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="de" href="https://rickmolloyguitars.com/de/lab/tools/resonance_reader/">
@@ -20,14 +20,14 @@
   <link rel="alternate" hreflang="it" href="https://rickmolloyguitars.com/it/lab/tools/resonance_reader/">
   <link rel="alternate" hreflang="x-default" href="https://rickmolloyguitars.com/lab/tools/resonance_reader/">
   <!-- shared-length-units:start -->
-  <link rel="stylesheet" href="../common/length_unit_control.css?rev=4a9544c40f78">
+  <link rel="stylesheet" href="../common/length_unit_control.css?rev=77822e68554b">
   <script id="tool_length_unit_config" type="application/json">{"label":"Length units"}</script>
-  <script src="../common/length_unit_preference.js?rev=4a9544c40f78"></script>
-  <script src="../common/canonical_length_fields.js?rev=4a9544c40f78"></script>
-  <script src="../common/length_unit_controller.js?rev=4a9544c40f78"></script>
-  <script src="../common/length_unit_frame_sync.js?rev=4a9544c40f78"></script>
-  <script src="../common/length_unit_navigation.js?rev=4a9544c40f78"></script>
-  <script src="../common/length_unit_control.js?rev=4a9544c40f78" defer></script>
+  <script src="../common/length_unit_preference.js?rev=77822e68554b"></script>
+  <script src="../common/canonical_length_fields.js?rev=77822e68554b"></script>
+  <script src="../common/length_unit_controller.js?rev=77822e68554b"></script>
+  <script src="../common/length_unit_frame_sync.js?rev=77822e68554b"></script>
+  <script src="../common/length_unit_navigation.js?rev=77822e68554b"></script>
+  <script src="../common/length_unit_control.js?rev=77822e68554b" defer></script>
   <!-- shared-length-units:end -->
 </head>
 
@@ -528,6 +528,21 @@
               </select>
             </label>
             <label class="settings-field">
+              <span class="settings-label-row">Q method<span class="settings-help" tabindex="0" data-tooltip="Chooses how Q is calculated. Spectral uses peak width; decay fits each tap's ring-down. Unavailable decay fits do not fall back to spectral Q.">?</span></span>
+              <select id="settings_q_method">
+                <option value="spectral">Spectral</option>
+                <option value="decay">Decay</option>
+              </select>
+            </label>
+            <label class="settings-field">
+              <span class="settings-label-row">Decay Q across taps<span class="settings-help" tabindex="0" data-tooltip="Uses accepted taps whose onsets lie in the selected analysis window. P75 is the default: the interpolated 75th percentile. Median selects the middle value; maximum selects the highest accepted Q. Used only with Decay Q.">?</span></span>
+              <select id="settings_q_aggregation">
+                <option value="median">Median</option>
+                <option value="max">Maximum</option>
+                <option value="p75">75th percentile (P75)</option>
+              </select>
+            </label>
+            <label class="settings-field">
               <span class="settings-label-row">Display Range<span class="settings-help" tabindex="0" data-tooltip="Sets the horizontal frequency span shown on the main spectrum. Classic FFT uses a tighter 20-1000 Hz view.">?</span></span>
               <select id="settings_fft_display_range">
                 <option value="">Profile default</option>
@@ -640,38 +655,38 @@
     </form>
   </dialog>
 
-  <script src="../vendor/plotly/plotly-basic.min.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/atmosphere.js?rev=4a9544c40f78" defer></script>
-  <script src="../plate_thickness/calculator.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/solver_core.js?rev=4a9544c40f78" defer></script>
-  <script src="../modal_frequency_shared/state.js?rev=4a9544c40f78" defer></script>
-  <script src="../modal_frequency_shared/utils.js?rev=4a9544c40f78" defer></script>
-  <script src="../modal_frequency_shared/audio.js?rev=4a9544c40f78" defer></script>
-  <script src="../modal_frequency_shared/waveform.js?rev=4a9544c40f78" defer></script>
-  <script src="../modal_frequency_shared/segmentation.js?rev=4a9544c40f78" defer></script>
-  <script src="../modal_frequency_shared/fft_engine.js?rev=4a9544c40f78" defer></script>
-  <script src="../modal_frequency_shared/fft_plot.js?rev=4a9544c40f78" defer></script>
-  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/4dof/model_core.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/per_tab_tool_session.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/tool_fullscreen_navigation.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/page_fullscreen.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/site_menu_loader.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/tool_footer_loader.js?rev=4a9544c40f78" defer></script>
-  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=4a9544c40f78"></script>
-  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=4a9544c40f78"></script>
-  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=4a9544c40f78"></script>
-  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=4a9544c40f78"></script>
-  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=4a9544c40f78"></script>
-  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=4a9544c40f78"></script>
-  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=4a9544c40f78"></script>
-  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=4a9544c40f78"></script>
-  <script type="module" src="dist/resonance_reader/main.js?rev=4a9544c40f78"></script>
+  <script src="../vendor/plotly/plotly-basic.min.js?rev=77822e68554b" defer></script>
+  <script src="../common/atmosphere.js?rev=77822e68554b" defer></script>
+  <script src="../plate_thickness/calculator.js?rev=77822e68554b" defer></script>
+  <script src="../common/solver_core.js?rev=77822e68554b" defer></script>
+  <script src="../modal_frequency_shared/state.js?rev=77822e68554b" defer></script>
+  <script src="../modal_frequency_shared/utils.js?rev=77822e68554b" defer></script>
+  <script src="../modal_frequency_shared/audio.js?rev=77822e68554b" defer></script>
+  <script src="../modal_frequency_shared/waveform.js?rev=77822e68554b" defer></script>
+  <script src="../modal_frequency_shared/segmentation.js?rev=77822e68554b" defer></script>
+  <script src="../modal_frequency_shared/fft_engine.js?rev=77822e68554b" defer></script>
+  <script src="../modal_frequency_shared/fft_plot.js?rev=77822e68554b" defer></script>
+  <script src="../modal_frequency_shared/modal_analysis/ringdown.js?rev=77822e68554b" defer></script>
+  <script src="../common/4dof/model_core.js?rev=77822e68554b" defer></script>
+  <script src="../common/per_tab_tool_session.js?rev=77822e68554b" defer></script>
+  <script src="../common/tool_fullscreen_navigation.js?rev=77822e68554b" defer></script>
+  <script src="../common/page_fullscreen.js?rev=77822e68554b" defer></script>
+  <script src="../common/site_menu_loader.js?rev=77822e68554b" defer></script>
+  <script src="../common/tool_footer_loader.js?rev=77822e68554b" defer></script>
+  <script type="module" src="dist/resonance_reader/resonate_wolf_note_core.js?rev=77822e68554b"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ingest_stage.js?rev=77822e68554b"></script>
+  <script type="module" src="dist/resonance_reader/resonate_waveform_interactions.js?rev=77822e68554b"></script>
+  <script type="module" src="dist/resonance_reader/resonate_startup.js?rev=77822e68554b"></script>
+  <script type="module" src="dist/resonance_reader/resonate_artifact_event.js?rev=77822e68554b"></script>
+  <script type="module" src="dist/resonance_reader/resonate_stage_events.js?rev=77822e68554b"></script>
+  <script type="module" src="dist/resonance_reader/resonate_ui_events.js?rev=77822e68554b"></script>
+  <script type="module" src="dist/resonance_reader/resonate_render_events.js?rev=77822e68554b"></script>
+  <script type="module" src="dist/resonance_reader/main.js?rev=77822e68554b"></script>
   <!-- localized-locale-selector:start -->
-  <link rel="stylesheet" href="../common/locale_selector.css?rev=4a9544c40f78">
+  <link rel="stylesheet" href="../common/locale_selector.css?rev=77822e68554b">
   <script id="tool_locale_config" type="application/json">{"label":"Language","currentLocale":"en-US","locales":[{"tag":"en-US","nativeName":"English (US)","href":"https://rickmolloyguitars.com/lab/tools/resonance_reader/"},{"tag":"es","nativeName":"Español","href":"https://rickmolloyguitars.com/es/lab/tools/resonance_reader/"},{"tag":"de","nativeName":"Deutsch","href":"https://rickmolloyguitars.com/de/lab/tools/resonance_reader/"},{"tag":"fr","nativeName":"Français","href":"https://rickmolloyguitars.com/fr/lab/tools/resonance_reader/"},{"tag":"pt","nativeName":"Português","href":"https://rickmolloyguitars.com/pt/lab/tools/resonance_reader/"},{"tag":"it","nativeName":"Italiano","href":"https://rickmolloyguitars.com/it/lab/tools/resonance_reader/"}]}</script>
-  <script src="../common/locale_preference.js?rev=4a9544c40f78" defer></script>
-  <script src="../common/locale_selector.js?rev=4a9544c40f78" defer></script>
+  <script src="../common/locale_preference.js?rev=77822e68554b" defer></script>
+  <script src="../common/locale_selector.js?rev=77822e68554b" defer></script>
   <!-- localized-locale-selector:end -->
 </body>
 

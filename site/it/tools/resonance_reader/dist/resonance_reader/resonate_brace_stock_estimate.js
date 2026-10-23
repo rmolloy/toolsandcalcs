@@ -1,5 +1,5 @@
-import { braceStockMaterialBuildFromMeasurements, braceStockMeasurementsValid, } from "./resonate_brace_stock_material.js?rev=4a9544c40f78";
-import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=4a9544c40f78";
+import { braceStockMaterialBuildFromMeasurements, braceStockMeasurementsValid, } from "./resonate_brace_stock_material.js?rev=77822e68554b";
+import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=77822e68554b";
 export function braceStockEstimateResolveFromState(state) {
     const measurements = state.braceStockMeasurements;
     if (!measurements || !braceStockMeasurementsValid(measurements)) {

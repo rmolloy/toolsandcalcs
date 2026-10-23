@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=4a9544c40f78";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=77822e68554b";
 export function saveButtonElementGet() {
     return document.getElementById("btn_save_audio");
 }

@@ -1,5 +1,6 @@
-import { customMeasurementCardsBuildFromState } from "./resonate_custom_measurements.js?rev=4a9544c40f78";
-import { stockLongAssignmentCapture } from "./resonate_stock_long_confirmation.js?rev=4a9544c40f78";
+import { customMeasurementCardsBuildFromState } from "./resonate_custom_measurements.js?rev=77822e68554b";
+import { stockLongAssignmentCapture } from "./resonate_stock_long_confirmation.js?rev=77822e68554b";
+import { resolveQForModeCards } from "./resonate_q_measurement.js?rev=77822e68554b";
 export function stageRefreshPostApply(args) {
     const cards = stageRefreshCardsBuild({
         analysis: args.analysis,
@@ -16,6 +17,7 @@ export function stageRefreshPostApply(args) {
     });
     args.state.lastModesDetected = args.modesDetected;
     args.state.lastModeCards = [...cards, ...customCards];
+    args.state.lastModeCards = resolveQForModeCards(args.state, args.state.lastModeCards, args.measureDecayQ);
     stockLongAssignmentCapture(args.state);
 }
 function stageRefreshCardsBuild(args) {

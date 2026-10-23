@@ -9,6 +9,7 @@ import { emitArtifactEventFromState } from "./resonate_artifact_emit.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
 import {
   resonancePeakHoldEnabled,
+  resonanceFftInputScopeResolve,
   resonancePolymaxValidationEnabled,
   resonanceSpectrumAveragingModeResolve,
   resonanceSpectrumSmoothingBinsResolve,
@@ -18,6 +19,7 @@ import {
 import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js";
 import { spectrumDbApply } from "./resonate_spectrum_db_scale.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js";
 
 const FFT_SMOOTH_GAUSSIAN_BINS = 8;
 const SPECTRUM_AVERAGING_LIMITS: Record<string, number> = {
@@ -154,6 +156,9 @@ export async function refreshFftFromState(deps: {
     deps.setStatus(resonanceLocalizedMessages.saveIdleStatus);
     return;
   }
+  deps.state.qAnalysisWindowMs = resonanceFftInputScopeResolve() === "full-file"
+    ? null
+    : deps.state.viewRangeMs || { start: 0, end: 1000 * slice.wave.length / slice.sampleRate };
   const fftFactory = (window as any).createFftEngine;
   if (typeof fftFactory !== "function") return;
   const { directSpectrum, spectrum } = await stageRefreshPreRun({
@@ -212,6 +217,7 @@ export async function refreshFftFromState(deps: {
     modesDetected,
     freqs,
     dbs,
+    measureDecayQ: peakAnalysisRingdownDataBuild,
   });
   deps.state.rerenderFromLastSpectrum = (options?: { skipDof?: boolean }) => {
     const last = deps.state.lastSpectrum;
@@ -233,6 +239,7 @@ export async function refreshFftFromState(deps: {
       modesDetected: det,
       freqs: freqs2,
       dbs: dbs2,
+      measureDecayQ: peakAnalysisRingdownDataBuild,
     });
     if (options?.skipDof) {
       emitArtifactEventFromState(deps.state);

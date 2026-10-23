@@ -14,6 +14,12 @@ export type ModeCard = {
   note: string | null;
   cents: number | null;
   q: number | null;
+  qEvidence?: {
+    method: "decay";
+    aggregation: "median" | "max" | "p75";
+    spectralQ: number | null;
+    taps: Array<{ tapIndex: number; q: number | null; flags: string[] }>;
+  };
   wolfRisk: "None" | "Low" | "Med" | "High" | null;
   deltaHz?: number | null;
   targetHz?: number | null;

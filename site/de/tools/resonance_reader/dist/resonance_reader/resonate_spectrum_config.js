@@ -1,4 +1,4 @@
-import { resonanceSpectrumDisplayRangeResolve } from "./resonate_debug_flags.js?rev=4a9544c40f78";
+import { resonanceSpectrumDisplayRangeResolve } from "./resonate_debug_flags.js?rev=77822e68554b";
 export const FREQ_MIN = 50;
 export const FREQ_AXIS_MAX = 500;
 export const FFT_MAX_HZ = 2000;

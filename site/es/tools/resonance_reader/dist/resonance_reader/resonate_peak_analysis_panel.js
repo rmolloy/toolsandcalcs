@@ -1,11 +1,13 @@
-import { analyzeAdaptiveRingdown } from "./resonate_ringdown_adaptive.js?rev=4a9544c40f78";
-import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=4a9544c40f78";
-import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js?rev=4a9544c40f78";
-import { resonanceSpectrumSmoothingEnabled, resonanceSpectrumLineWidthResolve, resonanceTapAveragingEnabled, } from "./resonate_debug_flags.js?rev=4a9544c40f78";
-import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=4a9544c40f78";
-import { stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js?rev=4a9544c40f78";
-import { stockPeakLabelsForSpecimen } from "./resonate_stock_peak_context.js?rev=4a9544c40f78";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=4a9544c40f78";
+import { analyzeAdaptiveRingdown } from "./resonate_ringdown_adaptive.js?rev=77822e68554b";
+import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=77822e68554b";
+import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js?rev=77822e68554b";
+import { resonanceSpectrumSmoothingEnabled, resonanceSpectrumLineWidthResolve, resonanceTapAveragingEnabled, } from "./resonate_debug_flags.js?rev=77822e68554b";
+import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=77822e68554b";
+import { stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js?rev=77822e68554b";
+import { stockPeakLabelsForSpecimen } from "./resonate_stock_peak_context.js?rev=77822e68554b";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=77822e68554b";
+import { resolveQForModeCards, spectralQFromMode } from "./resonate_q_measurement.js?rev=77822e68554b";
+import { reuseRingdownFit } from "./resonate_ringdown_cache.js?rev=77822e68554b";
 const PEAK_RINGDOWN_DEFAULT_WINDOW_MS = 1200;
 const PEAK_RINGDOWN_MIN_WINDOW_MS = PEAK_RINGDOWN_DEFAULT_WINDOW_MS;
 const PEAK_RINGDOWN_MAX_WINDOW_MS = 3000;
@@ -82,9 +84,10 @@ export function peakAnalysisSelectionSyncFromState(state) {
     return peakAnalysisCardFindByKey(candidates, fallback?.key) || fallback;
 }
 export function peakAnalysisWidthHzResolveFromMode(mode) {
-    if (!Number.isFinite(mode?.freq) || !Number.isFinite(mode?.q) || mode?.q <= 0)
+    const spectralQ = mode ? spectralQFromMode(mode) : null;
+    if (!Number.isFinite(mode?.freq) || !Number.isFinite(spectralQ) || spectralQ <= 0)
         return null;
-    return mode?.freq / mode?.q;
+    return mode?.freq / spectralQ;
 }
 export function peakAnalysisRingdownDataBuild(state, selectedMode) {
     const api = peakAnalysisRingdownApiResolve();
@@ -92,6 +95,17 @@ export function peakAnalysisRingdownDataBuild(state, selectedMode) {
     const input = peakAnalysisRingdownInputBuild(state, selectedMode, adaptive);
     if (!api || !input)
         return null;
+    return peakAnalysisRingdownFitReuse(state, selectedMode, input, api, adaptive);
+}
+function peakAnalysisRingdownFitReuse(state, selectedMode, input, api, adaptive) {
+    return reuseRingdownFit(input.wave, [
+        api.analyzeModeRingdown, api.transformComplex, api.fitDampedSinusoid, adaptive,
+        input.wave.length, input.provenance.sampleRate, JSON.stringify(state.tapSegments || []),
+        JSON.stringify(peakAnalysisUnresolvedCandidatesRead(state).map((candidate) => candidate.freq)),
+        adaptive ? null : JSON.stringify(peakAnalysisSpectrumReadFromState(state)),
+    ], JSON.stringify([selectedMode.freq, input.selectedStart, input.provenance]), () => peakAnalysisRingdownFitCalculate(state, selectedMode, input, api, adaptive));
+}
+function peakAnalysisRingdownFitCalculate(state, selectedMode, input, api, adaptive) {
     try {
         if (adaptive)
             return peakAnalysisAdaptiveDataBuild(state, selectedMode, input, api);
@@ -119,7 +133,7 @@ function peakAnalysisAdaptiveDataBuild(state, selectedMode, input, api) {
     const result = analyzeAdaptiveRingdown({
         buffer: input.buffer, wave: input.wave, sampleRate: input.provenance.sampleRate,
         targetFrequencyHz: selectedMode.freq, spectralWidthHz: input.provenance.bandwidthHz,
-        neighborFrequencies: peakAnalysisCandidatesReadFromState(state).map((candidate) => candidate.freq),
+        neighborFrequencies: peakAnalysisUnresolvedCandidatesRead(state).map((candidate) => candidate.freq),
         taps: state.tapSegments || [], selectedStart: input.selectedStart, onsetSec: input.onsetSec,
     }, api);
     return { result, provenance: input.provenance };
@@ -235,7 +249,10 @@ export function peakAnalysisCandidatesBuild(spectrum, modeCards, estimateQ = nul
     return peakAnalysisModeCandidatesBuild(modeCards, resolved).sort((left, right) => (left.freq || 0) - (right.freq || 0));
 }
 function peakAnalysisCandidatesReadFromState(state) {
-    return stockPeakLabelsForSpecimen(state, peakAnalysisCandidatesBuild(peakAnalysisSpectrumReadFromState(state), peakAnalysisCardsReadFromState(state), state.analysisBoundary?.estimateQFromDb || null));
+    return stockPeakLabelsForSpecimen(state, resolveQForModeCards(state, peakAnalysisUnresolvedCandidatesRead(state), peakAnalysisRingdownDataBuild));
+}
+function peakAnalysisUnresolvedCandidatesRead(state) {
+    return peakAnalysisCandidatesBuild(peakAnalysisSpectrumReadFromState(state), peakAnalysisCardsReadFromState(state), state.analysisBoundary?.estimateQFromDb || null);
 }
 function peakAnalysisSpectrumPointsBuild(spectrum) {
     const freqs = Array.isArray(spectrum?.freqs) ? spectrum.freqs : [];
@@ -266,7 +283,8 @@ function peakAnalysisDetectedCandidatesBuild(points, modeCards, estimateQ) {
             freq: point.freq,
             note: mode?.note || null,
             cents: mode?.cents || null,
-            q: mode?.q ?? estimateQ?.(freqs, dbs, point) ?? null,
+            q: mode?.qEvidence ? mode.q : mode?.q ?? estimateQ?.(freqs, dbs, point) ?? null,
+            ...(mode?.qEvidence ? { qEvidence: mode.qEvidence } : {}),
             wolfRisk: mode?.wolfRisk || null,
             db: point.db,
         });
