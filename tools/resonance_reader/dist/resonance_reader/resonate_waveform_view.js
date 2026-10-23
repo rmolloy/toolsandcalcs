@@ -926,8 +926,13 @@ export function primaryRangeAutoSelectFromState(slice, state) {
     }))
         .filter((range) => Number.isFinite(range.start) && Number.isFinite(range.end) && range.end > range.start);
     const bestCluster = contiguousRangeClusterBestBuild(ranges, TAP_CLUSTER_GAP_MS, { preferCount: true });
+    if (ranges.length > 1 && bestCluster?.ranges?.length === 1)
+        return isolatedTapRangeSpanBuild(ranges);
     const normalizedRange = rangeClusterNormalizeByMedianDuration(bestCluster);
     return normalizedRange || fallbackRangeOnLeftFromDuration(waveDurationMsResolve(state, slice));
+}
+function isolatedTapRangeSpanBuild(ranges) {
+    return { start: Math.min(...ranges.map((range) => range.start)), end: Math.max(...ranges.map((range) => range.end)) };
 }
 function waveDurationMsResolve(state, slice) {
     const fromSlice = Number(slice?.timeMs?.[slice.timeMs.length - 1]);

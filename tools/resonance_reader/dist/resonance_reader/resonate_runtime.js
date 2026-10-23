@@ -21,12 +21,14 @@ import { stockMeasurementsPanelInitialize, stockMeasurementsPanelRender } from "
 import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js";
 import { flexuralRigidityBaseHrefResolve, flexuralRigidityOpenFromBraceStock } from "./resonate_flexural_rigidity_link.js";
 import { analysisTabsInitialize, analysisTabsRenderFromState } from "./resonate_analysis_tabs.js";
-import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState, peakAnalysisSelectionSyncFromState } from "./resonate_peak_analysis_panel.js";
+import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState, peakAnalysisCompletedQRenderFromState, peakAnalysisSelectionSyncFromState } from "./resonate_peak_analysis_panel.js";
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
 import { plateStockTransferModesBuild } from "./resonate_plate_stock_transfer.js";
 import { takeOverlayCurrentPayloadBuild } from "./resonate_take_overlays.js";
 import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js";
 import { resonanceToolNavigate } from "./resonate_tool_navigation.js";
+import { installRingdownWorkerProvider } from "./resonate_ringdown_worker_provider.js";
+import { refreshModeCardQValues } from "./resonate_q_card_update.js";
 const state = window.FFTState;
 const resonatePipelineTriggerRun = pipelineRunCoalescedTriggerBuild(async (trigger) => {
     const runner = window.ResonatePipelineRunner;
@@ -62,6 +64,11 @@ function renderModes(modes) {
 }
 function renderModesConfigBuild() {
     return { state, modeMeta: modeMetaBuildFromState() };
+}
+function renderCompletedQResults() {
+    refreshModeCardQValues(state.lastModeCards || []);
+    if (peakAnalysisShouldRender())
+        peakAnalysisCompletedQRenderFromState(state);
 }
 function setStatus(text) {
     setStatusText(text);
@@ -108,6 +115,7 @@ function refreshFftStaticArgsBuild() {
         state,
         setStatus,
         modeMeta: modeMetaBuildFromState(),
+        resolveModeMeta: modeMetaBuildFromState,
         fftMaxHz: spectrumFftMaxHzResolve(),
         sliceCurrentWave,
         solveDofFromState: () => stageSolveDofRun({ state }),
@@ -291,6 +299,7 @@ export function resonanceReaderRuntimeStart() {
     const boundaries = boundariesResolveFromState();
     resonanceStatusExpose(setStatus);
     resonanceUiExpose();
+    installRingdownWorkerProvider(state, renderCompletedQResults);
     stockMeasurementsPanelInitialize(state, {
         selectedPeak: () => state.measureMode === "peak_analysis" ? peakAnalysisSelectionSyncFromState(state) : null,
         render: () => {

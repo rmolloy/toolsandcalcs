@@ -31,7 +31,8 @@ export function analyzeAdaptiveRingdown(input, math) {
         sampleRate: input.sampleRate, attackSkipMs: (window.startSec - input.onsetSec) * 1000,
         smoothWindowMs: 1000 / input.targetFrequencyHz, fitMethod: "damped_sinusoid",
         isolationBandwidthHz: band.widthHz,
-        evidence: { method: "adaptive-v1", noise, window, fittedFrequencyHz: fit.frequencyHz, bandwidthVariation: variation, rejected },
+        evidence: { method: "adaptive-v1", noise, window, fittedFrequencyHz: fit.frequencyHz, bandwidthVariation: variation, rejected,
+            ...(input.neighborEvidence ? { neighbors: input.neighborEvidence } : {}) },
     };
 }
 function fitSelectedWindow(response, input, window, math) {

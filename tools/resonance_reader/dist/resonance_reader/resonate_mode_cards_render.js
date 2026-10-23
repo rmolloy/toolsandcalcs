@@ -6,6 +6,10 @@ export function modeCardsHtmlBuild(modes, deps, editingKey) {
     const modeCardsHtml = modes.map((m) => modeCardHtmlBuildFromMode(m, deps, editingKey, formatters)).join("");
     return `${modeCardsHtml}${modeCardAddCustomHtmlBuild()}`;
 }
+export function modeBehaviorHtmlBuild(mode) {
+    const formatters = modeCardFormattersBuild();
+    return modeBehaviorHtmlBuildFromMode(mode, formatters.formatProximity(mode.cents), formatters.formatQ);
+}
 function modeCardAddCustomHtmlBuild() {
     return `
     <button class="mode-card mode-custom mode-card-add" type="button" aria-label="${resonanceLocalizedMessages.modeCardsAddCustomAriaLabel}">
@@ -168,6 +172,8 @@ function modeBehaviorHtmlBuildFromMode(m, proximity, formatQ) {
         return `<span class="behavior">${resonanceLocalizedMessages.modeCardsNoPeak}</span>`;
     }
     const wolf = proximity ? ` • ${proximity.label}` : "";
+    if (m.qEvidence?.pending)
+        return `<span class="behavior" aria-busy="true">Q …${wolf}</span>`;
     return `<span class="behavior">${formatQ(m.q)}${wolf}</span>`;
 }
 function modeTargetHtmlBuildFromMode(m, editingKey) {
