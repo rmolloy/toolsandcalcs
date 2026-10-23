@@ -1,15 +1,16 @@
-import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js?rev=77822e68554b";
-import { signalBoundaryDefault } from "./resonate_signal_boundary.js?rev=77822e68554b";
-import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js?rev=77822e68554b";
-import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js?rev=77822e68554b";
-import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js?rev=77822e68554b";
-import { emitArtifactEventFromState } from "./resonate_artifact_emit.js?rev=77822e68554b";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=77822e68554b";
-import { resonancePeakHoldEnabled, resonanceFftInputScopeResolve, resonancePolymaxValidationEnabled, resonanceSpectrumAveragingModeResolve, resonanceSpectrumSmoothingBinsResolve, resonanceSpectrumSmoothingHzResolve, resonanceSpectrumSmoothingModeResolve, } from "./resonate_debug_flags.js?rev=77822e68554b";
-import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js?rev=77822e68554b";
-import { spectrumDbApply } from "./resonate_spectrum_db_scale.js?rev=77822e68554b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=77822e68554b";
-import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js?rev=77822e68554b";
+import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js?rev=c40b9f2c1b26";
+import { signalBoundaryDefault } from "./resonate_signal_boundary.js?rev=c40b9f2c1b26";
+import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js?rev=c40b9f2c1b26";
+import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js?rev=c40b9f2c1b26";
+import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js?rev=c40b9f2c1b26";
+import { emitArtifactEventFromState } from "./resonate_artifact_emit.js?rev=c40b9f2c1b26";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=c40b9f2c1b26";
+import { resonancePeakHoldEnabled, resonanceFftInputScopeResolve, resonancePolymaxValidationEnabled, resonanceSpectrumAveragingModeResolve, resonanceSpectrumSmoothingBinsResolve, resonanceSpectrumSmoothingHzResolve, resonanceSpectrumSmoothingModeResolve, } from "./resonate_debug_flags.js?rev=c40b9f2c1b26";
+import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js?rev=c40b9f2c1b26";
+import { spectrumDbApply } from "./resonate_spectrum_db_scale.js?rev=c40b9f2c1b26";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c40b9f2c1b26";
+import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js?rev=c40b9f2c1b26";
+import { captureSpectrumInputs, rememberSpectrumFrame } from "./resonate_spectrum_cache.js?rev=c40b9f2c1b26";
 const FFT_SMOOTH_GAUSSIAN_BINS = 8;
 const SPECTRUM_AVERAGING_LIMITS = {
     "avg-4": 4,
@@ -121,6 +122,7 @@ export async function refreshFftFromState(deps) {
     const fftFactory = window.createFftEngine;
     if (typeof fftFactory !== "function")
         return;
+    const spectrumInputs = captureSpectrumInputs(deps.state, deps.fftMaxHz);
     const { directSpectrum, spectrum } = await stageRefreshPreRun({
         wave: slice.wave,
         sampleRate: slice.sampleRate,
@@ -165,7 +167,7 @@ export async function refreshFftFromState(deps) {
     stageRefreshPostApply({
         state: deps.state,
         analysis,
-        modeMeta: deps.modeMeta,
+        modeMeta: deps.resolveModeMeta?.() || deps.modeMeta,
         modesDetected,
         freqs,
         dbs,
@@ -189,7 +191,7 @@ export async function refreshFftFromState(deps) {
         stageRefreshPostApply({
             state: deps.state,
             analysis,
-            modeMeta: deps.modeMeta,
+            modeMeta: deps.resolveModeMeta?.() || deps.modeMeta,
             modesDetected: det,
             freqs: freqs2,
             dbs: dbs2,
@@ -201,6 +203,7 @@ export async function refreshFftFromState(deps) {
         }
         deps.solveDofFromState?.();
     };
+    rememberSpectrumFrame(deps.state, spectrumInputs);
 }
 function polymaxCandidatesResolveFromSlice(wave, sampleRate, fftMaxHz) {
     if (!resonancePolymaxValidationEnabled())

@@ -3,6 +3,7 @@ import { qSettingsResolve } from "./resonate_q_settings.js";
 import type { ModeCard } from "./resonate_types.js";
 
 export type DecayQFit = (state: Record<string, any>, mode: ModeCard) => {
+  pending?: boolean;
   result: { Q: number | null; flags?: string[] };
 } | null;
 
@@ -14,8 +15,9 @@ export function resolveQForModeCards<Card extends ModeCard>(state: Record<string
 function resolveDecayQForMode<Card extends ModeCard>(state: Record<string, any>, card: Card, fit?: DecayQFit): Card {
   const aggregation = qSettingsResolve(state).aggregation;
   const taps = decayQFitsForMode(state, card, fit);
-  return { ...card, q: aggregateDecayQ(taps.map((tap) => tap.q), aggregation), qEvidence: {
-    method: "decay", aggregation, spectralQ: spectralQFromMode(card), taps,
+  const pending = taps.some((tap) => tap.pending);
+  return { ...card, q: pending ? null : aggregateDecayQ(taps.map((tap) => tap.q), aggregation), qEvidence: {
+    method: "decay", aggregation, spectralQ: spectralQFromMode(card), taps, ...(pending ? { pending: true } : {}),
   } };
 }
 
@@ -30,7 +32,7 @@ function decayQFitsForMode(state: Record<string, any>, card: ModeCard, fit?: Dec
 
 function decayQFitForTap(state: Record<string, any>, card: ModeCard, tapIndex: number, fit: DecayQFit) {
   const data = fit({ ...state, peakAnalysisSelectedTapIndex: tapIndex }, card);
-  return { tapIndex, q: data?.result.Q ?? null, flags: data?.result.flags ?? [] };
+  return { tapIndex, q: data?.result.Q ?? null, flags: data?.result.flags ?? [], ...(data?.pending ? { pending: true } : {}) };
 }
 
 export function tapIndexesInAnalysisWindow(state: Record<string, any>): number[] {

@@ -4,7 +4,7 @@ export type QSettings = { method: "spectral" | "decay"; aggregation: QAggregatio
 
 export function qSettingsResolve(state: Record<string, any>): QSettings {
   return {
-    method: state.qSettings?.method === "decay" ? "decay" : "spectral",
+    method: state.qSettings?.method === "spectral" ? "spectral" : "decay",
     aggregation: qAggregationResolve(state.qSettings?.aggregation),
   };
 }

@@ -1,5 +1,4 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=77822e68554b";
-import { resonanceFftInputScopeResolve } from "./resonate_debug_flags.js?rev=77822e68554b";
+import { resonanceFftInputScopeResolve } from "./resonate_debug_flags.js?rev=c40b9f2c1b26";
 export function sliceCurrentWaveFromState(state) {
     const src = state.currentWave;
     if (!src)
@@ -10,11 +9,7 @@ export function sliceCurrentWaveFromState(state) {
     if (state.viewRangeMs) {
         return window.FFTWaveform.sliceWaveRange(src, state.viewRangeMs.start, state.viewRangeMs.end);
     }
-    if (measureModeNormalize(state.measureMode) === "played_note") {
-        return fullWaveFromState(state);
-    }
-    const desired = Math.min(5000, src.fullLengthMs || 5000);
-    return window.FFTWaveform.sliceWave(src, desired);
+    return fullWaveFromState(state);
 }
 export function fullWaveFromState(state) {
     const src = state.currentWave;

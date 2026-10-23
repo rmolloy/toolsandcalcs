@@ -148,6 +148,7 @@ const ENGLISH_RESONANCE_MESSAGES = Object.freeze({
     peakAnalysisProvenanceNoConsistentDecay: "keine konsistente Abklingung",
     peakAnalysisProvenanceOverlappingPeaks: "überlappende Peaks",
     peakAnalysisProvenancePoorFit: "schlechte Anpassung",
+    peakAnalysisProvenanceTargetNotObserved: "keine Resonanz bei der gewählten Frequenz",
     peakAnalysisProvenanceRecordingEndsLimit: " (Aufnahme endet)",
     peakAnalysisProvenanceSourceTemplate: "Abklingungsquelle: {tapLabel} · {window} · {preOnsetMs} ms vor dem Einschlag · {bandwidth} · {sampleRateHz} Hz{adaptiveStatus}",
     peakAnalysisProvenanceSpectralBandwidthTemplate: "spektrale Bandbreite {bandwidthHz} Hz",

@@ -1,10 +1,14 @@
-import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=77822e68554b";
-import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=77822e68554b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=77822e68554b";
+import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=c40b9f2c1b26";
+import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=c40b9f2c1b26";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c40b9f2c1b26";
 export function modeCardsHtmlBuild(modes, deps, editingKey) {
     const formatters = modeCardFormattersBuild();
     const modeCardsHtml = modes.map((m) => modeCardHtmlBuildFromMode(m, deps, editingKey, formatters)).join("");
     return `${modeCardsHtml}${modeCardAddCustomHtmlBuild()}`;
+}
+export function modeBehaviorHtmlBuild(mode) {
+    const formatters = modeCardFormattersBuild();
+    return modeBehaviorHtmlBuildFromMode(mode, formatters.formatProximity(mode.cents), formatters.formatQ);
 }
 function modeCardAddCustomHtmlBuild() {
     return `
@@ -168,6 +172,8 @@ function modeBehaviorHtmlBuildFromMode(m, proximity, formatQ) {
         return `<span class="behavior">${resonanceLocalizedMessages.modeCardsNoPeak}</span>`;
     }
     const wolf = proximity ? ` • ${proximity.label}` : "";
+    if (m.qEvidence?.pending)
+        return `<span class="behavior" aria-busy="true">Q …${wolf}</span>`;
     return `<span class="behavior">${formatQ(m.q)}${wolf}</span>`;
 }
 function modeTargetHtmlBuildFromMode(m, editingKey) {

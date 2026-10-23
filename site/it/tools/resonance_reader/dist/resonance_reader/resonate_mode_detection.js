@@ -1,6 +1,6 @@
-import { modeBands } from "./resonate_mode_config.js?rev=77822e68554b";
-import { median } from "./resonate_mode_metrics.js?rev=77822e68554b";
-import { resonanceParabolicPeakRefineEnabled } from "./resonate_debug_flags.js?rev=77822e68554b";
+import { modeBands } from "./resonate_mode_config.js?rev=c40b9f2c1b26";
+import { median } from "./resonate_mode_metrics.js?rev=c40b9f2c1b26";
+import { resonanceParabolicPeakRefineEnabled } from "./resonate_debug_flags.js?rev=c40b9f2c1b26";
 export function smoothSpectrumFast(freqs, mags, smoothHz) {
     if (!smoothHz || smoothHz <= 0)
         return mags;
@@ -82,7 +82,7 @@ function gaussianKernelBuild(sigmaBins) {
     }
     return kernel.map((value) => value / sum);
 }
-function refineParabolicPeak(freqs, ys, idx) {
+export function refineParabolicPeak(freqs, ys, idx) {
     if (idx <= 0 || idx >= ys.length - 1)
         return null;
     const a = ys[idx - 1];

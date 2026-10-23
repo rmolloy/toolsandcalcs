@@ -20,6 +20,7 @@ import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js";
 import { spectrumDbApply } from "./resonate_spectrum_db_scale.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js";
+import { captureSpectrumInputs, rememberSpectrumFrame } from "./resonate_spectrum_cache.js";
 
 const FFT_SMOOTH_GAUSSIAN_BINS = 8;
 const SPECTRUM_AVERAGING_LIMITS: Record<string, number> = {
@@ -143,6 +144,7 @@ export async function refreshFftFromState(deps: {
   state: Record<string, any>;
   setStatus: (text: string) => void;
   modeMeta: Record<string, { label: string }>;
+  resolveModeMeta?: () => Record<string, { label: string }>;
   fftMaxHz: number;
   sliceCurrentWave: () => { wave: Float32Array | number[]; sampleRate: number } | null;
   solveDofFromState?: () => void;
@@ -161,6 +163,7 @@ export async function refreshFftFromState(deps: {
     : deps.state.viewRangeMs || { start: 0, end: 1000 * slice.wave.length / slice.sampleRate };
   const fftFactory = (window as any).createFftEngine;
   if (typeof fftFactory !== "function") return;
+  const spectrumInputs = captureSpectrumInputs(deps.state, deps.fftMaxHz);
   const { directSpectrum, spectrum } = await stageRefreshPreRun({
     wave: slice.wave,
     sampleRate: slice.sampleRate,
@@ -213,7 +216,7 @@ export async function refreshFftFromState(deps: {
   stageRefreshPostApply({
     state: deps.state,
     analysis,
-    modeMeta: deps.modeMeta,
+    modeMeta: deps.resolveModeMeta?.() || deps.modeMeta,
     modesDetected,
     freqs,
     dbs,
@@ -235,7 +238,7 @@ export async function refreshFftFromState(deps: {
     stageRefreshPostApply({
       state: deps.state,
       analysis,
-      modeMeta: deps.modeMeta,
+      modeMeta: deps.resolveModeMeta?.() || deps.modeMeta,
       modesDetected: det,
       freqs: freqs2,
       dbs: dbs2,
@@ -247,6 +250,7 @@ export async function refreshFftFromState(deps: {
     }
     deps.solveDofFromState?.();
   };
+  rememberSpectrumFrame(deps.state, spectrumInputs);
 }
 
 function polymaxCandidatesResolveFromSlice(

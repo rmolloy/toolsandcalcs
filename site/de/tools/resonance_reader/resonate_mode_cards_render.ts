@@ -22,6 +22,11 @@ export function modeCardsHtmlBuild(modes: ModeCard[], deps: ModeCardDeps, editin
   return `${modeCardsHtml}${modeCardAddCustomHtmlBuild()}`;
 }
 
+export function modeBehaviorHtmlBuild(mode: ModeCard) {
+  const formatters = modeCardFormattersBuild();
+  return modeBehaviorHtmlBuildFromMode(mode, formatters.formatProximity(mode.cents), formatters.formatQ);
+}
+
 function modeCardAddCustomHtmlBuild() {
   return `
     <button class="mode-card mode-custom mode-card-add" type="button" aria-label="${resonanceLocalizedMessages.modeCardsAddCustomAriaLabel}">
@@ -211,6 +216,7 @@ function modeBehaviorHtmlBuildFromMode(
     return `<span class="behavior">${resonanceLocalizedMessages.modeCardsNoPeak}</span>`;
   }
   const wolf = proximity ? ` • ${proximity.label}` : "";
+  if (m.qEvidence?.pending) return `<span class="behavior" aria-busy="true">Q …${wolf}</span>`;
   return `<span class="behavior">${formatQ(m.q)}${wolf}</span>`;
 }
 

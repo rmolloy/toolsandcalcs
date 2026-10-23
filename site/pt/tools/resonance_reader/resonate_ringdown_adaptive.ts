@@ -1,6 +1,7 @@
 import { estimateLocalModalNoise, type RingdownTap } from "./resonate_ringdown_noise.js";
 import { selectDecayWindow, type DecayWindow } from "./resonate_ringdown_fit_window.js";
 import { isolateAnalyticMode, selectIsolationBand, type ComplexTransform } from "./resonate_ringdown_isolation.js";
+import type { DecayNeighborEvidence } from "./resonate_ringdown_neighbors.js";
 
 type DampedFit = { frequencyHz: number | null; tau: number | null; r2: number | null; slope: number | null };
 export type RingdownMath = {
@@ -17,6 +18,7 @@ export type AdaptiveRingdownInput = {
   targetFrequencyHz: number;
   spectralWidthHz: number | null;
   neighborFrequencies: number[];
+  neighborEvidence?: DecayNeighborEvidence;
   taps: RingdownTap[];
   selectedStart: number;
   onsetSec: number;
@@ -54,7 +56,8 @@ export function analyzeAdaptiveRingdown(input: AdaptiveRingdownInput, math: Ring
     sampleRate: input.sampleRate, attackSkipMs: (window.startSec - input.onsetSec) * 1000,
     smoothWindowMs: 1000 / input.targetFrequencyHz, fitMethod: "damped_sinusoid" as const,
     isolationBandwidthHz: band.widthHz,
-    evidence: { method: "adaptive-v1", noise, window, fittedFrequencyHz: fit.frequencyHz, bandwidthVariation: variation, rejected },
+    evidence: { method: "adaptive-v1", noise, window, fittedFrequencyHz: fit.frequencyHz, bandwidthVariation: variation, rejected,
+      ...(input.neighborEvidence ? { neighbors: input.neighborEvidence } : {}) },
   };
 }
 

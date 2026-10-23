@@ -1,7 +1,7 @@
-import { DEFAULT_Q_AGGREGATION } from "./resonate_q_aggregation.js?rev=77822e68554b";
+import { DEFAULT_Q_AGGREGATION } from "./resonate_q_aggregation.js?rev=c40b9f2c1b26";
 export function qSettingsResolve(state) {
     return {
-        method: state.qSettings?.method === "decay" ? "decay" : "spectral",
+        method: state.qSettings?.method === "spectral" ? "spectral" : "decay",
         aggregation: qAggregationResolve(state.qSettings?.aggregation),
     };
 }

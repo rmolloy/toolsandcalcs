@@ -1,7 +1,8 @@
-import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js?rev=77822e68554b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=77822e68554b";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=77822e68554b";
-import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js?rev=77822e68554b";
+import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js?rev=c40b9f2c1b26";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c40b9f2c1b26";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=c40b9f2c1b26";
+import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js?rev=c40b9f2c1b26";
+import { rerenderFromCachedSpectrumIfCurrent } from "./resonate_spectrum_cache.js?rev=c40b9f2c1b26";
 export function bindMeasureMode(deps) {
     measureModeStateSeedFromSelect(deps.state);
     energyTransferPanelSyncFromState(deps.state);
@@ -28,6 +29,10 @@ export function measureModeChangeApply(nextMode, deps) {
     if (measureModeChangeShouldRenderMock(deps.state)) {
         deps.renderMock();
         deps.setStatus(resonanceLocalizedMessages.saveIdleStatus);
+        return;
+    }
+    if (rerenderFromCachedSpectrumIfCurrent(deps.state, { preserveRanges: false })) {
+        void window.ResonatePerTabState?.persist?.();
         return;
     }
     rerenderFromLastSpectrumIfPossible(deps.state);
@@ -58,13 +63,13 @@ export function measureModeStatePreserveCustomCardsOnly(state) {
     state.lastModesDetected = [];
 }
 export function measureModeStateResetForDemoWave(state) {
+    state.viewRangeMs = null;
     state.currentWave = null;
     state.lastSpectrum = null;
     state.lastSpectrumRaw = null;
     state.lastSpectrumNoteSelection = null;
 }
 export function measureModeViewRangesReset(state) {
-    state.viewRangeMs = null;
     state.noteSelectionRangeMs = null;
     state.lastPrimaryRangePipelineFingerprint = null;
     state.lastNoteRangePipelineFingerprint = null;

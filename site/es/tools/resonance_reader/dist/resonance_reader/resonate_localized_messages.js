@@ -148,6 +148,7 @@ const ENGLISH_RESONANCE_MESSAGES = Object.freeze({
     peakAnalysisProvenanceNoConsistentDecay: "atenuación inconsistente",
     peakAnalysisProvenanceOverlappingPeaks: "picos superpuestos",
     peakAnalysisProvenancePoorFit: "mal ajuste",
+    peakAnalysisProvenanceTargetNotObserved: "no hay resonancia en la frecuencia seleccionada",
     peakAnalysisProvenanceRecordingEndsLimit: " (finaliza grabación)",
     peakAnalysisProvenanceSourceTemplate: "Fuente de atenuación: {tapLabel} · {window} · {preOnsetMs} ms antes del inicio · {bandwidth} · {sampleRateHz} Hz{adaptiveStatus}",
     peakAnalysisProvenanceSpectralBandwidthTemplate: "ancho de banda espectral {bandwidthHz} Hz",

@@ -2,6 +2,7 @@ import { customMeasurementKeyIsCustom } from "./resonate_custom_measurements.js"
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 import { measureModeNormalize, type MeasureMode } from "./resonate_mode_config.js";
 import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js";
+import { rerenderFromCachedSpectrumIfCurrent } from "./resonate_spectrum_cache.js";
 import type { UiBindingsDeps } from "./resonate_ui_bindings_contract.js";
 
 export function bindMeasureMode(deps: UiBindingsDeps) {
@@ -33,6 +34,10 @@ export function measureModeChangeApply(
   if (measureModeChangeShouldRenderMock(deps.state)) {
     deps.renderMock();
     deps.setStatus(resonanceLocalizedMessages.saveIdleStatus);
+    return;
+  }
+  if (rerenderFromCachedSpectrumIfCurrent(deps.state, { preserveRanges: false })) {
+    void (window as any).ResonatePerTabState?.persist?.();
     return;
   }
   rerenderFromLastSpectrumIfPossible(deps.state);
@@ -69,6 +74,7 @@ export function measureModeStatePreserveCustomCardsOnly(state: Record<string, an
 }
 
 export function measureModeStateResetForDemoWave(state: Record<string, any>) {
+  state.viewRangeMs = null;
   state.currentWave = null;
   state.lastSpectrum = null;
   state.lastSpectrumRaw = null;
@@ -76,7 +82,6 @@ export function measureModeStateResetForDemoWave(state: Record<string, any>) {
 }
 
 export function measureModeViewRangesReset(state: Record<string, any>) {
-  state.viewRangeMs = null;
   state.noteSelectionRangeMs = null;
   state.lastPrimaryRangePipelineFingerprint = null;
   state.lastNoteRangePipelineFingerprint = null;

@@ -18,7 +18,8 @@ export type ModeCard = {
     method: "decay";
     aggregation: "median" | "max" | "p75";
     spectralQ: number | null;
-    taps: Array<{ tapIndex: number; q: number | null; flags: string[] }>;
+    pending?: boolean;
+    taps: Array<{ tapIndex: number; q: number | null; flags: string[]; pending?: boolean }>;
   };
   wolfRisk: "None" | "Low" | "Med" | "High" | null;
   deltaHz?: number | null;

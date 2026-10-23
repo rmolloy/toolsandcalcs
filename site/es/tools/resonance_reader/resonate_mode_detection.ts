@@ -97,7 +97,7 @@ function gaussianKernelBuild(sigmaBins: number) {
   return kernel.map((value) => value / sum);
 }
 
-function refineParabolicPeak(freqs: number[], ys: number[], idx: number): { freq: number; y: number; delta: number } | null {
+export function refineParabolicPeak(freqs: number[], ys: number[], idx: number): { freq: number; y: number; delta: number } | null {
   if (idx <= 0 || idx >= ys.length - 1) return null;
   const a = ys[idx - 1];
   const b = ys[idx];

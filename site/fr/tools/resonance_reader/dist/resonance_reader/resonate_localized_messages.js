@@ -148,6 +148,7 @@ const ENGLISH_RESONANCE_MESSAGES = Object.freeze({
     peakAnalysisProvenanceNoConsistentDecay: "décroissance non cohérente",
     peakAnalysisProvenanceOverlappingPeaks: "pics superposés",
     peakAnalysisProvenancePoorFit: "mauvais ajustement",
+    peakAnalysisProvenanceTargetNotObserved: "aucune résonance à la fréquence sélectionnée",
     peakAnalysisProvenanceRecordingEndsLimit: " (enregistrement terminé)",
     peakAnalysisProvenanceSourceTemplate: "Source de décroissance : {tapLabel} · {window} · {preOnsetMs} ms avant l'impact · {bandwidth} · {sampleRateHz} Hz{adaptiveStatus}",
     peakAnalysisProvenanceSpectralBandwidthTemplate: "largeur de bande spectrale {bandwidthHz} Hz",

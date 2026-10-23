@@ -1,11 +1,14 @@
 import type { ModeCard } from "./resonate_types.js";
-import { analyzeAdaptiveRingdown, type RingdownMath } from "./resonate_ringdown_adaptive.js";
+import type { analyzeAdaptiveRingdown, RingdownMath } from "./resonate_ringdown_adaptive.js";
+import { analyzeObservedRingdown } from "./resonate_ringdown_observed.js";
 import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js";
+import { refineParabolicPeak } from "./resonate_mode_detection.js";
 import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js";
 import {
   resonanceSpectrumSmoothingEnabled,
   resonanceSpectrumLineWidthResolve,
   resonanceTapAveragingEnabled,
+  resonanceParabolicPeakRefineEnabled,
 } from "./resonate_debug_flags.js";
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
 import { stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js";
@@ -13,6 +16,7 @@ import { stockPeakLabelsForSpecimen } from "./resonate_stock_peak_context.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 import { resolveQForModeCards, spectralQFromMode } from "./resonate_q_measurement.js";
 import { reuseRingdownFit } from "./resonate_ringdown_cache.js";
+import type { RingdownFitInput } from "./resonate_ringdown_worker_protocol.js";
 
 type SpectrumLike = {
   freqs?: number[];
@@ -60,9 +64,10 @@ type PeakAnalysisRingdownResult = {
   evidence?: ReturnType<typeof analyzeAdaptiveRingdown>["evidence"];
 };
 
-type PeakAnalysisRingdownData = {
+export type PeakAnalysisRingdownData = {
   result: PeakAnalysisRingdownResult;
   provenance: PeakAnalysisRingdownProvenance;
+  pending?: boolean;
 };
 
 type PeakAnalysisRingdownProvenance = {
@@ -112,6 +117,13 @@ export function peakAnalysisPanelRenderFromState(state: Record<string, any>) {
     ? { key: selectedMode.key, freq: selectedMode.freq }
     : null);
   peakAnalysisActionsRender(state, selectedMode, ringdownData);
+}
+
+export function peakAnalysisCompletedQRenderFromState(state: Record<string, any>) {
+  const selectedMode = peakAnalysisSelectionSyncFromState(state);
+  const data = peakAnalysisRingdownDataBuild(state, selectedMode);
+  peakAnalysisRingdownRender(data);
+  peakAnalysisActionsRender(state, selectedMode, data);
 }
 
 export function peakAnalysisSelectionApplyFromModeKey(state: Record<string, any>, modeKey: string) {
@@ -168,6 +180,7 @@ export function peakAnalysisWidthHzResolveFromMode(mode: Pick<ModeCard, "freq" |
 }
 
 export function peakAnalysisRingdownDataBuild(state: Record<string, any>, selectedMode: ModeCard | null): PeakAnalysisRingdownData | null {
+  if (typeof state.ringdownDataRead === "function") return state.ringdownDataRead(state, selectedMode);
   const api = peakAnalysisRingdownApiResolve();
   const adaptive = new URLSearchParams(String(globalThis.window?.location?.search || "")).get("ringdownMethod") !== "legacy";
   const input = peakAnalysisRingdownInputBuild(state, selectedMode, adaptive);
@@ -182,7 +195,7 @@ function peakAnalysisRingdownFitReuse(
   return reuseRingdownFit(input.wave as object, [
     api.analyzeModeRingdown, api.transformComplex, api.fitDampedSinusoid, adaptive,
     input.wave.length, input.provenance.sampleRate, JSON.stringify(state.tapSegments || []),
-    JSON.stringify(peakAnalysisUnresolvedCandidatesRead(state).map((candidate) => candidate.freq)),
+    JSON.stringify(peakAnalysisNeighborFrequenciesRead(state, selectedMode.freq as number)),
     adaptive ? null : JSON.stringify(peakAnalysisSpectrumReadFromState(state)),
   ], JSON.stringify([selectedMode.freq, input.selectedStart, input.provenance]),
   () => peakAnalysisRingdownFitCalculate(state, selectedMode, input, api, adaptive));
@@ -217,16 +230,39 @@ function peakAnalysisAdaptiveDataBuild(
   input: NonNullable<ReturnType<typeof peakAnalysisRingdownInputBuild>>, api: RingdownApi,
 ): PeakAnalysisRingdownData | null {
   if (!api.transformComplex || !api.fitDampedSinusoid) return null;
-  const result = analyzeAdaptiveRingdown({
+  const result = analyzeObservedRingdown({
     buffer: input.buffer, wave: input.wave, sampleRate: input.provenance.sampleRate,
     targetFrequencyHz: selectedMode.freq as number, spectralWidthHz: input.provenance.bandwidthHz,
-    neighborFrequencies: peakAnalysisUnresolvedCandidatesRead(state).map((candidate) => candidate.freq as number),
+    neighborFrequencies: peakAnalysisNeighborFrequenciesRead(state, selectedMode.freq as number),
     taps: state.tapSegments || [], selectedStart: input.selectedStart, onsetSec: input.onsetSec,
   }, api as RingdownMath);
   return { result, provenance: input.provenance };
 }
 
 function peakAnalysisRingdownInputBuild(state: Record<string, any>, selectedMode: ModeCard | null, adaptive = false) {
+  const input = peakAnalysisRingdownWindowBuild(state, selectedMode, adaptive);
+  if (!input) return null;
+  const buffer = Float32Array.from({ length: input.provenance.sampleCount }, (_, index) => Number(input.wave[input.startSample + index]) || 0);
+  return { ...input, buffer };
+}
+
+export function peakAnalysisRingdownRequestBuild(state: Record<string, any>, selectedMode: ModeCard | null) {
+  const adaptive = new URLSearchParams(String(globalThis.window?.location?.search || "")).get("ringdownMethod") !== "legacy";
+  const window = peakAnalysisRingdownWindowBuild(state, selectedMode, adaptive);
+  if (!window) return null;
+  const input: RingdownFitInput = {
+    method: adaptive ? "adaptive" : "legacy",
+    targetFrequencyHz: selectedMode!.freq as number,
+    spectralWidthHz: window.provenance.bandwidthHz,
+    neighborFrequencies: peakAnalysisNeighborFrequenciesRead(state, selectedMode!.freq as number),
+    taps: state.tapSegments || [], selectedStart: window.selectedStart, onsetSec: window.onsetSec,
+    startSample: window.startSample, sampleCount: window.provenance.sampleCount,
+    ...(adaptive ? {} : { spectrum: peakAnalysisSpectrumReadFromState(state) }),
+  };
+  return { wave: window.wave as ArrayLike<number> & object, provenance: window.provenance, input };
+}
+
+function peakAnalysisRingdownWindowBuild(state: Record<string, any>, selectedMode: ModeCard | null, adaptive: boolean) {
   if (!Number.isFinite(selectedMode?.freq)) return null;
   const wave = peakAnalysisWaveReadFromState(state);
   const sampleRate = Number(state.currentWave?.sampleRate);
@@ -234,9 +270,9 @@ function peakAnalysisRingdownInputBuild(state: Record<string, any>, selectedMode
   const tap = peakAnalysisTapWindowResolve(state, sampleRate);
   const expectedWindowMs = adaptive ? PEAK_RINGDOWN_MAX_WINDOW_MS : peakAnalysisRingdownExpectedWindowMsResolve(selectedMode);
   const sampleWindow = peakAnalysisRingdownSampleWindowBuild(wave, sampleRate, tap?.start ?? 0, tap?.nextStart ?? null, expectedWindowMs);
-  if (!sampleWindow.buffer.length) return null;
+  if (!sampleWindow.sampleCount) return null;
   return {
-    buffer: sampleWindow.buffer,
+    startSample: sampleWindow.start,
     wave,
     selectedStart: tap?.start ?? 0,
     onsetSec: Math.min((tap?.start ?? 0) / sampleRate, PEAK_RINGDOWN_PRE_ONSET_MS / 1000),
@@ -248,7 +284,7 @@ function peakAnalysisRingdownInputBuild(state: Record<string, any>, selectedMode
       limit: sampleWindow.limit,
       preOnsetMs: PEAK_RINGDOWN_PRE_ONSET_MS,
       sampleRate,
-      sampleCount: sampleWindow.buffer.length,
+      sampleCount: sampleWindow.sampleCount,
       bandwidthHz: peakAnalysisWidthHzResolveFromMode(selectedMode),
     },
   };
@@ -315,7 +351,7 @@ function peakAnalysisFullResponseDataBuild(
       label: candidate.label,
       x: point.freq,
       y: point.db,
-      q: candidate.q,
+      q: spectralQFromMode(candidate),
       widthHz: peakAnalysisWidthHzResolveFromMode(candidate),
     });
     return rows;
@@ -325,7 +361,7 @@ function peakAnalysisFullResponseDataBuild(
     y: points.map((point) => point.db),
     selectedX: selectedPoint.freq,
     selectedY: selectedPoint.db,
-    selectedQ: selectedMode.q,
+    selectedQ: spectralQFromMode(selectedMode),
     widthHz: peakAnalysisWidthHzResolveFromMode(selectedMode),
     candidates: candidatePoints,
   };
@@ -344,9 +380,10 @@ export function peakAnalysisCandidatesBuild(
 }
 
 function peakAnalysisCandidatesReadFromState(state: Record<string, any>) {
-  return stockPeakLabelsForSpecimen(state, resolveQForModeCards(
-    state, peakAnalysisUnresolvedCandidatesRead(state), peakAnalysisRingdownDataBuild,
-  ));
+  const candidates = peakAnalysisUnresolvedCandidatesRead(state);
+  const selected = candidates.find((candidate) => candidate.key === state.peakAnalysisSelectedKey);
+  const resolved = selected ? resolveQForModeCards(state, [selected], peakAnalysisRingdownDataBuild)[0] : null;
+  return stockPeakLabelsForSpecimen(state, candidates.map((candidate) => candidate === selected ? resolved! : candidate));
 }
 
 function peakAnalysisUnresolvedCandidatesRead(state: Record<string, any>) {
@@ -355,6 +392,14 @@ function peakAnalysisUnresolvedCandidatesRead(state: Record<string, any>) {
     peakAnalysisCardsReadFromState(state),
     state.analysisBoundary?.estimateQFromDb || null,
   );
+}
+
+function peakAnalysisNeighborFrequenciesRead(state: Record<string, any>, targetFrequencyHz: number) {
+  const spectrum = peakAnalysisSpectrumReadFromState(state);
+  const frequencies = peakAnalysisCandidatesBuild(spectrum, []).map((candidate) => candidate.freq as number);
+  const nearest = [...frequencies].sort((left, right) => Math.abs(left - targetFrequencyHz) - Math.abs(right - targetFrequencyHz))[0];
+  const binWidth = Math.abs(Number(spectrum?.freqs?.[1]) - Number(spectrum?.freqs?.[0])) || 0.5;
+  return frequencies.filter((frequency) => frequency !== nearest || Math.abs(frequency - targetFrequencyHz) > binWidth);
 }
 
 function peakAnalysisSpectrumPointsBuild(spectrum: SpectrumLike | null | undefined) {
@@ -384,7 +429,7 @@ function peakAnalysisDetectedCandidatesBuild(
       key: mode?.key || `spectrum-peak-${index}`,
       kind: mode?.kind || "custom",
       label: mode?.label || resonanceLocalizedMessages.peakAnalysisCandidateLabel,
-      freq: point.freq,
+      freq: mode?.freq ?? peakAnalysisDetectedFrequencyResolve(freqs, dbs, index),
       note: mode?.note || null,
       cents: mode?.cents || null,
       q: mode?.qEvidence ? mode.q : mode?.q ?? estimateQ?.(freqs, dbs, point) ?? null,
@@ -394,6 +439,11 @@ function peakAnalysisDetectedCandidatesBuild(
     });
     return candidates;
   }, []);
+}
+
+function peakAnalysisDetectedFrequencyResolve(freqs: number[], dbs: number[], index: number) {
+  if (!resonanceParabolicPeakRefineEnabled()) return freqs[index];
+  return refineParabolicPeak(freqs, dbs, index)?.freq ?? freqs[index];
 }
 
 function peakAnalysisNearbyCandidatesConsolidate(candidates: PeakAnalysisCandidate[]) {
@@ -552,7 +602,7 @@ function peakAnalysisPlotResize(plot: HTMLElement, Plotly: PlotlyLike) {
 function peakAnalysisRingdownRender(data: PeakAnalysisRingdownData | null) {
   const provenance = peakAnalysisProvenanceElementGet();
   const plot = peakAnalysisRingdownPlotElementGet();
-  if (!data) {
+  if (!data || data.pending) {
     if (provenance) provenance.textContent = "";
     if (plot) {
       plot.hidden = true;
@@ -571,8 +621,7 @@ function peakAnalysisActionsRender(
 ) {
   const actions = peakAnalysisActionsElementGet();
   if (!actions) return;
-  const enabled = Boolean(selectedMode && data);
-  peakAnalysisActionButtonsSetEnabled(actions, enabled);
+  peakAnalysisActionButtonsSetEnabled(actions, Boolean(selectedMode), Boolean(data && !data.pending));
   const candidates = peakAnalysisCandidatesReadFromState(state);
   const selectedIndex = candidates.findIndex((candidate) => candidate.key === selectedMode?.key);
   const position = document.getElementById("peak_analysis_position");
@@ -621,7 +670,7 @@ function peakAnalysisReviewNextApply(state: Record<string, any>) {
 function peakAnalysisEvidenceExport(state: Record<string, any>) {
   const selectedMode = peakAnalysisSelectionSyncFromState(state);
   const data = peakAnalysisRingdownDataBuild(state, selectedMode);
-  if (!selectedMode || !data) return;
+  if (!selectedMode || !data || data.pending) return;
   peakAnalysisJsonDownload(
     peakAnalysisEvidenceFilenameBuild(selectedMode),
     peakAnalysisEvidencePayloadBuild(state, selectedMode, data),
@@ -674,9 +723,9 @@ function peakAnalysisJsonDownload(filename: string, payload: Record<string, unkn
   scope.URL.revokeObjectURL?.(url);
 }
 
-function peakAnalysisActionButtonsSetEnabled(actions: HTMLElement, enabled: boolean) {
+function peakAnalysisActionButtonsSetEnabled(actions: HTMLElement, canNavigate: boolean, canExport: boolean) {
   actions.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
-    button.disabled = !enabled;
+    button.disabled = !canNavigate || (button.id === "peak_analysis_export_data" && !canExport);
   });
 }
 
@@ -760,6 +809,7 @@ function peakAnalysisAdaptiveStatusText(result: PeakAnalysisRingdownResult) {
     overlapping_modes: resonanceLocalizedMessages.peakAnalysisProvenanceOverlappingPeaks,
     filter_sensitive: resonanceLocalizedMessages.peakAnalysisProvenanceFilterSensitive,
     unstable_decay: resonanceLocalizedMessages.peakAnalysisProvenancePoorFit,
+    target_not_observed: resonanceLocalizedMessages.peakAnalysisProvenanceTargetNotObserved,
   };
   const reasons = result.flags.map((flag) => labels[flag]).filter(Boolean);
   const fit = result.evidence.rejected
@@ -1017,10 +1067,12 @@ function peakAnalysisTracesBuild(data: {
   selectedY: number;
   candidates: Array<{ key: string; label: string; x: number; y: number; q: number | null; widthHz: number | null }>;
 }) {
+  const candidateKeysByFrequency = new Map(data.candidates.map((candidate) => [candidate.x, candidate.key]));
   return [
     {
       x: data.x,
       y: data.y,
+      customdata: data.x.map((frequency) => candidateKeysByFrequency.get(frequency) ?? null),
       type: "scatter",
       mode: "lines",
       line: { color: resolveColorHexFromRole("fftLine"), width: resonanceSpectrumLineWidthResolve(PEAK_ANALYSIS_MEASURED_TRACE_LINE_WIDTH) },
@@ -1170,12 +1222,9 @@ function peakAnalysisRingdownSampleWindowBuild(
     ? Math.max(start, Math.round(nextTapStartSample as number) - nextTapGuardSamples)
     : Infinity;
   const end = Math.min(wave.length, expectedEnd, nextTapEnd);
-  const buffer = new Float32Array(Math.max(0, end - start));
-  for (let index = 0; index < buffer.length; index += 1) {
-    buffer[index] = Number(wave[start + index]) || 0;
-  }
+  const sampleCount = Math.max(0, end - start);
   const limit: PeakAnalysisRingdownProvenance["limit"] = end === expectedEnd ? "expected" : end === nextTapEnd ? "next_tap" : "recording_end";
-  return { buffer, windowMs: Math.round((buffer.length / sampleRate) * 1000), limit };
+  return { start, sampleCount, windowMs: Math.round((sampleCount / sampleRate) * 1000), limit };
 }
 
 function peakAnalysisReferenceLineShapeBuild(referenceDb: number) {
