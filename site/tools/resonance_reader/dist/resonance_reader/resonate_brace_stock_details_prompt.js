@@ -1,5 +1,5 @@
-import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=c40b9f2c1b26";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c40b9f2c1b26";
+import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=3d07b6bb6d26";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3d07b6bb6d26";
 const BRACE_STOCK_FIELDS = [
     { key: "stockLengthMm", label: resonanceLocalizedMessages.braceStockDetailsLengthLabel, unit: "mm" },
     { key: "stockWidthMm", label: resonanceLocalizedMessages.braceStockDetailsWidthLabel, unit: "mm" },

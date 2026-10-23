@@ -1,8 +1,8 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c40b9f2c1b26";
-import { perTabSessionPersist } from "./resonate_per_tab_persistence.js?rev=c40b9f2c1b26";
-import { recordingMenuLabelSet, takeOverlayMenuElementGet, } from "./resonate_recording_menu.js?rev=c40b9f2c1b26";
-import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js?rev=c40b9f2c1b26";
-import { takeOverlayCaptureCurrentFromState, takeOverlayClearAll, takeOverlayListRead, takeOverlaySelectAsCurrent, } from "./resonate_take_overlays.js?rev=c40b9f2c1b26";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3d07b6bb6d26";
+import { perTabSessionPersist } from "./resonate_per_tab_persistence.js?rev=3d07b6bb6d26";
+import { recordingMenuLabelSet, takeOverlayMenuElementGet, } from "./resonate_recording_menu.js?rev=3d07b6bb6d26";
+import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js?rev=3d07b6bb6d26";
+import { takeOverlayCaptureCurrentFromState, takeOverlayClearAll, takeOverlayListRead, takeOverlaySelectAsCurrent, } from "./resonate_take_overlays.js?rev=3d07b6bb6d26";
 export function takeOverlayCaptureCurrentAndRender(deps) {
     if (!takeOverlayCaptureCurrentFromState(deps.state))
         return;

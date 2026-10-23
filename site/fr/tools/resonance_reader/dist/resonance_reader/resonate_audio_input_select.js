@@ -1,6 +1,6 @@
-import { settingsAudioInputDeviceIdRead, settingsAudioInputDeviceIdWrite, settingsAudioInputDevicesRead, } from "./resonate_audio_input_gateway.js?rev=c40b9f2c1b26";
-import { SETTINGS_IDS } from "./resonate_settings_ids.js?rev=c40b9f2c1b26";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c40b9f2c1b26";
+import { settingsAudioInputDeviceIdRead, settingsAudioInputDeviceIdWrite, settingsAudioInputDevicesRead, } from "./resonate_audio_input_gateway.js?rev=3d07b6bb6d26";
+import { SETTINGS_IDS } from "./resonate_settings_ids.js?rev=3d07b6bb6d26";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3d07b6bb6d26";
 export function settingsAudioInputBind() {
     settingsAudioInputSelectGet()?.addEventListener("change", (event) => {
         const select = event.currentTarget;
