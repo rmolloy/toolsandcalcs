@@ -1,4 +1,4 @@
-import { resonanceCapturePackageZipBlobBuild, resonanceCaptureWaveBlobBuild } from "./resonate_capture_package.js?rev=bd81c33a8408";
+import { resonanceCapturePackageZipBlobBuild, resonanceCaptureWaveBlobBuild } from "./resonate_capture_package.js?rev=37b595148646";
 export async function downloadResonanceCapturePackage(args) {
     const savedAt = new Date().toISOString();
     const packageBlob = await resonanceCapturePackageZipBlobBuild({

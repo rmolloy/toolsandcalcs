@@ -1,4 +1,4 @@
-import { RINGDOWN_WORKER_SOURCE } from "./resonate_ringdown_worker_source.mjs?rev=bd81c33a8408";
+import { RINGDOWN_WORKER_SOURCE } from "./resonate_ringdown_worker_source.mjs?rev=37b595148646";
 export const MAX_CACHED_WORKER_FITS = 128;
 export function createRingdownWorkerClient(options) {
     const client = new RingdownWorkerClient(options);

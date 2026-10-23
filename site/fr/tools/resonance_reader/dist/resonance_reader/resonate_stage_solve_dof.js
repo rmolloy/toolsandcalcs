@@ -1,9 +1,9 @@
-import { computeOverlayCurveFromState } from "./resonate_overlay_controller.js?rev=bd81c33a8408";
-import { overlayBoundaryDefault } from "./resonate_overlay_boundary.js?rev=bd81c33a8408";
-import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=bd81c33a8408";
-import { emitArtifactEventFromState } from "./resonate_artifact_emit.js?rev=bd81c33a8408";
-import { renderTryPanel } from "./resonate_try_panel.js?rev=bd81c33a8408";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=bd81c33a8408";
+import { computeOverlayCurveFromState } from "./resonate_overlay_controller.js?rev=37b595148646";
+import { overlayBoundaryDefault } from "./resonate_overlay_boundary.js?rev=37b595148646";
+import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=37b595148646";
+import { emitArtifactEventFromState } from "./resonate_artifact_emit.js?rev=37b595148646";
+import { renderTryPanel } from "./resonate_try_panel.js?rev=37b595148646";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=37b595148646";
 export function stageSolveDofRun(args) {
     const spectrum = args.state.lastSpectrum;
     if (!spectrum?.freqs?.length)

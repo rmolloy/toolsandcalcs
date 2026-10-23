@@ -8,7 +8,7 @@ import {
   loadCompleteTensionCatalog,
   loadDAddarioStringRecords,
   parseStringjoyMassTables,
-} from "./tension_sources.mjs?rev=bd81c33a8408";
+} from "./tension_sources.mjs?rev=37b595148646";
 
 test("Stringjoy parser extracts every embedded mass table row", () => {
   const records = parseStringjoyMassTables(

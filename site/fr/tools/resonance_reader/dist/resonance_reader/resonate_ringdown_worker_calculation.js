@@ -1,4 +1,4 @@
-import { analyzeObservedRingdown } from "./resonate_ringdown_observed.js?rev=bd81c33a8408";
+import { analyzeObservedRingdown } from "./resonate_ringdown_observed.js?rev=37b595148646";
 export function calculateRingdownFromJob(wave, sampleRate, input, math) {
     const buffer = copyRingdownWindowFromWave(wave, input.startSample, input.sampleCount);
     if (input.method === "legacy")
