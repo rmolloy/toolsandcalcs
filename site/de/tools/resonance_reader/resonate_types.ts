@@ -16,7 +16,7 @@ export type ModeCard = {
   q: number | null;
   qEvidence?: {
     method: "decay";
-    aggregation: "median" | "max" | "p75";
+    aggregation: "median" | "max" | "p75" | "selected_tap";
     spectralQ: number | null;
     pending?: boolean;
     taps: Array<{ tapIndex: number; q: number | null; flags: string[]; pending?: boolean }>;

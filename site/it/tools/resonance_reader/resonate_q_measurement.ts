@@ -4,6 +4,7 @@ import type { ModeCard } from "./resonate_types.js";
 
 export type DecayQFit = (state: Record<string, any>, mode: ModeCard) => {
   pending?: boolean;
+  provenance?: { tapIndex: number | null };
   result: { Q: number | null; flags?: string[] };
 } | null;
 

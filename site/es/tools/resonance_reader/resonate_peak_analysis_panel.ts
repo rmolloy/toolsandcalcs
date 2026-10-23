@@ -14,7 +14,7 @@ import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_co
 import { stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js";
 import { stockPeakLabelsForSpecimen } from "./resonate_stock_peak_context.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
-import { resolveQForModeCards, spectralQFromMode } from "./resonate_q_measurement.js";
+import { spectralQFromMode } from "./resonate_q_measurement.js";
 import { reuseRingdownFit } from "./resonate_ringdown_cache.js";
 import type { RingdownFitInput } from "./resonate_ringdown_worker_protocol.js";
 
@@ -26,6 +26,7 @@ type SpectrumLike = {
 
 type PlotlyLike = {
   react: (element: HTMLElement, data: unknown[], layout: Record<string, unknown>, config?: Record<string, unknown>) => unknown;
+  relayout?: (element: HTMLElement, layout: Record<string, unknown>) => unknown;
   purge?: (element: HTMLElement) => unknown;
   Plots?: { resize?: (element: HTMLElement) => unknown };
 };
@@ -111,7 +112,7 @@ export function peakAnalysisPanelInitialize(state: Record<string, any>) {
 export function peakAnalysisPanelRenderFromState(state: Record<string, any>) {
   const selectedMode = peakAnalysisSelectionSyncFromState(state);
   const ringdownData = peakAnalysisRingdownDataBuild(state, selectedMode);
-  peakAnalysisPlotRender(state, selectedMode);
+  peakAnalysisPlotRender(state, selectedMode, ringdownData);
   peakAnalysisRingdownRender(ringdownData);
   stockMeasurementsPanelRender(state, selectedMode
     ? { key: selectedMode.key, freq: selectedMode.freq }
@@ -122,8 +123,25 @@ export function peakAnalysisPanelRenderFromState(state: Record<string, any>) {
 export function peakAnalysisCompletedQRenderFromState(state: Record<string, any>) {
   const selectedMode = peakAnalysisSelectionSyncFromState(state);
   const data = peakAnalysisRingdownDataBuild(state, selectedMode);
+  peakAnalysisCompletedQAnnotationRefresh(selectedMode, data);
   peakAnalysisRingdownRender(data);
   peakAnalysisActionsRender(state, selectedMode, data);
+}
+
+function peakAnalysisCompletedQAnnotationRefresh(selectedMode: ModeCard | null, data: PeakAnalysisRingdownData | null) {
+  const plot = peakAnalysisPlotElementGet() as (HTMLElement & Record<string, any>) | null;
+  if (!selectedMode || !plot?.__peakAnalysisLatestData) return;
+  plot.__peakAnalysisLatestData = { ...plot.__peakAnalysisLatestData, selectedDecayQ: true,
+    selectedQ: data?.pending ? null : data?.result.Q ?? null };
+  peakAnalysisQAnnotationPlotApply(plot);
+}
+
+function peakAnalysisQAnnotationPlotApply(plot: HTMLElement & Record<string, any>) {
+  const Plotly = peakAnalysisPlotlyResolve();
+  if (!Plotly?.relayout) return;
+  plot.__peakAnalysisPlotReady = Promise.resolve(plot.__peakAnalysisPlotReady)
+    .then(() => Plotly.relayout!(plot, { annotations: peakAnalysisQAnnotationsBuild(plot.__peakAnalysisLatestData) }))
+    .catch(() => undefined);
 }
 
 export function peakAnalysisSelectionApplyFromModeKey(state: Record<string, any>, modeKey: string) {
@@ -307,13 +325,14 @@ function peakAnalysisQLabelBuild(q: number | null) {
   return `Q ${Math.round(q as number)}`;
 }
 
-function peakAnalysisPlotRender(state: Record<string, any>, selectedMode: ModeCard | null) {
+function peakAnalysisPlotRender(state: Record<string, any>, selectedMode: ModeCard | null, ringdownData: PeakAnalysisRingdownData | null) {
   const plot = peakAnalysisPlotElementGet();
   if (!plot) return;
   const responseData = peakAnalysisFullResponseDataBuild(
     peakAnalysisSpectrumReadFromState(state),
     selectedMode,
     peakAnalysisCandidatesReadFromState(state),
+    ringdownData,
   );
   if (!responseData) {
     plot.hidden = true;
@@ -328,6 +347,7 @@ function peakAnalysisFullResponseDataBuild(
   spectrum: SpectrumLike | null | undefined,
   selectedMode: ModeCard | null,
   candidates: PeakAnalysisCandidate[],
+  ringdownData: PeakAnalysisRingdownData | null,
 ) {
   if (!selectedMode || !Number.isFinite(selectedMode.freq)) return null;
   const freqs = Array.isArray(spectrum?.freqs) ? spectrum?.freqs : [];
@@ -361,7 +381,8 @@ function peakAnalysisFullResponseDataBuild(
     y: points.map((point) => point.db),
     selectedX: selectedPoint.freq,
     selectedY: selectedPoint.db,
-    selectedQ: spectralQFromMode(selectedMode),
+    selectedQ: ringdownData?.pending ? null : ringdownData?.result.Q ?? null,
+    selectedDecayQ: true,
     widthHz: peakAnalysisWidthHzResolveFromMode(selectedMode),
     candidates: candidatePoints,
   };
@@ -380,10 +401,7 @@ export function peakAnalysisCandidatesBuild(
 }
 
 function peakAnalysisCandidatesReadFromState(state: Record<string, any>) {
-  const candidates = peakAnalysisUnresolvedCandidatesRead(state);
-  const selected = candidates.find((candidate) => candidate.key === state.peakAnalysisSelectedKey);
-  const resolved = selected ? resolveQForModeCards(state, [selected], peakAnalysisRingdownDataBuild)[0] : null;
-  return stockPeakLabelsForSpecimen(state, candidates.map((candidate) => candidate === selected ? resolved! : candidate));
+  return stockPeakLabelsForSpecimen(state, peakAnalysisUnresolvedCandidatesRead(state));
 }
 
 function peakAnalysisUnresolvedCandidatesRead(state: Record<string, any>) {
@@ -528,6 +546,7 @@ function peakAnalysisPlotApply(
     selectedX: number;
     selectedY: number;
     selectedQ: number | null;
+    selectedDecayQ?: boolean;
     widthHz: number | null;
     candidates: Array<{ key: string; label: string; x: number; y: number; q: number | null; widthHz: number | null }>;
   },
@@ -552,6 +571,7 @@ function peakAnalysisPlotDraw(
     selectedX: number;
     selectedY: number;
     selectedQ: number | null;
+    selectedDecayQ?: boolean;
     widthHz: number | null;
     candidates: Array<{ key: string; label: string; x: number; y: number; q: number | null; widthHz: number | null }>;
   },
@@ -1106,7 +1126,7 @@ function peakAnalysisTracesBuild(data: {
   ];
 }
 
-function peakAnalysisLayoutBuild(data: { selectedX: number; selectedY: number; selectedQ: number | null; widthHz: number | null }) {
+function peakAnalysisLayoutBuild(data: { selectedX: number; selectedY: number; selectedQ: number | null; selectedDecayQ?: boolean; widthHz: number | null }) {
   const halfWidth = Number.isFinite(data.widthHz) ? (data.widthHz as number) / 2 : null;
   return {
     margin: { l: 54, r: 18, t: 24, b: 42 },
@@ -1239,13 +1259,12 @@ function peakAnalysisReferenceLineShapeBuild(referenceDb: number) {
   };
 }
 
-function peakAnalysisQAnnotationsBuild(data: { selectedX: number; selectedY: number; selectedQ: number | null; widthHz: number | null }) {
-  if (!Number.isFinite(data.selectedQ)) return [];
+function peakAnalysisQAnnotationsBuild(data: { selectedX: number; selectedY: number; selectedQ: number | null; selectedDecayQ?: boolean; widthHz: number | null }) {
   return [
     {
       x: data.selectedX,
       y: data.selectedY,
-      text: peakAnalysisQAnnotationTextBuild(data.selectedX, data.selectedQ as number, data.widthHz),
+      text: peakAnalysisQAnnotationTextBuild(data.selectedX, data.selectedQ, data.widthHz, data.selectedDecayQ),
       showarrow: true,
       arrowhead: 2,
       ax: 0,
@@ -1272,11 +1291,17 @@ function peakAnalysisQAnnotationsBuild(data: { selectedX: number; selectedY: num
   ];
 }
 
-function peakAnalysisQAnnotationTextBuild(frequencyHz: number, q: number, widthHz: number | null) {
+function peakAnalysisQAnnotationTextBuild(frequencyHz: number, q: number | null, widthHz: number | null, decay = false) {
   const frequencyText = `${frequencyHz.toFixed(1)} Hz`;
-  const qText = `Q ${Math.round(q)}`;
+  const qText = `Q ${Number.isFinite(q) ? Math.round(q as number) : "—"}`;
+  if (decay) return `${frequencyText}<br>${qText} · ${resonanceLocalizedMessages.peakAnalysisRingdownDecayFitTrace}${peakAnalysisSpectralBandwidthTextBuild(widthHz)}`;
   if (!Number.isFinite(widthHz)) return `${frequencyText}<br>${qText}`;
   return `${frequencyText}<br>${qText} · BW ${(widthHz as number).toFixed(2)} Hz`;
+}
+
+function peakAnalysisSpectralBandwidthTextBuild(widthHz: number | null) {
+  if (!Number.isFinite(widthHz)) return "";
+  return `<br>${resonanceLocalizedMessages.peakAnalysisProvenanceSpectralBandwidthTemplate.replace("{bandwidthHz}", (widthHz as number).toFixed(2))}`;
 }
 
 function peakAnalysisPlotClear(plot: HTMLElement) {

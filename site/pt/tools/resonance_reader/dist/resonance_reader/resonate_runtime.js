@@ -1,34 +1,35 @@
 // Orchestrate resonance reader runtime wiring.
-import { renderWaveform } from "./resonate_waveform_view.js?rev=3d07b6bb6d26";
-import { measureModeNormalize, modeProfileResolveFromState, peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=3d07b6bb6d26";
-import { spectrumFftMaxHzResolve, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js?rev=3d07b6bb6d26";
-import { renderEnergyTransferFromState, renderModesFromState, renderSpectrumFromConfig, setStatusText } from "./resonate_ui_render.js?rev=3d07b6bb6d26";
-import { fullWaveFromState, sliceCurrentWaveFromState } from "./resonate_wave_slices.js?rev=3d07b6bb6d26";
-import { computeOverlayCurveFromState } from "./resonate_overlay_controller.js?rev=3d07b6bb6d26";
-import { resonanceBoundaryResolveFromState } from "./resonate_boundary_resolver.js?rev=3d07b6bb6d26";
-import { resonanceBoundarySeedIntoState } from "./resonate_boundary_seed.js?rev=3d07b6bb6d26";
-import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=3d07b6bb6d26";
-import { renderTryPanel } from "./resonate_try_panel.js?rev=3d07b6bb6d26";
-import { refreshFftFromState } from "./resonate_fft_refresh.js?rev=3d07b6bb6d26";
-import { stageSolveDofRun } from "./resonate_stage_solve_dof.js?rev=3d07b6bb6d26";
-import { resonatePipelineRefreshAllFromState } from "./resonate_pipeline_refresh.js?rev=3d07b6bb6d26";
-import { resonanceReaderBootstrap } from "./resonate_bootstrap_entry.js?rev=3d07b6bb6d26";
-import { customMeasurementModeMetaBuildFromState } from "./resonate_custom_measurements.js?rev=3d07b6bb6d26";
-import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js?rev=3d07b6bb6d26";
-import { braceCalculatorHrefBuildFromModes } from "./resonate_brace_calculator_link.js?rev=3d07b6bb6d26";
-import { stockKindResolve } from "./resonate_stock_measurements.js?rev=3d07b6bb6d26";
-import { stockMeasurementsPanelInitialize, stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js?rev=3d07b6bb6d26";
-import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=3d07b6bb6d26";
-import { flexuralRigidityBaseHrefResolve, flexuralRigidityOpenFromBraceStock } from "./resonate_flexural_rigidity_link.js?rev=3d07b6bb6d26";
-import { analysisTabsInitialize, analysisTabsRenderFromState } from "./resonate_analysis_tabs.js?rev=3d07b6bb6d26";
-import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState, peakAnalysisCompletedQRenderFromState, peakAnalysisSelectionSyncFromState } from "./resonate_peak_analysis_panel.js?rev=3d07b6bb6d26";
-import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js?rev=3d07b6bb6d26";
-import { plateStockTransferModesBuild } from "./resonate_plate_stock_transfer.js?rev=3d07b6bb6d26";
-import { takeOverlayCurrentPayloadBuild } from "./resonate_take_overlays.js?rev=3d07b6bb6d26";
-import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js?rev=3d07b6bb6d26";
-import { resonanceToolNavigate } from "./resonate_tool_navigation.js?rev=3d07b6bb6d26";
-import { installRingdownWorkerProvider } from "./resonate_ringdown_worker_provider.js?rev=3d07b6bb6d26";
-import { refreshModeCardQValues } from "./resonate_q_card_update.js?rev=3d07b6bb6d26";
+import { renderWaveform } from "./resonate_waveform_view.js?rev=bd81c33a8408";
+import { measureModeNormalize, modeProfileResolveFromState, peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=bd81c33a8408";
+import { spectrumFftMaxHzResolve, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js?rev=bd81c33a8408";
+import { renderEnergyTransferFromState, renderModesFromState, renderSpectrumFromConfig, setStatusText } from "./resonate_ui_render.js?rev=bd81c33a8408";
+import { fullWaveFromState, sliceCurrentWaveFromState } from "./resonate_wave_slices.js?rev=bd81c33a8408";
+import { computeOverlayCurveFromState } from "./resonate_overlay_controller.js?rev=bd81c33a8408";
+import { resonanceBoundaryResolveFromState } from "./resonate_boundary_resolver.js?rev=bd81c33a8408";
+import { resonanceBoundarySeedIntoState } from "./resonate_boundary_seed.js?rev=bd81c33a8408";
+import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=bd81c33a8408";
+import { renderTryPanel } from "./resonate_try_panel.js?rev=bd81c33a8408";
+import { refreshFftFromState } from "./resonate_fft_refresh.js?rev=bd81c33a8408";
+import { stageSolveDofRun } from "./resonate_stage_solve_dof.js?rev=bd81c33a8408";
+import { resonatePipelineRefreshAllFromState } from "./resonate_pipeline_refresh.js?rev=bd81c33a8408";
+import { resonanceReaderBootstrap } from "./resonate_bootstrap_entry.js?rev=bd81c33a8408";
+import { customMeasurementModeMetaBuildFromState } from "./resonate_custom_measurements.js?rev=bd81c33a8408";
+import { externalModelDestinationResolveFromMeasureMode } from "./resonate_model_destination.js?rev=bd81c33a8408";
+import { braceCalculatorHrefBuildFromModes } from "./resonate_brace_calculator_link.js?rev=bd81c33a8408";
+import { stockKindResolve } from "./resonate_stock_measurements.js?rev=bd81c33a8408";
+import { stockMeasurementsPanelInitialize, stockMeasurementsPanelRender } from "./resonate_stock_measurements_panel.js?rev=bd81c33a8408";
+import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=bd81c33a8408";
+import { flexuralRigidityBaseHrefResolve, flexuralRigidityOpenFromBraceStock } from "./resonate_flexural_rigidity_link.js?rev=bd81c33a8408";
+import { analysisTabsInitialize, analysisTabsRenderFromState } from "./resonate_analysis_tabs.js?rev=bd81c33a8408";
+import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState, peakAnalysisCompletedQRenderFromState, peakAnalysisSelectionSyncFromState, peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js?rev=bd81c33a8408";
+import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js?rev=bd81c33a8408";
+import { plateStockTransferModesBuild } from "./resonate_plate_stock_transfer.js?rev=bd81c33a8408";
+import { takeOverlayCurrentPayloadBuild } from "./resonate_take_overlays.js?rev=bd81c33a8408";
+import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalescer.js?rev=bd81c33a8408";
+import { resonanceToolNavigate } from "./resonate_tool_navigation.js?rev=bd81c33a8408";
+import { installRingdownWorkerProvider } from "./resonate_ringdown_worker_provider.js?rev=bd81c33a8408";
+import { refreshModeCardQValues } from "./resonate_q_card_update.js?rev=bd81c33a8408";
+import { resolveQForViewModeCards } from "./resonate_q_view_policy.js?rev=bd81c33a8408";
 const state = window.FFTState;
 const resonatePipelineTriggerRun = pipelineRunCoalescedTriggerBuild(async (trigger) => {
     const runner = window.ResonatePipelineRunner;
@@ -69,6 +70,10 @@ function renderCompletedQResults() {
     refreshModeCardQValues(state.lastModeCards || []);
     if (peakAnalysisShouldRender())
         peakAnalysisCompletedQRenderFromState(state);
+}
+function renderSelectedTapQResults() {
+    state.lastModeCards = resolveQForViewModeCards(state, state.lastModeCards || [], peakAnalysisRingdownDataBuild);
+    renderCompletedQResults();
 }
 function setStatus(text) {
     setStatusText(text);
@@ -352,11 +357,7 @@ function renderWaveformConfigBuild() {
         state,
         setStatus,
         runResonatePipeline: resonatePipelineRunnerRun,
-        renderPeakAnalysis: () => {
-            if (peakAnalysisShouldRender()) {
-                peakAnalysisPanelRenderFromState(state);
-            }
-        },
+        renderPeakAnalysis: renderSelectedTapQResults,
     };
 }
 function runtimeBoundaryArgsBuild(boundaries) {

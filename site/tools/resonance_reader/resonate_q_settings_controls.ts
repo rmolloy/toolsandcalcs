@@ -1,5 +1,6 @@
 import { qSettingsResolve, type QSettings } from "./resonate_q_settings.js";
 import { settingsPipelineRefresh, type SettingsRefreshDeps } from "./resonate_settings_refresh.js";
+import { stockQSettingsAreApplicable } from "./resonate_q_view_policy.js";
 
 const Q_FIELDS = { method: "settings_q_method", aggregation: "settings_q_aggregation" } as const;
 
@@ -15,6 +16,8 @@ export function qSettingsControlsSync(state: Record<string, any>): void {
   Object.entries(Q_FIELDS).forEach(([field, id]) => {
     const select = document.getElementById(id) as HTMLSelectElement | null;
     if (select) select.value = settings[field as keyof QSettings];
+    const row = select?.closest<HTMLElement>(".settings-field");
+    if (row) row.style.display = stockQSettingsAreApplicable(state) ? "" : "none";
   });
 }
 

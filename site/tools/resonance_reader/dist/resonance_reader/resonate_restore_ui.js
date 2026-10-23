@@ -1,11 +1,11 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=3d07b6bb6d26";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=3d07b6bb6d26";
-import { consumeResonanceNotebookConnectDraft, restoreResonanceNotebookConnectDraftState, } from "./resonate_notebook_connect_draft.js?rev=3d07b6bb6d26";
-import { restoreResonanceNotebookEventIntoState } from "./resonate_notebook_restore.js?rev=3d07b6bb6d26";
-import { perTabSessionResolve } from "./resonate_per_tab_persistence.js?rev=3d07b6bb6d26";
-import { recordingMenuLabelSet } from "./resonate_recording_menu.js?rev=3d07b6bb6d26";
-import { saveStateMarkDirtyAndRender } from "./resonate_save_button.js?rev=3d07b6bb6d26";
-import { takeOverlayControlsRender } from "./resonate_take_overlay_controls.js?rev=3d07b6bb6d26";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=bd81c33a8408";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=bd81c33a8408";
+import { consumeResonanceNotebookConnectDraft, restoreResonanceNotebookConnectDraftState, } from "./resonate_notebook_connect_draft.js?rev=bd81c33a8408";
+import { restoreResonanceNotebookEventIntoState } from "./resonate_notebook_restore.js?rev=bd81c33a8408";
+import { perTabSessionResolve } from "./resonate_per_tab_persistence.js?rev=bd81c33a8408";
+import { recordingMenuLabelSet } from "./resonate_recording_menu.js?rev=bd81c33a8408";
+import { saveStateMarkDirtyAndRender } from "./resonate_save_button.js?rev=bd81c33a8408";
+import { takeOverlayControlsRender } from "./resonate_take_overlay_controls.js?rev=bd81c33a8408";
 export async function restorePerTabSessionIntoUi(deps) {
     if (!await perTabSessionResolve(deps)?.restoreIntoState(deps.state)) {
         return false;
