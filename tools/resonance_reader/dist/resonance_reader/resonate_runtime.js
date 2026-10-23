@@ -21,7 +21,7 @@ import { stockMeasurementsPanelInitialize, stockMeasurementsPanelRender } from "
 import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js";
 import { flexuralRigidityBaseHrefResolve, flexuralRigidityOpenFromBraceStock } from "./resonate_flexural_rigidity_link.js";
 import { analysisTabsInitialize, analysisTabsRenderFromState } from "./resonate_analysis_tabs.js";
-import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState, peakAnalysisCompletedQRenderFromState, peakAnalysisSelectionSyncFromState } from "./resonate_peak_analysis_panel.js";
+import { peakAnalysisPanelInitialize, peakAnalysisPanelRenderFromState, peakAnalysisCompletedQRenderFromState, peakAnalysisSelectionSyncFromState, peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js";
 import { plateThicknessHrefBuildFromModes } from "./resonate_plate_thickness_link.js";
 import { plateStockTransferModesBuild } from "./resonate_plate_stock_transfer.js";
 import { takeOverlayCurrentPayloadBuild } from "./resonate_take_overlays.js";
@@ -29,6 +29,7 @@ import { pipelineRunCoalescedTriggerBuild } from "../common/pipeline_run_coalesc
 import { resonanceToolNavigate } from "./resonate_tool_navigation.js";
 import { installRingdownWorkerProvider } from "./resonate_ringdown_worker_provider.js";
 import { refreshModeCardQValues } from "./resonate_q_card_update.js";
+import { resolveQForViewModeCards } from "./resonate_q_view_policy.js";
 const state = window.FFTState;
 const resonatePipelineTriggerRun = pipelineRunCoalescedTriggerBuild(async (trigger) => {
     const runner = window.ResonatePipelineRunner;
@@ -69,6 +70,10 @@ function renderCompletedQResults() {
     refreshModeCardQValues(state.lastModeCards || []);
     if (peakAnalysisShouldRender())
         peakAnalysisCompletedQRenderFromState(state);
+}
+function renderSelectedTapQResults() {
+    state.lastModeCards = resolveQForViewModeCards(state, state.lastModeCards || [], peakAnalysisRingdownDataBuild);
+    renderCompletedQResults();
 }
 function setStatus(text) {
     setStatusText(text);
@@ -352,11 +357,7 @@ function renderWaveformConfigBuild() {
         state,
         setStatus,
         runResonatePipeline: resonatePipelineRunnerRun,
-        renderPeakAnalysis: () => {
-            if (peakAnalysisShouldRender()) {
-                peakAnalysisPanelRenderFromState(state);
-            }
-        },
+        renderPeakAnalysis: renderSelectedTapQResults,
     };
 }
 function runtimeBoundaryArgsBuild(boundaries) {

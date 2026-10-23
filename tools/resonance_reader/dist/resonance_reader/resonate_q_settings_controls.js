@@ -1,5 +1,6 @@
 import { qSettingsResolve } from "./resonate_q_settings.js";
 import { settingsPipelineRefresh } from "./resonate_settings_refresh.js";
+import { stockQSettingsAreApplicable } from "./resonate_q_view_policy.js";
 const Q_FIELDS = { method: "settings_q_method", aggregation: "settings_q_aggregation" };
 export function qSettingsControlsBind(deps) {
     Object.entries(Q_FIELDS).forEach(([field, id]) => {
@@ -13,6 +14,9 @@ export function qSettingsControlsSync(state) {
         const select = document.getElementById(id);
         if (select)
             select.value = settings[field];
+        const row = select?.closest(".settings-field");
+        if (row)
+            row.style.display = stockQSettingsAreApplicable(state) ? "" : "none";
     });
 }
 export function qSettingsControlsReset(state) {
