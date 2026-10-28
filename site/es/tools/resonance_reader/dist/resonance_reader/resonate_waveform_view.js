@@ -1,8 +1,9 @@
-import { waveformLabelResolveFromContext } from "./resonate_waveform_label.js?rev=37b595148646";
-import { noteWindowRangeBuildFromSlice, noteWindowSliceFindByTime, noteSelectionWindowRequestedFromPlotlyClick, } from "./resonate_note_window_selection.js?rev=37b595148646";
-import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=37b595148646";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=37b595148646";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=37b595148646";
+import { waveformLabelResolveFromContext } from "./resonate_waveform_label.js?rev=093b6a20873d";
+import { noteWindowRangeBuildFromSlice, noteWindowSliceFindByTime, noteSelectionWindowRequestedFromPlotlyClick, } from "./resonate_note_window_selection.js?rev=093b6a20873d";
+import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=093b6a20873d";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=093b6a20873d";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=093b6a20873d";
+import { renderWaveformPlot } from "./resonate_waveform_plot.js?rev=093b6a20873d";
 let waveUpdatingShapes = false;
 const TAP_CLUSTER_GAP_MS = 950;
 const NOTE_CLUSTER_GAP_MS = 2600;
@@ -483,7 +484,7 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
         shapes: buildWaveShapes(slice.sampleRate, deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps.state.tapSegments, deps.state.noteSlices, deps.state.measureMode, deps.state.peakAnalysisSelectedTapIndex),
         annotations: buildWaveAnnotations(deps.state.noteSlices || [], deps.state.noteResults || [], deps),
     };
-    Plotly.newPlot(plot, [trace], layout, {
+    renderWaveformPlot(Plotly, plot, trace, layout, {
         displayModeBar: plotlyWaveToolsEnabled,
         displaylogo: false,
         responsive: true,
@@ -561,6 +562,8 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
         const range0 = ev["xaxis.range[0]"];
         const range1 = ev["xaxis.range[1]"];
         const auto = ev["xaxis.autorange"];
+        if (auto === undefined && range0 === undefined && range1 === undefined)
+            return;
         if (auto || range0 === undefined || range1 === undefined) {
             if (plot.__resonateShiftDragActive) {
                 deps.state.noteSelectionRangeMs = null;
