@@ -3,6 +3,7 @@ import { noteWindowRangeBuildFromSlice, noteWindowSliceFindByTime, noteSelection
 import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+import { renderWaveformPlot } from "./resonate_waveform_plot.js";
 let waveUpdatingShapes = false;
 const TAP_CLUSTER_GAP_MS = 950;
 const NOTE_CLUSTER_GAP_MS = 2600;
@@ -483,7 +484,7 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
         shapes: buildWaveShapes(slice.sampleRate, deps.state.viewRangeMs || null, deps.state.noteSelectionRangeMs || null, deps.state.tapSegments, deps.state.noteSlices, deps.state.measureMode, deps.state.peakAnalysisSelectedTapIndex),
         annotations: buildWaveAnnotations(deps.state.noteSlices || [], deps.state.noteResults || [], deps),
     };
-    Plotly.newPlot(plot, [trace], layout, {
+    renderWaveformPlot(Plotly, plot, trace, layout, {
         displayModeBar: plotlyWaveToolsEnabled,
         displaylogo: false,
         responsive: true,
@@ -561,6 +562,8 @@ function makeWaveNavigatorPlot(slice, deps, onPrimaryRangeChange, onNoteSelectio
         const range0 = ev["xaxis.range[0]"];
         const range1 = ev["xaxis.range[1]"];
         const auto = ev["xaxis.autorange"];
+        if (auto === undefined && range0 === undefined && range1 === undefined)
+            return;
         if (auto || range0 === undefined || range1 === undefined) {
             if (plot.__resonateShiftDragActive) {
                 deps.state.noteSelectionRangeMs = null;
