@@ -1,4 +1,4 @@
-import { BASE_PARAMS } from "./resonate_fit_defaults.js?rev=771d0fdbd277";
+import { BASE_PARAMS } from "./resonate_fit_defaults.js?rev=6e6ab0f635c5";
 export function fitModeWeightsFromDetected(modesDetected) {
     const byMode = new Map();
     modesDetected.forEach((mode) => byMode.set(mode.mode, mode));

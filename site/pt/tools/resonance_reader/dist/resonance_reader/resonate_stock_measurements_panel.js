@@ -1,13 +1,13 @@
-import { stockMeasurementsDraftApply, stockMeasurementsDraftBuild, stockKindResolve } from "./resonate_stock_measurements.js?rev=771d0fdbd277";
-import { stockMeasurementsPromptOpen } from "./resonate_stock_measurements_prompt.js?rev=771d0fdbd277";
-import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=771d0fdbd277";
-import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=771d0fdbd277";
-import { stockLongAssignmentCapture, stockLongConfirmationApply, stockLongConfirmationClear, stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=771d0fdbd277";
-import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js?rev=771d0fdbd277";
-import { stockPeakContextDiffers } from "./resonate_stock_peak_context.js?rev=771d0fdbd277";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=771d0fdbd277";
-import { renderStockSupportGuidance } from "./resonate_stock_support_guidance.js?rev=771d0fdbd277";
-import { stockLongAssignedModeResolve } from "./resonate_stock_long_assignment.js?rev=771d0fdbd277";
+import { stockMeasurementsDraftApply, stockMeasurementsDraftBuild, stockKindResolve } from "./resonate_stock_measurements.js?rev=6e6ab0f635c5";
+import { stockMeasurementsPromptOpen } from "./resonate_stock_measurements_prompt.js?rev=6e6ab0f635c5";
+import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=6e6ab0f635c5";
+import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=6e6ab0f635c5";
+import { stockLongAssignmentCapture, stockLongConfirmationApply, stockLongConfirmationClear, stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=6e6ab0f635c5";
+import { stockMaterialEstimateResolve } from "./resonate_stock_material_estimate.js?rev=6e6ab0f635c5";
+import { stockPeakContextDiffers } from "./resonate_stock_peak_context.js?rev=6e6ab0f635c5";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=6e6ab0f635c5";
+import { renderStockSupportGuidance } from "./resonate_stock_support_guidance.js?rev=6e6ab0f635c5";
+import { stockLongAssignedModeResolve } from "./resonate_stock_long_assignment.js?rev=6e6ab0f635c5";
 export function stockMeasurementsPanelInitialize(state, dependencies) {
     const panel = document.getElementById("stock_measurements");
     if (!panel || panel.dataset.bound)
