@@ -1,4 +1,4 @@
-import { resonanceFftInputScopeResolve } from "./resonate_debug_flags.js?rev=886d77f4e6db";
+import { resonanceFftInputScopeResolve } from "./resonate_debug_flags.js?rev=8974cca7f62c";
 export function sliceCurrentWaveFromState(state) {
     const src = state.currentWave;
     if (!src)

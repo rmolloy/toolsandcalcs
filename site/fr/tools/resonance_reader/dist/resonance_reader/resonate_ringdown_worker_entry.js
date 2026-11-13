@@ -1,5 +1,5 @@
-import "../modal_frequency_shared/modal_analysis/ringdown.js?rev=886d77f4e6db";
-import { calculateRingdownFromJob } from "./resonate_ringdown_worker_calculation.js?rev=886d77f4e6db";
+import "../modal_frequency_shared/modal_analysis/ringdown.js?rev=8974cca7f62c";
+import { calculateRingdownFromJob } from "./resonate_ringdown_worker_calculation.js?rev=8974cca7f62c";
 export function createRingdownWorkerRequestHandler(math, send) {
     let dataset;
     return (request) => {

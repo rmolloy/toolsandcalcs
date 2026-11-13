@@ -1,6 +1,6 @@
-import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=886d77f4e6db";
-import { resonanceToolNavigate } from "./resonate_tool_navigation.js?rev=886d77f4e6db";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=886d77f4e6db";
+import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=8974cca7f62c";
+import { resonanceToolNavigate } from "./resonate_tool_navigation.js?rev=8974cca7f62c";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=8974cca7f62c";
 export function flexuralRigidityBaseHrefResolve(runtimeHref = typeof window !== "undefined" ? window.location.href : "http://localhost/") {
     return new URL(runtimeHref).protocol === "file:"
         ? "../flexural_rigidity/index.html"

@@ -1,6 +1,6 @@
-import { readOfflineDownloadSaveSurface } from "../common/offline_save_surface.js?rev=886d77f4e6db";
-import { downloadResonanceWave } from "./resonate_save_package_download.js?rev=886d77f4e6db";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=886d77f4e6db";
+import { readOfflineDownloadSaveSurface } from "../common/offline_save_surface.js?rev=8974cca7f62c";
+import { downloadResonanceWave } from "./resonate_save_package_download.js?rev=8974cca7f62c";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=8974cca7f62c";
 export function resonanceSaveRunnerCreate() {
     return {
         readResonanceSaveSurface,
