@@ -1,5 +1,5 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=d1d4f852375a";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=d1d4f852375a";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=6544777673f2";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=6544777673f2";
 const GUITAR_DESTINATION = {
     href: "../dof_model/index.html",
     label: resonanceLocalizedMessages.modelDestinationDofLabel,

@@ -1,6 +1,6 @@
-import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=d1d4f852375a";
-import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=d1d4f852375a";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=d1d4f852375a";
+import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=6544777673f2";
+import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=6544777673f2";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=6544777673f2";
 export function modeCardsHtmlBuild(modes, deps, editingKey) {
     const formatters = modeCardFormattersBuild();
     const modeCardsHtml = modes.map((m) => modeCardHtmlBuildFromMode(m, deps, editingKey, formatters)).join("");

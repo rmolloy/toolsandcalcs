@@ -1,6 +1,6 @@
-import { resonanceDebugApiInstall } from "./resonate_debug_flags.js?rev=d1d4f852375a";
-import { spectrumFftMaxHzResolve } from "./resonate_spectrum_config.js?rev=d1d4f852375a";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=d1d4f852375a";
+import { resonanceDebugApiInstall } from "./resonate_debug_flags.js?rev=6544777673f2";
+import { spectrumFftMaxHzResolve } from "./resonate_spectrum_config.js?rev=6544777673f2";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=6544777673f2";
 const spectraByState = new WeakMap();
 export function captureSpectrumInputs(state, fftMaxHz = spectrumFftMaxHzResolve()) {
     resonanceDebugApiInstall();

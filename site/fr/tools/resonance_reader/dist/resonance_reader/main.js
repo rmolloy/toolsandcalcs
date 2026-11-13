@@ -1,4 +1,4 @@
-import { resonanceDebugApiInstall } from "./resonate_debug_flags.js?rev=d1d4f852375a";
-import { resonanceReaderRuntimeStart } from "./resonate_runtime.js?rev=d1d4f852375a";
+import { resonanceDebugApiInstall } from "./resonate_debug_flags.js?rev=6544777673f2";
+import { resonanceReaderRuntimeStart } from "./resonate_runtime.js?rev=6544777673f2";
 resonanceDebugApiInstall();
 resonanceReaderRuntimeStart();
