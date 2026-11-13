@@ -1,5 +1,5 @@
-import "../common/notebook_rpc_client.js?rev=8974cca7f62c";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=8974cca7f62c";
+import "../common/notebook_rpc_client.js?rev=7157ade1c3cc";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=7157ade1c3cc";
 export async function listNotebookSubjectsForResonanceSave(workbookId) {
     return await readSharedNotebookRpcClient().listNotebookSubjects(workbookId);
 }

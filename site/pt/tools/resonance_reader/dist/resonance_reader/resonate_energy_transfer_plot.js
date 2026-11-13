@@ -1,5 +1,5 @@
-import { resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=8974cca7f62c";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=8974cca7f62c";
+import { resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=7157ade1c3cc";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=7157ade1c3cc";
 export function energyPlotRender(traces, layout) {
     const plot = energyPlotElementGet();
     if (!plot)

@@ -1,5 +1,5 @@
-import { measureModeLabelBuild } from "./resonate_mode_config.js?rev=8974cca7f62c";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=8974cca7f62c";
+import { measureModeLabelBuild } from "./resonate_mode_config.js?rev=7157ade1c3cc";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=7157ade1c3cc";
 const SUMMARY_MODE_ROW_LIMIT = 6;
 export function resonanceSaveSummaryBuild(state, recordingLabel) {
     return [

@@ -1,7 +1,7 @@
-import "../common/notebook_save_modal.js?rev=8974cca7f62c";
-import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js?rev=8974cca7f62c";
-import { measureModeLabelBuild, measureModeNormalize } from "./resonate_mode_config.js?rev=8974cca7f62c";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=8974cca7f62c";
+import "../common/notebook_save_modal.js?rev=7157ade1c3cc";
+import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js?rev=7157ade1c3cc";
+import { measureModeLabelBuild, measureModeNormalize } from "./resonate_mode_config.js?rev=7157ade1c3cc";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=7157ade1c3cc";
 const RESONANCE_CAPTURE_PACKAGE_FILES = ["state.json", "source.wav", "plot.png"];
 export async function openConnectedResonanceSaveModal(args) {
     const defaults = resonanceSubjectDraftDefaultsFromMeasureMode(args.measureMode);

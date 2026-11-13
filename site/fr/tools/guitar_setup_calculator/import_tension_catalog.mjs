@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 import {
   loadCompleteTensionCatalog,
   TENSION_SOURCE_URLS,
-} from "./tension_sources.mjs?rev=8974cca7f62c";
+} from "./tension_sources.mjs?rev=7157ade1c3cc";
 
 const outputPath = resolve(
   process.argv[2] || new URL("./tension_catalog.json", import.meta.url).pathname,

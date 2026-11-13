@@ -1,8 +1,8 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=8974cca7f62c";
-import { perTabSessionPersist } from "./resonate_per_tab_persistence.js?rev=8974cca7f62c";
-import { recordingMenuLabelSet, takeOverlayMenuElementGet, } from "./resonate_recording_menu.js?rev=8974cca7f62c";
-import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js?rev=8974cca7f62c";
-import { takeOverlayCaptureCurrentFromState, takeOverlayClearAll, takeOverlayListRead, takeOverlaySelectAsCurrent, } from "./resonate_take_overlays.js?rev=8974cca7f62c";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=7157ade1c3cc";
+import { perTabSessionPersist } from "./resonate_per_tab_persistence.js?rev=7157ade1c3cc";
+import { recordingMenuLabelSet, takeOverlayMenuElementGet, } from "./resonate_recording_menu.js?rev=7157ade1c3cc";
+import { rerenderFromLastSpectrumIfPossible } from "./resonate_spectrum_rerender.js?rev=7157ade1c3cc";
+import { takeOverlayCaptureCurrentFromState, takeOverlayClearAll, takeOverlayListRead, takeOverlaySelectAsCurrent, } from "./resonate_take_overlays.js?rev=7157ade1c3cc";
 export function takeOverlayCaptureCurrentAndRender(deps) {
     if (!takeOverlayCaptureCurrentFromState(deps.state))
         return;
