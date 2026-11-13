@@ -1,6 +1,6 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=6544777673f2";
-import { resolveQForModeCards, spectralQFromMode } from "./resonate_q_measurement.js?rev=6544777673f2";
-import { qSettingsResolve } from "./resonate_q_settings.js?rev=6544777673f2";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=a5f15a6afb2b";
+import { resolveQForModeCards, spectralQFromMode } from "./resonate_q_measurement.js?rev=a5f15a6afb2b";
+import { qSettingsResolve } from "./resonate_q_settings.js?rev=a5f15a6afb2b";
 export function resolveQForViewModeCards(state, cards, fit) {
     if (stockQSettingsAreApplicable(state) && qSettingsResolve(state).method === "decay")
         return resolveQForModeCards(state, cards, fit);

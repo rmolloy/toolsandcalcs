@@ -1,4 +1,4 @@
-import { pipelineEventEmit } from "./pipeline_runtime.js?rev=6544777673f2";
+import { pipelineEventEmit } from "./pipeline_runtime.js?rev=a5f15a6afb2b";
 export function pipelineStageStartedEmit(emit, runId, stageId) {
     pipelineEventEmit(emit, "stage.started", runId, { stage: stageId }, stageId);
 }
