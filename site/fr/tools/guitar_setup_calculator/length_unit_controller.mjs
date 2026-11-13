@@ -1,4 +1,4 @@
-import { lengthUnitPresentation } from "./length_units.mjs?rev=6e6ab0f635c5";
+import { lengthUnitPresentation } from "./length_units.mjs?rev=886d77f4e6db";
 
 const STRING_LENGTH_FIELDS = new Set(["scaleLengthMm", "gaugeMm"]);
 const LENGTH_INPUT_IDS = new Set([

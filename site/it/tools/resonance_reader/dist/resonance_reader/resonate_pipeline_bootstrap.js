@@ -1,8 +1,8 @@
-import { pipelineRunnerRun } from "./resonate_pipeline_runner.js?rev=6e6ab0f635c5";
-import { uiBindingsAttach } from "./resonate_ui_bindings.js?rev=6e6ab0f635c5";
-import { wireResonatePipeline } from "./resonate_pipeline_wiring.js?rev=6e6ab0f635c5";
-import { pipelineRuntimeEventForwardToBus } from "../common/pipeline_event_forwarder.js?rev=6e6ab0f635c5";
-import { createPipelineBus } from "../common/pipeline_bus.js?rev=6e6ab0f635c5";
+import { pipelineRunnerRun } from "./resonate_pipeline_runner.js?rev=886d77f4e6db";
+import { uiBindingsAttach } from "./resonate_ui_bindings.js?rev=886d77f4e6db";
+import { wireResonatePipeline } from "./resonate_pipeline_wiring.js?rev=886d77f4e6db";
+import { pipelineRuntimeEventForwardToBus } from "../common/pipeline_event_forwarder.js?rev=886d77f4e6db";
+import { createPipelineBus } from "../common/pipeline_bus.js?rev=886d77f4e6db";
 function pipelineRunnerWindowExpose(bus, deps) {
     window.ResonatePipelineRunner = {
         run: (input, config) => pipelineRunnerRun(input, config, (event) => pipelineRuntimeEventForwardToBus(bus, event), {
