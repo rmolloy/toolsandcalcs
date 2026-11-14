@@ -1,6 +1,6 @@
-import { renderPayloadBuildFromState } from "./resonate_render_events.js?rev=a5f15a6afb2b";
-import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js?rev=a5f15a6afb2b";
-import { qSettingsResolve } from "./resonate_q_settings.js?rev=a5f15a6afb2b";
+import { renderPayloadBuildFromState } from "./resonate_render_events.js?rev=1f0fca766fb9";
+import { stockMeasurementsEvidenceBuild } from "./resonate_stock_measurements.js?rev=1f0fca766fb9";
+import { qSettingsResolve } from "./resonate_q_settings.js?rev=1f0fca766fb9";
 const RESONANCE_NOTEBOOK_CONNECT_DRAFT_KEY = "resonanceNotebookConnectDraft";
 export function persistResonanceNotebookConnectDraft(runtime, state, recordingLabel) {
     const storage = readResonanceNotebookConnectDraftStorage(runtime);

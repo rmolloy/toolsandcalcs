@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages as messages } from "./resonate_localized_messages.js?rev=a5f15a6afb2b";
+import { resonanceLocalizedMessages as messages } from "./resonate_localized_messages.js?rev=1f0fca766fb9";
 export function renderStockSupportGuidance(draft) {
     if (!draft.kind)
         return null;
