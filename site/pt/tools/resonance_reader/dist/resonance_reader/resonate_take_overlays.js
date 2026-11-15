@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=1f0fca766fb9";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=b6ec15c45357";
 const MAX_TAKES_STORED = 8;
 const MAX_TAKES_VISIBLE = 4;
 export function takeOverlayCaptureCurrentFromState(state) {

@@ -83,7 +83,17 @@
     editResultCentroid.textContent = centroid;
   }
 
+  // The engine's result for the luthier's own top inputs, for a notebook save to keep as measurements.
+  // It stays null while any top input is blank, since the display then falls back to placeholder values.
+  function publishSavedResults(slice) {
+    const enteredTop = [spanInput, thicknessInput, modulusInput].every((input) => Number(input.value) > 0);
+    window.FlexuralLatestResults = slice && enteredTop
+      ? { eiNm2: slice.EI / 1e6, transformedIMm4: slice.transformedI, centroidMm: slice.centroid }
+      : null;
+  }
+
   function run() {
+    publishSavedResults(null);
     try {
       const span = Number(spanInput.value) || 500;
       const thickness = Number(thicknessInput.value) || 4;
@@ -100,6 +110,7 @@
         topModulus: modulusTop,
         braces
       });
+      publishSavedResults(slice);
       const firstBrace = slice.braces[0];
       writeResultValues(
         `${format(slice.EI / 1e6, 3)}`,

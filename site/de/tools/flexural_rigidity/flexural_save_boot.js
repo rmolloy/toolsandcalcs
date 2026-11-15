@@ -112,6 +112,7 @@
     return {
       top: readFlexuralTopInputs(),
       braces: latestBraceState.slice(),
+      results: window.FlexuralLatestResults || undefined,
     };
   }
 

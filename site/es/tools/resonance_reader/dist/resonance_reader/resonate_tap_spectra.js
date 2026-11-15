@@ -1,5 +1,5 @@
-import { FFT_MAX_HZ } from "./resonate_spectrum_config.js?rev=1f0fca766fb9";
-import { resonanceFftMinSamplesResolve, resonanceFftWindowResolve, resonanceTapSliceWindowMsResolve, resonanceUsePaddedTapWindowResolve, resonanceUseTapOnsetAlignmentResolve, } from "./resonate_debug_flags.js?rev=1f0fca766fb9";
+import { FFT_MAX_HZ } from "./resonate_spectrum_config.js?rev=b6ec15c45357";
+import { resonanceFftMinSamplesResolve, resonanceFftWindowResolve, resonanceTapSliceWindowMsResolve, resonanceUsePaddedTapWindowResolve, resonanceUseTapOnsetAlignmentResolve, } from "./resonate_debug_flags.js?rev=b6ec15c45357";
 export const TAP_ANALYSIS_WINDOW_MS = 400;
 export const TAP_PRE_ONSET_MS = 100;
 const TAP_CAPTURE_WINDOW_MS = 500;

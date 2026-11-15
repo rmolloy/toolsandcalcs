@@ -42,11 +42,11 @@
     });
   }
 
-  function buildBraceSavePackage(braces, now) {
+  function buildBraceSavePackage(braces, now, results) {
     var savedAt = readBraceSaveTimestamp(now);
     return {
       filename: "brace-layout-" + buildBraceSaveTimestampToken(savedAt) + ".json",
-      text: JSON.stringify(readBraceSavePayload(braces, savedAt), null, 2),
+      text: JSON.stringify(readBraceSavePayload(braces, savedAt, results), null, 2),
     };
   }
 
@@ -83,7 +83,8 @@
     throw new Error("Este archivo no contiene una disposición de varetas.");
   }
 
-  function readBraceSavePayload(braces, savedAt) {
+  function readBraceSavePayload(braces, savedAt, results) {
+    var braceResults = readBraceResultsSnapshot(results);
     return {
       ...readSharedToolDocument().buildToolDocumentHeader({
         toolDocumentType: "BRACE_CALCULATOR_SAVE",
@@ -94,7 +95,25 @@
       packageVersion: 1,
       exportedAtIso: savedAt,
       braces: Array.isArray(braces) ? braces : [],
+      ...(braceResults.length ? { results: braceResults } : {}),
     };
+  }
+
+  // The engine's computed result per brace, kept beside the layout so the notebook can store it as measurements.
+  function readBraceResultsSnapshot(results) {
+    return (Array.isArray(results) ? results : []).flatMap(function (result) {
+      var eiNm2 = Number(result && result.eiNm2);
+      if (!Number.isFinite(eiNm2)) {
+        return [];
+      }
+
+      return [{
+        name: String(result.name || ""),
+        eiNm2: eiNm2,
+        heightMm: Number(result.heightMm),
+        massPerLengthGM: Number(result.massPerLengthGM),
+      }];
+    });
   }
 
   function isBraceSaveDocumentType(value) {

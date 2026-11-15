@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=1f0fca766fb9";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=b6ec15c45357";
 const SAVE_HELP = {
     offline: resonanceLocalizedMessages.saveHelpOffline,
     "lab-disconnected": resonanceLocalizedMessages.saveHelpDisconnected,

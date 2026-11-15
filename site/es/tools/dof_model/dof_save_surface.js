@@ -93,7 +93,21 @@
       overlayEnabled: Boolean(source.overlayEnabled),
       fitInputs: source.fitInputs || {},
       solveOptions: source.solveOptions || {},
+      ...readDofResultsSnapshot(source.results),
     };
+  }
+
+  // The model's predicted peaks, kept beside the inputs so the notebook can store them as measurements.
+  function readDofResultsSnapshot(value) {
+    var results = value || {};
+    var peaks = {};
+    ["airHz", "topHz", "backHz"].forEach(function (key) {
+      var number = Number(results[key]);
+      if (results[key] !== null && results[key] !== undefined && Number.isFinite(number) && number > 0) {
+        peaks[key] = number;
+      }
+    });
+    return Object.keys(peaks).length ? { results: peaks } : {};
   }
 
   function readDofSaveTimestamp(now) {

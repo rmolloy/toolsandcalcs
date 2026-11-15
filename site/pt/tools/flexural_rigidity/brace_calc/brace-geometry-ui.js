@@ -40,6 +40,7 @@
         const matchPlanMaterial = activeBraceStock || starterBraceStockCreate();
         let activeTop = readTopFromLayout(defaultLayout);
         let braces = createInitialBraces();
+        let latestBraceResults = [];
         const perTabSession = readBracePerTabSession();
         function nextBraceId() {
             braceCounter += 1;
@@ -127,6 +128,7 @@
                 density: DEFAULT_DENSITY,
                 modulus: DEFAULT_MODULUS,
             });
+            latestBraceResults = readBraceSaveResults(sourceBraces, renderInfo);
             if (fullRebuild ||
                 braceDom.size !== sourceBraces.length ||
                 !updateBraceVisuals(sourceBraces, renderInfo, scales)) {
@@ -573,9 +575,20 @@
             showAdvanced = !showAdvanced;
             run(true);
         }
+        // The engine's result for each brace, kept with a save so the notebook can store it as measurements.
+        function readBraceSaveResults(sourceBraces, renderInfo) {
+            return sourceBraces.flatMap((brace) => {
+                var _a;
+                const result = (_a = renderInfo[brace.id]) === null || _a === void 0 ? void 0 : _a.result;
+                return result
+                    ? [{ name: brace.name, eiNm2: result.EI, heightMm: result.height, massPerLengthGM: result.massPerLength * 1000 }]
+                    : [];
+            });
+        }
         async function saveBraceLayout() {
             await readBraceSaveRunner().runBraceSaveAction({
                 readSnapshot: readBraceSaveSnapshot,
+                readResults: () => latestBraceResults.slice(),
                 setStatus: writeBraceSaveStatus,
             });
         }
@@ -700,7 +713,8 @@
                     });
                 },
                 runBraceSaveAction(request) {
-                    const savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(request.readSnapshot());
+                    var _a;
+                    const savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(request.readSnapshot(), undefined, (_a = request.readResults) === null || _a === void 0 ? void 0 : _a.call(request));
                     readBraceSaveSurfaceApi().downloadBraceSavePackage({ document, URL }, savePackage);
                     request.setStatus("Pacote JSON baixado.");
                     return Promise.resolve(true);

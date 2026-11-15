@@ -110,6 +110,24 @@
       exportedAtIso: exportedAt,
       top: readFlexuralTopSnapshot(source.top),
       braces: readFlexuralBraceSnapshot(source.braces),
+      ...readFlexuralResultsSnapshot(source.results),
+    };
+  }
+
+  // The engine's computed result, kept beside the inputs so the notebook can store it as measurements.
+  function readFlexuralResultsSnapshot(value) {
+    var results = value || {};
+    var eiNm2 = readFlexuralNumber(results.eiNm2);
+    if (eiNm2 === undefined) {
+      return {};
+    }
+
+    return {
+      results: {
+        eiNm2: eiNm2,
+        transformedIMm4: readFlexuralNumber(results.transformedIMm4),
+        centroidMm: readFlexuralNumber(results.centroidMm),
+      },
     };
   }
 

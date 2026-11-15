@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { lengthUnitPresentation } from "./length_units.mjs?rev=1f0fca766fb9";
+import { lengthUnitPresentation } from "./length_units.mjs?rev=b6ec15c45357";
 
 test("length presentation converts inches at the UI boundary and defaults to millimetres", () => {
   assert.equal(lengthUnitPresentation.normalize("unexpected"), "mm");

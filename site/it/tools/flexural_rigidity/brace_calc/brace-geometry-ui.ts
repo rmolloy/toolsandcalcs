@@ -17,7 +17,7 @@ declare global {
       braces?: unknown[];
     };
     BraceSaveSurface?: {
-      buildBraceSavePackage(braces: unknown[], now?: Date): { filename: string; text: string };
+      buildBraceSavePackage(braces: unknown[], now?: Date, results?: unknown[]): { filename: string; text: string };
       downloadBraceSavePackage(runtime: unknown, savePackage: { filename: string; text: string }): void;
       readBraceSavePackageFile(file: { text(): Promise<string> }): Promise<unknown[]>;
       readBraceSaveSurface(): { label: string; hint: string };
@@ -82,6 +82,7 @@ type BraceRenderInfo = import("./brace-geometry").BraceCalculationInfo;
   const matchPlanMaterial = activeBraceStock || starterBraceStockCreate();
   let activeTop = readTopFromLayout(defaultLayout);
   let braces: BraceConfig[] = createInitialBraces();
+  let latestBraceResults: Array<{ name: string; eiNm2: number; heightMm: number; massPerLengthGM: number }> = [];
   const perTabSession = readBracePerTabSession();
 
   function nextBraceId(): string {
@@ -191,6 +192,7 @@ type BraceRenderInfo = import("./brace-geometry").BraceCalculationInfo;
       density: DEFAULT_DENSITY,
       modulus: DEFAULT_MODULUS,
     });
+    latestBraceResults = readBraceSaveResults(sourceBraces, renderInfo);
     if (
       fullRebuild ||
       braceDom.size !== sourceBraces.length ||
@@ -727,9 +729,20 @@ type BraceRenderInfo = import("./brace-geometry").BraceCalculationInfo;
     run(true);
   }
 
+  // The engine's result for each brace, kept with a save so the notebook can store it as measurements.
+  function readBraceSaveResults(sourceBraces: BraceConfig[], renderInfo: Record<string, BraceRenderInfo>) {
+    return sourceBraces.flatMap((brace) => {
+      const result = renderInfo[brace.id]?.result;
+      return result
+        ? [{ name: brace.name, eiNm2: result.EI, heightMm: result.height, massPerLengthGM: result.massPerLength * 1000 }]
+        : [];
+    });
+  }
+
   async function saveBraceLayout(): Promise<void> {
     await readBraceSaveRunner().runBraceSaveAction({
       readSnapshot: readBraceSaveSnapshot,
+      readResults: () => latestBraceResults.slice(),
       setStatus: writeBraceSaveStatus,
     });
   }
@@ -866,9 +879,10 @@ type BraceRenderInfo = import("./brace-geometry").BraceCalculationInfo;
       },
       runBraceSaveAction(request: {
         readSnapshot: () => ReturnType<typeof readBraceSaveSnapshot>;
+        readResults?: () => unknown[];
         setStatus: (message: string) => void;
       }) {
-        const savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(request.readSnapshot());
+        const savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(request.readSnapshot(), undefined, request.readResults?.());
         readBraceSaveSurfaceApi().downloadBraceSavePackage({ document, URL }, savePackage);
         request.setStatus("JSON package downloaded.");
         return Promise.resolve(true);

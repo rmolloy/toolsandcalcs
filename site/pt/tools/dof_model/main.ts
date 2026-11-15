@@ -1970,7 +1970,14 @@ function readCurrentDofSaveSnapshot() {
     fitInputs: readCurrentDofFitInputs(),
     solveOptions: readCurrentDofSolveOptions(),
     simpleSources: simpleSourcesStateRead(),
+    results: readCurrentDofSaveResults(),
   };
+}
+
+// The model's predicted air, top and back peaks, kept with a save so the notebook can store them as measurements.
+function readCurrentDofSaveResults() {
+  const peaks = lastResponse ? modelPeaksFromResponse(lastResponse) : null;
+  return peaks ? { airHz: peaks.air, topHz: peaks.top, backHz: peaks.back } : undefined;
 }
 
 function dofPerTabSessionRead() {

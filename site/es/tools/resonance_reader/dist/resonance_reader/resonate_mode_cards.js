@@ -1,5 +1,5 @@
-import { modeTargetHandlersBindOnce } from "./resonate_mode_cards_interactions.js?rev=1f0fca766fb9";
-import { modeCardsHtmlBuild } from "./resonate_mode_cards_render.js?rev=1f0fca766fb9";
+import { modeTargetHandlersBindOnce } from "./resonate_mode_cards_interactions.js?rev=b6ec15c45357";
+import { modeCardsHtmlBuild } from "./resonate_mode_cards_render.js?rev=b6ec15c45357";
 export function renderModes(modes, deps) {
     const grid = modeGridElementGet();
     if (!grid)
