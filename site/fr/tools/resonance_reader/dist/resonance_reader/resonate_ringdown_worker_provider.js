@@ -1,7 +1,7 @@
-import { createRingdownWorkerClient } from "./resonate_ringdown_worker_client.js?rev=b6ec15c45357";
-import { peakAnalysisRingdownDataBuild, peakAnalysisRingdownRequestBuild, peakAnalysisWidthHzResolveFromMode } from "./resonate_peak_analysis_panel.js?rev=b6ec15c45357";
-import { resolveQForViewModeCards } from "./resonate_q_view_policy.js?rev=b6ec15c45357";
-import { qSettingsResolve } from "./resonate_q_settings.js?rev=b6ec15c45357";
+import { createRingdownWorkerClient } from "./resonate_ringdown_worker_client.js?rev=7cd6e97dd9da";
+import { peakAnalysisRingdownDataBuild, peakAnalysisRingdownRequestBuild, peakAnalysisWidthHzResolveFromMode } from "./resonate_peak_analysis_panel.js?rev=7cd6e97dd9da";
+import { resolveQForViewModeCards } from "./resonate_q_view_policy.js?rev=7cd6e97dd9da";
+import { qSettingsResolve } from "./resonate_q_settings.js?rev=7cd6e97dd9da";
 const spectrumFrameIds = new WeakMap();
 let nextSpectrumFrameId = 1;
 export function installRingdownWorkerProvider(state, render, options = {}) {

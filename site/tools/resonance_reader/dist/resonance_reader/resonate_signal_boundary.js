@@ -1,5 +1,5 @@
-import { detectTaps } from "./resonate_transient_detection.js?rev=b6ec15c45357";
-import { averageTapSpectra } from "./resonate_tap_spectra.js?rev=b6ec15c45357";
+import { detectTaps } from "./resonate_transient_detection.js?rev=7cd6e97dd9da";
+import { averageTapSpectra } from "./resonate_tap_spectra.js?rev=7cd6e97dd9da";
 export const signalBoundaryDefault = {
     detectTaps,
     averageTapSpectra,

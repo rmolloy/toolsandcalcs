@@ -25,6 +25,8 @@
   if (!spanInput || !thicknessInput || !modulusInput || !resultEI || !resultI || !resultCentroid || !resultHeight || !editResultEI || !editResultI || !editResultCentroid || !statusEl) return;
 
   const DEFAULT_MODULUS = 12; // GPa
+  // The page's own (localized) opening status, shown again while a top input is blank.
+  const readyForInputsStatus = statusEl.textContent;
   let braceLayouts = [];
 
   function format(value, digits = 2) {
@@ -83,21 +85,29 @@
     editResultCentroid.textContent = centroid;
   }
 
+  function topInputsEntered() {
+    return [spanInput, thicknessInput, modulusInput].every((input) => Number(input.value) > 0);
+  }
+
   // The engine's result for the luthier's own top inputs, for a notebook save to keep as measurements.
-  // It stays null while any top input is blank, since the display then falls back to placeholder values.
   function publishSavedResults(slice) {
-    const enteredTop = [spanInput, thicknessInput, modulusInput].every((input) => Number(input.value) > 0);
-    window.FlexuralLatestResults = slice && enteredTop
+    window.FlexuralLatestResults = slice
       ? { eiNm2: slice.EI / 1e6, transformedIMm4: slice.transformedI, centroidMm: slice.centroid }
       : null;
   }
 
   function run() {
     publishSavedResults(null);
+    // No result is shown for a top the luthier has not fully described.
+    if (!topInputsEntered()) {
+      statusEl.textContent = readyForInputsStatus;
+      writeResultValues("—", "—", "—", "—");
+      return;
+    }
     try {
-      const span = Number(spanInput.value) || 500;
-      const thickness = Number(thicknessInput.value) || 4;
-      const modulusTop = (Number(modulusInput.value) || DEFAULT_MODULUS) * 1000;
+      const span = Number(spanInput.value);
+      const thickness = Number(thicknessInput.value);
+      const modulusTop = Number(modulusInput.value) * 1000;
       const braces = buildBraceSpecs();
       if (!braces.length) {
         statusEl.textContent = flexuralResultsMessages.awaitingBraceLayout;
