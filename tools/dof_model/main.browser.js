@@ -2862,8 +2862,13 @@
       overlayEnabled: isWhatIfEnabled(),
       fitInputs: readCurrentDofFitInputs(),
       solveOptions: readCurrentDofSolveOptions(),
-      simpleSources: simpleSourcesStateRead()
+      simpleSources: simpleSourcesStateRead(),
+      results: readCurrentDofSaveResults()
     };
+  }
+  function readCurrentDofSaveResults() {
+    const peaks = lastResponse ? modelPeaksFromResponse(lastResponse) : null;
+    return peaks ? { airHz: peaks.air, topHz: peaks.top, backHz: peaks.back } : void 0;
   }
   function dofPerTabSessionRead() {
     return window.PerTabToolSession?.perTabToolSessionCreate ? window.PerTabToolSession.perTabToolSessionCreate({ toolId: "dof_model", version: 1 }) : null;
