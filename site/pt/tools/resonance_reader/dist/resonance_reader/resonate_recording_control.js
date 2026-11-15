@@ -1,8 +1,8 @@
-import { recordingMenuLabelSet } from "./resonate_recording_menu.js?rev=7cd6e97dd9da";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=7cd6e97dd9da";
-import { takeOverlayCaptureCurrentAndRender, takeOverlayControlsRender, } from "./resonate_take_overlay_controls.js?rev=7cd6e97dd9da";
-import { takeOverlayPrepareNewCurrentState } from "./resonate_take_overlays.js?rev=7cd6e97dd9da";
-import { updateWaveTransportLabels } from "./resonate_transport_labels.js?rev=7cd6e97dd9da";
+import { recordingMenuLabelSet } from "./resonate_recording_menu.js?rev=69c2b05b3eb6";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=69c2b05b3eb6";
+import { takeOverlayCaptureCurrentAndRender, takeOverlayControlsRender, } from "./resonate_take_overlay_controls.js?rev=69c2b05b3eb6";
+import { takeOverlayPrepareNewCurrentState } from "./resonate_take_overlays.js?rev=69c2b05b3eb6";
+import { updateWaveTransportLabels } from "./resonate_transport_labels.js?rev=69c2b05b3eb6";
 export function bindRecord(deps) {
     const button = document.getElementById("btn_record");
     if (!button)

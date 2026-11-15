@@ -1,4 +1,4 @@
-import { resonanceSpectrumDbScaleResolve } from "./resonate_debug_flags.js?rev=7cd6e97dd9da";
+import { resonanceSpectrumDbScaleResolve } from "./resonate_debug_flags.js?rev=69c2b05b3eb6";
 export function spectrumDbApply(spectrum, legacyApplyDb) {
     if (resonanceSpectrumDbScaleResolve() === "celestial-fixed") {
         return celestialSpectrumDbApply(spectrum);
