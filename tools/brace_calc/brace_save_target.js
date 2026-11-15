@@ -44,7 +44,7 @@
       return false;
     }
 
-    var savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(snapshot);
+    var savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(snapshot, undefined, readBraceRequestResults(request));
     await readNotebookSaveClient().saveNotebookBraceCapture({
       workbookId: surface.workbookId,
       subject: selection.subject,
@@ -57,6 +57,10 @@
     return true;
   }
 
+  function readBraceRequestResults(request) {
+    return typeof request.readResults === "function" ? request.readResults() : [];
+  }
+
   function formatBraceSavedStatus(notebookName) {
     return "Saved to {notebookName}.".replace(
       "{notebookName}",
@@ -65,7 +69,7 @@
   }
 
   async function runOfflineBraceSaveAction(request) {
-    var savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(request.readSnapshot());
+    var savePackage = readBraceSaveSurfaceApi().buildBraceSavePackage(request.readSnapshot(), undefined, readBraceRequestResults(request));
     readBraceSaveSurfaceApi().downloadBraceSavePackage({ document: globalScope.document, URL: globalScope.URL }, savePackage);
     request.setStatus("JSON package downloaded.");
     return Promise.resolve(true);
