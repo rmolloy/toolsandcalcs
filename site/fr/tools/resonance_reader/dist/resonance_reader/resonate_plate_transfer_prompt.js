@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=69c2b05b3eb6";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=e0bd2386cdc0";
 const PLATE_TRANSFER_FIELDS = [
     { key: "panelLengthMm", label: resonanceLocalizedMessages.plateTransferLengthLabel, unit: "mm" },
     { key: "panelWidthMm", label: resonanceLocalizedMessages.plateTransferWidthLabel, unit: "mm" },

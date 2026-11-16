@@ -1,4 +1,4 @@
-import { resonanceBoundaryDefaults } from "./resonate_boundary_defaults.js?rev=69c2b05b3eb6";
+import { resonanceBoundaryDefaults } from "./resonate_boundary_defaults.js?rev=e0bd2386cdc0";
 export function resonanceBoundaryResolveFromOverrides(overrides) {
     return {
         analysis: overrides.analysis || resonanceBoundaryDefaults.analysis,

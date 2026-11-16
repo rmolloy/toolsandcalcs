@@ -1,5 +1,5 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=69c2b05b3eb6";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=69c2b05b3eb6";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=e0bd2386cdc0";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=e0bd2386cdc0";
 const SUBJECT_TYPE_OPTIONS = [
     { key: "GUITAR", label: resonanceLocalizedMessages.subjectGuitar, subtypes: [{ key: "", label: resonanceLocalizedMessages.subjectGeneral }] },
     { key: "MATERIAL", label: resonanceLocalizedMessages.subjectMaterial, subtypes: [{ key: "PLATE_STOCK", label: resonanceLocalizedMessages.subjectPlateStock }, { key: "BRACE_STOCK", label: resonanceLocalizedMessages.subjectBraceStock }] },
