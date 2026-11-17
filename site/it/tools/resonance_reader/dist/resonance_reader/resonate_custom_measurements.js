@@ -1,6 +1,6 @@
-import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js?rev=a9c4c0145336";
-import { resolveColorHexFromRole } from "./resonate_color_roles.js?rev=a9c4c0145336";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=a9c4c0145336";
+import { noteAndCentsFromFreq } from "./resonate_mode_metrics.js?rev=287f3b1752f9";
+import { resolveColorHexFromRole } from "./resonate_color_roles.js?rev=287f3b1752f9";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=287f3b1752f9";
 const CUSTOM_MEASUREMENT_KEY_PREFIX = "custom_";
 const CUSTOM_MEASUREMENT_FALLBACK_FREQ_HZ = 180;
 const CUSTOM_MEASUREMENT_FREQ_SEPARATION_HZ = 6;
