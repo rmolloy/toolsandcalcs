@@ -9,13 +9,17 @@
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.FlexuralRigidity = exports.Shapes = void 0;
+    exports.FlexuralRigidity = exports.DEFAULT_SEGMENT_MODULUS_GPA = exports.Shapes = void 0;
     exports.shapeProperties = shapeProperties;
     exports.computeInterceptBreadth = computeInterceptBreadth;
     exports.computeBraceTransformed = computeBraceTransformed;
     exports.computeBraceElasticRigidity = computeBraceElasticRigidity;
     exports.computeTopSection = computeTopSection;
     exports.computeSlice = computeSlice;
+    exports.normalizeLayoutShape = normalizeLayoutShape;
+    exports.braceSpecsFromLayout = braceSpecsFromLayout;
+    exports.sliceTopFromLayout = sliceTopFromLayout;
+    exports.savedResultsFromSlice = savedResultsFromSlice;
     exports.Shapes = {
         RECTANGLE: "rectangle",
         TRIANGLE: "triangle",
@@ -192,8 +196,74 @@
             braces: braceResults
         };
     }
+    // The modulus a layout segment without its own takes, in GPa, and the intercept breadth a brace takes when
+    // none of its segments gives one, in mm.
+    exports.DEFAULT_SEGMENT_MODULUS_GPA = 12;
+    const DEFAULT_LAYOUT_BRACE_BREADTH_MM = 10;
+    // A shape as the layout names it; a name the engine does not know is a rectangle.
+    function normalizeLayoutShape(shape) {
+        const s = (shape || "").toString().toLowerCase();
+        if (s.includes("tri"))
+            return exports.Shapes.TRIANGLE;
+        if (s.includes("para"))
+            return exports.Shapes.PARABOLIC;
+        if (s.includes("rect"))
+            return exports.Shapes.RECTANGLE;
+        return exports.Shapes.RECTANGLE;
+    }
+    // The layout's braces as the engine's brace specs. Segments without a positive height are left out, and so
+    // is a brace left with none.
+    function braceSpecsFromLayout(braces) {
+        return braces
+            .map((brace) => {
+            const segs = Array.isArray(brace.segments) ? brace.segments : [];
+            const normalized = segs
+                .map((seg, segIdx) => {
+                var _a, _b;
+                const height = Number(seg.height);
+                if (!Number.isFinite(height) || height <= 0)
+                    return null;
+                const breadth = Number((_b = (_a = seg.breadth) !== null && _a !== void 0 ? _a : seg.width) !== null && _b !== void 0 ? _b : seg.b) || 0;
+                const modulusGPa = Number(seg.modulus);
+                const materialE = (Number.isFinite(modulusGPa) && modulusGPa > 0 ? modulusGPa : exports.DEFAULT_SEGMENT_MODULUS_GPA) * 1000;
+                return {
+                    label: seg.label || `Segment ${segIdx + 1}`,
+                    shape: normalizeLayoutShape(seg.shape),
+                    h: height,
+                    material: { E: materialE },
+                    breadth
+                };
+            })
+                .filter(Boolean);
+            if (!normalized.length)
+                return null;
+            const maxBreadth = normalized.reduce((max, seg) => Math.max(max, seg.breadth || 0), 0) || DEFAULT_LAYOUT_BRACE_BREADTH_MM;
+            return {
+                b: maxBreadth,
+                segments: normalized
+            };
+        })
+            .filter(Boolean);
+    }
+    // The layout's top as the slice's top: span and thickness in mm, modulus from GPa to N/mm².
+    function sliceTopFromLayout(top) {
+        return {
+            spanAA: top.span,
+            topThickness: top.thickness,
+            topModulus: top.modulus * 1000
+        };
+    }
+    // A slice's result in the units a save keeps: EI in N·m², I in mm⁴, the neutral axis in mm.
+    function savedResultsFromSlice(slice) {
+        return { eiNm2: slice.EI / 1e6, transformedIMm4: slice.transformedI, centroidMm: slice.centroid };
+    }
     exports.FlexuralRigidity = {
         Shapes: exports.Shapes,
+        DEFAULT_SEGMENT_MODULUS_GPA: exports.DEFAULT_SEGMENT_MODULUS_GPA,
+        normalizeLayoutShape,
+        braceSpecsFromLayout,
+        sliceTopFromLayout,
+        savedResultsFromSlice,
         shapeProperties,
         computeInterceptBreadth,
         computeBraceTransformed,

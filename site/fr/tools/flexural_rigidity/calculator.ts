@@ -282,8 +282,90 @@ export function computeSlice(params: SliceParams): SliceResult {
   };
 }
 
+// The modulus a layout segment without its own takes, in GPa, and the intercept breadth a brace takes when
+// none of its segments gives one, in mm.
+export const DEFAULT_SEGMENT_MODULUS_GPA = 12;
+const DEFAULT_LAYOUT_BRACE_BREADTH_MM = 10;
+
+// A top and braces as the brace layout and its save file hold them: mm, and moduli in GPa.
+export interface LayoutTop {
+  span: number;
+  thickness: number;
+  modulus: number;
+}
+
+export interface LayoutBrace {
+  segments?: unknown;
+}
+
+export interface SavedFlexuralResults {
+  eiNm2: number;
+  transformedIMm4: number;
+  centroidMm: number;
+}
+
+// A shape as the layout names it; a name the engine does not know is a rectangle.
+export function normalizeLayoutShape(shape: unknown): ShapeKind {
+  const s = (shape || "").toString().toLowerCase();
+  if (s.includes("tri")) return Shapes.TRIANGLE;
+  if (s.includes("para")) return Shapes.PARABOLIC;
+  if (s.includes("rect")) return Shapes.RECTANGLE;
+  return Shapes.RECTANGLE;
+}
+
+// The layout's braces as the engine's brace specs. Segments without a positive height are left out, and so
+// is a brace left with none.
+export function braceSpecsFromLayout(braces: readonly LayoutBrace[]): BraceSpec[] {
+  return braces
+    .map((brace) => {
+      const segs: any[] = Array.isArray(brace.segments) ? brace.segments : [];
+      const normalized = segs
+        .map((seg, segIdx) => {
+          const height = Number(seg.height);
+          if (!Number.isFinite(height) || height <= 0) return null;
+          const breadth = Number(seg.breadth ?? seg.width ?? seg.b) || 0;
+          const modulusGPa = Number(seg.modulus);
+          const materialE = (Number.isFinite(modulusGPa) && modulusGPa > 0 ? modulusGPa : DEFAULT_SEGMENT_MODULUS_GPA) * 1000;
+          return {
+            label: seg.label || `Segment ${segIdx + 1}`,
+            shape: normalizeLayoutShape(seg.shape),
+            h: height,
+            material: { E: materialE },
+            breadth
+          };
+        })
+        .filter(Boolean) as Array<SegmentSpec & { breadth: number }>;
+      if (!normalized.length) return null;
+      const maxBreadth = normalized.reduce((max, seg) => Math.max(max, seg.breadth || 0), 0) || DEFAULT_LAYOUT_BRACE_BREADTH_MM;
+      return {
+        b: maxBreadth,
+        segments: normalized
+      };
+    })
+    .filter(Boolean) as BraceSpec[];
+}
+
+// The layout's top as the slice's top: span and thickness in mm, modulus from GPa to N/mm².
+export function sliceTopFromLayout(top: LayoutTop): Pick<SliceParams, "spanAA" | "topThickness" | "topModulus"> {
+  return {
+    spanAA: top.span,
+    topThickness: top.thickness,
+    topModulus: top.modulus * 1000
+  };
+}
+
+// A slice's result in the units a save keeps: EI in N·m², I in mm⁴, the neutral axis in mm.
+export function savedResultsFromSlice(slice: SliceResult): SavedFlexuralResults {
+  return { eiNm2: slice.EI / 1e6, transformedIMm4: slice.transformedI, centroidMm: slice.centroid };
+}
+
 export const FlexuralRigidity = {
   Shapes,
+  DEFAULT_SEGMENT_MODULUS_GPA,
+  normalizeLayoutShape,
+  braceSpecsFromLayout,
+  sliceTopFromLayout,
+  savedResultsFromSlice,
   shapeProperties,
   computeInterceptBreadth,
   computeBraceTransformed,

@@ -24,7 +24,6 @@
   const statusEl = document.getElementById("result_status");
   if (!spanInput || !thicknessInput || !modulusInput || !resultEI || !resultI || !resultCentroid || !resultHeight || !editResultEI || !editResultI || !editResultCentroid || !statusEl) return;
 
-  const DEFAULT_MODULUS = 12; // GPa
   // The page's own (localized) opening status, shown again while a top input is blank.
   const readyForInputsStatus = statusEl.textContent;
   let braceLayouts = [];
@@ -35,44 +34,6 @@
       minimumFractionDigits: digits,
       maximumFractionDigits: digits
     }).format(value);
-  }
-
-  function normalizeShape(shape) {
-    const s = (shape || "").toString().toLowerCase();
-    if (s.includes("tri")) return calc.Shapes.TRIANGLE;
-    if (s.includes("para")) return calc.Shapes.PARABOLIC;
-    if (s.includes("rect")) return calc.Shapes.RECTANGLE;
-    return calc.Shapes.RECTANGLE;
-  }
-
-  function buildBraceSpecs() {
-    return braceLayouts
-      .map((brace, idx) => {
-        const segs = Array.isArray(brace.segments) ? brace.segments : [];
-        const normalized = segs
-          .map((seg, segIdx) => {
-            const height = Number(seg.height);
-            if (!Number.isFinite(height) || height <= 0) return null;
-            const breadth = Number(seg.breadth ?? seg.width ?? seg.b) || 0;
-            const modulusGPa = Number(seg.modulus);
-            const materialE = (Number.isFinite(modulusGPa) && modulusGPa > 0 ? modulusGPa : DEFAULT_MODULUS) * 1000;
-            return {
-              label: seg.label || `Segment ${segIdx + 1}`,
-              shape: normalizeShape(seg.shape),
-              h: height,
-              material: { E: materialE },
-              breadth
-            };
-          })
-          .filter(Boolean);
-        if (!normalized.length) return null;
-        const maxBreadth = normalized.reduce((max, seg) => Math.max(max, seg.breadth || 0), 0) || 10;
-        return {
-          b: maxBreadth,
-          segments: normalized
-        };
-      })
-      .filter(Boolean);
   }
 
   function writeResultValues(ei, transformedI, centroid, height) {
@@ -91,9 +52,7 @@
 
   // The engine's result for the luthier's own top inputs, for a notebook save to keep as measurements.
   function publishSavedResults(slice) {
-    window.FlexuralLatestResults = slice
-      ? { eiNm2: slice.EI / 1e6, transformedIMm4: slice.transformedI, centroidMm: slice.centroid }
-      : null;
+    window.FlexuralLatestResults = slice ? calc.savedResultsFromSlice(slice) : null;
   }
 
   function run() {
@@ -105,19 +64,18 @@
       return;
     }
     try {
-      const span = Number(spanInput.value);
-      const thickness = Number(thicknessInput.value);
-      const modulusTop = Number(modulusInput.value) * 1000;
-      const braces = buildBraceSpecs();
+      const braces = calc.braceSpecsFromLayout(braceLayouts);
       if (!braces.length) {
         statusEl.textContent = flexuralResultsMessages.awaitingBraceLayout;
         writeResultValues("—", "—", "—", "—");
         return;
       }
       const slice = calc.computeSlice({
-        spanAA: span,
-        topThickness: thickness,
-        topModulus: modulusTop,
+        ...calc.sliceTopFromLayout({
+          span: Number(spanInput.value),
+          thickness: Number(thicknessInput.value),
+          modulus: Number(modulusInput.value)
+        }),
         braces
       });
       publishSavedResults(slice);

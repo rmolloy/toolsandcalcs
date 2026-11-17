@@ -1,6 +1,6 @@
-import { stockKindResolve } from "./resonate_stock_measurements.js?rev=f105e0d448ca";
-import { braceStockLongModeConfirmationBuild } from "./resonate_brace_stock_confirmation.js?rev=f105e0d448ca";
-import { stockLongAssignedModeResolve } from "./resonate_stock_long_assignment.js?rev=f105e0d448ca";
+import { stockKindResolve } from "./resonate_stock_measurements.js?rev=a9c4c0145336";
+import { braceStockLongModeConfirmationBuild } from "./resonate_brace_stock_confirmation.js?rev=a9c4c0145336";
+import { stockLongAssignedModeResolve } from "./resonate_stock_long_assignment.js?rev=a9c4c0145336";
 const CONFIRMATION_FIELDS = { plate_stock: "plateStockConfirmedLongMode", brace_stock: "braceStockConfirmedLongMode" };
 export function stockLongConfirmationResolve(state) {
     const assigned = stockLongAssignedModeResolve(state);
