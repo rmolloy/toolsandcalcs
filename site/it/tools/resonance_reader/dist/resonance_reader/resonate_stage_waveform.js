@@ -1,4 +1,4 @@
-import { detectTaps } from "./resonate_transient_detection.js?rev=e0bd2386cdc0";
+import { detectTaps } from "./resonate_transient_detection.js?rev=f105e0d448ca";
 function waveformSliceBuildFromState(state) {
     const src = state?.currentWave;
     if (!src)

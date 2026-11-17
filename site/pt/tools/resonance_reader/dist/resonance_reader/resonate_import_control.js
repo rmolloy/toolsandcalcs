@@ -1,7 +1,7 @@
-import { recordingMenuLabelSet } from "./resonate_recording_menu.js?rev=e0bd2386cdc0";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=e0bd2386cdc0";
-import { takeOverlayCaptureCurrentAndRender, takeOverlayControlsRender, } from "./resonate_take_overlay_controls.js?rev=e0bd2386cdc0";
-import { takeOverlayPrepareNewCurrentState } from "./resonate_take_overlays.js?rev=e0bd2386cdc0";
+import { recordingMenuLabelSet } from "./resonate_recording_menu.js?rev=f105e0d448ca";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=f105e0d448ca";
+import { takeOverlayCaptureCurrentAndRender, takeOverlayControlsRender, } from "./resonate_take_overlay_controls.js?rev=f105e0d448ca";
+import { takeOverlayPrepareNewCurrentState } from "./resonate_take_overlays.js?rev=f105e0d448ca";
 export function bindImport(deps) {
     const btnImport = document.getElementById("btn_import");
     const fileInput = document.getElementById("file_input");

@@ -6,7 +6,6 @@ Permission is granted to view and reference this source for educational purposes
 Redistribution, modification, or commercial use requires written consent from the author.
 */
 
-const g = 9.8;
 const modes = {
   STATIC: "static",
   DYNAMIC: "dynamic",
@@ -83,16 +82,8 @@ const monopoleRuntimeMessages = Object.freeze({
 const defaults = {
   name: "Rick Molloy OM (10/25/2025)",
   type: "steel",
-  static: {
-    freq: 153,
-    deflection: 0.18,
-    mass: 1.02,
-  },
-  dynamic: {
-    f0: 153,
-    f1: 141,
-    addedMass: 20,
-  },
+  static: window.MonopoleMobilityEngine.referenceReadings.static,
+  dynamic: window.MonopoleMobilityEngine.referenceReadings.dynamic,
 };
 
 const typeLabels = {
@@ -225,118 +216,29 @@ function updateInstrumentLabel() {
   instrumentDisplay.textContent = `${name} • ${typeLabel}`;
 }
 
+// The engine holds the math and returns message keys; the page turns them into its own localized words.
 function computeStaticMobility(freq, deflection, mass) {
-  const valid =
-    Number.isFinite(freq) &&
-    Number.isFinite(deflection) &&
-    Number.isFinite(mass) &&
-    freq > 0 &&
-    deflection > 0 &&
-    mass > 0;
-
-  if (!valid) {
-    return { ok: false, message: monopoleRuntimeMessages.waitingForCompleteInputs };
-  }
-
-  const defM = deflection / 1000;
-  const stiffness = (mass * g) / defM;
-  const meffKg = stiffness / Math.pow(2 * Math.PI * freq, 2);
-  const mobilityScore = 1000 / Math.sqrt(stiffness * meffKg);
-
-  return {
-    ok: true,
-    stiffness,
-    meffKg,
-    mobilityScore,
-    warnings: getStaticWarnings({ freq, deflection, mass, mobilityScore }),
-  };
+  return localizeMonopoleResult(
+    window.MonopoleMobilityEngine.computeStaticMobility(freq, deflection, mass),
+    monopoleRuntimeMessages.staticMode,
+  );
 }
 
 function computeDynamicMobility(f0, f1, addedMassGrams) {
-  const valid =
-    Number.isFinite(f0) &&
-    Number.isFinite(f1) &&
-    Number.isFinite(addedMassGrams) &&
-    f0 > 0 &&
-    f1 > 0;
+  return localizeMonopoleResult(
+    window.MonopoleMobilityEngine.computeDynamicMobility(f0, f1, addedMassGrams),
+    monopoleRuntimeMessages.dynamicMode,
+  );
+}
 
-  if (!valid) {
-    return { ok: false, message: monopoleRuntimeMessages.waitingForCompleteInputs };
+function localizeMonopoleResult(result, modeLabel) {
+  if (!result.ok) {
+    return { ok: false, message: monopoleRuntimeMessages[result.messageKey] };
   }
-
-  if (addedMassGrams <= 0) {
-    return { ok: false, message: monopoleRuntimeMessages.addedMassGreaterThanZero };
-  }
-
-  if (f1 >= f0) {
-    return { ok: false, message: monopoleRuntimeMessages.loadedFrequencyMustBeLower };
-  }
-
-  const addedMassKg = addedMassGrams / 1000;
-  const denom = Math.pow(f0, 2) - Math.pow(f1, 2);
-
-  if (denom <= 0) {
-    return { ok: false, message: monopoleRuntimeMessages.invalidDenominator };
-  }
-
-  const meffKg = (Math.pow(f1, 2) * addedMassKg) / denom;
-  if (!Number.isFinite(meffKg) || meffKg <= 0) {
-    return { ok: false, message: monopoleRuntimeMessages.invalidEffectiveMass };
-  }
-
-  const stiffness = Math.pow(2 * Math.PI * f0, 2) * meffKg;
-  const mobilityScore = 1000 / Math.sqrt(stiffness * meffKg);
-
   return {
-    ok: true,
-    stiffness,
-    meffKg,
-    mobilityScore,
-    warnings: getDynamicWarnings({ f0, f1, addedMass: addedMassGrams, mobilityScore }),
+    ...result,
+    warnings: result.warnings.map((key) => formatMonopoleMessage(monopoleRuntimeMessages[key], { mode: modeLabel })),
   };
-}
-
-function getStaticWarnings({ freq, deflection, mass, mobilityScore }) {
-  const notes = [];
-  if (freq < 90 || freq > 220) {
-    notes.push(monopoleRuntimeMessages.staticFrequencyWarning);
-  }
-  if (deflection < 0.05) {
-    notes.push(monopoleRuntimeMessages.deflectionSmallWarning);
-  } else if (deflection > 0.5) {
-    notes.push(monopoleRuntimeMessages.deflectionHighWarning);
-  }
-  if (mass < 0.3 || mass > 2.0) {
-    notes.push(monopoleRuntimeMessages.testMassWarning);
-  }
-  appendMobilityNotes(mobilityScore, notes, monopoleRuntimeMessages.staticMode);
-  return notes;
-}
-
-function getDynamicWarnings({ f0, f1, addedMass, mobilityScore }) {
-  const notes = [];
-  if (f0 < 90 || f0 > 240) {
-    notes.push(monopoleRuntimeMessages.dynamicFrequencyWarning);
-  }
-  if (addedMass < 2 || addedMass > 80) {
-    notes.push(monopoleRuntimeMessages.dynamicAddedMassWarning);
-  }
-  if (f0 - f1 < 2) {
-    notes.push(monopoleRuntimeMessages.frequencyShiftSmallWarning);
-  }
-  appendMobilityNotes(mobilityScore, notes, monopoleRuntimeMessages.dynamicMode);
-  return notes;
-}
-
-function appendMobilityNotes(mobilityScore, notes, contextLabel) {
-  if (!Number.isFinite(mobilityScore)) {
-    return;
-  }
-  if (mobilityScore < 15) {
-    notes.push(formatMonopoleMessage(monopoleRuntimeMessages.mobilityLowWarning, { mode: contextLabel }));
-  } else if (mobilityScore > 40) {
-    notes.push(formatMonopoleMessage(monopoleRuntimeMessages.mobilityHighWarning, { mode: contextLabel }));
-  }
 }
 
 function compute() {
@@ -442,20 +344,12 @@ function writeMonopoleInputValues(target, values) {
   });
 }
 
-function matchesStaticDefaults({ freq, deflection, mass }) {
-  return (
-    Math.abs(freq - defaults.static.freq) < 1e-9 &&
-    Math.abs(deflection - defaults.static.deflection) < 1e-9 &&
-    Math.abs(mass - defaults.static.mass) < 1e-9
-  );
+function matchesStaticDefaults(inputs) {
+  return window.MonopoleMobilityEngine.staticInputsMatch(inputs, defaults.static);
 }
 
-function matchesDynamicDefaults({ f0, f1, addedMass }) {
-  return (
-    Math.abs(f0 - defaults.dynamic.f0) < 1e-9 &&
-    Math.abs(f1 - defaults.dynamic.f1) < 1e-9 &&
-    Math.abs(addedMass - defaults.dynamic.addedMass) < 1e-9
-  );
+function matchesDynamicDefaults(inputs) {
+  return window.MonopoleMobilityEngine.dynamicInputsMatch(inputs, defaults.dynamic);
 }
 
 function setOutputs(value) {
