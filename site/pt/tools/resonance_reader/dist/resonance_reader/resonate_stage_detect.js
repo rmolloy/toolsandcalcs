@@ -1,5 +1,5 @@
-import { modeOverrideStateApplyToModes, modeOverrideStateGetOrInit } from "./resonate_mode_override_state.js?rev=2f4a6c9dc10d";
-import { modeProfileResolveFromState, peakAnalysisSourceMeasureModeResolve, } from "./resonate_mode_config.js?rev=2f4a6c9dc10d";
+import { modeOverrideStateApplyToModes, modeOverrideStateGetOrInit } from "./resonate_mode_override_state.js?rev=8d6b00dea0a7";
+import { modeProfileResolveFromState, peakAnalysisSourceMeasureModeResolve, } from "./resonate_mode_config.js?rev=8d6b00dea0a7";
 export function stageDetectModesFromSpectrum(state, analysisBoundary, spectrum) {
     const profile = modeProfileResolveFromState(state);
     const detected = braceStockModesDetect(state, analysisBoundary, spectrum, profile.bands)

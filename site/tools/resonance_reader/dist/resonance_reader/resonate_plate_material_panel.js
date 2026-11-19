@@ -1,5 +1,5 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=2f4a6c9dc10d";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=2f4a6c9dc10d";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=8d6b00dea0a7";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=8d6b00dea0a7";
 const DEFAULT_PLATE_MATERIAL_MEASUREMENTS = {
     panelLengthMm: 555,
     panelWidthMm: 227,

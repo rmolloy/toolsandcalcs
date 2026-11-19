@@ -1,4 +1,4 @@
-import { braceStockMeasurementsValid, braceStockSoundSpeedCalculate } from "./resonate_brace_stock_material.js?rev=2f4a6c9dc10d";
+import { braceStockMeasurementsValid, braceStockSoundSpeedCalculate } from "./resonate_brace_stock_material.js?rev=8d6b00dea0a7";
 export function plateStockMaterialBuildFromMeasurements(measurements, frequencyHz, calculator = globalThis.PlateThickness) {
     if (!calculator || !braceStockMeasurementsValid(measurements))
         return null;

@@ -1,4 +1,4 @@
-import { resonancePerTabSessionCreate } from "./resonate_per_tab_session.js?rev=2f4a6c9dc10d";
+import { resonancePerTabSessionCreate } from "./resonate_per_tab_session.js?rev=8d6b00dea0a7";
 export function perTabSessionPersist(deps) {
     return perTabSessionResolve(deps)?.persistFromState(deps.state).catch((error) => {
         console.warn("[Resonance Reader] Per-tab restoration save failed", error);
