@@ -16,9 +16,28 @@ type FretPosition = {
   remainingMm: number;
 };
 
-const MM_PER_INCH = 25.4;
-const DEFAULT_SCALE_MM = 650;
-const DEFAULT_FRET_COUNT = 24;
+type BridgeCompensation = {
+  scaleMm: number;
+  classicalSetbackMm: number;
+  steelFirstSetbackMm: number;
+  steelSixthSetbackMm: number;
+  classicalNutToSaddleMm: number;
+  steelFirstNutToSaddleMm: number;
+  steelSixthNutToSaddleMm: number;
+};
+
+// The math is the Fret Calculator engine, loaded before this script.
+const fretEngine = (globalThis as typeof globalThis & {
+  FretCalculatorEngine: {
+    DEFAULT_SCALE_MM: number;
+    DEFAULT_FRET_COUNT: number;
+    SCALE_RANGE_MM: { min: number; max: number };
+    fretPositionsBuild(scaleMm: number, fretCount: number): FretPosition[];
+    compensationBuildFromScale(scaleMm: number): BridgeCompensation;
+    lengthFromMillimeters(valueMm: number, unit: Unit): number;
+    millimetersFromLength(value: number, unit: Unit): number;
+  };
+}).FretCalculatorEngine;
 
 // localized-runtime-messages:start
 const fretRuntimeMessages = Object.freeze({
@@ -65,7 +84,7 @@ const fretRuntimeMessages = Object.freeze({
   }
 
   function resetDefaults() {
-    scaleMm = DEFAULT_SCALE_MM;
+    scaleMm = fretEngine.DEFAULT_SCALE_MM;
     unitSelect.value = sharedLengthUnits?.read() || "mm";
     writeScaleAndRender();
   }
@@ -76,10 +95,10 @@ const fretRuntimeMessages = Object.freeze({
   }
 
   function writeScaleAndRender() {
-    const factor = readUnit() === "in" ? MM_PER_INCH : 1;
-    scaleInput.value = Number.isFinite(scaleMm) ? String(Number((scaleMm / factor).toFixed(6))) : "";
-    scaleInput.min = String(400 / factor);
-    scaleInput.max = String(1000 / factor);
+    const unit = readUnit();
+    scaleInput.value = Number.isFinite(scaleMm) ? String(Number(fretEngine.lengthFromMillimeters(scaleMm, unit).toFixed(6))) : "";
+    scaleInput.min = String(fretEngine.lengthFromMillimeters(fretEngine.SCALE_RANGE_MM.min, unit));
+    scaleInput.max = String(fretEngine.lengthFromMillimeters(fretEngine.SCALE_RANGE_MM.max, unit));
     scaleInput.step = readUnit() === "in" ? "0.01" : "1";
     render();
   }
@@ -91,8 +110,8 @@ const fretRuntimeMessages = Object.freeze({
       return;
     }
 
-    const frets = fretPositionsBuild(scaleMm, DEFAULT_FRET_COUNT);
-    const compensation = compensationBuildFromScale(scaleMm);
+    const frets = fretEngine.fretPositionsBuild(scaleMm, fretEngine.DEFAULT_FRET_COUNT);
+    const compensation = fretEngine.compensationBuildFromScale(scaleMm);
 
     summaryScale.textContent = valueLabelBuild(scaleMm, unit);
     summaryClassical.textContent = valueLabelBuild(compensation.classicalSetbackMm, unit);
@@ -111,34 +130,9 @@ const fretRuntimeMessages = Object.freeze({
   function scaleLengthReadInMillimeters(unit: Unit): number {
     const raw = parseFloat(scaleInput.value);
     if (!Number.isFinite(raw)) return NaN;
-    return unit === "in" ? raw * MM_PER_INCH : raw;
+    return fretEngine.millimetersFromLength(raw, unit);
   }
 })();
-
-function fretPositionsBuild(scaleMm: number, fretCount: number): FretPosition[] {
-  const rows: FretPosition[] = [];
-  let previousDistanceMm = 0;
-
-  for (let fret = 1; fret <= fretCount; fret += 1) {
-    const distanceMm = scaleMm - scaleMm / Math.pow(2, fret / 12);
-    const deltaMm = distanceMm - previousDistanceMm;
-    const remainingMm = scaleMm - distanceMm;
-    rows.push({ fret, distanceMm, deltaMm, remainingMm });
-    previousDistanceMm = distanceMm;
-  }
-
-  return rows;
-}
-
-function compensationBuildFromScale(scaleMm: number) {
-  const factor = scaleMm / DEFAULT_SCALE_MM;
-  return {
-    scaleMm,
-    classicalSetbackMm: 2.0 * factor,
-    steelFirstSetbackMm: 2.266 * factor,
-    steelSixthSetbackMm: 5.470 * factor,
-  };
-}
 
 function fretRowHtmlBuild(position: FretPosition, unit: Unit): string {
   return `<tr>
@@ -149,36 +143,24 @@ function fretRowHtmlBuild(position: FretPosition, unit: Unit): string {
   </tr>`;
 }
 
-function compensationRowsHtmlBuild(
-  compensation: {
-    scaleMm: number;
-    classicalSetbackMm: number;
-    steelFirstSetbackMm: number;
-    steelSixthSetbackMm: number;
-  },
-  unit: Unit,
-): string {
-  const classicalScale = compensation.scaleMm + compensation.classicalSetbackMm;
-  const steelScaleFirst = compensation.scaleMm + compensation.steelFirstSetbackMm;
-  const steelScaleSixth = compensation.scaleMm + compensation.steelSixthSetbackMm;
-
+function compensationRowsHtmlBuild(compensation: BridgeCompensation, unit: Unit): string {
   return [
     rowHtmlBuild(
       fretRuntimeMessages.classicalStraight,
       compensation.classicalSetbackMm,
-      classicalScale,
+      compensation.classicalNutToSaddleMm,
       unit,
     ),
     rowHtmlBuild(
       fretRuntimeMessages.steelFirstString,
       compensation.steelFirstSetbackMm,
-      steelScaleFirst,
+      compensation.steelFirstNutToSaddleMm,
       unit,
     ),
     rowHtmlBuild(
       fretRuntimeMessages.steelSixthString,
       compensation.steelSixthSetbackMm,
-      steelScaleSixth,
+      compensation.steelSixthNutToSaddleMm,
       unit,
     ),
   ].join("");
@@ -193,7 +175,7 @@ function rowHtmlBuild(label: string, setbackMm: number, nutToSaddleMm: number, u
 }
 
 function valueLabelBuild(valueMm: number, unit: Unit): string {
-  const unitValue = unit === "in" ? valueMm / MM_PER_INCH : valueMm;
+  const unitValue = fretEngine.lengthFromMillimeters(valueMm, unit);
   const suffix = unit === "in" ? "in" : "mm";
   return `${unitValue.toFixed(2)} ${suffix}`;
 }
