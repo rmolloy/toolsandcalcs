@@ -1,4 +1,4 @@
-import { createSetupSessionSnapshot, readSetupSessionSnapshot } from './setup_session_snapshot.mjs?rev=287f3b1752f9';
+import { createSetupSessionSnapshot, readSetupSessionSnapshot } from './setup_session_snapshot.mjs?rev=2f4a6c9dc10d';
 
 export function createSetupSessionPersistence(runtime, capture) {
   const session = runtime.PerTabToolSession?.perTabToolSessionCreate({ toolId: 'guitar_setup_calculator', version: 1 });

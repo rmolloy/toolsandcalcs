@@ -1,7 +1,7 @@
-import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=287f3b1752f9";
-import { stockKindResolve } from "./resonate_stock_measurements.js?rev=287f3b1752f9";
-import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=287f3b1752f9";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=287f3b1752f9";
+import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=2f4a6c9dc10d";
+import { stockKindResolve } from "./resonate_stock_measurements.js?rev=2f4a6c9dc10d";
+import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=2f4a6c9dc10d";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=2f4a6c9dc10d";
 export function stockPeakContextDiffers(state) {
     const kind = stockKindResolve(state);
     return state.measureMode === "peak_analysis" && Boolean(kind && kind !== peakAnalysisSourceMeasureModeResolve(state));

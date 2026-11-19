@@ -65,8 +65,8 @@ type BraceRenderInfo = import("./brace-geometry").BraceCalculationInfo;
 
   const shapeSet = new Set<ShapeKind>(Object.values(api.Shapes));
 
-  const DEFAULT_DENSITY = 420;
-  const DEFAULT_MODULUS = 11;
+  const DEFAULT_DENSITY = api.DEFAULT_DENSITY;
+  const DEFAULT_MODULUS = api.DEFAULT_MODULUS;
   let braceCounter = 0;
   let segmentCounter = 0;
   let showAdvanced = false;
@@ -192,7 +192,7 @@ type BraceRenderInfo = import("./brace-geometry").BraceCalculationInfo;
       density: DEFAULT_DENSITY,
       modulus: DEFAULT_MODULUS,
     });
-    latestBraceResults = readBraceSaveResults(sourceBraces, renderInfo);
+    latestBraceResults = api.braceSavedResults(sourceBraces, renderInfo);
     if (
       fullRebuild ||
       braceDom.size !== sourceBraces.length ||
@@ -727,16 +727,6 @@ type BraceRenderInfo = import("./brace-geometry").BraceCalculationInfo;
   function toggleAdvanced(): void {
     showAdvanced = !showAdvanced;
     run(true);
-  }
-
-  // The engine's result for each brace, kept with a save so the notebook can store it as measurements.
-  function readBraceSaveResults(sourceBraces: BraceConfig[], renderInfo: Record<string, BraceRenderInfo>) {
-    return sourceBraces.flatMap((brace) => {
-      const result = renderInfo[brace.id]?.result;
-      return result
-        ? [{ name: brace.name, eiNm2: result.EI, heightMm: result.height, massPerLengthGM: result.massPerLength * 1000 }]
-        : [];
-    });
   }
 
   async function saveBraceLayout(): Promise<void> {

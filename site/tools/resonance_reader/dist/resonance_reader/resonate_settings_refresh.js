@@ -1,5 +1,5 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=287f3b1752f9";
-import { rerenderFromCachedSpectrumIfCurrent } from "./resonate_spectrum_cache.js?rev=287f3b1752f9";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=2f4a6c9dc10d";
+import { rerenderFromCachedSpectrumIfCurrent } from "./resonate_spectrum_cache.js?rev=2f4a6c9dc10d";
 export function settingsPipelineRefresh(deps) {
     if (!deps.state.currentWave) {
         deps.setStatus(resonanceLocalizedMessages.settingsUpdatedStatus);

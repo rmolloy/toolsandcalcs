@@ -9,11 +9,12 @@
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.BraceGeometry = void 0;
+    exports.BraceGeometry = exports.DEFAULT_MODULUS = exports.DEFAULT_DENSITY = void 0;
     exports.resolveFlexuralRigidity = resolveFlexuralRigidity;
     exports.computeBraceGeometry = computeBraceGeometry;
     exports.calculateBraceRenderModel = calculateBraceRenderModel;
     exports.calculateBraceComparisonModel = calculateBraceComparisonModel;
+    exports.braceSavedResults = braceSavedResults;
     function resolveFlexuralRigidity(browserApi, commonJsRequire) {
         if (browserApi)
             return browserApi;
@@ -32,8 +33,8 @@
             throw new Error(`${label} deve ser um número positivo`);
         }
     }
-    const DEFAULT_DENSITY = 420; // kg/m³, spruce-ish
-    const DEFAULT_MODULUS = 11; // GPa
+    exports.DEFAULT_DENSITY = 420; // kg/m³, spruce-ish
+    exports.DEFAULT_MODULUS = 11; // GPa
     function computeBraceGeometry(defaultBreadth, segments) {
         var _a, _b, _c;
         assertPositive(defaultBreadth, "Largura da barra");
@@ -51,9 +52,9 @@
             assertPositive(height, `altura de ${segmentLabel}`);
             const segBreadth = (_a = segment.breadth) !== null && _a !== void 0 ? _a : defaultBreadth;
             assertPositive(segBreadth, `largura de ${segmentLabel}`);
-            const density = (_b = segment.density) !== null && _b !== void 0 ? _b : DEFAULT_DENSITY;
+            const density = (_b = segment.density) !== null && _b !== void 0 ? _b : exports.DEFAULT_DENSITY;
             assertPositive(density, `densidade de ${segmentLabel}`);
-            const modulus = (_c = segment.modulus) !== null && _c !== void 0 ? _c : DEFAULT_MODULUS;
+            const modulus = (_c = segment.modulus) !== null && _c !== void 0 ? _c : exports.DEFAULT_MODULUS;
             assertPositive(modulus, `módulo de ${segmentLabel}`);
             const props = shapeProperties(shape, segBreadth, height);
             const centroidAbs = runningBase + props.centroid;
@@ -174,8 +175,21 @@
             relativeArea: (result.area / referenceArea) * 100,
         }));
     }
+    // The result of each brace that calculated, named, for a save to keep as measurements.
+    function braceSavedResults(braces, renderInfo) {
+        return braces.flatMap((brace) => {
+            var _a;
+            const result = (_a = renderInfo[brace.id]) === null || _a === void 0 ? void 0 : _a.result;
+            return result
+                ? [{ name: brace.name, eiNm2: result.EI, heightMm: result.height, massPerLengthGM: result.massPerLength * 1000 }]
+                : [];
+        });
+    }
     exports.BraceGeometry = {
         Shapes,
+        DEFAULT_DENSITY: exports.DEFAULT_DENSITY,
+        DEFAULT_MODULUS: exports.DEFAULT_MODULUS,
+        braceSavedResults,
         calculateBraceComparisonModel,
         calculateBraceRenderModel,
         computeBraceGeometry

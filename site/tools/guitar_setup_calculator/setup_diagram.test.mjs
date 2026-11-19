@@ -7,7 +7,7 @@ import {
   createDefaultSetup,
   createSetupFromInstrumentProfile,
 } from "./setup_model.ts";
-import { calculateStringYPositions, renderSetupDiagram as renderSetupDiagramWithMessages } from "./setup_diagram.mjs?rev=287f3b1752f9";
+import { calculateStringYPositions, renderSetupDiagram as renderSetupDiagramWithMessages } from "./setup_diagram.mjs?rev=2f4a6c9dc10d";
 
 const diagramMessages = Object.freeze({
   actionAtFret12Heading: "ACTION @ FRET 12 · CAPO 1",

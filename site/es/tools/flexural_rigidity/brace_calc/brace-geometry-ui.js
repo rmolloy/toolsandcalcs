@@ -28,8 +28,8 @@
             document.getElementById("match_brace_plan_view"),
         ].filter((element) => element !== null);
         const shapeSet = new Set(Object.values(api.Shapes));
-        const DEFAULT_DENSITY = 420;
-        const DEFAULT_MODULUS = 11;
+        const DEFAULT_DENSITY = api.DEFAULT_DENSITY;
+        const DEFAULT_MODULUS = api.DEFAULT_MODULUS;
         let braceCounter = 0;
         let segmentCounter = 0;
         let showAdvanced = false;
@@ -128,7 +128,7 @@
                 density: DEFAULT_DENSITY,
                 modulus: DEFAULT_MODULUS,
             });
-            latestBraceResults = readBraceSaveResults(sourceBraces, renderInfo);
+            latestBraceResults = api.braceSavedResults(sourceBraces, renderInfo);
             if (fullRebuild ||
                 braceDom.size !== sourceBraces.length ||
                 !updateBraceVisuals(sourceBraces, renderInfo, scales)) {
@@ -574,16 +574,6 @@
         function toggleAdvanced() {
             showAdvanced = !showAdvanced;
             run(true);
-        }
-        // The engine's result for each brace, kept with a save so the notebook can store it as measurements.
-        function readBraceSaveResults(sourceBraces, renderInfo) {
-            return sourceBraces.flatMap((brace) => {
-                var _a;
-                const result = (_a = renderInfo[brace.id]) === null || _a === void 0 ? void 0 : _a.result;
-                return result
-                    ? [{ name: brace.name, eiNm2: result.EI, heightMm: result.height, massPerLengthGM: result.massPerLength * 1000 }]
-                    : [];
-            });
         }
         async function saveBraceLayout() {
             await readBraceSaveRunner().runBraceSaveAction({

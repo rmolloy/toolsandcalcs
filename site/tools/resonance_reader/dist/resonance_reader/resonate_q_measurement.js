@@ -1,5 +1,5 @@
-import { aggregateDecayQ } from "./resonate_q_aggregation.js?rev=287f3b1752f9";
-import { qSettingsResolve } from "./resonate_q_settings.js?rev=287f3b1752f9";
+import { aggregateDecayQ } from "./resonate_q_aggregation.js?rev=2f4a6c9dc10d";
+import { qSettingsResolve } from "./resonate_q_settings.js?rev=2f4a6c9dc10d";
 export function resolveQForModeCards(state, cards, fit) {
     if (qSettingsResolve(state).method === "spectral")
         return cards;

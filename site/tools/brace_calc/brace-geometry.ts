@@ -102,8 +102,16 @@ function assertPositive(value: number, label: string): asserts value is number {
   }
 }
 
-const DEFAULT_DENSITY = 420; // kg/m³, spruce-ish
-const DEFAULT_MODULUS = 11; // GPa
+export const DEFAULT_DENSITY = 420; // kg/m³, spruce-ish
+export const DEFAULT_MODULUS = 11; // GPa
+
+// A brace's result in the units a save keeps: EI in N·m², height in mm, mass per length in g/m.
+export interface BraceSavedResult {
+  name: string;
+  eiNm2: number;
+  heightMm: number;
+  massPerLengthGM: number;
+}
 
 export function computeBraceGeometry(defaultBreadth: number, segments: BraceSegmentSpec[]): BraceGeometryResult {
   assertPositive(defaultBreadth, "Brace breadth");
@@ -265,8 +273,24 @@ export function calculateBraceComparisonModel(
   }));
 }
 
+// The result of each brace that calculated, named, for a save to keep as measurements.
+export function braceSavedResults(
+  braces: BraceComparisonInput[],
+  renderInfo: Record<string, BraceCalculationInfo>,
+): BraceSavedResult[] {
+  return braces.flatMap((brace) => {
+    const result = renderInfo[brace.id]?.result;
+    return result
+      ? [{ name: brace.name, eiNm2: result.EI, heightMm: result.height, massPerLengthGM: result.massPerLength * 1000 }]
+      : [];
+  });
+}
+
 export const BraceGeometry = {
   Shapes,
+  DEFAULT_DENSITY,
+  DEFAULT_MODULUS,
+  braceSavedResults,
   calculateBraceComparisonModel,
   calculateBraceRenderModel,
   computeBraceGeometry

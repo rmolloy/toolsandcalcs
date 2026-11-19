@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=287f3b1752f9";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=2f4a6c9dc10d";
 const BRACE_TRANSFER_FIELDS = [
     { key: "stockLengthMm", label: resonanceLocalizedMessages.braceTransferLengthLabel, unit: "mm" },
     { key: "stockWidthMm", label: resonanceLocalizedMessages.braceTransferWidthLabel, unit: "mm" },
