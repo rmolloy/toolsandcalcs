@@ -1,0 +1,33 @@
+{
+  "note": "Gauges of Stringjoy's six-string Signatures (nickel wound electric) sets, first string first, as each product page printed them on the date read. A third string is plain unless the page marks it wound; strings four to six are wound.",
+  "readOn": "2026-11-19",
+  "family": "stringjoy_nickel",
+  "sourceUrlPrefix": "https://stringjoy.com/guitarstrings/strings/electric-guitar-strings/",
+  "sets": [
+    { "id": "stringjoy_balanced_ultra_light_7_38", "label": "Stringjoy 7-38 Balanced Ultra Light", "gaugesIn": [0.007, 0.0095, 0.012, 0.020, 0.028, 0.038], "woundThird": false, "page": "signatures/6-string-signatures/balanced-ultra-light-electric-guitar-strings/" },
+    { "id": "stringjoy_balanced_extra_light_8_40", "label": "Stringjoy 8-40 Balanced Extra Light", "gaugesIn": [0.008, 0.0105, 0.0135, 0.022, 0.030, 0.040], "woundThird": false, "page": "signatures/6-string-signatures/balanced-8s-electric-guitar-strings/" },
+    { "id": "stringjoy_balanced_extra_light_plus_8_5_40", "label": "Stringjoy 8.5-40 Balanced Extra Light Plus", "gaugesIn": [0.0085, 0.011, 0.014, 0.022, 0.032, 0.040], "woundThird": false, "page": "signatures/6-string-signatures/balanced-extra-light-plus-electric-guitar-strings/" },
+    { "id": "stringjoy_balanced_super_light_9_42", "label": "Stringjoy 9-42 Balanced Super Light", "gaugesIn": [0.009, 0.012, 0.015, 0.024, 0.032, 0.042], "woundThird": false, "page": "signatures/6-string-signatures/extra-light-electric-guitar-strings/" },
+    { "id": "stringjoy_husky_super_light_9_46", "label": "Stringjoy 9-46 Husky Super Light", "gaugesIn": [0.009, 0.012, 0.015, 0.026, 0.034, 0.046], "woundThird": false, "page": "signatures/6-string-signatures/husky-9-gauge-electric-guitar-strings/" },
+    { "id": "stringjoy_heavy_bottom_super_light_9_48", "label": "Stringjoy 9-48 Heavy Bottom Super Light", "gaugesIn": [0.009, 0.012, 0.015, 0.026, 0.036, 0.048], "woundThird": false, "page": "signatures/6-string-signatures/extra-light-plus-electric-guitar-strings/" },
+    { "id": "stringjoy_balanced_super_light_plus_9_5_46", "label": "Stringjoy 9.5-46 Balanced Super Light Plus", "gaugesIn": [0.0095, 0.013, 0.016, 0.026, 0.034, 0.046], "woundThird": false, "page": "signatures/6-string-signatures/balanced-9-5s-electric-guitar-strings/" },
+    { "id": "stringjoy_husky_super_light_plus_9_5_48", "label": "Stringjoy 9.5-48 Husky Super Light Plus", "gaugesIn": [0.0095, 0.013, 0.016, 0.026, 0.036, 0.048], "woundThird": false, "page": "signatures/6-string-signatures/husky-9-5-gauge-electric-guitar-strings/" },
+    { "id": "stringjoy_classic_light_10_46", "label": "Stringjoy 10-46 Classic Light", "gaugesIn": [0.010, 0.013, 0.017, 0.026, 0.036, 0.046], "woundThird": false, "page": "classic-light-10-46/" },
+    { "id": "stringjoy_balanced_light_10_48", "label": "Stringjoy 10-48 Balanced Light", "gaugesIn": [0.010, 0.0135, 0.017, 0.026, 0.036, 0.048], "woundThird": false, "page": "6-string-light-electric-guitar-strings/" },
+    { "id": "stringjoy_wound_third_light_10_48", "label": "Stringjoy 10-48 Wound 3rd Light", "gaugesIn": [0.010, 0.0135, 0.018, 0.026, 0.036, 0.048], "woundThird": true, "page": "light-wound-3rd/" },
+    { "id": "stringjoy_husky_light_10_50", "label": "Stringjoy 10-50 Husky Light", "gaugesIn": [0.010, 0.0135, 0.017, 0.028, 0.038, 0.050], "woundThird": false, "page": "signatures/6-string-signatures/husky-10-gauge-electric-guitar-strings/" },
+    { "id": "stringjoy_heavy_bottom_light_10_52", "label": "Stringjoy 10-52 Heavy Bottom Light", "gaugesIn": [0.010, 0.0135, 0.017, 0.030, 0.040, 0.052], "woundThird": false, "page": "signatures/6-string-signatures/light-top-heavy-bottom-electric-guitar-strings/" },
+    { "id": "stringjoy_balanced_light_plus_10_5_50", "label": "Stringjoy 10.5-50 Balanced Light Plus", "gaugesIn": [0.0105, 0.0135, 0.017, 0.028, 0.038, 0.050], "woundThird": false, "page": "signatures/6-string-signatures/balanced-10-5-gauge-electric-guitar-strings/" },
+    { "id": "stringjoy_husky_light_plus_10_5_52", "label": "Stringjoy 10.5-52 Husky Light Plus", "gaugesIn": [0.0105, 0.0135, 0.017, 0.030, 0.040, 0.052], "woundThird": false, "page": "signatures/6-string-signatures/husky-10-5-gauge-electric-guitar-strings/" },
+    { "id": "stringjoy_balanced_medium_11_50", "label": "Stringjoy 11-50 Balanced Medium", "gaugesIn": [0.011, 0.014, 0.018, 0.028, 0.038, 0.050], "woundThird": false, "page": "signatures/6-string-signatures/medium-electric-guitar-strings/" },
+    { "id": "stringjoy_wound_third_medium_11_50", "label": "Stringjoy 11-50 Wound 3rd Medium", "gaugesIn": [0.011, 0.014, 0.020, 0.028, 0.038, 0.050], "woundThird": true, "page": "medium-wound-3rd/" },
+    { "id": "stringjoy_husky_medium_11_52", "label": "Stringjoy 11-52 Husky Medium", "gaugesIn": [0.011, 0.014, 0.018, 0.030, 0.040, 0.052], "woundThird": false, "page": "signatures/6-string-signatures/husky-11-gauge-electric-guitar-strings/" },
+    { "id": "stringjoy_drop_c_11_58", "label": "Stringjoy 11-58 Drop C", "gaugesIn": [0.011, 0.014, 0.018, 0.032, 0.044, 0.058], "woundThird": false, "page": "signatures/6-string-signatures/drop-11s-electric-guitar-strings/" },
+    { "id": "stringjoy_balanced_medium_plus_11_5_52", "label": "Stringjoy 11.5-52 Balanced Medium Plus", "gaugesIn": [0.0115, 0.015, 0.019, 0.030, 0.040, 0.052], "woundThird": false, "page": "signatures/6-string-signatures/balanced-11-5-gauge-electric-guitar-strings/" },
+    { "id": "stringjoy_husky_medium_plus_11_5_54", "label": "Stringjoy 11.5-54 Husky Medium Plus", "gaugesIn": [0.0115, 0.015, 0.019, 0.030, 0.042, 0.054], "woundThird": false, "page": "signatures/6-string-signatures/husky-11-5-gauge-electric-guitar-strings/" },
+    { "id": "stringjoy_balanced_heavy_12_56", "label": "Stringjoy 12-56 Balanced Heavy", "gaugesIn": [0.012, 0.016, 0.020, 0.032, 0.044, 0.056], "woundThird": false, "page": "signatures/6-string-signatures/heavy-electric-guitar-strings/" },
+    { "id": "stringjoy_drop_a_b_12_64", "label": "Stringjoy 12-64 Drop A/B", "gaugesIn": [0.012, 0.016, 0.020, 0.034, 0.046, 0.064], "woundThird": false, "page": "signatures/6-string-signatures/drop-12s-guitar-strings/" },
+    { "id": "stringjoy_balanced_extra_heavy_13_58", "label": "Stringjoy 13-58 Balanced Extra Heavy", "gaugesIn": [0.013, 0.017, 0.022, 0.034, 0.046, 0.058], "woundThird": false, "page": "signatures/6-string-signatures/extra-heavy-guitar-strings/" },
+    { "id": "stringjoy_drop_g_a_13_68", "label": "Stringjoy 13-68 Drop G/A", "gaugesIn": [0.013, 0.017, 0.022, 0.036, 0.048, 0.068], "woundThird": false, "page": "signatures/6-string-signatures/drop-13s-guitar-strings/" }
+  ]
+}
