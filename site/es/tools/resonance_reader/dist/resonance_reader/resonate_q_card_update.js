@@ -1,4 +1,4 @@
-import { modeBehaviorHtmlBuild } from "./resonate_mode_cards_render.js?rev=356685105939";
+import { modeBehaviorHtmlBuild } from "./resonate_mode_cards_render.js?rev=c46dc1d6973b";
 export function refreshModeCardQValues(modes) {
     document.getElementById("mode_grid")?.querySelectorAll(".mode-card[data-mode]")
         .forEach((card) => refreshRenderedCardQ(card, modes.find((mode) => mode.key === card.dataset.mode)));

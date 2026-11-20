@@ -1,4 +1,4 @@
-import { DEFAULT_Q_AGGREGATION } from "./resonate_q_aggregation.js?rev=356685105939";
+import { DEFAULT_Q_AGGREGATION } from "./resonate_q_aggregation.js?rev=c46dc1d6973b";
 export function qSettingsResolve(state) {
     return {
         method: state.qSettings?.method === "spectral" ? "spectral" : "decay",
