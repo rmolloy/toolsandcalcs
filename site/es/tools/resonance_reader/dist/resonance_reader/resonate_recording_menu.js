@@ -1,4 +1,4 @@
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=e906c8d81506";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=356685105939";
 export function recordingMenuLabelSet(label, state) {
     if (state)
         state.recordingLabel = label;

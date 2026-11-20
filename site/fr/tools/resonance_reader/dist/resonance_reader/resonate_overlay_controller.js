@@ -1,11 +1,11 @@
-import { fitModeWeightsFromDetected, fitPriorsFromState } from "./resonate_fit_priors.js?rev=e906c8d81506";
-import { BASE_PARAMS } from "./resonate_fit_defaults.js?rev=e906c8d81506";
-import { overlayBoundaryDefault } from "./resonate_overlay_boundary.js?rev=e906c8d81506";
-import { overlayBoundaryEnsure } from "./resonate_overlay_boundary_guard.js?rev=e906c8d81506";
-import { buildMassOnlyRecipes, buildWhatIfRecipes } from "./resonate_whatif_recipes.js?rev=e906c8d81506";
-import { renderTryPanel } from "./resonate_try_panel.js?rev=e906c8d81506";
-import { ensureBaselineFitFromDetected, hasAnyTargets, normalizedWhatIfTargets } from "./resonate_target_state.js?rev=e906c8d81506";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=e906c8d81506";
+import { fitModeWeightsFromDetected, fitPriorsFromState } from "./resonate_fit_priors.js?rev=356685105939";
+import { BASE_PARAMS } from "./resonate_fit_defaults.js?rev=356685105939";
+import { overlayBoundaryDefault } from "./resonate_overlay_boundary.js?rev=356685105939";
+import { overlayBoundaryEnsure } from "./resonate_overlay_boundary_guard.js?rev=356685105939";
+import { buildMassOnlyRecipes, buildWhatIfRecipes } from "./resonate_whatif_recipes.js?rev=356685105939";
+import { renderTryPanel } from "./resonate_try_panel.js?rev=356685105939";
+import { ensureBaselineFitFromDetected, hasAnyTargets, normalizedWhatIfTargets } from "./resonate_target_state.js?rev=356685105939";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=356685105939";
 export function computeOverlayCurveFromState(state, freqs, dbs, modesDetected, overlayBoundary = overlayBoundaryDefault, opts = {}) {
     const measureMode = measureModeNormalize(state.measureMode);
     if (measureMode !== "guitar") {

@@ -10,14 +10,22 @@ import {
 } from "./dof_peak_detection";
 import { dofSaveSummaryBuild } from "./dof_save_summary";
 import {
+  DOF_DEFAULT_PARAMS as DEFAULT_PARAMS,
+  DOF_SOLVE_TWEAK_IDS as SOLVE_TWEAK_IDS,
+  DOF_WHAT_IF_RECIPE_IDS as WHAT_IF_RECIPE_IDS,
+  dofRecipeSummaryValues,
+  DOF_WHAT_IF_SLIDER_RANGES as WHAT_IF_SLIDER_RANGES,
+  dofClampToBounds as clampToBounds,
+  dofFitWithSolver,
+  dofSolveRecipeOptions,
+  dofSolveRecipeTargets,
+} from "./dof_model_engine";
+import {
   buildDofTargetOverlayTraces,
   buildDofTrace,
   computeDofYRange,
 } from "./dof_plot_data";
-import {
-  buildDofFastTargetWarmParams,
-  fitDofFromTargets,
-} from "./dof_target_fit";
+import { buildDofFastTargetWarmParams } from "./dof_target_fit";
 import {
   buildDofTaskCards,
   restoreDofFitTaskControls,
@@ -43,10 +51,8 @@ import {
 } from "./dof_trace_visibility";
 import {
   buildDofFitInputTargets,
-  dofFitIncreaseOnlyFactorAllowed,
   dofFitSolveTweakIdsFromTargets,
   dofFitTargetsHaveAnyValue,
-  readDofRestrictedTweakIds,
 } from "./dof_fit_input_policy";
 import {
   applyDofModeCardPresentation,
@@ -101,31 +107,6 @@ type ModeCardElements = {
   whatIfNoteCents: HTMLSpanElement;
 };
 
-const DEFAULT_PARAMS: DofParams = {
-  model_order: 4,
-  ambient_temp: 20,
-  altitude: 0,
-  driving_force: 0.4,
-  area_hole: 0.0055,
-  // Masses are in kg in the solver core.
-  // UI shows grams, but we convert g -> kg on input.
-  mass_air: 0.0005,
-  volume_air: 0.0141,
-  damping_air: 0.005,
-  mass_top: 0.043,
-  stiffness_top: 42700,
-  damping_top: 1.5,
-  area_top: 0.039,
-  mass_back: 0.094,
-  stiffness_back: 130000,
-  damping_back: 7.0,
-  area_back: 0.04,
-  mass_sides: 0.8,
-  stiffness_sides: 1400000,
-  damping_sides: 10.0,
-  area_sides: 0.025,
-};
-
 type CardField = {
   label: string;
   param: keyof typeof DEFAULT_PARAMS;
@@ -162,8 +143,8 @@ const CARD_DEFS: CardDef[] = [
     color: "var(--purple)",
     badgeText: "DOF 1",
     fields: [
-      { label: localizedMessages.soundholeAreaLabel, param: "area_hole", step: 0.0001, min: 0.003, max: 0.01 },
-      { label: localizedMessages.cavityVolumeLabel, param: "volume_air", step: 0.0005, min: 0.01, max: 0.025 },
+      { label: localizedMessages.soundholeAreaLabel, param: "area_hole", ...WHAT_IF_SLIDER_RANGES.area_hole },
+      { label: localizedMessages.cavityVolumeLabel, param: "volume_air", ...WHAT_IF_SLIDER_RANGES.volume_air },
       { label: localizedMessages.movingAirMassLabel, param: "mass_air", step: 0.01, min: 0.1, max: 2.0 },
       { label: localizedMessages.airDampingLabel, param: "damping_air", step: 0.0005, min: 0.001, max: 0.02 },
     ],
@@ -176,8 +157,8 @@ const CARD_DEFS: CardDef[] = [
     color: "var(--blue)",
     badgeText: "DOF 2",
     fields: [
-      { label: localizedMessages.topMassLabel, param: "mass_top", step: 0.1, min: 5, max: 120 },
-      { label: localizedMessages.topStiffnessLabel, param: "stiffness_top", step: 100, min: 10000, max: 150000 },
+      { label: localizedMessages.topMassLabel, param: "mass_top", ...WHAT_IF_SLIDER_RANGES.mass_top },
+      { label: localizedMessages.topStiffnessLabel, param: "stiffness_top", ...WHAT_IF_SLIDER_RANGES.stiffness_top },
       { label: localizedMessages.topDampingLabel, param: "damping_top", step: 0.1, min: 0.5, max: 6.0 },
       { label: localizedMessages.topRadiatingAreaLabel, param: "area_top", step: 0.0005, min: 0.02, max: 0.06 },
     ],
@@ -190,8 +171,8 @@ const CARD_DEFS: CardDef[] = [
     color: "var(--green)",
     badgeText: "DOF 3",
     fields: [
-      { label: localizedMessages.backMassLabel, param: "mass_back", step: 0.5, min: 40, max: 220 },
-      { label: localizedMessages.backStiffnessLabel, param: "stiffness_back", step: 200, min: 80000, max: 400000 },
+      { label: localizedMessages.backMassLabel, param: "mass_back", ...WHAT_IF_SLIDER_RANGES.mass_back },
+      { label: localizedMessages.backStiffnessLabel, param: "stiffness_back", ...WHAT_IF_SLIDER_RANGES.stiffness_back },
       { label: localizedMessages.backDampingLabel, param: "damping_back", step: 0.1, min: 1.0, max: 15.0 },
       { label: localizedMessages.backRadiatingAreaLabel, param: "area_back", step: 0.0005, min: 0.02, max: 0.06 },
     ],
@@ -353,15 +334,6 @@ const TARGET_OVERLAY = {
   opacities: { thin: 0.25, mid: 0.8, thick: 0.9 },
 };
 
-const FIT_BOUNDS: Record<string, { min: number; max: number }> = {
-  area_hole: { min: 0.003, max: 0.01 },
-  volume_air: { min: 0.01, max: 0.025 },
-  mass_top: { min: 0.005, max: 0.12 },
-  stiffness_top: { min: 10000, max: 150000 },
-  stiffness_back: { min: 80000, max: 400000 },
-};
-
-const SOLVE_TWEAK_IDS = ["stiffness_top", "stiffness_back", "volume_air", "area_hole"] as const;
 const SIMPLE_SOURCE_COLORS = ["var(--orange)", "var(--yellow)", "var(--purple)", "var(--blue)", "var(--green)"];
 
 let currentParams: DofParams = { ...DEFAULT_PARAMS };
@@ -815,6 +787,8 @@ function buildCards() {
     FIT_TASK_CARD_DEFS,
   );
   solveTaskControlsRestoreHome();
+  // A what-if a recipe or the luthier set outlives the cards being rebuilt.
+  const whatIfText = whatIfOverlayTextRead();
   container.innerHTML = "";
   if (currentTaskMode === "fit") {
     buildDofTaskCards(document, container, FIT_TASK_CARD_DEFS);
@@ -961,7 +935,7 @@ function buildCards() {
       if (field.min != null) overlay.min = String(field.min);
       if (field.max != null) overlay.max = String(field.max);
       overlay.step = field.step != null ? String(field.step) : "any";
-      overlay.value = input.value;
+      overlay.value = whatIfText[field.param] ?? input.value;
       overlay.dataset.param = field.param;
       overlay.addEventListener("input", () => {
         updateOverlayLatch(field.param);
@@ -1005,6 +979,17 @@ function buildCards() {
   });
   simpleSourceCardsAppend(container);
   applyCardVisibility();
+  refreshOverlayVisuals();
+  updateModeCards();
+}
+
+function whatIfOverlayTextRead() {
+  const text: Partial<Record<string, string>> = {};
+  overlayLatched.forEach((param) => {
+    const overlay = overlaySliders[param];
+    if (overlay) text[param] = overlay.value;
+  });
+  return text;
 }
 
 function applyCardVisibility() {
@@ -1363,12 +1348,6 @@ function sharedSeriesSamplerRead() {
   return { seriesValueSampleAtFrequency: sample };
 }
 
-function clampToBounds(id: string, value: number) {
-  const bounds = FIT_BOUNDS[id];
-  if (!bounds || !Number.isFinite(value)) return value;
-  return Math.max(bounds.min, Math.min(bounds.max, value));
-}
-
 function sampleSeriesAtFreq(series: Array<{ x: number; y: number }>, freq: number | null) {
   const sharedSampler = sharedSeriesSamplerRead();
   if (sharedSampler) return sharedSampler.seriesValueSampleAtFrequency(series, freq);
@@ -1379,14 +1358,7 @@ function fit4DofFromTargets(
   targets: Record<string, number | null | undefined>,
   opts: { maxIter?: number; tweakIds?: string[]; baseParams?: Record<string, any>; factorAllowed?: (id: string, factor: number) => boolean } = {},
 ) {
-  return fitDofFromTargets(targets, opts, {
-    defaultParams: DEFAULT_PARAMS,
-    defaultTweakIds: SOLVE_TWEAK_IDS,
-    clampToBounds,
-    computeResponse: computeResponseSafe,
-    adaptParams: adaptParamsToSolver,
-    peaksFromResponse: modelPeaksFromResponse,
-  });
+  return dofFitWithSolver({ computeResponse: computeResponseSafe, adaptParams: adaptParamsToSolver }, targets, opts);
 }
 
 function targetOverlaySharedBuilderRead() {
@@ -1558,7 +1530,7 @@ function updateThumbs(response = lastResponse) {
 
 function applyWhatIfParams(raw: DofParams) {
   if (!isWhatIfEnabled()) return;
-  (SOLVE_TWEAK_IDS as readonly (keyof typeof DEFAULT_PARAMS)[]).forEach((id) => {
+  (WHAT_IF_RECIPE_IDS as readonly (keyof typeof DEFAULT_PARAMS)[]).forEach((id) => {
     const overlay = overlaySliders[id];
     if (!overlay || !Number.isFinite(raw[id])) return;
     const displayValue = internalToDisplay(id, raw[id]);
@@ -1609,14 +1581,6 @@ function fitRecipeRestrictSimpleEnabled() {
   return Boolean(toggle?.checked);
 }
 
-function fitRecipeRestrictedTweakIds() {
-  return readDofRestrictedTweakIds();
-}
-
-function fitRecipeIncreaseOnlyFactorAllowed(id: string, factor: number) {
-  return dofFitIncreaseOnlyFactorAllowed(id, factor);
-}
-
 function fitStatusSet(message: string) {
   const status = document.getElementById("fit_status");
   if (!status) return;
@@ -1659,8 +1623,8 @@ function whatIfToggleEnsureEnabled() {
 function whatIfSummaryRefreshFromCurrentRecipe() {
   const recipeParams = getWhatIfParams();
   const lines = window.buildWhatIfRecipeSummaryLines?.(
-    currentParams as Record<string, number>,
-    recipeParams as Record<string, number> | null,
+    dofRecipeSummaryValues(currentParams),
+    dofRecipeSummaryValues(recipeParams),
     {
       decreaseTemplate: localizedMessages.whatIfDecreaseTemplate,
       fieldLabels: {
@@ -1690,10 +1654,11 @@ function solveRecipeTargetsFromFitInputs() {
     return;
   }
   const restrictSimple = fitRecipeRestrictSimpleEnabled();
-  solveTargets(targets as Record<ModeKey, number | null>, {
+  const modelResponse = computeResponseForParams(currentParams);
+  const modelPeaks = modelResponse ? modelPeaksFromResponse(modelResponse) : null;
+  solveTargets(dofSolveRecipeTargets(targets, modelPeaks) as Record<ModeKey, number | null>, {
     useWhatIf: true,
-    tweakIds: restrictSimple ? fitRecipeRestrictedTweakIds() : fitSolveTweakIdsFromTargets(targets),
-    factorAllowed: restrictSimple ? fitRecipeIncreaseOnlyFactorAllowed : undefined,
+    ...dofSolveRecipeOptions(targets, restrictSimple),
   });
   whatIfSummaryRefreshFromCurrentRecipe();
   fitStatusSet(localizedMessages.statusSolveApplied);

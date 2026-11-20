@@ -1,8 +1,8 @@
-import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=e906c8d81506";
-import { braceStockDetailsPromptOpen } from "./resonate_brace_stock_details_prompt.js?rev=e906c8d81506";
-import { braceStockLongModeConfirmationApply, braceStockLongModeConfirmationClear, } from "./resonate_brace_stock_confirmation.js?rev=e906c8d81506";
-import { measureModeNormalize, peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=e906c8d81506";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=e906c8d81506";
+import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=356685105939";
+import { braceStockDetailsPromptOpen } from "./resonate_brace_stock_details_prompt.js?rev=356685105939";
+import { braceStockLongModeConfirmationApply, braceStockLongModeConfirmationClear, } from "./resonate_brace_stock_confirmation.js?rev=356685105939";
+import { measureModeNormalize, peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=356685105939";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=356685105939";
 export function braceStockEstimatePresentationBuild(state, selectedPeak) {
     const estimate = braceStockEstimateResolveFromState(state);
     if (estimate.status === "incomplete") {

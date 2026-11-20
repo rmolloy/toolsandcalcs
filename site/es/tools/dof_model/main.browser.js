@@ -269,103 +269,235 @@
     return messageValueRead(messages?.[row.messageKey], row.label);
   }
 
-  // tools/dof_model/dof_plot_data.ts
-  function buildDofTrace(points, name, color, lineOptions = {}) {
-    if (!Array.isArray(points) || points.length === 0) return null;
+  // tools/dof_model/dof_fit_input_policy.ts
+  var DOF_FIT_MODE_KEYS = ["air", "top", "back"];
+  var DOF_SOLVE_TWEAK_IDS = [
+    "stiffness_top",
+    "stiffness_back",
+    "volume_air",
+    "area_hole"
+  ];
+  var DOF_RESTRICTED_TWEAK_IDS = ["mass_top", "mass_back", "area_hole"];
+  function readFiniteDofFitTarget(readInput, elementId) {
+    const value = parseFloat(readInput(elementId));
+    return Number.isFinite(value) ? value : null;
+  }
+  function buildDofFitInputTargets(readInput, displayToInternal) {
+    const massTopDisplay = readFiniteDofFitTarget(readInput, "fit_target_mass_top");
+    const massBackDisplay = readFiniteDofFitTarget(readInput, "fit_target_mass_back");
+    const soundholeDiameter = readFiniteDofFitTarget(readInput, "fit_target_area_hole_diam");
     return {
-      x: points.map((point) => point.x),
-      y: points.map((point) => point.y),
-      mode: "lines",
-      name,
-      line: { color, ...lineOptions || {} },
-      hovertemplate: `%{x:.1f} Hz \xB7 %{y:.1f} dB<extra>${name}</extra>`
+      air: readFiniteDofFitTarget(readInput, "fit_target_air"),
+      top: readFiniteDofFitTarget(readInput, "fit_target_top"),
+      back: readFiniteDofFitTarget(readInput, "fit_target_back"),
+      mass_top: Number.isFinite(massTopDisplay) ? displayToInternal("mass_top", massTopDisplay) : null,
+      stiffness_top: readFiniteDofFitTarget(readInput, "fit_target_stiffness_top"),
+      mass_back: Number.isFinite(massBackDisplay) ? displayToInternal("mass_back", massBackDisplay) : null,
+      stiffness_back: readFiniteDofFitTarget(readInput, "fit_target_stiffness_back"),
+      volume_air: readFiniteDofFitTarget(readInput, "fit_target_volume_air"),
+      area_hole_diam: soundholeDiameter,
+      area_hole: Number.isFinite(soundholeDiameter) ? Math.PI * Math.pow(soundholeDiameter / 1e3, 2) / 4 : null
     };
   }
-  function overlayBucketFromWeight(weight, config) {
-    if (weight > 0.66) {
-      return { width: config.widths.thick, opacity: config.opacities.thick };
-    }
-    if (weight > 0.33) {
-      return { width: config.widths.mid, opacity: config.opacities.mid };
-    }
-    return { width: config.widths.thin, opacity: config.opacities.thin };
+  function dofFitTargetsHaveAnyValue(targets) {
+    return DOF_FIT_MODE_KEYS.some((mode) => Number.isFinite(targets[mode])) || Number.isFinite(targets.mass_top) || Number.isFinite(targets.stiffness_top) || Number.isFinite(targets.mass_back) || Number.isFinite(targets.stiffness_back) || Number.isFinite(targets.volume_air) || Number.isFinite(targets.area_hole);
   }
-  function overlayWeightAtFrequency(frequency, config) {
-    const { min, max, feather } = config;
-    if (frequency >= min && frequency <= max) return 1;
-    if (frequency >= min - feather && frequency < min) {
-      return 1 - (min - frequency) / feather;
-    }
-    if (frequency > max && frequency <= max + feather) {
-      return 1 - (frequency - max) / feather;
-    }
-    return 0;
+  function dofFitSolveTweakIdsFromTargets(targets) {
+    const tweakIds = Array.from(DOF_SOLVE_TWEAK_IDS);
+    if (Number.isFinite(targets.mass_top)) tweakIds.push("mass_top");
+    if (Number.isFinite(targets.mass_back)) tweakIds.push("mass_back");
+    return tweakIds;
   }
-  function buildDofTargetOverlaySegments(points, config, sharedBuilder) {
-    if (sharedBuilder) return sharedBuilder(points, config);
-    const segments = [];
-    let current = null;
-    points.forEach((point) => {
-      const frequency = point?.x;
-      const level = point?.y;
-      if (!Number.isFinite(frequency) || !Number.isFinite(level)) {
-        current = null;
-        return;
+  function readDofRestrictedTweakIds() {
+    return Array.from(DOF_RESTRICTED_TWEAK_IDS);
+  }
+  function dofFitIncreaseOnlyFactorAllowed(id, factor) {
+    if (!DOF_RESTRICTED_TWEAK_IDS.includes(id)) {
+      return false;
+    }
+    return factor >= 1;
+  }
+
+  // tools/dof_model/dof_legacy_solver.ts
+  function computeDofLegacyResponse(runtime, params) {
+    try {
+      const computeResponse = runtime.computeResponse || runtime.ModelCore?.computeResponse;
+      return typeof computeResponse === "function" ? computeResponse(params) : null;
+    } catch (error) {
+      console.warn("computeResponse failed", error);
+      return null;
+    }
+  }
+  function adaptDofLegacyParams(runtime, raw) {
+    const params = { ...raw };
+    const deriveAtmosphere = runtime.Atmosphere?.deriveAtmosphere;
+    if (typeof deriveAtmosphere !== "function") return params;
+    const altitude = finiteDofValueOr(params.altitude, 0);
+    const temperature = finiteDofValueOr(params.ambient_temp, 20);
+    const atmosphere = deriveAtmosphere(altitude, temperature);
+    params.air_density = atmosphere.rho;
+    params.speed_of_sound = atmosphere.c;
+    params.air_pressure = atmosphere.pressure;
+    params.air_temp_k = atmosphere.tempK;
+    params._atm = atmosphere;
+    const movingAirMass = finiteDofValueOrNull(params.mass_air);
+    if (movingAirMass !== null) {
+      const referenceDensity = runtime.Atmosphere?.REFERENCE_RHO ?? 1.205;
+      params.mass_air = movingAirMass * (atmosphere.rho / referenceDensity);
+    }
+    return params;
+  }
+  function finiteDofValueOr(value, fallback) {
+    return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  }
+  function finiteDofValueOrNull(value) {
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  }
+
+  // tools/dof_model/dof_parameter_input_policy.ts
+  function readDofParamsFromSearch(search, allowedKeys) {
+    const raw = new URLSearchParams(search).get("params");
+    if (!raw) return null;
+    try {
+      const parsed = JSON.parse(decodeURIComponent(raw));
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return null;
       }
-      const weight = overlayWeightAtFrequency(frequency, config);
-      if (weight <= 0) {
-        current = null;
-        return;
-      }
-      const bucket = overlayBucketFromWeight(weight, config);
-      const sameBucket = current && current.width === bucket.width && current.opacity === bucket.opacity;
-      if (!sameBucket) {
-        current = { x: [], y: [], width: bucket.width, opacity: bucket.opacity };
-        segments.push(current);
-      }
-      current.x.push(frequency);
-      current.y.push(level);
+      const values = parsed;
+      const params = {};
+      allowedKeys.forEach((key) => {
+        const value = values[key];
+        if (Number.isFinite(value)) params[key] = value;
+      });
+      return Object.keys(params).length > 0 ? params : null;
+    } catch {
+      return null;
+    }
+  }
+  function dofDisplayValueToInternal(param, value) {
+    if (!Number.isFinite(value)) return value;
+    return param.startsWith("mass_") ? value / 1e3 : value;
+  }
+  function dofInternalValueToDisplay(param, value) {
+    if (!Number.isFinite(value)) return value;
+    return param.startsWith("mass_") ? value * 1e3 : value;
+  }
+  function isDofUncommittedDecimalInput(value) {
+    return /^-?\d+\.$/.test(value.trim());
+  }
+
+  // tools/dof_model/dof_localized_messages.ts
+  var ENGLISH_DOF_MESSAGES = Object.freeze({
+    airDampingLabel: "Air Damping R\u2090",
+    airLabel: "Air",
+    altitudeLabel: "Altitude (m)",
+    alwaysBadge: "Always",
+    ambientTemperatureLabel: "Ambient Temp (\xB0C)",
+    backDampingLabel: "Damping R\u1D66",
+    backLabel: "Back",
+    backMassLabel: "Mass m\u1D66 (g)",
+    backRadiatingAreaLabel: "Radiating Area A\u1D66 (m\xB2)",
+    backStiffnessLabel: "Stiffness k\u1D66 (N/m)",
+    cavityVolumeLabel: "Cavity Volume (m\xB3)",
+    drivingForceLabel: "Driving Force F (N)",
+    editCardsTitle: "Current Model",
+    editCardsCopy: "Direct parameter editing for each degree of freedom.",
+    environmentLabel: "Environment",
+    externalAlias: "External",
+    fitAirAlias: "Measured mode + body",
+    fitAirCopy: "Match the air resonance from the measured mode and the body inputs you already know.",
+    fitBackCopy: "Anchor the back mode with the observed frequency and the effective back properties you trust.",
+    fitBadge: "Fit",
+    fitCardsTitle: "Fit by System",
+    fitCardsCopy: "Use measured modes and known inputs to infer the current model.",
+    fitEnvironmentAlias: "Atmosphere + actions",
+    fitEnvironmentCopy: "Set the measurement altitude, run the fitter, and clear the inputs when you want to start over.",
+    fitPlateAlias: "Measured mode + plate",
+    fitTopCopy: "Anchor the top mode with the observed frequency and the effective top properties you trust.",
+    inputsAlias: "Inputs",
+    movingAirMassLabel: "Moving Air Mass (g)",
+    plotBaseTraceLabel: "4DOF base",
+    plotComposedTraceLabel: "4DOF + Sources",
+    plotCurrentTraceLabel: "Current",
+    plotFrequencyAxisLabel: "Frequency (Hz)",
+    plotLevelAxisLabel: "Level (dB)",
+    plotResponseUnavailable: "Model response unavailable.",
+    plotTargetTraceLabel: "Target",
+    saveConnectedLabel: "Save",
+    saveDefaultDisplayName: "Instrument",
+    saveDefaultNotebookName: "Notebook",
+    saveDialogLabel: "Save 4DOF Model",
+    saveModelTitle: "4-DOF model",
+    saveSummaryAirModeLabel: "Air T(1,1)\u2081",
+    saveSummaryBackModeLabel: "Back T(1,1)\u2083",
+    saveSummaryFittedModelValueTemplate: "{order}-DOF \xB7 fitted to targets",
+    saveSummaryModelLabel: "Model",
+    saveSummaryModeledProvenance: "modeled",
+    saveSummaryTopModeLabel: "Top T(1,1)\u2082",
+    saveDownloadLabel: "Save",
+    saveDownloadHint: "Notebook saving is not available here. Download the model instead.",
+    saveSavedToNotebookTemplate: "Saved to {notebookName}.",
+    sidesAreaLabel: "Sides Area (m\xB2)",
+    sidesDampingLabel: "Sides Damping",
+    sidesLabel: "Sides",
+    sidesMassLabel: "Sides Mass (g)",
+    sidesStiffnessLabel: "Sides Stiffness (N/m)",
+    simpleSourceAmplitudeLabel: "Amplitude (m\xB2/kg)",
+    simpleSourceAmplitudeTerm: "Amplitude",
+    simpleSourceFrequencyLabel: "Frequency (Hz)",
+    simpleSourceNameLabel: "name",
+    simpleSourcePeakLabel: "Peak",
+    simpleSourceRemoveLabel: "Remove",
+    simpleSourceResponsePeakLabel: "Response peak",
+    simpleSourcesTraceLabel: "Simple sources",
+    solveAirAlias: "Target mode + body",
+    solveAirCopy: "Set the air goal first, then shape the body inputs that most directly move it.",
+    solveBackCopy: "Set the back target and the effective back properties you want the solver to respect.",
+    solveBadge: "Solve",
+    solveCardsTitle: "Solve by System",
+    solveCardsCopy: "Set goals and constraints, then review the suggested moves.",
+    solveEnvironmentAlias: "Recipe actions",
+    solveEnvironmentCopy: "Constrain the recipe, solve the what-if, and review the suggested structural moves.",
+    solvePlateAlias: "Target mode + plate",
+    solveTopCopy: "Set the top target and the effective top properties that define the move you want.",
+    soundholeAreaLabel: "Soundhole Area (m\xB2)",
+    statusCompareUnavailable: "Compare mode is unavailable.",
+    statusComparisonReset: "What-If comparison reset.",
+    statusEnterTargetFrequency: "Enter at least one target frequency.",
+    statusFitApplied: "Fit applied.",
+    statusNotebookEventRestored: "Notebook event restored.",
+    statusPackageLoaded: "Loaded JSON package.",
+    statusPackageLoadFailed: "Unable to load JSON package.",
+    statusPackageDownloaded: "JSON package downloaded.",
+    statusSolveApplied: "Solve Targets applied as a What-If recipe.",
+    topDampingLabel: "Damping R\u209C",
+    topLabel: "Top",
+    topMassLabel: "Mass m\u209C (g)",
+    topRadiatingAreaLabel: "Radiating Area A\u209C (m\xB2)",
+    topStiffnessLabel: "Stiffness k\u209C (N/m)",
+    whatIfEmptyMessage: "Run Solve Targets to see suggested adjustments.",
+    whatIfDecreaseTemplate: "Decrease {field} by {amount} {unit}",
+    whatIfBackPlateMassLabel: "back plate mass",
+    whatIfBackPlateStiffnessLabel: "back plate stiffness",
+    whatIfCavityVolumeLabel: "cavity volume",
+    whatIfIncreaseTemplate: "Increase {field} by {amount} {unit}",
+    whatIfSoundholeAreaDeltaTemplate: " ({sign}{area} m\xB2)",
+    whatIfSoundholeDiameterLabel: "soundhole diameter",
+    whatIfTargetLabel: "Target",
+    whatIfTopPlateMassLabel: "top plate mass",
+    whatIfTopPlateStiffnessLabel: "top plate stiffness"
+  });
+  function resolveDofLocalizedMessages(candidate) {
+    return Object.freeze({
+      ...ENGLISH_DOF_MESSAGES,
+      ...nonEmptyMessagesRead(candidate)
     });
-    return segments;
   }
-  function buildDofTargetOverlayTraces(points, color, config, colorWithAlpha2, options = {}) {
-    const traceLabel = options.traceLabel || "Target";
-    const segments = buildDofTargetOverlaySegments(
-      points,
-      config,
-      options.segmentBuilder
+  function nonEmptyMessagesRead(candidate) {
+    if (!candidate) return {};
+    return Object.fromEntries(
+      Object.entries(candidate).filter(([, value]) => typeof value === "string" && value.trim().length > 0)
     );
-    return segments.map((segment, index) => ({
-      x: segment.x,
-      y: segment.y,
-      mode: "lines",
-      name: traceLabel,
-      legendgroup: "target",
-      showlegend: index === 0,
-      line: {
-        color: colorWithAlpha2(color, segment.opacity),
-        width: segment.width,
-        dash: "dash"
-      },
-      hovertemplate: `%{x:.1f} Hz \xB7 %{y:.1f} dB<extra>${traceLabel}</extra>`
-    }));
-  }
-  function computeDofYRange(series, pad = 6, minX, maxX) {
-    if (!Array.isArray(series) || !series.length) return null;
-    let min = Infinity;
-    let max = -Infinity;
-    series.forEach((point) => {
-      if (!Number.isFinite(point?.y)) return;
-      if (Number.isFinite(minX) && Number.isFinite(maxX)) {
-        if (!Number.isFinite(point?.x)) return;
-        if (point.x < minX || point.x > maxX) return;
-      }
-      min = Math.min(min, point.y);
-      max = Math.max(max, point.y);
-    });
-    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-    const padding = Math.max(2, pad);
-    return [min - padding, max + padding];
   }
 
   // tools/dof_model/dof_target_fit.ts
@@ -544,6 +676,186 @@
     return warm;
   }
 
+  // tools/dof_model/dof_model_engine.ts
+  var DOF_DEFAULT_PARAMS = {
+    model_order: 4,
+    ambient_temp: 20,
+    altitude: 0,
+    driving_force: 0.4,
+    area_hole: 55e-4,
+    // Masses are in kg in the solver core.
+    // UI shows grams, but we convert g -> kg on input.
+    mass_air: 5e-4,
+    volume_air: 0.0141,
+    damping_air: 5e-3,
+    mass_top: 0.043,
+    stiffness_top: 42700,
+    damping_top: 1.5,
+    area_top: 0.039,
+    mass_back: 0.094,
+    stiffness_back: 13e4,
+    damping_back: 7,
+    area_back: 0.04,
+    mass_sides: 0.8,
+    stiffness_sides: 14e5,
+    damping_sides: 10,
+    area_sides: 0.025
+  };
+  var DOF_FIT_BOUNDS = {
+    area_hole: { min: 3e-3, max: 0.01 },
+    volume_air: { min: 0.01, max: 0.025 },
+    mass_top: { min: 5e-3, max: 0.12 },
+    stiffness_top: { min: 1e4, max: 15e4 },
+    stiffness_back: { min: 8e4, max: 4e5 }
+  };
+  var DOF_SOLVE_TWEAK_IDS2 = ["stiffness_top", "stiffness_back", "volume_air", "area_hole"];
+  var DOF_WHAT_IF_RECIPE_IDS = [...DOF_SOLVE_TWEAK_IDS2, "mass_top", "mass_back"];
+  var DOF_WHAT_IF_SLIDER_RANGES = {
+    area_hole: { step: 1e-4, min: 3e-3, max: 0.01 },
+    volume_air: { step: 5e-4, min: 0.01, max: 0.025 },
+    stiffness_top: { step: 100, min: 1e4, max: 15e4 },
+    stiffness_back: { step: 200, min: 8e4, max: 4e5 },
+    mass_top: { step: 0.1, min: 5, max: 120 },
+    mass_back: { step: 0.5, min: 40, max: 220 }
+  };
+  function dofClampToBounds(id, value) {
+    const bounds = DOF_FIT_BOUNDS[id];
+    if (!bounds || !Number.isFinite(value)) return value;
+    return Math.max(bounds.min, Math.min(bounds.max, value));
+  }
+  function dofFitWithSolver(solver, targets, options = {}) {
+    return fitDofFromTargets(targets, options, {
+      defaultParams: DOF_DEFAULT_PARAMS,
+      defaultTweakIds: DOF_SOLVE_TWEAK_IDS2,
+      clampToBounds: dofClampToBounds,
+      computeResponse: solver.computeResponse,
+      adaptParams: solver.adaptParams,
+      peaksFromResponse: modelPeaksFromResponse
+    });
+  }
+  function dofSolveRecipeOptions(targets, restrictSimple) {
+    return {
+      tweakIds: restrictSimple ? readDofRestrictedTweakIds() : dofFitSolveTweakIdsFromTargets(targets),
+      factorAllowed: restrictSimple ? dofFitIncreaseOnlyFactorAllowed : void 0
+    };
+  }
+  function dofSolveRecipeTargets(targets, modelPeaks) {
+    const held = { ...targets };
+    ["air", "top", "back"].forEach((mode) => {
+      if (Number.isFinite(targets[mode])) return;
+      const peak = modelPeaks?.[mode];
+      if (Number.isFinite(peak)) held[mode] = peak;
+    });
+    return held;
+  }
+  function dofRecipeSummaryValues(raw) {
+    if (!raw) return null;
+    return {
+      ...raw,
+      mass_top: dofInternalValueToDisplay("mass_top", raw.mass_top),
+      mass_back: dofInternalValueToDisplay("mass_back", raw.mass_back)
+    };
+  }
+
+  // tools/dof_model/dof_plot_data.ts
+  function buildDofTrace(points, name, color, lineOptions = {}) {
+    if (!Array.isArray(points) || points.length === 0) return null;
+    return {
+      x: points.map((point) => point.x),
+      y: points.map((point) => point.y),
+      mode: "lines",
+      name,
+      line: { color, ...lineOptions || {} },
+      hovertemplate: `%{x:.1f} Hz \xB7 %{y:.1f} dB<extra>${name}</extra>`
+    };
+  }
+  function overlayBucketFromWeight(weight, config) {
+    if (weight > 0.66) {
+      return { width: config.widths.thick, opacity: config.opacities.thick };
+    }
+    if (weight > 0.33) {
+      return { width: config.widths.mid, opacity: config.opacities.mid };
+    }
+    return { width: config.widths.thin, opacity: config.opacities.thin };
+  }
+  function overlayWeightAtFrequency(frequency, config) {
+    const { min, max, feather } = config;
+    if (frequency >= min && frequency <= max) return 1;
+    if (frequency >= min - feather && frequency < min) {
+      return 1 - (min - frequency) / feather;
+    }
+    if (frequency > max && frequency <= max + feather) {
+      return 1 - (frequency - max) / feather;
+    }
+    return 0;
+  }
+  function buildDofTargetOverlaySegments(points, config, sharedBuilder) {
+    if (sharedBuilder) return sharedBuilder(points, config);
+    const segments = [];
+    let current = null;
+    points.forEach((point) => {
+      const frequency = point?.x;
+      const level = point?.y;
+      if (!Number.isFinite(frequency) || !Number.isFinite(level)) {
+        current = null;
+        return;
+      }
+      const weight = overlayWeightAtFrequency(frequency, config);
+      if (weight <= 0) {
+        current = null;
+        return;
+      }
+      const bucket = overlayBucketFromWeight(weight, config);
+      const sameBucket = current && current.width === bucket.width && current.opacity === bucket.opacity;
+      if (!sameBucket) {
+        current = { x: [], y: [], width: bucket.width, opacity: bucket.opacity };
+        segments.push(current);
+      }
+      current.x.push(frequency);
+      current.y.push(level);
+    });
+    return segments;
+  }
+  function buildDofTargetOverlayTraces(points, color, config, colorWithAlpha2, options = {}) {
+    const traceLabel = options.traceLabel || "Target";
+    const segments = buildDofTargetOverlaySegments(
+      points,
+      config,
+      options.segmentBuilder
+    );
+    return segments.map((segment, index) => ({
+      x: segment.x,
+      y: segment.y,
+      mode: "lines",
+      name: traceLabel,
+      legendgroup: "target",
+      showlegend: index === 0,
+      line: {
+        color: colorWithAlpha2(color, segment.opacity),
+        width: segment.width,
+        dash: "dash"
+      },
+      hovertemplate: `%{x:.1f} Hz \xB7 %{y:.1f} dB<extra>${traceLabel}</extra>`
+    }));
+  }
+  function computeDofYRange(series, pad = 6, minX, maxX) {
+    if (!Array.isArray(series) || !series.length) return null;
+    let min = Infinity;
+    let max = -Infinity;
+    series.forEach((point) => {
+      if (!Number.isFinite(point?.y)) return;
+      if (Number.isFinite(minX) && Number.isFinite(maxX)) {
+        if (!Number.isFinite(point?.x)) return;
+        if (point.x < minX || point.x > maxX) return;
+      }
+      min = Math.min(min, point.y);
+      max = Math.max(max, point.y);
+    });
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+    const padding = Math.max(2, pad);
+    return [min - padding, max + padding];
+  }
+
   // tools/dof_model/dof_task_cards.ts
   function buildDofTaskCards(documentRef, container, cardDefinitions) {
     cardDefinitions.forEach((card) => {
@@ -646,42 +958,6 @@
   }
   function appendDofTaskCardElement(parent, element) {
     if (element) parent.appendChild(element);
-  }
-
-  // tools/dof_model/dof_legacy_solver.ts
-  function computeDofLegacyResponse(runtime, params) {
-    try {
-      const computeResponse = runtime.computeResponse || runtime.ModelCore?.computeResponse;
-      return typeof computeResponse === "function" ? computeResponse(params) : null;
-    } catch (error) {
-      console.warn("computeResponse failed", error);
-      return null;
-    }
-  }
-  function adaptDofLegacyParams(runtime, raw) {
-    const params = { ...raw };
-    const deriveAtmosphere = runtime.Atmosphere?.deriveAtmosphere;
-    if (typeof deriveAtmosphere !== "function") return params;
-    const altitude = finiteDofValueOr(params.altitude, 0);
-    const temperature = finiteDofValueOr(params.ambient_temp, 20);
-    const atmosphere = deriveAtmosphere(altitude, temperature);
-    params.air_density = atmosphere.rho;
-    params.speed_of_sound = atmosphere.c;
-    params.air_pressure = atmosphere.pressure;
-    params.air_temp_k = atmosphere.tempK;
-    params._atm = atmosphere;
-    const movingAirMass = finiteDofValueOrNull(params.mass_air);
-    if (movingAirMass !== null) {
-      const referenceDensity = runtime.Atmosphere?.REFERENCE_RHO ?? 1.205;
-      params.mass_air = movingAirMass * (atmosphere.rho / referenceDensity);
-    }
-    return params;
-  }
-  function finiteDofValueOr(value, fallback) {
-    return typeof value === "number" && Number.isFinite(value) ? value : fallback;
-  }
-  function finiteDofValueOrNull(value) {
-    return typeof value === "number" && Number.isFinite(value) ? value : null;
   }
 
   // tools/dof_model/dof_series_sampling.ts
@@ -838,55 +1114,6 @@
     return value;
   }
 
-  // tools/dof_model/dof_fit_input_policy.ts
-  var DOF_FIT_MODE_KEYS = ["air", "top", "back"];
-  var DOF_SOLVE_TWEAK_IDS = [
-    "stiffness_top",
-    "stiffness_back",
-    "volume_air",
-    "area_hole"
-  ];
-  var DOF_RESTRICTED_TWEAK_IDS = ["mass_top", "mass_back", "area_hole"];
-  function readFiniteDofFitTarget(readInput, elementId) {
-    const value = parseFloat(readInput(elementId));
-    return Number.isFinite(value) ? value : null;
-  }
-  function buildDofFitInputTargets(readInput, displayToInternal) {
-    const massTopDisplay = readFiniteDofFitTarget(readInput, "fit_target_mass_top");
-    const massBackDisplay = readFiniteDofFitTarget(readInput, "fit_target_mass_back");
-    const soundholeDiameter = readFiniteDofFitTarget(readInput, "fit_target_area_hole_diam");
-    return {
-      air: readFiniteDofFitTarget(readInput, "fit_target_air"),
-      top: readFiniteDofFitTarget(readInput, "fit_target_top"),
-      back: readFiniteDofFitTarget(readInput, "fit_target_back"),
-      mass_top: Number.isFinite(massTopDisplay) ? displayToInternal("mass_top", massTopDisplay) : null,
-      stiffness_top: readFiniteDofFitTarget(readInput, "fit_target_stiffness_top"),
-      mass_back: Number.isFinite(massBackDisplay) ? displayToInternal("mass_back", massBackDisplay) : null,
-      stiffness_back: readFiniteDofFitTarget(readInput, "fit_target_stiffness_back"),
-      volume_air: readFiniteDofFitTarget(readInput, "fit_target_volume_air"),
-      area_hole_diam: soundholeDiameter,
-      area_hole: Number.isFinite(soundholeDiameter) ? Math.PI * Math.pow(soundholeDiameter / 1e3, 2) / 4 : null
-    };
-  }
-  function dofFitTargetsHaveAnyValue(targets) {
-    return DOF_FIT_MODE_KEYS.some((mode) => Number.isFinite(targets[mode])) || Number.isFinite(targets.mass_top) || Number.isFinite(targets.stiffness_top) || Number.isFinite(targets.mass_back) || Number.isFinite(targets.stiffness_back) || Number.isFinite(targets.volume_air) || Number.isFinite(targets.area_hole);
-  }
-  function dofFitSolveTweakIdsFromTargets(targets) {
-    const tweakIds = Array.from(DOF_SOLVE_TWEAK_IDS);
-    if (Number.isFinite(targets.mass_top)) tweakIds.push("mass_top");
-    if (Number.isFinite(targets.mass_back)) tweakIds.push("mass_back");
-    return tweakIds;
-  }
-  function readDofRestrictedTweakIds() {
-    return Array.from(DOF_RESTRICTED_TWEAK_IDS);
-  }
-  function dofFitIncreaseOnlyFactorAllowed(id, factor) {
-    if (!DOF_RESTRICTED_TWEAK_IDS.includes(id)) {
-      return false;
-    }
-    return factor >= 1;
-  }
-
   // tools/dof_model/dof_mode_card_presentation.ts
   var DOF_NOTE_NAMES = [
     "C",
@@ -982,38 +1209,6 @@
       "negative",
       typeof presentation.whatIfNote.centsNumber === "number" && presentation.whatIfNote.centsNumber < 0
     );
-  }
-
-  // tools/dof_model/dof_parameter_input_policy.ts
-  function readDofParamsFromSearch(search, allowedKeys) {
-    const raw = new URLSearchParams(search).get("params");
-    if (!raw) return null;
-    try {
-      const parsed = JSON.parse(decodeURIComponent(raw));
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-        return null;
-      }
-      const values = parsed;
-      const params = {};
-      allowedKeys.forEach((key) => {
-        const value = values[key];
-        if (Number.isFinite(value)) params[key] = value;
-      });
-      return Object.keys(params).length > 0 ? params : null;
-    } catch {
-      return null;
-    }
-  }
-  function dofDisplayValueToInternal(param, value) {
-    if (!Number.isFinite(value)) return value;
-    return param.startsWith("mass_") ? value / 1e3 : value;
-  }
-  function dofInternalValueToDisplay(param, value) {
-    if (!Number.isFinite(value)) return value;
-    return param.startsWith("mass_") ? value * 1e3 : value;
-  }
-  function isDofUncommittedDecimalInput(value) {
-    return /^-?\d+\.$/.test(value.trim());
   }
 
   // tools/dof_model/dof_simple_sources.ts
@@ -1122,145 +1317,7 @@
     return { root, label, stem, dot, halo };
   }
 
-  // tools/dof_model/dof_localized_messages.ts
-  var ENGLISH_DOF_MESSAGES = Object.freeze({
-    airDampingLabel: "Air Damping R\u2090",
-    airLabel: "Air",
-    altitudeLabel: "Altitude (m)",
-    alwaysBadge: "Always",
-    ambientTemperatureLabel: "Ambient Temp (\xB0C)",
-    backDampingLabel: "Damping R\u1D66",
-    backLabel: "Back",
-    backMassLabel: "Mass m\u1D66 (g)",
-    backRadiatingAreaLabel: "Radiating Area A\u1D66 (m\xB2)",
-    backStiffnessLabel: "Stiffness k\u1D66 (N/m)",
-    cavityVolumeLabel: "Cavity Volume (m\xB3)",
-    drivingForceLabel: "Driving Force F (N)",
-    editCardsTitle: "Current Model",
-    editCardsCopy: "Direct parameter editing for each degree of freedom.",
-    environmentLabel: "Environment",
-    externalAlias: "External",
-    fitAirAlias: "Measured mode + body",
-    fitAirCopy: "Match the air resonance from the measured mode and the body inputs you already know.",
-    fitBackCopy: "Anchor the back mode with the observed frequency and the effective back properties you trust.",
-    fitBadge: "Fit",
-    fitCardsTitle: "Fit by System",
-    fitCardsCopy: "Use measured modes and known inputs to infer the current model.",
-    fitEnvironmentAlias: "Atmosphere + actions",
-    fitEnvironmentCopy: "Set the measurement altitude, run the fitter, and clear the inputs when you want to start over.",
-    fitPlateAlias: "Measured mode + plate",
-    fitTopCopy: "Anchor the top mode with the observed frequency and the effective top properties you trust.",
-    inputsAlias: "Inputs",
-    movingAirMassLabel: "Moving Air Mass (g)",
-    plotBaseTraceLabel: "4DOF base",
-    plotComposedTraceLabel: "4DOF + Sources",
-    plotCurrentTraceLabel: "Current",
-    plotFrequencyAxisLabel: "Frequency (Hz)",
-    plotLevelAxisLabel: "Level (dB)",
-    plotResponseUnavailable: "Model response unavailable.",
-    plotTargetTraceLabel: "Target",
-    saveConnectedLabel: "Save",
-    saveDefaultDisplayName: "Instrument",
-    saveDefaultNotebookName: "Notebook",
-    saveDialogLabel: "Save 4DOF Model",
-    saveModelTitle: "4-DOF model",
-    saveSummaryAirModeLabel: "Air T(1,1)\u2081",
-    saveSummaryBackModeLabel: "Back T(1,1)\u2083",
-    saveSummaryFittedModelValueTemplate: "{order}-DOF \xB7 fitted to targets",
-    saveSummaryModelLabel: "Model",
-    saveSummaryModeledProvenance: "modeled",
-    saveSummaryTopModeLabel: "Top T(1,1)\u2082",
-    saveDownloadLabel: "Save",
-    saveDownloadHint: "Notebook saving is not available here. Download the model instead.",
-    saveSavedToNotebookTemplate: "Saved to {notebookName}.",
-    sidesAreaLabel: "Sides Area (m\xB2)",
-    sidesDampingLabel: "Sides Damping",
-    sidesLabel: "Sides",
-    sidesMassLabel: "Sides Mass (g)",
-    sidesStiffnessLabel: "Sides Stiffness (N/m)",
-    simpleSourceAmplitudeLabel: "Amplitude (m\xB2/kg)",
-    simpleSourceAmplitudeTerm: "Amplitude",
-    simpleSourceFrequencyLabel: "Frequency (Hz)",
-    simpleSourceNameLabel: "name",
-    simpleSourcePeakLabel: "Peak",
-    simpleSourceRemoveLabel: "Remove",
-    simpleSourceResponsePeakLabel: "Response peak",
-    simpleSourcesTraceLabel: "Simple sources",
-    solveAirAlias: "Target mode + body",
-    solveAirCopy: "Set the air goal first, then shape the body inputs that most directly move it.",
-    solveBackCopy: "Set the back target and the effective back properties you want the solver to respect.",
-    solveBadge: "Solve",
-    solveCardsTitle: "Solve by System",
-    solveCardsCopy: "Set goals and constraints, then review the suggested moves.",
-    solveEnvironmentAlias: "Recipe actions",
-    solveEnvironmentCopy: "Constrain the recipe, solve the what-if, and review the suggested structural moves.",
-    solvePlateAlias: "Target mode + plate",
-    solveTopCopy: "Set the top target and the effective top properties that define the move you want.",
-    soundholeAreaLabel: "Soundhole Area (m\xB2)",
-    statusCompareUnavailable: "Compare mode is unavailable.",
-    statusComparisonReset: "What-If comparison reset.",
-    statusEnterTargetFrequency: "Enter at least one target frequency.",
-    statusFitApplied: "Fit applied.",
-    statusNotebookEventRestored: "Notebook event restored.",
-    statusPackageLoaded: "Loaded JSON package.",
-    statusPackageLoadFailed: "Unable to load JSON package.",
-    statusPackageDownloaded: "JSON package downloaded.",
-    statusSolveApplied: "Solve Targets applied as a What-If recipe.",
-    topDampingLabel: "Damping R\u209C",
-    topLabel: "Top",
-    topMassLabel: "Mass m\u209C (g)",
-    topRadiatingAreaLabel: "Radiating Area A\u209C (m\xB2)",
-    topStiffnessLabel: "Stiffness k\u209C (N/m)",
-    whatIfEmptyMessage: "Run Solve Targets to see suggested adjustments.",
-    whatIfDecreaseTemplate: "Decrease {field} by {amount} {unit}",
-    whatIfBackPlateMassLabel: "back plate mass",
-    whatIfBackPlateStiffnessLabel: "back plate stiffness",
-    whatIfCavityVolumeLabel: "cavity volume",
-    whatIfIncreaseTemplate: "Increase {field} by {amount} {unit}",
-    whatIfSoundholeAreaDeltaTemplate: " ({sign}{area} m\xB2)",
-    whatIfSoundholeDiameterLabel: "soundhole diameter",
-    whatIfTargetLabel: "Target",
-    whatIfTopPlateMassLabel: "top plate mass",
-    whatIfTopPlateStiffnessLabel: "top plate stiffness"
-  });
-  function resolveDofLocalizedMessages(candidate) {
-    return Object.freeze({
-      ...ENGLISH_DOF_MESSAGES,
-      ...nonEmptyMessagesRead(candidate)
-    });
-  }
-  function nonEmptyMessagesRead(candidate) {
-    if (!candidate) return {};
-    return Object.fromEntries(
-      Object.entries(candidate).filter(([, value]) => typeof value === "string" && value.trim().length > 0)
-    );
-  }
-
   // tools/dof_model/main.ts
-  var DEFAULT_PARAMS = {
-    model_order: 4,
-    ambient_temp: 20,
-    altitude: 0,
-    driving_force: 0.4,
-    area_hole: 55e-4,
-    // Masses are in kg in the solver core.
-    // UI shows grams, but we convert g -> kg on input.
-    mass_air: 5e-4,
-    volume_air: 0.0141,
-    damping_air: 5e-3,
-    mass_top: 0.043,
-    stiffness_top: 42700,
-    damping_top: 1.5,
-    area_top: 0.039,
-    mass_back: 0.094,
-    stiffness_back: 13e4,
-    damping_back: 7,
-    area_back: 0.04,
-    mass_sides: 0.8,
-    stiffness_sides: 14e5,
-    damping_sides: 10,
-    area_sides: 0.025
-  };
   var localizedMessages = resolveDofLocalizedMessages(
     window.ToneLabDofMessages
   );
@@ -1273,8 +1330,8 @@
       color: "var(--purple)",
       badgeText: "DOF 1",
       fields: [
-        { label: localizedMessages.soundholeAreaLabel, param: "area_hole", step: 1e-4, min: 3e-3, max: 0.01 },
-        { label: localizedMessages.cavityVolumeLabel, param: "volume_air", step: 5e-4, min: 0.01, max: 0.025 },
+        { label: localizedMessages.soundholeAreaLabel, param: "area_hole", ...DOF_WHAT_IF_SLIDER_RANGES.area_hole },
+        { label: localizedMessages.cavityVolumeLabel, param: "volume_air", ...DOF_WHAT_IF_SLIDER_RANGES.volume_air },
         { label: localizedMessages.movingAirMassLabel, param: "mass_air", step: 0.01, min: 0.1, max: 2 },
         { label: localizedMessages.airDampingLabel, param: "damping_air", step: 5e-4, min: 1e-3, max: 0.02 }
       ]
@@ -1287,8 +1344,8 @@
       color: "var(--blue)",
       badgeText: "DOF 2",
       fields: [
-        { label: localizedMessages.topMassLabel, param: "mass_top", step: 0.1, min: 5, max: 120 },
-        { label: localizedMessages.topStiffnessLabel, param: "stiffness_top", step: 100, min: 1e4, max: 15e4 },
+        { label: localizedMessages.topMassLabel, param: "mass_top", ...DOF_WHAT_IF_SLIDER_RANGES.mass_top },
+        { label: localizedMessages.topStiffnessLabel, param: "stiffness_top", ...DOF_WHAT_IF_SLIDER_RANGES.stiffness_top },
         { label: localizedMessages.topDampingLabel, param: "damping_top", step: 0.1, min: 0.5, max: 6 },
         { label: localizedMessages.topRadiatingAreaLabel, param: "area_top", step: 5e-4, min: 0.02, max: 0.06 }
       ]
@@ -1301,8 +1358,8 @@
       color: "var(--green)",
       badgeText: "DOF 3",
       fields: [
-        { label: localizedMessages.backMassLabel, param: "mass_back", step: 0.5, min: 40, max: 220 },
-        { label: localizedMessages.backStiffnessLabel, param: "stiffness_back", step: 200, min: 8e4, max: 4e5 },
+        { label: localizedMessages.backMassLabel, param: "mass_back", ...DOF_WHAT_IF_SLIDER_RANGES.mass_back },
+        { label: localizedMessages.backStiffnessLabel, param: "stiffness_back", ...DOF_WHAT_IF_SLIDER_RANGES.stiffness_back },
         { label: localizedMessages.backDampingLabel, param: "damping_back", step: 0.1, min: 1, max: 15 },
         { label: localizedMessages.backRadiatingAreaLabel, param: "area_back", step: 5e-4, min: 0.02, max: 0.06 }
       ]
@@ -1453,16 +1510,8 @@
     widths: { thin: 1, mid: 2, thick: 3 },
     opacities: { thin: 0.25, mid: 0.8, thick: 0.9 }
   };
-  var FIT_BOUNDS = {
-    area_hole: { min: 3e-3, max: 0.01 },
-    volume_air: { min: 0.01, max: 0.025 },
-    mass_top: { min: 5e-3, max: 0.12 },
-    stiffness_top: { min: 1e4, max: 15e4 },
-    stiffness_back: { min: 8e4, max: 4e5 }
-  };
-  var SOLVE_TWEAK_IDS = ["stiffness_top", "stiffness_back", "volume_air", "area_hole"];
   var SIMPLE_SOURCE_COLORS = ["var(--orange)", "var(--yellow)", "var(--purple)", "var(--blue)", "var(--green)"];
-  var currentParams = { ...DEFAULT_PARAMS };
+  var currentParams = { ...DOF_DEFAULT_PARAMS };
   var currentOrder = 4;
   var currentTaskMode = "edit";
   var currentSimpleSources = {
@@ -1520,7 +1569,7 @@
   function dofParamsFromLocation() {
     return readDofParamsFromSearch(
       window.location.search,
-      Object.keys(DEFAULT_PARAMS)
+      Object.keys(DOF_DEFAULT_PARAMS)
     );
   }
   function dofCardsRead() {
@@ -1845,6 +1894,7 @@
       FIT_TASK_CARD_DEFS
     );
     solveTaskControlsRestoreHome();
+    const whatIfText = whatIfOverlayTextRead();
     container.innerHTML = "";
     if (currentTaskMode === "fit") {
       buildDofTaskCards(document, container, FIT_TASK_CARD_DEFS);
@@ -1975,7 +2025,7 @@
         if (field.min != null) overlay.min = String(field.min);
         if (field.max != null) overlay.max = String(field.max);
         overlay.step = field.step != null ? String(field.step) : "any";
-        overlay.value = input.value;
+        overlay.value = whatIfText[field.param] ?? input.value;
         overlay.dataset.param = field.param;
         overlay.addEventListener("input", () => {
           updateOverlayLatch(field.param);
@@ -2013,6 +2063,16 @@
     });
     simpleSourceCardsAppend(container);
     applyCardVisibility();
+    refreshOverlayVisuals();
+    updateModeCards();
+  }
+  function whatIfOverlayTextRead() {
+    const text = {};
+    overlayLatched.forEach((param) => {
+      const overlay = overlaySliders[param];
+      if (overlay) text[param] = overlay.value;
+    });
+    return text;
   }
   function applyCardVisibility() {
     if (currentTaskMode !== "edit") return;
@@ -2319,25 +2379,13 @@
     if (typeof sample !== "function") return null;
     return { seriesValueSampleAtFrequency: sample };
   }
-  function clampToBounds(id, value) {
-    const bounds = FIT_BOUNDS[id];
-    if (!bounds || !Number.isFinite(value)) return value;
-    return Math.max(bounds.min, Math.min(bounds.max, value));
-  }
   function sampleSeriesAtFreq(series, freq) {
     const sharedSampler = sharedSeriesSamplerRead();
     if (sharedSampler) return sharedSampler.seriesValueSampleAtFrequency(series, freq);
     return sampleDofSeriesAtFrequency(series, freq);
   }
   function fit4DofFromTargets(targets, opts = {}) {
-    return fitDofFromTargets(targets, opts, {
-      defaultParams: DEFAULT_PARAMS,
-      defaultTweakIds: SOLVE_TWEAK_IDS,
-      clampToBounds,
-      computeResponse: computeResponseSafe,
-      adaptParams: adaptParamsToSolver,
-      peaksFromResponse: modelPeaksFromResponse
-    });
+    return dofFitWithSolver({ computeResponse: computeResponseSafe, adaptParams: adaptParamsToSolver }, targets, opts);
   }
   function targetOverlaySharedBuilderRead() {
     const shared = window.overlay_segments;
@@ -2492,7 +2540,7 @@
   }
   function applyWhatIfParams(raw) {
     if (!isWhatIfEnabled()) return;
-    SOLVE_TWEAK_IDS.forEach((id) => {
+    DOF_WHAT_IF_RECIPE_IDS.forEach((id) => {
       const overlay = overlaySliders[id];
       if (!overlay || !Number.isFinite(raw[id])) return;
       const displayValue = dofInternalValueToDisplay(id, raw[id]);
@@ -2507,7 +2555,7 @@
     const baseParams = useWhatIf ? getWhatIfParams() || currentParams : currentParams;
     const fit = fit4DofFromTargets(targets, {
       maxIter: 12,
-      tweakIds: opts.tweakIds || Array.from(SOLVE_TWEAK_IDS),
+      tweakIds: opts.tweakIds || Array.from(DOF_SOLVE_TWEAK_IDS2),
       baseParams: { ...baseParams },
       factorAllowed: opts.factorAllowed
     });
@@ -2533,12 +2581,6 @@
   function fitRecipeRestrictSimpleEnabled() {
     const toggle = document.getElementById("fit_restrict_simple");
     return Boolean(toggle?.checked);
-  }
-  function fitRecipeRestrictedTweakIds() {
-    return readDofRestrictedTweakIds();
-  }
-  function fitRecipeIncreaseOnlyFactorAllowed(id, factor) {
-    return dofFitIncreaseOnlyFactorAllowed(id, factor);
   }
   function fitStatusSet(message) {
     const status = document.getElementById("fit_status");
@@ -2577,8 +2619,8 @@
   function whatIfSummaryRefreshFromCurrentRecipe() {
     const recipeParams = getWhatIfParams();
     const lines = window.buildWhatIfRecipeSummaryLines?.(
-      currentParams,
-      recipeParams,
+      dofRecipeSummaryValues(currentParams),
+      dofRecipeSummaryValues(recipeParams),
       {
         decreaseTemplate: localizedMessages.whatIfDecreaseTemplate,
         fieldLabels: {
@@ -2607,10 +2649,11 @@
       return;
     }
     const restrictSimple = fitRecipeRestrictSimpleEnabled();
-    solveTargets(targets, {
+    const modelResponse = computeResponseForParams(currentParams);
+    const modelPeaks = modelResponse ? modelPeaksFromResponse(modelResponse) : null;
+    solveTargets(dofSolveRecipeTargets(targets, modelPeaks), {
       useWhatIf: true,
-      tweakIds: restrictSimple ? fitRecipeRestrictedTweakIds() : fitSolveTweakIdsFromTargets(targets),
-      factorAllowed: restrictSimple ? fitRecipeIncreaseOnlyFactorAllowed : void 0
+      ...dofSolveRecipeOptions(targets, restrictSimple)
     });
     whatIfSummaryRefreshFromCurrentRecipe();
     fitStatusSet(localizedMessages.statusSolveApplied);
@@ -2671,7 +2714,7 @@
     if (!peaks) {
       const fit = fit4DofFromTargets(targets, {
         maxIter: 2,
-        tweakIds: Array.from(SOLVE_TWEAK_IDS),
+        tweakIds: Array.from(DOF_SOLVE_TWEAK_IDS2),
         baseParams: { ...baseParams }
       });
       if (fit?.raw) {
@@ -2687,7 +2730,7 @@
       baseParams,
       targets,
       peaks,
-      clampToBounds
+      clampToBounds: dofClampToBounds
     });
     if (useWhatIf) applyWhatIfParams(warm);
     else {
@@ -2899,7 +2942,7 @@
   }
   function applyLoadedDofSnapshot(snapshot) {
     const plan = window.DofSaveSnapshot.buildDofSnapshotApplyPlan(snapshot, {
-      params: DEFAULT_PARAMS,
+      params: DOF_DEFAULT_PARAMS,
       modelOrder: 4
     });
     currentParams = { ...plan.params };

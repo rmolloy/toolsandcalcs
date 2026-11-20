@@ -5,7 +5,7 @@
         if (v !== undefined) module.exports = v;
     }
     else if (typeof define === "function" && define.amd) {
-        define(["require", "exports", "./dof_display_format", "./dof_peak_detection", "./dof_save_summary", "./dof_plot_data", "./dof_target_fit", "./dof_task_cards", "./dof_legacy_solver", "./dof_series_sampling", "./dof_plot_pointer", "./dof_plot_resize", "./dof_trace_visibility", "./dof_fit_input_policy", "./dof_mode_card_presentation", "./dof_parameter_input_policy", "./dof_simple_sources", "./dof_plot_callouts", "./dof_localized_messages"], factory);
+        define(["require", "exports", "./dof_display_format", "./dof_peak_detection", "./dof_save_summary", "./dof_model_engine", "./dof_plot_data", "./dof_target_fit", "./dof_task_cards", "./dof_legacy_solver", "./dof_series_sampling", "./dof_plot_pointer", "./dof_plot_resize", "./dof_trace_visibility", "./dof_fit_input_policy", "./dof_mode_card_presentation", "./dof_parameter_input_policy", "./dof_simple_sources", "./dof_plot_callouts", "./dof_localized_messages"], factory);
     }
 })(function (require, exports) {
     "use strict";
@@ -13,6 +13,7 @@
     const dof_display_format_1 = require("./dof_display_format");
     const dof_peak_detection_1 = require("./dof_peak_detection");
     const dof_save_summary_1 = require("./dof_save_summary");
+    const dof_model_engine_1 = require("./dof_model_engine");
     const dof_plot_data_1 = require("./dof_plot_data");
     const dof_target_fit_1 = require("./dof_target_fit");
     const dof_task_cards_1 = require("./dof_task_cards");
@@ -27,30 +28,6 @@
     const dof_simple_sources_1 = require("./dof_simple_sources");
     const dof_plot_callouts_1 = require("./dof_plot_callouts");
     const dof_localized_messages_1 = require("./dof_localized_messages");
-    const DEFAULT_PARAMS = {
-        model_order: 4,
-        ambient_temp: 20,
-        altitude: 0,
-        driving_force: 0.4,
-        area_hole: 0.0055,
-        // Masses are in kg in the solver core.
-        // UI shows grams, but we convert g -> kg on input.
-        mass_air: 0.0005,
-        volume_air: 0.0141,
-        damping_air: 0.005,
-        mass_top: 0.043,
-        stiffness_top: 42700,
-        damping_top: 1.5,
-        area_top: 0.039,
-        mass_back: 0.094,
-        stiffness_back: 130000,
-        damping_back: 7.0,
-        area_back: 0.04,
-        mass_sides: 0.8,
-        stiffness_sides: 1400000,
-        damping_sides: 10.0,
-        area_sides: 0.025,
-    };
     const localizedMessages = (0, dof_localized_messages_1.resolveDofLocalizedMessages)(window
         .ToneLabDofMessages);
     const CARD_DEFS = [
@@ -62,8 +39,8 @@
             color: "var(--purple)",
             badgeText: "DOF 1",
             fields: [
-                { label: localizedMessages.soundholeAreaLabel, param: "area_hole", step: 0.0001, min: 0.003, max: 0.01 },
-                { label: localizedMessages.cavityVolumeLabel, param: "volume_air", step: 0.0005, min: 0.01, max: 0.025 },
+                { label: localizedMessages.soundholeAreaLabel, param: "area_hole", ...dof_model_engine_1.DOF_WHAT_IF_SLIDER_RANGES.area_hole },
+                { label: localizedMessages.cavityVolumeLabel, param: "volume_air", ...dof_model_engine_1.DOF_WHAT_IF_SLIDER_RANGES.volume_air },
                 { label: localizedMessages.movingAirMassLabel, param: "mass_air", step: 0.01, min: 0.1, max: 2.0 },
                 { label: localizedMessages.airDampingLabel, param: "damping_air", step: 0.0005, min: 0.001, max: 0.02 },
             ],
@@ -76,8 +53,8 @@
             color: "var(--blue)",
             badgeText: "DOF 2",
             fields: [
-                { label: localizedMessages.topMassLabel, param: "mass_top", step: 0.1, min: 5, max: 120 },
-                { label: localizedMessages.topStiffnessLabel, param: "stiffness_top", step: 100, min: 10000, max: 150000 },
+                { label: localizedMessages.topMassLabel, param: "mass_top", ...dof_model_engine_1.DOF_WHAT_IF_SLIDER_RANGES.mass_top },
+                { label: localizedMessages.topStiffnessLabel, param: "stiffness_top", ...dof_model_engine_1.DOF_WHAT_IF_SLIDER_RANGES.stiffness_top },
                 { label: localizedMessages.topDampingLabel, param: "damping_top", step: 0.1, min: 0.5, max: 6.0 },
                 { label: localizedMessages.topRadiatingAreaLabel, param: "area_top", step: 0.0005, min: 0.02, max: 0.06 },
             ],
@@ -90,8 +67,8 @@
             color: "var(--green)",
             badgeText: "DOF 3",
             fields: [
-                { label: localizedMessages.backMassLabel, param: "mass_back", step: 0.5, min: 40, max: 220 },
-                { label: localizedMessages.backStiffnessLabel, param: "stiffness_back", step: 200, min: 80000, max: 400000 },
+                { label: localizedMessages.backMassLabel, param: "mass_back", ...dof_model_engine_1.DOF_WHAT_IF_SLIDER_RANGES.mass_back },
+                { label: localizedMessages.backStiffnessLabel, param: "stiffness_back", ...dof_model_engine_1.DOF_WHAT_IF_SLIDER_RANGES.stiffness_back },
                 { label: localizedMessages.backDampingLabel, param: "damping_back", step: 0.1, min: 1.0, max: 15.0 },
                 { label: localizedMessages.backRadiatingAreaLabel, param: "area_back", step: 0.0005, min: 0.02, max: 0.06 },
             ],
@@ -241,16 +218,8 @@
         widths: { thin: 1.0, mid: 2.0, thick: 3.0 },
         opacities: { thin: 0.25, mid: 0.8, thick: 0.9 },
     };
-    const FIT_BOUNDS = {
-        area_hole: { min: 0.003, max: 0.01 },
-        volume_air: { min: 0.01, max: 0.025 },
-        mass_top: { min: 0.005, max: 0.12 },
-        stiffness_top: { min: 10000, max: 150000 },
-        stiffness_back: { min: 80000, max: 400000 },
-    };
-    const SOLVE_TWEAK_IDS = ["stiffness_top", "stiffness_back", "volume_air", "area_hole"];
     const SIMPLE_SOURCE_COLORS = ["var(--orange)", "var(--yellow)", "var(--purple)", "var(--blue)", "var(--green)"];
-    let currentParams = { ...DEFAULT_PARAMS };
+    let currentParams = { ...dof_model_engine_1.DOF_DEFAULT_PARAMS };
     let currentOrder = 4;
     let currentTaskMode = "edit";
     let currentSimpleSources = {
@@ -306,7 +275,7 @@
         "fit_target_area_hole_diam",
     ];
     function dofParamsFromLocation() {
-        return (0, dof_parameter_input_policy_1.readDofParamsFromSearch)(window.location.search, Object.keys(DEFAULT_PARAMS));
+        return (0, dof_parameter_input_policy_1.readDofParamsFromSearch)(window.location.search, Object.keys(dof_model_engine_1.DOF_DEFAULT_PARAMS));
     }
     function dofCardsRead() {
         return document.getElementById("dof_cards");
@@ -643,6 +612,8 @@
             return;
         (0, dof_task_cards_1.restoreDofFitTaskControls)(document, fitPanelSection(), fitTaskControlGridRead(), FIT_TASK_CARD_DEFS);
         solveTaskControlsRestoreHome();
+        // A what-if a recipe or the luthier set outlives the cards being rebuilt.
+        const whatIfText = whatIfOverlayTextRead();
         container.innerHTML = "";
         if (currentTaskMode === "fit") {
             (0, dof_task_cards_1.buildDofTaskCards)(document, container, FIT_TASK_CARD_DEFS);
@@ -727,6 +698,7 @@
             const grid = document.createElement("div");
             grid.className = "param-grid";
             card.fields.forEach((field) => {
+                var _a;
                 const row = document.createElement("div");
                 row.className = "param-row";
                 const label = document.createElement("div");
@@ -781,7 +753,7 @@
                 if (field.max != null)
                     overlay.max = String(field.max);
                 overlay.step = field.step != null ? String(field.step) : "any";
-                overlay.value = input.value;
+                overlay.value = (_a = whatIfText[field.param]) !== null && _a !== void 0 ? _a : input.value;
                 overlay.dataset.param = field.param;
                 overlay.addEventListener("input", () => {
                     updateOverlayLatch(field.param);
@@ -819,6 +791,17 @@
         });
         simpleSourceCardsAppend(container);
         applyCardVisibility();
+        refreshOverlayVisuals();
+        updateModeCards();
+    }
+    function whatIfOverlayTextRead() {
+        const text = {};
+        overlayLatched.forEach((param) => {
+            const overlay = overlaySliders[param];
+            if (overlay)
+                text[param] = overlay.value;
+        });
+        return text;
     }
     function applyCardVisibility() {
         if (currentTaskMode !== "edit")
@@ -1144,12 +1127,6 @@
             return null;
         return { seriesValueSampleAtFrequency: sample };
     }
-    function clampToBounds(id, value) {
-        const bounds = FIT_BOUNDS[id];
-        if (!bounds || !Number.isFinite(value))
-            return value;
-        return Math.max(bounds.min, Math.min(bounds.max, value));
-    }
     function sampleSeriesAtFreq(series, freq) {
         const sharedSampler = sharedSeriesSamplerRead();
         if (sharedSampler)
@@ -1157,14 +1134,7 @@
         return (0, dof_series_sampling_1.sampleDofSeriesAtFrequency)(series, freq);
     }
     function fit4DofFromTargets(targets, opts = {}) {
-        return (0, dof_target_fit_1.fitDofFromTargets)(targets, opts, {
-            defaultParams: DEFAULT_PARAMS,
-            defaultTweakIds: SOLVE_TWEAK_IDS,
-            clampToBounds,
-            computeResponse: computeResponseSafe,
-            adaptParams: adaptParamsToSolver,
-            peaksFromResponse: dof_peak_detection_1.modelPeaksFromResponse,
-        });
+        return (0, dof_model_engine_1.dofFitWithSolver)({ computeResponse: computeResponseSafe, adaptParams: adaptParamsToSolver }, targets, opts);
     }
     function targetOverlaySharedBuilderRead() {
         const shared = window.overlay_segments;
@@ -1321,7 +1291,7 @@
     function applyWhatIfParams(raw) {
         if (!isWhatIfEnabled())
             return;
-        SOLVE_TWEAK_IDS.forEach((id) => {
+        dof_model_engine_1.DOF_WHAT_IF_RECIPE_IDS.forEach((id) => {
             const overlay = overlaySliders[id];
             if (!overlay || !Number.isFinite(raw[id]))
                 return;
@@ -1338,7 +1308,7 @@
         const baseParams = useWhatIf ? (getWhatIfParams() || currentParams) : currentParams;
         const fit = fit4DofFromTargets(targets, {
             maxIter: 12,
-            tweakIds: opts.tweakIds || Array.from(SOLVE_TWEAK_IDS),
+            tweakIds: opts.tweakIds || Array.from(dof_model_engine_1.DOF_SOLVE_TWEAK_IDS),
             baseParams: { ...baseParams },
             factorAllowed: opts.factorAllowed,
         });
@@ -1365,12 +1335,6 @@
     function fitRecipeRestrictSimpleEnabled() {
         const toggle = document.getElementById("fit_restrict_simple");
         return Boolean(toggle === null || toggle === void 0 ? void 0 : toggle.checked);
-    }
-    function fitRecipeRestrictedTweakIds() {
-        return (0, dof_fit_input_policy_1.readDofRestrictedTweakIds)();
-    }
-    function fitRecipeIncreaseOnlyFactorAllowed(id, factor) {
-        return (0, dof_fit_input_policy_1.dofFitIncreaseOnlyFactorAllowed)(id, factor);
     }
     function fitStatusSet(message) {
         const status = document.getElementById("fit_status");
@@ -1414,7 +1378,7 @@
     function whatIfSummaryRefreshFromCurrentRecipe() {
         var _a, _b;
         const recipeParams = getWhatIfParams();
-        const lines = (_b = (_a = window.buildWhatIfRecipeSummaryLines) === null || _a === void 0 ? void 0 : _a.call(window, currentParams, recipeParams, {
+        const lines = (_b = (_a = window.buildWhatIfRecipeSummaryLines) === null || _a === void 0 ? void 0 : _a.call(window, (0, dof_model_engine_1.dofRecipeSummaryValues)(currentParams), (0, dof_model_engine_1.dofRecipeSummaryValues)(recipeParams), {
             decreaseTemplate: localizedMessages.whatIfDecreaseTemplate,
             fieldLabels: {
                 mass_top: localizedMessages.whatIfTopPlateMassLabel,
@@ -1441,10 +1405,11 @@
             return;
         }
         const restrictSimple = fitRecipeRestrictSimpleEnabled();
-        solveTargets(targets, {
+        const modelResponse = computeResponseForParams(currentParams);
+        const modelPeaks = modelResponse ? (0, dof_peak_detection_1.modelPeaksFromResponse)(modelResponse) : null;
+        solveTargets((0, dof_model_engine_1.dofSolveRecipeTargets)(targets, modelPeaks), {
             useWhatIf: true,
-            tweakIds: restrictSimple ? fitRecipeRestrictedTweakIds() : fitSolveTweakIdsFromTargets(targets),
-            factorAllowed: restrictSimple ? fitRecipeIncreaseOnlyFactorAllowed : undefined,
+            ...(0, dof_model_engine_1.dofSolveRecipeOptions)(targets, restrictSimple),
         });
         whatIfSummaryRefreshFromCurrentRecipe();
         fitStatusSet(localizedMessages.statusSolveApplied);
@@ -1510,7 +1475,7 @@
         if (!peaks) {
             const fit = fit4DofFromTargets(targets, {
                 maxIter: 2,
-                tweakIds: Array.from(SOLVE_TWEAK_IDS),
+                tweakIds: Array.from(dof_model_engine_1.DOF_SOLVE_TWEAK_IDS),
                 baseParams: { ...baseParams },
             });
             if (fit === null || fit === void 0 ? void 0 : fit.raw) {
@@ -1527,7 +1492,7 @@
             baseParams,
             targets,
             peaks,
-            clampToBounds,
+            clampToBounds: dof_model_engine_1.dofClampToBounds,
         });
         if (useWhatIf)
             applyWhatIfParams(warm);
@@ -1761,7 +1726,7 @@
     function applyLoadedDofSnapshot(snapshot) {
         var _a;
         const plan = window.DofSaveSnapshot.buildDofSnapshotApplyPlan(snapshot, {
-            params: DEFAULT_PARAMS,
+            params: dof_model_engine_1.DOF_DEFAULT_PARAMS,
             modelOrder: 4,
         });
         currentParams = { ...plan.params };

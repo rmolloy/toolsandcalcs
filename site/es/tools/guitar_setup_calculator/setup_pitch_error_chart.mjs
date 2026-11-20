@@ -1,5 +1,5 @@
-import { createPitchErrorPlot, createPitchErrorSpacing } from './setup_pitch_error_plot.mjs?rev=e906c8d81506';
-import { createPitchErrorView } from './setup_pitch_error_view.mjs?rev=e906c8d81506';
+import { createPitchErrorPlot, createPitchErrorSpacing } from './setup_pitch_error_plot.mjs?rev=356685105939';
+import { createPitchErrorView } from './setup_pitch_error_view.mjs?rev=356685105939';
 
 export function createSetupPitchErrorChart({ document, plotly, calculateComparison, messages }) {
   const selector = document.getElementById('pitch_error_string');
