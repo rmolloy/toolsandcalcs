@@ -1,6 +1,6 @@
-import { renderModes as renderModesBase } from "./resonate_mode_cards.js?rev=9b7373dc94f1";
-import { renderSpectrum as renderSpectrumBase } from "./resonate_spectrum_render.js?rev=9b7373dc94f1";
-import { renderEnergyTransferFromState as renderEnergyTransferFromStateBase } from "./resonate_energy_transfer.js?rev=9b7373dc94f1";
+import { renderModes as renderModesBase } from "./resonate_mode_cards.js?rev=e906c8d81506";
+import { renderSpectrum as renderSpectrumBase } from "./resonate_spectrum_render.js?rev=e906c8d81506";
+import { renderEnergyTransferFromState as renderEnergyTransferFromStateBase } from "./resonate_energy_transfer.js?rev=e906c8d81506";
 export function renderModesFromState(modes, deps) {
     renderModesBase(modes, { state: deps.state, modeMeta: deps.modeMeta });
 }
