@@ -5,27 +5,21 @@ import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js";
 import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js";
 import { emitArtifactEventFromState } from "./resonate_artifact_emit.js";
 import { measureModeNormalize } from "./resonate_mode_config.js";
-import { resonancePeakHoldEnabled, resonanceFftInputScopeResolve, resonancePolymaxValidationEnabled, resonanceSpectrumAveragingModeResolve, resonanceSpectrumSmoothingBinsResolve, resonanceSpectrumSmoothingHzResolve, resonanceSpectrumSmoothingModeResolve, } from "./resonate_debug_flags.js";
+import { resonancePeakHoldEnabled, resonanceFftInputScopeResolve, resonancePolymaxValidationEnabled, resonanceSpectrumAveragingModeResolve, } from "./resonate_debug_flags.js";
 import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js";
 import { spectrumDbApply } from "./resonate_spectrum_db_scale.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js";
+import { refreshSpectrumVariantsBuild, spectrumMaybeSmooth } from "./resonate_spectrum_variants.js";
 import { captureSpectrumInputs, rememberSpectrumFrame } from "./resonate_spectrum_cache.js";
-const FFT_SMOOTH_GAUSSIAN_BINS = 8;
 const SPECTRUM_AVERAGING_LIMITS = {
     "avg-4": 4,
     "avg-8": 8,
 };
+export { refreshSpectrumVariantsBuild };
 export function tapAveragingAllowedForState(state) {
     void state;
     return true;
-}
-export function refreshSpectrumVariantsBuild(args) {
-    const displayMags = spectrumMaybeSmooth(args.analysis, args.displaySpectrum.freqs, args.displaySpectrum.mags);
-    return {
-        rawSpectrum: spectrumDbApply(args.rawSpectrum, args.applyDb),
-        displaySpectrum: spectrumDbApply({ freqs: args.displaySpectrum.freqs, mags: displayMags }, args.applyDb),
-    };
 }
 export function spectrumAveragedMagsResolveForState(state, freqs, mags) {
     const mode = resonanceSpectrumAveragingModeResolve();
@@ -50,15 +44,6 @@ export function peakHoldSpectrumResolveForState(state, freqs, dbs) {
     const nextState = { freqs: freqs.slice(), dbs: peakDbs };
     state.peakHoldSpectrumState = nextState;
     return nextState;
-}
-function spectrumMaybeSmooth(analysis, freqsRaw, magsRaw) {
-    const smoothingMode = resonanceSpectrumSmoothingModeResolve();
-    if (smoothingMode === "off")
-        return magsRaw;
-    if (smoothingMode === "triangular-hz") {
-        return analysis.smoothSpectrumFast(freqsRaw, magsRaw, resonanceSpectrumSmoothingHzResolve(1));
-    }
-    return analysis.smoothSpectrumGaussianBins(magsRaw, resonanceSpectrumSmoothingBinsResolve(FFT_SMOOTH_GAUSSIAN_BINS));
 }
 function spectrumAveragingStateResolve(state, freqs, mode) {
     const current = state.spectrumAveragingState;
