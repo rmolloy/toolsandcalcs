@@ -23,6 +23,7 @@ var DofModelEngine = (() => {
   __export(dof_model_engine_exports, {
     DOF_DEFAULT_PARAMS: () => DOF_DEFAULT_PARAMS,
     DOF_FIT_BOUNDS: () => DOF_FIT_BOUNDS,
+    DOF_PLOT_FREQUENCY_RANGE_HZ: () => DOF_PLOT_FREQUENCY_RANGE_HZ,
     DOF_SOLVE_TWEAK_IDS: () => DOF_SOLVE_TWEAK_IDS2,
     DOF_WHAT_IF_RECIPE_IDS: () => DOF_WHAT_IF_RECIPE_IDS,
     DOF_WHAT_IF_SLIDER_RANGES: () => DOF_WHAT_IF_SLIDER_RANGES,
@@ -35,6 +36,7 @@ var DofModelEngine = (() => {
     dofInternalValueToDisplay: () => dofInternalValueToDisplay,
     dofLegacySolver: () => dofLegacySolver,
     dofPeaksForParams: () => dofPeaksForParams,
+    dofPlotResponseForParams: () => dofPlotResponseForParams,
     dofRecipeSummaryValues: () => dofRecipeSummaryValues,
     dofSaveSummaryBuild: () => dofSaveSummaryBuild,
     dofSolveRecipeOptions: () => dofSolveRecipeOptions,
@@ -706,6 +708,11 @@ var DofModelEngine = (() => {
       computeResponse: (params) => computeDofLegacyResponse(runtime, params),
       adaptParams: (raw) => adaptDofLegacyParams(runtime, raw)
     };
+  }
+  var DOF_PLOT_FREQUENCY_RANGE_HZ = [50, 300];
+  function dofPlotResponseForParams(solver, raw) {
+    const response = solver.computeResponse(solver.adaptParams(raw));
+    return Array.isArray(response?.total) && response.total.length > 0 ? response.total : null;
   }
   function dofPeaksForParams(solver, raw) {
     const response = solver.computeResponse(solver.adaptParams(raw));

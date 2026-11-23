@@ -12,38 +12,24 @@ import {
   resonanceFftInputScopeResolve,
   resonancePolymaxValidationEnabled,
   resonanceSpectrumAveragingModeResolve,
-  resonanceSpectrumSmoothingBinsResolve,
-  resonanceSpectrumSmoothingHzResolve,
-  resonanceSpectrumSmoothingModeResolve,
 } from "./resonate_debug_flags.js";
 import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js";
 import { spectrumDbApply } from "./resonate_spectrum_db_scale.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
 import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js";
+import { refreshSpectrumVariantsBuild, spectrumMaybeSmooth } from "./resonate_spectrum_variants.js";
 import { captureSpectrumInputs, rememberSpectrumFrame } from "./resonate_spectrum_cache.js";
 
-const FFT_SMOOTH_GAUSSIAN_BINS = 8;
 const SPECTRUM_AVERAGING_LIMITS: Record<string, number> = {
   "avg-4": 4,
   "avg-8": 8,
 };
 
+export { refreshSpectrumVariantsBuild };
+
 export function tapAveragingAllowedForState(state: Record<string, any>) {
   void state;
   return true;
-}
-
-export function refreshSpectrumVariantsBuild(args: {
-  analysis: AnalysisBoundary;
-  rawSpectrum: { freqs: number[]; mags: number[] };
-  displaySpectrum: { freqs: number[]; mags: number[] };
-  applyDb: (spectrum: { freqs: number[]; mags: number[] }) => any;
-}) {
-  const displayMags = spectrumMaybeSmooth(args.analysis, args.displaySpectrum.freqs, args.displaySpectrum.mags);
-  return {
-    rawSpectrum: spectrumDbApply(args.rawSpectrum, args.applyDb),
-    displaySpectrum: spectrumDbApply({ freqs: args.displaySpectrum.freqs, mags: displayMags }, args.applyDb),
-  };
 }
 
 export function spectrumAveragedMagsResolveForState(
@@ -79,19 +65,6 @@ export function peakHoldSpectrumResolveForState(
   const nextState = { freqs: freqs.slice(), dbs: peakDbs };
   state.peakHoldSpectrumState = nextState;
   return nextState;
-}
-
-function spectrumMaybeSmooth(
-  analysis: AnalysisBoundary,
-  freqsRaw: number[],
-  magsRaw: number[],
-) {
-  const smoothingMode = resonanceSpectrumSmoothingModeResolve();
-  if (smoothingMode === "off") return magsRaw;
-  if (smoothingMode === "triangular-hz") {
-    return analysis.smoothSpectrumFast(freqsRaw, magsRaw, resonanceSpectrumSmoothingHzResolve(1));
-  }
-  return analysis.smoothSpectrumGaussianBins(magsRaw, resonanceSpectrumSmoothingBinsResolve(FFT_SMOOTH_GAUSSIAN_BINS));
 }
 
 function spectrumAveragingStateResolve(state: Record<string, any>, freqs: number[], mode: string) {

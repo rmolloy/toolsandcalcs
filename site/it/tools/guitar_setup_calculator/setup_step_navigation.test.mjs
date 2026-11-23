@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Window } from "happy-dom";
-import { createSetupStepNavigation } from "./setup_step_navigation.mjs?rev=c46dc1d6973b";
+import { createSetupStepNavigation } from "./setup_step_navigation.mjs?rev=dae658f6289e";
 
 test("step navigation changes visibility and focus without changing entered measurements", () => {
   const window = new Window();

@@ -1,31 +1,25 @@
-import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js?rev=c46dc1d6973b";
-import { signalBoundaryDefault } from "./resonate_signal_boundary.js?rev=c46dc1d6973b";
-import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js?rev=c46dc1d6973b";
-import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js?rev=c46dc1d6973b";
-import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js?rev=c46dc1d6973b";
-import { emitArtifactEventFromState } from "./resonate_artifact_emit.js?rev=c46dc1d6973b";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=c46dc1d6973b";
-import { resonancePeakHoldEnabled, resonanceFftInputScopeResolve, resonancePolymaxValidationEnabled, resonanceSpectrumAveragingModeResolve, resonanceSpectrumSmoothingBinsResolve, resonanceSpectrumSmoothingHzResolve, resonanceSpectrumSmoothingModeResolve, } from "./resonate_debug_flags.js?rev=c46dc1d6973b";
-import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js?rev=c46dc1d6973b";
-import { spectrumDbApply } from "./resonate_spectrum_db_scale.js?rev=c46dc1d6973b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c46dc1d6973b";
-import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js?rev=c46dc1d6973b";
-import { captureSpectrumInputs, rememberSpectrumFrame } from "./resonate_spectrum_cache.js?rev=c46dc1d6973b";
-const FFT_SMOOTH_GAUSSIAN_BINS = 8;
+import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js?rev=dae658f6289e";
+import { signalBoundaryDefault } from "./resonate_signal_boundary.js?rev=dae658f6289e";
+import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js?rev=dae658f6289e";
+import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js?rev=dae658f6289e";
+import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js?rev=dae658f6289e";
+import { emitArtifactEventFromState } from "./resonate_artifact_emit.js?rev=dae658f6289e";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=dae658f6289e";
+import { resonancePeakHoldEnabled, resonanceFftInputScopeResolve, resonancePolymaxValidationEnabled, resonanceSpectrumAveragingModeResolve, } from "./resonate_debug_flags.js?rev=dae658f6289e";
+import { polymaxStableCandidatesFromWave } from "./resonate_polymax.js?rev=dae658f6289e";
+import { spectrumDbApply } from "./resonate_spectrum_db_scale.js?rev=dae658f6289e";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=dae658f6289e";
+import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js?rev=dae658f6289e";
+import { refreshSpectrumVariantsBuild, spectrumMaybeSmooth } from "./resonate_spectrum_variants.js?rev=dae658f6289e";
+import { captureSpectrumInputs, rememberSpectrumFrame } from "./resonate_spectrum_cache.js?rev=dae658f6289e";
 const SPECTRUM_AVERAGING_LIMITS = {
     "avg-4": 4,
     "avg-8": 8,
 };
+export { refreshSpectrumVariantsBuild };
 export function tapAveragingAllowedForState(state) {
     void state;
     return true;
-}
-export function refreshSpectrumVariantsBuild(args) {
-    const displayMags = spectrumMaybeSmooth(args.analysis, args.displaySpectrum.freqs, args.displaySpectrum.mags);
-    return {
-        rawSpectrum: spectrumDbApply(args.rawSpectrum, args.applyDb),
-        displaySpectrum: spectrumDbApply({ freqs: args.displaySpectrum.freqs, mags: displayMags }, args.applyDb),
-    };
 }
 export function spectrumAveragedMagsResolveForState(state, freqs, mags) {
     const mode = resonanceSpectrumAveragingModeResolve();
@@ -50,15 +44,6 @@ export function peakHoldSpectrumResolveForState(state, freqs, dbs) {
     const nextState = { freqs: freqs.slice(), dbs: peakDbs };
     state.peakHoldSpectrumState = nextState;
     return nextState;
-}
-function spectrumMaybeSmooth(analysis, freqsRaw, magsRaw) {
-    const smoothingMode = resonanceSpectrumSmoothingModeResolve();
-    if (smoothingMode === "off")
-        return magsRaw;
-    if (smoothingMode === "triangular-hz") {
-        return analysis.smoothSpectrumFast(freqsRaw, magsRaw, resonanceSpectrumSmoothingHzResolve(1));
-    }
-    return analysis.smoothSpectrumGaussianBins(magsRaw, resonanceSpectrumSmoothingBinsResolve(FFT_SMOOTH_GAUSSIAN_BINS));
 }
 function spectrumAveragingStateResolve(state, freqs, mode) {
     const current = state.spectrumAveragingState;

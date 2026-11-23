@@ -1,17 +1,13 @@
-import { waveformLabelResolveFromContext } from "./resonate_waveform_label.js?rev=c46dc1d6973b";
-import { noteWindowRangeBuildFromSlice, noteWindowSliceFindByTime, noteSelectionWindowRequestedFromPlotlyClick, } from "./resonate_note_window_selection.js?rev=c46dc1d6973b";
-import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=c46dc1d6973b";
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=c46dc1d6973b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c46dc1d6973b";
-import { renderWaveformPlot } from "./resonate_waveform_plot.js?rev=c46dc1d6973b";
+import { waveformLabelResolveFromContext } from "./resonate_waveform_label.js?rev=dae658f6289e";
+import { noteWindowRangeBuildFromSlice, noteWindowSliceFindByTime, noteSelectionWindowRequestedFromPlotlyClick, } from "./resonate_note_window_selection.js?rev=dae658f6289e";
+import { resolveColorHexFromRole, resolveColorRgbaFromRole } from "./resonate_color_roles.js?rev=dae658f6289e";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=dae658f6289e";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=dae658f6289e";
+import { renderWaveformPlot } from "./resonate_waveform_plot.js?rev=dae658f6289e";
+import { primaryRangeAutoSelectFromState, waveDurationMsResolve, fallbackWindowMsResolve, contiguousRangeClusterBestBuild, TAP_CLUSTER_OUTLIER_MAX_RATIO, TAP_CLUSTER_OUTLIER_MIN_RATIO, } from "./resonate_primary_range_auto.js?rev=dae658f6289e";
+export { primaryRangeAutoSelectFromState };
 let waveUpdatingShapes = false;
-const TAP_CLUSTER_GAP_MS = 950;
 const NOTE_CLUSTER_GAP_MS = 2600;
-const TAP_CLUSTER_OUTLIER_MIN_RATIO = 0.6;
-const TAP_CLUSTER_OUTLIER_MAX_RATIO = 1.8;
-const FALLBACK_WINDOW_MIN_MS = 900;
-const FALLBACK_WINDOW_MAX_MS = 3000;
-const FALLBACK_WINDOW_RATIO = 0.22;
 const RANGE_DRAG_EDGE_TOLERANCE_PX = 18;
 const RANGE_DRAG_MIN_WIDTH_MS = 80;
 const NOTE_EDITOR_POPOVER_ID = "wave_note_override_editor";
@@ -916,48 +912,6 @@ function noteSliceClassifiedAsTap(noteSlice, noteResults, state) {
     });
     return label === "Tap";
 }
-export function primaryRangeAutoSelectFromState(slice, state) {
-    if (state.viewRangeMs)
-        return null;
-    const taps = Array.isArray(state.tapSegments) ? state.tapSegments : [];
-    if (!taps.length)
-        return fallbackRangeOnLeftFromDuration(waveDurationMsResolve(state, slice));
-    const ranges = taps
-        .map((tap) => ({
-        start: (tap.start / slice.sampleRate) * 1000,
-        end: (tap.end / slice.sampleRate) * 1000,
-    }))
-        .filter((range) => Number.isFinite(range.start) && Number.isFinite(range.end) && range.end > range.start);
-    const bestCluster = contiguousRangeClusterBestBuild(ranges, TAP_CLUSTER_GAP_MS, { preferCount: true });
-    if (ranges.length > 1 && bestCluster?.ranges?.length === 1)
-        return isolatedTapRangeSpanBuild(ranges);
-    const normalizedRange = rangeClusterNormalizeByMedianDuration(bestCluster);
-    return normalizedRange || fallbackRangeOnLeftFromDuration(waveDurationMsResolve(state, slice));
-}
-function isolatedTapRangeSpanBuild(ranges) {
-    return { start: Math.min(...ranges.map((range) => range.start)), end: Math.max(...ranges.map((range) => range.end)) };
-}
-function waveDurationMsResolve(state, slice) {
-    const fromSlice = Number(slice?.timeMs?.[slice.timeMs.length - 1]);
-    if (Number.isFinite(fromSlice) && fromSlice > 0)
-        return fromSlice;
-    const fromCurrentWave = Number(state?.currentWave?.fullLengthMs);
-    if (Number.isFinite(fromCurrentWave) && fromCurrentWave > 0)
-        return fromCurrentWave;
-    const fromState = Number(state?.endMs);
-    if (Number.isFinite(fromState) && fromState > 0)
-        return fromState;
-    return 5000;
-}
-function fallbackWindowMsResolve(durationMs) {
-    const scaled = durationMs * FALLBACK_WINDOW_RATIO;
-    return Math.max(FALLBACK_WINDOW_MIN_MS, Math.min(FALLBACK_WINDOW_MAX_MS, scaled));
-}
-function fallbackRangeOnLeftFromDuration(durationMs) {
-    const windowMs = fallbackWindowMsResolve(durationMs);
-    const end = Math.min(durationMs, windowMs);
-    return { start: 0, end };
-}
 function fallbackRangeOnRightFromDuration(durationMs) {
     const windowMs = fallbackWindowMsResolve(durationMs);
     const start = Math.max(0, durationMs - windowMs);
@@ -968,69 +922,6 @@ function largestContiguousRangeClusterBuild(ranges, gapMs, options = {}) {
     if (!bestCluster)
         return null;
     return { start: bestCluster.start, end: bestCluster.end };
-}
-function contiguousRangeClusterBestBuild(ranges, gapMs, options = {}) {
-    if (!ranges.length)
-        return null;
-    const sorted = ranges
-        .slice()
-        .sort((left, right) => left.start - right.start || left.end - right.end);
-    const clusters = contiguousRangeClustersBuildFromSortedRanges(sorted, gapMs);
-    return clusters.reduce((best, cluster) => {
-        if (!best)
-            return cluster;
-        if (options.preferCount) {
-            const bestCount = best.ranges?.length ?? 0;
-            const clusterCount = cluster.ranges?.length ?? 0;
-            if (clusterCount > bestCount)
-                return cluster;
-            if (clusterCount < bestCount)
-                return best;
-        }
-        const bestWidth = best.end - best.start;
-        const currentWidth = cluster.end - cluster.start;
-        if (currentWidth > bestWidth)
-            return cluster;
-        if (currentWidth === bestWidth && cluster.start < best.start)
-            return cluster;
-        return best;
-    }, null);
-}
-function contiguousRangeClustersBuildFromSortedRanges(sortedRanges, gapMs) {
-    const clusters = [];
-    sortedRanges.forEach((range) => {
-        const current = clusters[clusters.length - 1];
-        if (!current || range.start - current.end > gapMs) {
-            clusters.push({ ...range, ranges: [{ ...range }] });
-            return;
-        }
-        current.end = Math.max(current.end, range.end);
-        current.ranges.push({ ...range });
-    });
-    return clusters;
-}
-function rangeClusterNormalizeByMedianDuration(range) {
-    if (!range?.ranges?.length)
-        return range ? { start: range.start, end: range.end } : null;
-    const durations = range.ranges
-        .map((entry) => rangeDurationMs(entry))
-        .filter((duration) => Number.isFinite(duration) && duration > 0)
-        .sort((left, right) => left - right);
-    if (!durations.length)
-        return { start: range.start, end: range.end };
-    const median = durations[Math.floor(durations.length / 2)];
-    const minDuration = median * TAP_CLUSTER_OUTLIER_MIN_RATIO;
-    const maxDuration = median * TAP_CLUSTER_OUTLIER_MAX_RATIO;
-    const normalized = range.ranges.filter((entry) => {
-        const duration = rangeDurationMs(entry);
-        return duration >= minDuration && duration <= maxDuration;
-    });
-    if (!normalized.length)
-        return { start: range.start, end: range.end };
-    return { start: normalized[0].start, end: normalized[normalized.length - 1].end };
-}
-function rangeDurationMs(range) {
-    return range.end - range.start;
 }
 function bindNoteSelectionResizeModifierTracking(plot) {
     const anyPlot = plot;

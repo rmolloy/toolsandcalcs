@@ -25,9 +25,10 @@ This license supersedes all previous licensing for this repository.
 })(function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.resolveDofLocalizedMessages = exports.modelPeaksFromResponse = exports.dofSaveSummaryBuild = exports.dofInternalValueToDisplay = exports.dofFitTargetsHaveAnyValue = exports.dofFitSolveTweakIdsFromTargets = exports.dofDisplayValueToInternal = exports.buildDofFitInputTargets = exports.DOF_WHAT_IF_SLIDER_RANGES = exports.DOF_WHAT_IF_RECIPE_IDS = exports.DOF_SOLVE_TWEAK_IDS = exports.DOF_FIT_BOUNDS = exports.DOF_DEFAULT_PARAMS = void 0;
+    exports.resolveDofLocalizedMessages = exports.modelPeaksFromResponse = exports.dofSaveSummaryBuild = exports.dofInternalValueToDisplay = exports.dofFitTargetsHaveAnyValue = exports.dofFitSolveTweakIdsFromTargets = exports.dofDisplayValueToInternal = exports.buildDofFitInputTargets = exports.DOF_PLOT_FREQUENCY_RANGE_HZ = exports.DOF_WHAT_IF_SLIDER_RANGES = exports.DOF_WHAT_IF_RECIPE_IDS = exports.DOF_SOLVE_TWEAK_IDS = exports.DOF_FIT_BOUNDS = exports.DOF_DEFAULT_PARAMS = void 0;
     exports.dofClampToBounds = dofClampToBounds;
     exports.dofLegacySolver = dofLegacySolver;
+    exports.dofPlotResponseForParams = dofPlotResponseForParams;
     exports.dofPeaksForParams = dofPeaksForParams;
     exports.dofFitWithSolver = dofFitWithSolver;
     exports.dofSolveRecipeOptions = dofSolveRecipeOptions;
@@ -108,6 +109,14 @@ This license supersedes all previous licensing for this repository.
             computeResponse: (params) => (0, dof_legacy_solver_1.computeDofLegacyResponse)(runtime, params),
             adaptParams: (raw) => (0, dof_legacy_solver_1.adaptDofLegacyParams)(runtime, raw),
         };
+    }
+    // The frequency range the page's response plot shows without added sources. The page keeps its own copy
+    // in main.ts; its published script is held to a byte baseline.
+    exports.DOF_PLOT_FREQUENCY_RANGE_HZ = [50, 300];
+    // The model's total response as the page plots it: level in dB against frequency in Hz.
+    function dofPlotResponseForParams(solver, raw) {
+        const response = solver.computeResponse(solver.adaptParams(raw));
+        return Array.isArray(response === null || response === void 0 ? void 0 : response.total) && response.total.length > 0 ? response.total : null;
     }
     function dofPeaksForParams(solver, raw) {
         const response = solver.computeResponse(solver.adaptParams(raw));

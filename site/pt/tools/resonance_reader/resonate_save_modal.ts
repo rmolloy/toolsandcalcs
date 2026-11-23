@@ -1,7 +1,9 @@
 import "../common/notebook_save_modal.js";
 import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js";
-import { measureModeLabelBuild, measureModeNormalize } from "./resonate_mode_config.js";
+import { resonanceSaveTitleBuild } from "./resonate_save_title.js";
 import { resonanceLocalizedMessages } from "./resonate_localized_messages.js";
+
+export { resonanceSaveTitleBuild };
 
 type ResonanceSaveSelection = { subject: Record<string, any>; event: Record<string, any> };
 
@@ -35,17 +37,6 @@ export async function openConnectedResonanceSaveModal(args: {
     },
     eventExtras: { measureMode: args.measureMode },
   });
-}
-
-// The entry title the builder sees before renaming it: what was done, and in which mode.
-export function resonanceSaveTitleBuild(measureMode: unknown): string {
-  const normalized = measureModeNormalize(measureMode);
-  if (normalized === "played_note") return resonanceLocalizedMessages.measureModePlayedNote;
-  if (normalized === "peak_analysis") return resonanceLocalizedMessages.savePeakAnalysisTitle;
-  return resonanceLocalizedMessages.saveTapTestTitleTemplate.replace(
-    "{mode}",
-    measureModeLabelBuild(measureMode),
-  );
 }
 
 function readSharedNotebookSaveModal(): SharedNotebookSaveModal {

@@ -1,7 +1,8 @@
-import "../common/notebook_save_modal.js?rev=c46dc1d6973b";
-import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js?rev=c46dc1d6973b";
-import { measureModeLabelBuild, measureModeNormalize } from "./resonate_mode_config.js?rev=c46dc1d6973b";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=c46dc1d6973b";
+import "../common/notebook_save_modal.js?rev=dae658f6289e";
+import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js?rev=dae658f6289e";
+import { resonanceSaveTitleBuild } from "./resonate_save_title.js?rev=dae658f6289e";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=dae658f6289e";
+export { resonanceSaveTitleBuild };
 const RESONANCE_CAPTURE_PACKAGE_FILES = ["state.json", "source.wav", "plot.png"];
 export async function openConnectedResonanceSaveModal(args) {
     const defaults = resonanceSubjectDraftDefaultsFromMeasureMode(args.measureMode);
@@ -20,15 +21,6 @@ export async function openConnectedResonanceSaveModal(args) {
         },
         eventExtras: { measureMode: args.measureMode },
     });
-}
-// The entry title the builder sees before renaming it: what was done, and in which mode.
-export function resonanceSaveTitleBuild(measureMode) {
-    const normalized = measureModeNormalize(measureMode);
-    if (normalized === "played_note")
-        return resonanceLocalizedMessages.measureModePlayedNote;
-    if (normalized === "peak_analysis")
-        return resonanceLocalizedMessages.savePeakAnalysisTitle;
-    return resonanceLocalizedMessages.saveTapTestTitleTemplate.replace("{mode}", measureModeLabelBuild(measureMode));
 }
 function readSharedNotebookSaveModal() {
     const shared = globalThis.CommonNotebookSaveModal;
