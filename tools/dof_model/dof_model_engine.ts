@@ -115,6 +115,16 @@ export function dofLegacySolver(runtime: Record<string, any>): DofModelSolver {
   };
 }
 
+// The frequency range the page's response plot shows without added sources. The page keeps its own copy
+// in main.ts; its published script is held to a byte baseline.
+export const DOF_PLOT_FREQUENCY_RANGE_HZ: [number, number] = [50, 300];
+
+// The model's total response as the page plots it: level in dB against frequency in Hz.
+export function dofPlotResponseForParams(solver: DofModelSolver, raw: DofModelParams) {
+  const response = solver.computeResponse(solver.adaptParams(raw)) as { total?: Array<{ x: number; y: number }> } | null;
+  return Array.isArray(response?.total) && response.total.length > 0 ? response.total : null;
+}
+
 export function dofPeaksForParams(solver: DofModelSolver, raw: DofModelParams) {
   const response = solver.computeResponse(solver.adaptParams(raw));
   return response ? modelPeaksFromResponse(response) : null;
