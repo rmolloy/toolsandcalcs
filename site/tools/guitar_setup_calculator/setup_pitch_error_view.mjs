@@ -1,4 +1,4 @@
-import { createPitchErrorSpacing } from './setup_pitch_error_plot.mjs?rev=dae658f6289e';
+import { createPitchErrorSpacing } from './setup_pitch_error_plot.mjs?rev=d0d67108da96';
 
 export function createPitchErrorView({ document, plotly, plot, messages, redraw }) {
   const dialog = document.getElementById('pitch_error_settings');

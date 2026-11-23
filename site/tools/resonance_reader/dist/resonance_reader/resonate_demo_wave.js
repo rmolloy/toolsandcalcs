@@ -1,4 +1,4 @@
-import { measureModeNormalize } from "./resonate_mode_config.js?rev=dae658f6289e";
+import { measureModeNormalize } from "./resonate_mode_config.js?rev=d0d67108da96";
 const DEMO_PEAKS_BY_MODE = {
     guitar: [98, 178, 220],
     played_note: [98, 178, 220],

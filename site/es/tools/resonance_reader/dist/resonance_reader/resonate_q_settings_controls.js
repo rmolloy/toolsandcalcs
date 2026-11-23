@@ -1,6 +1,6 @@
-import { qSettingsResolve } from "./resonate_q_settings.js?rev=dae658f6289e";
-import { settingsPipelineRefresh } from "./resonate_settings_refresh.js?rev=dae658f6289e";
-import { stockQSettingsAreApplicable } from "./resonate_q_view_policy.js?rev=dae658f6289e";
+import { qSettingsResolve } from "./resonate_q_settings.js?rev=d0d67108da96";
+import { settingsPipelineRefresh } from "./resonate_settings_refresh.js?rev=d0d67108da96";
+import { stockQSettingsAreApplicable } from "./resonate_q_view_policy.js?rev=d0d67108da96";
 const Q_FIELDS = { method: "settings_q_method", aggregation: "settings_q_aggregation" };
 export function qSettingsControlsBind(deps) {
     Object.entries(Q_FIELDS).forEach(([field, id]) => {

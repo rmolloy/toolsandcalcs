@@ -1,6 +1,6 @@
-import { modeBands } from "./resonate_mode_config.js?rev=dae658f6289e";
-import { median } from "./resonate_mode_metrics.js?rev=dae658f6289e";
-import { resonanceParabolicPeakRefineEnabled } from "./resonate_debug_flags.js?rev=dae658f6289e";
+import { modeBands } from "./resonate_mode_config.js?rev=d0d67108da96";
+import { median } from "./resonate_mode_metrics.js?rev=d0d67108da96";
+import { resonanceParabolicPeakRefineEnabled } from "./resonate_debug_flags.js?rev=d0d67108da96";
 export function smoothSpectrumFast(freqs, mags, smoothHz) {
     if (!smoothHz || smoothHz <= 0)
         return mags;
