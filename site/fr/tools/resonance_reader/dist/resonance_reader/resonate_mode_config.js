@@ -1,5 +1,5 @@
-import { resolveColorHexFromRole } from "./resonate_color_roles.js?rev=d0d67108da96";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=d0d67108da96";
+import { resolveColorHexFromRole } from "./resonate_color_roles.js?rev=b5eb48ee890e";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=b5eb48ee890e";
 const GUITAR_BANDS = {
     air: { low: 75, high: 115 },
     top: { low: 150, high: 205 },

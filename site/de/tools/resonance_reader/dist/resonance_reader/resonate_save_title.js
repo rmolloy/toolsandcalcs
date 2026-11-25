@@ -1,5 +1,5 @@
-import { measureModeLabelBuild, measureModeNormalize } from "./resonate_mode_config.js?rev=d0d67108da96";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=d0d67108da96";
+import { measureModeLabelBuild, measureModeNormalize } from "./resonate_mode_config.js?rev=b5eb48ee890e";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=b5eb48ee890e";
 // The entry title the builder sees before renaming it: what was done, and in which mode.
 export function resonanceSaveTitleBuild(measureMode) {
     const normalized = measureModeNormalize(measureMode);

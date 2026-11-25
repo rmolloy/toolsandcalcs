@@ -1,5 +1,5 @@
-import { renderMock } from "./resonate_mock_render.js?rev=d0d67108da96";
-import { resonatePipelineBootstrapAttach } from "./resonate_pipeline_bootstrap.js?rev=d0d67108da96";
+import { renderMock } from "./resonate_mock_render.js?rev=b5eb48ee890e";
+import { resonatePipelineBootstrapAttach } from "./resonate_pipeline_bootstrap.js?rev=b5eb48ee890e";
 export function resonanceReaderBootstrap(deps) {
     const renderMockBound = () => renderMock({ renderSpectrum: deps.renderSpectrum, renderModes: deps.renderModes });
     resonatePipelineBootstrapAttach({

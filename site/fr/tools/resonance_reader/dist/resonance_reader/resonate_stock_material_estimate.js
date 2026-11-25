@@ -1,8 +1,8 @@
-import { stockMeasurementsDraftBuild } from "./resonate_stock_measurements.js?rev=d0d67108da96";
-import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=d0d67108da96";
-import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=d0d67108da96";
-import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=d0d67108da96";
-import { plateStockMaterialBuildFromMeasurements } from "./resonate_plate_stock_material.js?rev=d0d67108da96";
+import { stockMeasurementsDraftBuild } from "./resonate_stock_measurements.js?rev=b5eb48ee890e";
+import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=b5eb48ee890e";
+import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=b5eb48ee890e";
+import { braceStockEstimateResolveFromState } from "./resonate_brace_stock_estimate.js?rev=b5eb48ee890e";
+import { plateStockMaterialBuildFromMeasurements } from "./resonate_plate_stock_material.js?rev=b5eb48ee890e";
 export function stockMaterialEstimateResolve(state) {
     const draft = stockMeasurementsDraftBuild(state);
     if (draft.kind === "brace_stock")
