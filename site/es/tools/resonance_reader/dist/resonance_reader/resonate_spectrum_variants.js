@@ -1,5 +1,5 @@
-import { resonanceSpectrumSmoothingBinsResolve, resonanceSpectrumSmoothingHzResolve, resonanceSpectrumSmoothingModeResolve, } from "./resonate_debug_flags.js?rev=b5eb48ee890e";
-import { spectrumDbApply } from "./resonate_spectrum_db_scale.js?rev=b5eb48ee890e";
+import { resonanceSpectrumSmoothingBinsResolve, resonanceSpectrumSmoothingHzResolve, resonanceSpectrumSmoothingModeResolve, } from "./resonate_debug_flags.js?rev=9c88a314891c";
+import { spectrumDbApply } from "./resonate_spectrum_db_scale.js?rev=9c88a314891c";
 const FFT_SMOOTH_GAUSSIAN_BINS = 8;
 export function refreshSpectrumVariantsBuild(args) {
     const displayMags = spectrumMaybeSmooth(args.analysis, args.displaySpectrum.freqs, args.displaySpectrum.mags);

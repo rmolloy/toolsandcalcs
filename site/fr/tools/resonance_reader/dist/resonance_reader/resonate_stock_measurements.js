@@ -1,5 +1,5 @@
-import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=b5eb48ee890e";
-import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=b5eb48ee890e";
+import { peakAnalysisSourceMeasureModeResolve } from "./resonate_mode_config.js?rev=9c88a314891c";
+import { braceStockMeasurementsValid } from "./resonate_brace_stock_material.js?rev=9c88a314891c";
 export function stockMeasurementsEvidenceBuild(state) {
     if (!state.stockMeasurementKind && !state.braceStockMeasurements)
         return {};

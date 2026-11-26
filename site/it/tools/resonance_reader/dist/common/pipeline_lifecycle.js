@@ -1,4 +1,4 @@
-import { pipelineEventEmit, pipelineRunIdBuild, } from "./pipeline_runtime.js?rev=b5eb48ee890e";
+import { pipelineEventEmit, pipelineRunIdBuild, } from "./pipeline_runtime.js?rev=9c88a314891c";
 export async function pipelineRunWithLifecycle({ runIdPrefix, input, config, emit, run, }) {
     const runId = pipelineRunIdBuild(runIdPrefix);
     pipelineEventEmit(emit, "pipeline.started", runId, { input, config });

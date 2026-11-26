@@ -5,7 +5,7 @@ import {
   describeActionProvenance,
   describeCalculationBasis,
   provenanceGroupForInput,
-} from "./setup_provenance.mjs?rev=b5eb48ee890e";
+} from "./setup_provenance.mjs?rev=9c88a314891c";
 
 const provenanceMessages = Object.freeze({
   calculatedFromMeasurements: "Calculated from your measured setup.",

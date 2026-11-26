@@ -1,5 +1,5 @@
-import { stockKindResolve } from "./resonate_stock_measurements.js?rev=b5eb48ee890e";
-import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=b5eb48ee890e";
+import { stockKindResolve } from "./resonate_stock_measurements.js?rev=9c88a314891c";
+import { stockLongConfirmationResolve } from "./resonate_stock_long_confirmation.js?rev=9c88a314891c";
 export function plateStockTransferModesBuild(state, compatibleModes) {
     if (stockKindResolve(state) !== "plate_stock")
         return compatibleModes;

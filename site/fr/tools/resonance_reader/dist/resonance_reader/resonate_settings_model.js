@@ -1,5 +1,5 @@
-import { RESONANCE_TONELAB_DEFAULTS } from "./resonate_debug_flags.js?rev=b5eb48ee890e";
-import { SETTINGS_IDS } from "./resonate_settings_ids.js?rev=b5eb48ee890e";
+import { RESONANCE_TONELAB_DEFAULTS } from "./resonate_debug_flags.js?rev=9c88a314891c";
+import { SETTINGS_IDS } from "./resonate_settings_ids.js?rev=9c88a314891c";
 export function settingsDebugPatchBuild(name, value) {
     if (name === SETTINGS_IDS.profile)
         return settingsProfilePatchBuild(value);

@@ -1,5 +1,5 @@
-@import url("../common/styles.css?rev=b5eb48ee890e");
-@import url("../common/theme_resonance_shared.css?rev=b5eb48ee890e");
+@import url("../common/styles.css?rev=9c88a314891c");
+@import url("../common/theme_resonance_shared.css?rev=9c88a314891c");
 :root {
   --tl-topbar-h: 0px;
   --tl-page-max: min(1600px, 94vw);
