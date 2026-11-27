@@ -1,9 +1,9 @@
-import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=9c88a314891c";
-import { emitModeOverrideResetRequested } from "./resonate_override_commands.js?rev=9c88a314891c";
-import { analysisTabActivatePeakAnalysis } from "./resonate_analysis_tabs.js?rev=9c88a314891c";
-import { peakAnalysisPanelRenderFromState, peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js?rev=9c88a314891c";
-import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=9c88a314891c";
-import { customMeasurementCreateAndAppendFromState, customMeasurementDeleteFromState, customMeasurementFrequencySetFromState, customMeasurementRenameFromState, } from "./resonate_custom_measurements.js?rev=9c88a314891c";
+import { overlayToggleShouldRender } from "./resonate_overlay_gate.js?rev=513a83b73dab";
+import { emitModeOverrideResetRequested } from "./resonate_override_commands.js?rev=513a83b73dab";
+import { analysisTabActivatePeakAnalysis } from "./resonate_analysis_tabs.js?rev=513a83b73dab";
+import { peakAnalysisPanelRenderFromState, peakAnalysisSelectionApplyFromModeKey } from "./resonate_peak_analysis_panel.js?rev=513a83b73dab";
+import { resonanceLocalizedMessages } from "./resonate_localized_messages.js?rev=513a83b73dab";
+import { customMeasurementCreateAndAppendFromState, customMeasurementDeleteFromState, customMeasurementFrequencySetFromState, customMeasurementRenameFromState, } from "./resonate_custom_measurements.js?rev=513a83b73dab";
 let modeTargetHandlersBound = false;
 let modeTargetRender = null;
 export function modeTargetHandlersBindOnce(grid, modes, deps, renderModes) {
