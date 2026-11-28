@@ -70,6 +70,8 @@ var ResonanceReaderEngine = (() => {
   var resonance_reader_engine_exports = {};
   __export(resonance_reader_engine_exports, {
     RESONANCE_RECORDING_MEASURE_MODES: () => RESONANCE_RECORDING_MEASURE_MODES,
+    braceStockMaterialBuildFromMeasurements: () => braceStockMaterialBuildFromMeasurements,
+    peakSideOfStrongerPeakHz: () => peakSideOfStrongerPeakHz,
     resonanceRecordingAnalyze: () => resonanceRecordingAnalyze,
     resonanceRecordingFromSave: () => resonanceRecordingFromSave,
     resonanceRecordingSaveBuild: () => resonanceRecordingSaveBuild
@@ -1190,6 +1192,62 @@ var ResonanceReaderEngine = (() => {
 
   // tools/resonance_reader/resonate_capture_package.ts
   var import_tool_document = __toESM(require_tool_document(), 1);
+
+  // tools/resonance_reader/resonate_brace_stock_material.ts
+  function braceStockMaterialBuildFromMeasurements(measurements, longModeFrequencyHz) {
+    if (!braceStockFrequencyValid(longModeFrequencyHz)) return null;
+    const specimen = braceStockSpecimenConvertToSi(measurements);
+    if (!braceStockSpecimenValid(specimen)) return null;
+    const densityKgM3 = braceStockDensityCalculate(specimen);
+    const dynamicYoungsModulusGPa = braceStockModulusCalculate(specimen, longModeFrequencyHz);
+    const sectionMomentOfInertiaM4 = braceStockSectionMomentOfInertiaCalculateFromSpecimen(specimen);
+    const flexuralRigidityNm2 = braceStockFlexuralRigidityCalculateFromValidInputs(
+      dynamicYoungsModulusGPa,
+      sectionMomentOfInertiaM4
+    );
+    const longitudinalSoundSpeedMps = braceStockSoundSpeedCalculateFromValidInputs(
+      dynamicYoungsModulusGPa,
+      densityKgM3
+    );
+    return {
+      densityKgM3,
+      dynamicYoungsModulusGPa,
+      sectionMomentOfInertiaM4,
+      flexuralRigidityNm2,
+      longitudinalSoundSpeedMps
+    };
+  }
+  function braceStockSoundSpeedCalculateFromValidInputs(dynamicYoungsModulusGPa, densityKgM3) {
+    return Math.sqrt(dynamicYoungsModulusGPa * 1e9 / densityKgM3);
+  }
+  function braceStockFlexuralRigidityCalculateFromValidInputs(dynamicYoungsModulusGPa, sectionMomentOfInertiaM4) {
+    return dynamicYoungsModulusGPa * 1e9 * sectionMomentOfInertiaM4;
+  }
+  function braceStockSpecimenConvertToSi(measurements) {
+    return {
+      lengthM: measurements.stockLengthMm / 1e3,
+      widthM: measurements.stockWidthMm / 1e3,
+      heightM: measurements.stockHeightMm / 1e3,
+      massKg: measurements.stockMassG / 1e3
+    };
+  }
+  function braceStockSpecimenValid(specimen) {
+    return Object.values(specimen).every((value) => Number.isFinite(value) && value > 0);
+  }
+  function braceStockFrequencyValid(frequencyHz) {
+    return Number.isFinite(frequencyHz) && frequencyHz > 0;
+  }
+  function braceStockDensityCalculate(specimen) {
+    return specimen.massKg / (specimen.lengthM * specimen.widthM * specimen.heightM);
+  }
+  function braceStockSectionMomentOfInertiaCalculateFromSpecimen(specimen) {
+    return specimen.widthM * Math.pow(specimen.heightM, 3) / 12;
+  }
+  function braceStockModulusCalculate(specimen, frequencyHz) {
+    const correctionFactor = 1 + 6.585 * Math.pow(specimen.heightM / specimen.lengthM, 2);
+    const modulusPa = 0.9465 * (specimen.massKg * Math.pow(frequencyHz, 2) * Math.pow(specimen.lengthM, 3) / (specimen.widthM * Math.pow(specimen.heightM, 3))) * correctionFactor;
+    return modulusPa / 1e9;
+  }
 
   // tools/resonance_reader/resonate_stock_measurements.ts
   function stockMeasurementsEvidenceBuild(state) {
@@ -2940,11 +2998,35 @@ var ResonanceReaderEngine = (() => {
         cents: cardOf(mode.mode)?.cents ?? null,
         q: cardOf(mode.mode)?.q ?? null,
         // How the page measured that Q: from each tap's decay for stock, from the peak's width otherwise.
-        qMethod: cardOf(mode.mode)?.qEvidence?.method ?? "spectral"
+        qMethod: cardOf(mode.mode)?.qEvidence?.method ?? "spectral",
+        // Set when the band's highest point is only the side of a stronger peak outside the band.
+        sideOfPeakHz: Number.isFinite(mode.peakFreq) ? peakSideOfStrongerPeakHz(freqs, dbs, mode.peakIdx) : null
       })),
       // The page's state for this recording, which its own save code writes from.
       pageState: state
     };
+  }
+  var PEAK_STANDS_CLEAR_DROP_DB = 3;
+  function peakSideOfStrongerPeakHz(freqs, dbs, index) {
+    for (const step of [-1, 1]) {
+      for (let at = index + step; at >= 0 && at < dbs.length; at += step) {
+        if (dbs[at] <= dbs[index] - PEAK_STANDS_CLEAR_DROP_DB) break;
+        if (dbs[at] <= dbs[index]) continue;
+        return freqs[peakTopIndexClimbFrom(freqs, dbs, at, step)];
+      }
+    }
+    return null;
+  }
+  var PEAK_SIDE_RIPPLE_SPAN_HZ = 5;
+  function peakTopIndexClimbFrom(freqs, dbs, from, step) {
+    const averaged = smoothSpectrumFast(freqs, dbs, PEAK_SIDE_RIPPLE_SPAN_HZ);
+    let at = from;
+    while (at + step >= 0 && at + step < averaged.length && averaged[at + step] > averaged[at]) at += step;
+    let top = at;
+    for (let near = 0; near < dbs.length; near += 1) {
+      if (Math.abs(freqs[near] - freqs[at]) <= PEAK_SIDE_RIPPLE_SPAN_HZ && dbs[near] > dbs[top]) top = near;
+    }
+    return top;
   }
   function resonanceRecordingSaveBuild(args) {
     const state = { ...args.analysis.pageState, recordingLabel: args.recordingLabel };
