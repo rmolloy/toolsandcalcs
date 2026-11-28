@@ -6,6 +6,7 @@
 import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js";
 import { resonanceCaptureStateJsonBuild, resonanceCaptureWaveBlobBuild } from "./resonate_capture_package.js";
 import { measureModeNormalize, modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js";
+import { smoothSpectrumFast } from "./resonate_mode_detection.js";
 import { restoreResonanceSavedStateDocument } from "./resonate_notebook_connect_draft.js";
 import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js";
 import { primaryRangeAutoSelectFromState } from "./resonate_primary_range_auto.js";
@@ -17,6 +18,9 @@ import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js";
 import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js";
 import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js";
 import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js";
+// The brace stock estimate the Reader page shows from a specimen's dimensions, mass and Long mode:
+// density, long-grain modulus, section stiffness and sound speed.
+export { braceStockMaterialBuildFromMeasurements } from "./resonate_brace_stock_material.js";
 export const RESONANCE_RECORDING_MEASURE_MODES = ["guitar", "plate_stock", "brace_stock"];
 export async function resonanceRecordingAnalyze(args) {
     const measureMode = measureModeNormalize(args.measureMode);
@@ -84,10 +88,45 @@ export async function resonanceRecordingAnalyze(args) {
             q: cardOf(mode.mode)?.q ?? null,
             // How the page measured that Q: from each tap's decay for stock, from the peak's width otherwise.
             qMethod: cardOf(mode.mode)?.qEvidence?.method ?? "spectral",
+            // Set when the band's highest point is only the side of a stronger peak outside the band.
+            sideOfPeakHz: Number.isFinite(mode.peakFreq) ? peakSideOfStrongerPeakHz(freqs, dbs, mode.peakIdx) : null,
         })),
         // The page's state for this recording, which its own save code writes from.
         pageState: state,
     };
+}
+// A resonance stands clear of its surroundings: the level falls away on both sides before it rises again.
+// The highest point of a band can instead be a ripple on the side of a stronger peak that lies outside the
+// band, which is no resonance of its own. This is the frequency of that stronger peak, or null when the
+// point at `index` stands clear: walking away from it either way, the level drops this far before it
+// climbs above the point's own.
+const PEAK_STANDS_CLEAR_DROP_DB = 3;
+export function peakSideOfStrongerPeakHz(freqs, dbs, index) {
+    for (const step of [-1, 1]) {
+        for (let at = index + step; at >= 0 && at < dbs.length; at += step) {
+            if (dbs[at] <= dbs[index] - PEAK_STANDS_CLEAR_DROP_DB)
+                break;
+            if (dbs[at] <= dbs[index])
+                continue;
+            return freqs[peakTopIndexClimbFrom(freqs, dbs, at, step)];
+        }
+    }
+    return null;
+}
+// Up a peak's side to its top. A side carries ripples, so the climb follows the level averaged over a few
+// hertz, and the top is the highest point of the spectrum itself around where that average turns over.
+const PEAK_SIDE_RIPPLE_SPAN_HZ = 5;
+function peakTopIndexClimbFrom(freqs, dbs, from, step) {
+    const averaged = smoothSpectrumFast(freqs, dbs, PEAK_SIDE_RIPPLE_SPAN_HZ);
+    let at = from;
+    while (at + step >= 0 && at + step < averaged.length && averaged[at + step] > averaged[at])
+        at += step;
+    let top = at;
+    for (let near = 0; near < dbs.length; near += 1) {
+        if (Math.abs(freqs[near] - freqs[at]) <= PEAK_SIDE_RIPPLE_SPAN_HZ && dbs[near] > dbs[top])
+            top = near;
+    }
+    return top;
 }
 // The Resonance Reader's own save of an analysed recording: the state document and the recording as a WAV,
 // written by the code the page saves with, and the entry title and kind of subject the page's save offers.
