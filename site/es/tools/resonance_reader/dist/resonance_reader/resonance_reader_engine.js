@@ -3,24 +3,24 @@
 // are the ones the page runs on an imported recording before the luthier changes anything, and the result
 // is the page's own mode cards, with the Q the page shows for that measure mode. A page that is not the Resonance Reader, such as a Guitar Lab connector panel, calculates
 // through this file.
-import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js?rev=5cd466ecbcb0";
-import { resonanceCaptureStateJsonBuild, resonanceCaptureWaveBlobBuild } from "./resonate_capture_package.js?rev=5cd466ecbcb0";
-import { measureModeNormalize, modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js?rev=5cd466ecbcb0";
-import { smoothSpectrumFast } from "./resonate_mode_detection.js?rev=5cd466ecbcb0";
-import { restoreResonanceSavedStateDocument } from "./resonate_notebook_connect_draft.js?rev=5cd466ecbcb0";
-import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js?rev=5cd466ecbcb0";
-import { primaryRangeAutoSelectFromState } from "./resonate_primary_range_auto.js?rev=5cd466ecbcb0";
-import { resonanceSaveTitleBuild } from "./resonate_save_title.js?rev=5cd466ecbcb0";
-import { signalBoundaryDefault } from "./resonate_signal_boundary.js?rev=5cd466ecbcb0";
-import { spectrumFftMaxHzResolve, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js?rev=5cd466ecbcb0";
-import { refreshSpectrumVariantsBuild } from "./resonate_spectrum_variants.js?rev=5cd466ecbcb0";
-import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js?rev=5cd466ecbcb0";
-import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js?rev=5cd466ecbcb0";
-import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js?rev=5cd466ecbcb0";
-import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js?rev=5cd466ecbcb0";
+import { analysisBoundaryDefault } from "./resonate_analysis_boundary.js?rev=62152aa99b89";
+import { resonanceCaptureStateJsonBuild, resonanceCaptureWaveBlobBuild } from "./resonate_capture_package.js?rev=62152aa99b89";
+import { measureModeNormalize, modeProfileResolveFromMeasureMode } from "./resonate_mode_config.js?rev=62152aa99b89";
+import { smoothSpectrumFast } from "./resonate_mode_detection.js?rev=62152aa99b89";
+import { restoreResonanceSavedStateDocument } from "./resonate_notebook_connect_draft.js?rev=62152aa99b89";
+import { peakAnalysisRingdownDataBuild } from "./resonate_peak_analysis_panel.js?rev=62152aa99b89";
+import { primaryRangeAutoSelectFromState } from "./resonate_primary_range_auto.js?rev=62152aa99b89";
+import { resonanceSaveTitleBuild } from "./resonate_save_title.js?rev=62152aa99b89";
+import { signalBoundaryDefault } from "./resonate_signal_boundary.js?rev=62152aa99b89";
+import { spectrumFftMaxHzResolve, spectrumViewRangeResolveFromMeasureMode } from "./resonate_spectrum_config.js?rev=62152aa99b89";
+import { refreshSpectrumVariantsBuild } from "./resonate_spectrum_variants.js?rev=62152aa99b89";
+import { stageDetectModesFromSpectrum } from "./resonate_stage_detect.js?rev=62152aa99b89";
+import { stageRefreshPostApply } from "./resonate_stage_refresh_post.js?rev=62152aa99b89";
+import { stageRefreshPreRun } from "./resonate_stage_refresh_pre.js?rev=62152aa99b89";
+import { resonanceSubjectDraftDefaultsFromMeasureMode } from "./resonate_subject_taxonomy.js?rev=62152aa99b89";
 // The brace stock estimate the Reader page shows from a specimen's dimensions, mass and Long mode:
 // density, long-grain modulus, section stiffness and sound speed.
-export { braceStockMaterialBuildFromMeasurements } from "./resonate_brace_stock_material.js?rev=5cd466ecbcb0";
+export { braceStockMaterialBuildFromMeasurements } from "./resonate_brace_stock_material.js?rev=62152aa99b89";
 export const RESONANCE_RECORDING_MEASURE_MODES = ["guitar", "plate_stock", "brace_stock"];
 export async function resonanceRecordingAnalyze(args) {
     const measureMode = measureModeNormalize(args.measureMode);
